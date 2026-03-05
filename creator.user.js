@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         APM Master: WO Creator & Auto-Fill + Tab Re-Order
 // @namespace    https://w.amazon.com/bin/view/Users/rosendah/APM-Master/
-// @version      0.6.14
+// @version      0.7.0
 // @description  WO Cretion, Auto-Fill Engine, and LOTO Checklist Automation.
 // @author       Jacob Rosendahl
 // @icon         https://media.licdn.com/dms/image/v2/D5603AQGdCV0_LQKRfQ/profile-displayphoto-scale_100_100/B56ZyZLvQ5HgAg-/0/1772096519061?e=1773878400&v=beta&t=eWO1Jiy0-WbzG_yBv-SBrmmsVOPMexF57-q1Xh_VXCk
@@ -181,11 +181,46 @@ function getCurrentFormData() {
         }
     }
 
-
     /** =========================
+     * GitHub Update Checker
+     * ========================= */
+    const CURRENT_VERSION = '0.7.0'; // Manually bump this when you release new versions
+
+    function isNewerVersion(oldVer, newVer) {
+        const oldParts = oldVer.split('.').map(Number);
+        const newParts = newVer.split('.').map(Number);
+        for (let i = 0; i < Math.max(oldParts.length, newParts.length); i++) {
+            const o = oldParts[i] || 0;
+            const n = newParts[i] || 0;
+            if (n > o) return true;
+            if (n < o) return false;
+        }
+        return false;
+    }
+
+    function checkForUpdates() {
+        if (window._apmUpdateChecked) return;
+        window._apmUpdateChecked = true;
+
+        fetch('https://raw.githubusercontent.com/jaker788-create/APM-Master/main/creator.user.js')
+            .then(response => response.text())
+            .then(text => {
+                const match = text.match(/\/\/\s*@version\s+([0-9\.]+)/);
+                if (match && match[1]) {
+                    const remoteVersion = match[1];
+                    if (isNewerVersion(CURRENT_VERSION, remoteVersion)) {
+                        const updateContainer = document.getElementById('apm-update-container');
+                        if (updateContainer) updateContainer.style.display = 'block';
+                        console.log(`[APM] Update available! Current: ${CURRENT_VERSION}, Remote: ${remoteVersion}`);
+                    }
+                }
+            }).catch(e => console.warn('[APM] Update check failed silently.', e));
+    }
+
+/** =========================
      * UI Builder (Panel)
      * ========================= */
-    let settingsMode = 'cols'; // 'cols' or 'tabs'
+    let settingsMode = 'cols';
 
     function buildCreatorUI() {
         if (window.self !== window.top || document.getElementById('apm-creator-panel')) return;
@@ -196,19 +231,19 @@ function getCurrentFormData() {
         panel.id = 'apm-creator-panel';
         panel.style = 'position:fixed; z-index:99999; padding:15px; background:#35404a; color:white; border:1px solid #2c353c; border-radius:8px; box-shadow: 0px 8px 25px rgba(0,0,0,0.6); font-family:sans-serif; width: 480px; display:none; top: 60px; right: 20px;';
 
-       panel.innerHTML = `
+        panel.innerHTML = `
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
                 <h4 style="margin:0; font-size:18px; color:#ffffff; font-weight: normal;">APM Master <span style="color:#e74c3c; font-weight: bold;">Suite</span></h4>
                 <button id="apm-c-btn-close" style="background:#505f6e; color:#ffffff; border:none; padding: 4px 10px; border-radius:4px; cursor:pointer; font-size:14px; font-weight:bold;">✖</button>
             </div>
 
             <div style="display:flex; margin-bottom:15px; background:#2b343c; border-radius:6px; overflow:hidden;">
-                <div id="tab-creator" class="apm-tab-btn apm-tab-active-creator">Creator</div>
+                <div id="tab-settings" class="apm-tab-btn apm-tab-active-autofill">Tab Order</div>
+                <div id="tab-creator" class="apm-tab-btn apm-tab-inactive">Creator</div>
                 <div id="tab-autofill" class="apm-tab-btn apm-tab-inactive">Auto Fill</div>
-                <div id="tab-settings" class="apm-tab-btn apm-tab-inactive">Settings</div>
             </div>
 
-            <div id="apm-main-fields">
+            <div id="apm-main-fields" style="display:none;">
                 <div class="preset-row">
                     <select id="apm-c-preset-select" style="flex-grow:1; padding:6px; border-radius:4px; border:none; font-weight:bold; cursor:pointer;"></select>
                     <button id="apm-c-btn-save" class="creator-btn" style="background:#3498db; color:white;">Save</button>
@@ -268,21 +303,37 @@ function getCurrentFormData() {
                 <button id="apm-c-btn-generate" style="width:100%; background:#e74c3c; color:white; border:none; padding:12px; border-radius:6px; cursor:pointer; font-weight:bold; font-size:14px; transition: background 0.2s;">⚡ Generate New Record</button>
             </div>
 
-            <div id="apm-settings-fields" style="display:none;">
+            <div id="apm-settings-fields">
                 <div style="display:flex; margin-bottom:10px; background:#22292f; border-radius:4px; overflow:hidden;">
                     <div id="apm-s-tog-cols" style="flex:1; text-align:center; padding:8px; cursor:pointer; font-size:12px; font-weight:bold; background:#3498db; color:#fff;">Grid Columns</div>
                     <div id="apm-s-tog-tabs" style="flex:1; text-align:center; padding:8px; cursor:pointer; font-size:12px; font-weight:bold; color:#7f8c8d;">Record Tabs</div>
                 </div>
 
                 <div style="color:#3498db; font-weight:bold; margin-bottom: 5px;" id="apm-s-title">Visual Order:</div>
-                <div style="font-size:11px; color:#aaa; margin-bottom:10px;">Drag and drop to reorder. Top item appears furthest left.</div>
-
-                <button id="apm-s-btn-fetch" style="width:100%; background:#f39c12; color:white; border:none; padding:8px; border-radius:4px; cursor:pointer; font-weight:bold; margin-bottom:10px;">1. Pull Visible Items from Screen</button>
+                <div style="font-size:11px; color:#aaa; margin-bottom:10px;">Drag and drop to reorder. Syncs automatically.</div>
 
                 <div id="apm-s-col-list" style="background:#22292f; border:1px solid #45535e; border-radius:4px; padding:5px; min-height:60px; max-height:220px; overflow-y:auto; margin-bottom:10px;">
                     </div>
 
-                <button id="apm-s-btn-save-settings" style="width:100%; background:#2ecc71; color:white; border:none; padding:12px; border-radius:6px; cursor:pointer; font-weight:bold; font-size:14px;">2. Save Settings & Apply</button>
+                <button id="apm-s-btn-save-settings" style="width:100%; background:#2ecc71; color:white; border:none; padding:12px; border-radius:6px; cursor:pointer; font-weight:bold; font-size:14px;">Save Layout Order</button>
+            </div>
+
+            <div id="apm-help-fields" style="display:none; padding: 10px; background: #22292f; border-radius: 6px; font-size: 12px; color: #b0bec5; line-height: 1.5;">
+                <h4 style="color:#3498db; margin: 0 0 10px 0;">APM Master Tips & Instructions</h4>
+                <ul style="padding-left: 20px; margin: 0;">
+                    <li style="margin-bottom: 8px;"><b style="color:white;">Tab Order:</b> The script constantly monitors EAM grids and tabs. Drag the items to match your preferred layout and hit Save. The script will force EAM to obey this order.</li>
+                    <li style="margin-bottom: 8px;"><b style="color:white;">Auto-Fill Keys:</b> To link a template to a Work Order, enter keywords separated by commas in the 'WO Title' field (e.g., <code>pre-sort, repair, filter</code>).</li>
+                    <li style="margin-bottom: 8px;"><b style="color:white;">Checklist Sync:</b> Select LOTO Yes/No to bypass the 1-Tech prompt. Entering a 'PMs' quantity forces the engine to auto-complete that exact number of lines on the 10-Tech activity tab.</li>
+                    <li><b style="color:white;">Hotkeys:</b> If your global keyboard shortcuts stop working, ensure you click outside of EAM dropdown menus to release the focus hook.</li>
+                </ul>
+            </div>
+
+            <div style="margin-top: 15px; text-align: center;">
+                <span id="apm-c-btn-help" style="cursor: pointer; color: #7f8c8d; font-size: 11px; text-decoration: underline;">Toggle Help & Tips</span>
+            </div>
+
+            <div id="apm-update-container" style="display:none; margin-top: 15px; text-align: center;">
+                <a href="https://raw.githubusercontent.com/jaker788-create/APM-Master/main/creator.user.js" target="_blank" style="display:inline-block; background:#f39c12; color:white; padding:8px 15px; border-radius:4px; font-weight:bold; text-decoration:none; font-size:13px; transition: background 0.2s; box-shadow: 0 2px 5px rgba(0,0,0,0.2);">✨ Update Available</a>
             </div>
         `;
         document.body.appendChild(panel);
@@ -293,6 +344,7 @@ function getCurrentFormData() {
         const selectEl = document.getElementById('apm-c-preset-select');
         const mainFields = document.getElementById('apm-main-fields');
         const settingsFields = document.getElementById('apm-settings-fields');
+        const helpFields = document.getElementById('apm-help-fields');
 
         const tabCreator = document.getElementById('tab-creator');
         const tabAutofill = document.getElementById('tab-autofill');
@@ -304,10 +356,16 @@ function getCurrentFormData() {
         const togTabs = document.getElementById('apm-s-tog-tabs');
         const colListContainer = document.getElementById('apm-s-col-list');
 
+        // Help Toggle
+        document.getElementById('apm-c-btn-help').onclick = () => {
+            helpFields.style.display = helpFields.style.display === 'none' ? 'block' : 'none';
+        };
+
         const resetTabs = () => {
-            tabCreator.style.background = 'transparent';
-            tabAutofill.style.background = 'transparent';
-            tabSettings.style.background = 'transparent';
+            tabCreator.style.background = 'transparent'; tabCreator.className = 'apm-tab-btn apm-tab-inactive';
+            tabAutofill.style.background = 'transparent'; tabAutofill.className = 'apm-tab-btn apm-tab-inactive';
+            tabSettings.style.background = 'transparent'; tabSettings.className = 'apm-tab-btn apm-tab-inactive';
+            helpFields.style.display = 'none';
         };
 
         const renderPresetOptions = () => {
@@ -363,7 +421,6 @@ function getCurrentFormData() {
             for (const win of allDocs) {
                 if (win.Ext && win.Ext.ComponentQuery) {
                     const tabPanels = win.Ext.ComponentQuery.query('tabpanel');
-                    // Find the TabPanel holding Header, Activities, etc.
                     const mainTabPanel = tabPanels.find(tp => tp.rendered && tp.items && tp.items.items.length > 3 &&
                         tp.items.items.some(t => {
                             let txt = t.title || t.text || '';
@@ -372,9 +429,7 @@ function getCurrentFormData() {
 
                     if (mainTabPanel) {
                         mainTabPanel.items.items.forEach(t => {
-                            // Check if tab is visually accessible
                             if (!t.tab || (typeof t.tab.isHidden === 'function' && t.tab.isHidden())) return;
-
                             let cleanText = (t.title || t.text || '').replace(/<[^>]*>?/gm, '').trim();
                             if (cleanText && cleanText !== '&#160;') {
                                 tabs.push({ index: cleanText, text: cleanText });
@@ -406,12 +461,10 @@ function getCurrentFormData() {
                     item.classList.add('dragging');
                 };
                 item.ondragend = () => { item.classList.remove('dragging'); };
-
                 colListContainer.appendChild(item);
             });
         };
 
-        // Container Drop Logic
         colListContainer.ondragover = (e) => {
             e.preventDefault();
             const dragging = document.querySelector('.dragging');
@@ -427,27 +480,33 @@ function getCurrentFormData() {
             else { colListContainer.appendChild(dragging); }
         };
 
+        const performAutoFetch = () => {
+            if (settingsMode === 'cols') {
+                const cols = probeExtGridColumns();
+                renderDragList(cols, 'No grid found. Open the Work Orders screen.');
+            } else {
+                const tabs = probeExtTabs();
+                renderDragList(tabs, 'No record tabs found. Open a Work Order.');
+            }
+        };
+
         const loadSettingsView = () => {
             if (settingsMode === 'cols') {
                 togCols.style.background = '#3498db'; togCols.style.color = '#fff';
                 togTabs.style.background = 'transparent'; togTabs.style.color = '#7f8c8d';
-                const saved = (presets.config.columnOrder || '').split(',').map(s => s.trim()).filter(s => s);
-                renderDragList(saved.map(idx => ({ index: idx, text: idx })), 'No grid found. Open the Work Orders screen and click Pull.');
             } else {
                 togTabs.style.background = '#3498db'; togTabs.style.color = '#fff';
                 togCols.style.background = 'transparent'; togCols.style.color = '#7f8c8d';
-                const saved = (presets.config.tabOrder || '').split(',').map(s => s.trim()).filter(s => s);
-                renderDragList(saved.map(idx => ({ index: idx, text: idx })), 'No record tabs found. Open a Work Order and click Pull.');
             }
+            performAutoFetch();
         };
 
         togCols.onclick = () => { settingsMode = 'cols'; loadSettingsView(); };
         togTabs.onclick = () => { settingsMode = 'tabs'; loadSettingsView(); };
 
-        // Tab Setup
         tabCreator.onclick = () => {
             activeTab = 'creator';
-            resetTabs(); tabCreator.style.background = '#3498db';
+            resetTabs(); tabCreator.className = 'apm-tab-btn apm-tab-active-creator';
             mainFields.style.display = 'block'; settingsFields.style.display = 'none';
             rowKw.style.display = 'none'; btnGen.style.display = 'block';
             renderPresetOptions();
@@ -455,7 +514,7 @@ function getCurrentFormData() {
 
         tabAutofill.onclick = () => {
             activeTab = 'autofill';
-            resetTabs(); tabAutofill.style.background = '#3498db';
+            resetTabs(); tabAutofill.className = 'apm-tab-btn apm-tab-active-autofill';
             mainFields.style.display = 'block'; settingsFields.style.display = 'none';
             rowKw.style.display = 'block'; btnGen.style.display = 'none';
             renderPresetOptions();
@@ -463,16 +522,9 @@ function getCurrentFormData() {
 
         tabSettings.onclick = () => {
             activeTab = 'settings';
-            resetTabs(); tabSettings.style.background = '#3498db';
+            resetTabs(); tabSettings.className = 'apm-tab-btn apm-tab-active-autofill';
             mainFields.style.display = 'none'; settingsFields.style.display = 'block';
             loadSettingsView();
-        };
-
-        // Init
-        renderPresetOptions();
-        selectEl.onchange = () => {
-            const targetList = activeTab === 'creator' ? presets.creator : presets.autofill;
-            applyPresetData(targetList[selectEl.value]);
         };
 
         document.getElementById('apm-c-btn-save').onclick = () => {
@@ -501,21 +553,6 @@ function getCurrentFormData() {
             }
         };
 
-        // Settings Buttons
-        document.getElementById('apm-s-btn-fetch').onclick = () => {
-            if (settingsMode === 'cols') {
-                setStatus('Probing ExtJS Grid...', '#f39c12');
-                const cols = probeExtGridColumns();
-                renderDragList(cols, 'No grid found.');
-                if (cols.length > 0) setStatus('Grid columns loaded.', '#2ecc71');
-            } else {
-                setStatus('Probing ExtJS Tabs...', '#f39c12');
-                const tabs = probeExtTabs();
-                renderDragList(tabs, 'No record tabs found.');
-                if (tabs.length > 0) setStatus('Record tabs loaded.', '#2ecc71');
-            }
-        };
-
         document.getElementById('apm-s-btn-save-settings').onclick = () => {
             const items = [...colListContainer.querySelectorAll('.apm-col-item')];
             if (items.length > 0) {
@@ -528,17 +565,25 @@ function getCurrentFormData() {
                     setStatus('Record Tab order saved!', '#2ecc71');
                 }
                 savePresets();
-
-                // Force active elements to unlock so they get resorted immediately
-                forceRetagExtJs();
             } else {
                 setStatus('No items to save.', '#e74c3c');
             }
         };
 
         document.getElementById('apm-c-btn-generate').onclick = () => { if (!isRunning) executeCreatorFlow(); };
-    }
 
+        // Initialize Default View
+        if (activeTab === 'settings') {
+            tabSettings.onclick();
+        } else if (activeTab === 'creator') {
+            tabCreator.onclick();
+        } else {
+            tabAutofill.onclick();
+        }
+
+        // Fire background update check
+        checkForUpdates();
+    }
 
     /** =========================
      * UI Customizations (Grid & Tabs)
@@ -1510,26 +1555,66 @@ async function executeAutoFillFlow(fallbackTitle) {
         parentContainer.appendChild(toggleBtn);
     }
 
-function injectAutoFillTriggers() {
-        // 1. Guard: ONLY let the top-level script manage the buttons
+/** =========================
+     * AutoFill Trigger Logic
+     * ========================= */
+    function injectAutoFillTriggers() {
         if (window.self !== window.top || isRunning) return;
 
-        // 2. Gather all documents (Top window + all iframes)
+        loadPresets();
+
         const allDocs = [window.document];
         document.querySelectorAll('iframe').forEach(f => {
             try { if (f.contentDocument) allDocs.push(f.contentDocument); } catch(e){}
         });
 
-        // 3. Scan every document for the WO header
+        // 1. Safely evaluate if Record View is visually active on the screen
+        let isRecordViewActive = false;
+        let realWoTitle = "";
+
         allDocs.forEach(d => {
             if (!d) return;
-            const titles = d.querySelectorAll('.recorddesc');
+            const descInputs = d.querySelectorAll('input[name="description"]');
+            descInputs.forEach(el => {
+                const rect = el.getBoundingClientRect();
+                if (rect.width > 0 && rect.height > 0) {
+                    isRecordViewActive = true;
+                    if (el.value) realWoTitle = el.value.trim().toLowerCase();
+                }
+            });
+        });
 
+        // 2. Main Trigger Loop
+        allDocs.forEach(d => {
+            if (!d) return;
+
+            const titles = d.querySelectorAll('.recorddesc');
             titles.forEach(titleEl => {
                 if (titleEl.getAttribute('aria-labelledby') && titleEl.getAttribute('aria-labelledby').includes('module_header')) {
                     const parent = titleEl.parentElement;
+                    const existingBtn = parent.querySelector('#apm-btn-do-autofill');
 
-                    if (!parent.querySelector('#apm-btn-do-autofill')) {
+                    // If we are NOT visually looking at a Record View, execute a kill command on the button and skip
+                    if (!isRecordViewActive || !realWoTitle) {
+                        if (existingBtn) existingBtn.remove();
+                        return;
+                    }
+
+                    // 3. Keyword Match Scanner
+                    let hasMatch = false;
+                    for (const key in presets.autofill) {
+                        const kwString = presets.autofill[key].keyword;
+                        if (!kwString) continue;
+
+                        const keywords = kwString.split(',').map(k => k.trim().toLowerCase()).filter(k => k.length > 0);
+                        if (keywords.some(k => realWoTitle.includes(k))) {
+                            hasMatch = true;
+                            break;
+                        }
+                    }
+
+                    // 4. Dom Manipulation
+                    if (hasMatch && !existingBtn) {
                         const btn = d.createElement('button');
                         btn.id = 'apm-btn-do-autofill';
                         btn.innerHTML = 'Auto Fill ⚡';
@@ -1546,6 +1631,8 @@ function injectAutoFillTriggers() {
                         parent.style.display = 'flex';
                         parent.style.alignItems = 'center';
                         parent.appendChild(btn);
+                    } else if (!hasMatch && existingBtn) {
+                        existingBtn.remove();
                     }
                 }
             });
