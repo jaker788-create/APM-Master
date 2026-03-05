@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         APM Master: Forecast Tool
 // @namespace    https://w.amazon.com/bin/view/Users/rosendah/APM-Master/
-// @version      12.5.1
+// @version      12.5.3
 // @description  Powerful WO Forecast Tool & Native Quick Search Bar. Manual edits to this script are not recomended, this is actively supported tool so Slack me for any issues and I can push an update! If you edit you will not receive auto updates
 // @author       Jacob Rosendahl & Thai Ho
 // @icon         https://media.licdn.com/dms/image/v2/D5603AQGdCV0_LQKRfQ/profile-displayphoto-scale_100_100/B56ZyZLvQ5HgAg-/0/1772096519061?e=1773878400&v=beta&t=eWO1Jiy0-WbzG_yBv-SBrmmsVOPMexF57-q1Xh_VXCk
@@ -14,12 +14,14 @@
 
 /* --------------------------------------------------------------------------
    RECENT FEATURES & BUG FIXES:
-   - v12.5.1 Feature: The Labor Tally function introduced in v12.3 is now a universal & moveable edge tab that fetches booked labor in the backround with a native server request. (Was real interesting to implement). Added manager mode to save multiple aliases for search
+   - v12.5.3 Optimize: Rewrote some legacy DOM checks and fixed wait functions with event driven ExtJS waits, even faster execution speed.
+   - v12.5.2 Optimize: Rewrote the Forecast Button to natively inject itself into the toolbar and let the framework handle placement and rendering.
+   - v12.5.1 Feature: The Labor Tally function introduced in v12.3 is now a universal & moveable edge tab that fetches booked labor in the backround with a native server request. (Was real interesting to implement). Added manager mode to save multiple aliases for search.
    - v12.4.0 Feature: The 3-Way PM filter introduced in v12.2 now directly modifies the ExtJS stores rather than visually hiding rows. Now it is functionally as if you are only looking at PMs only or Non PMs only, no hidden records.
-   - v12.3.4 Feature: Added internal update check and in menu notice. Cleaned up UI with removal of "Ready" status message
+   - v12.3.4 Feature: Added internal update check and in menu notice. Cleaned up UI with removal of "Ready" status message.
    - v12.3.3 Bug Fix: Fixed date format issue where systems would not be mm-dd-yyyy, added a date format override to conform with APM requirements always
    - v12.2.3 Bug Fix: UI Menu defocus events were getting trapped inside iframes, added native ExtJS listener for mouse events.
-   - v12.2.1 Feature: When performing WO Search the dataspy is now changed to "All Work Orders" to ensure any searched WO will come up. When performing Forecast search it is set back to "Open Work Orders"
+   - v12.2.1 Feature: When performing WO Search the dataspy is now changed to "All Work Orders" to ensure any searched WO will come up. When performing Forecast search it is set back to "Open Work Orders".
    - v12.1.3 Feature: Upgraded "Past Due" checkbox to a dynamic toggle button.
    - V12.1.1 Feature: Synced Relative dates to Custom Dates on switch.
    - v12.1.0 Feature: Merged native-blended "Quick Search" bar into the top header. Shares the high-speed engine for instant WO lookups.
@@ -75,14 +77,13 @@
     let selectedOrg = '';
 
 /** =========================
- * 3-Way PM Non-PM Filter
+ * 3-Way PM Non-PM Filter (Native ExtJS Upgrade)
  * ========================= */
 const ForecastFilter = (function() {
     let filterState = 0; // 0: All, 1: PMs, 2: Non-PMs
-    let lastKnownDoc = null;
-    let observer = null;
+    let lastKnownStoreId = null;
 
-    const TARGET_DATA_INDEX = 'duedate'; // Confirmed
+    const TARGET_DATA_INDEX = 'duedate';
     const STATES = [
         { label: 'Filter: Show All', bg: '#7f8c8d' },
         { label: 'Filter: PMs Only', bg: '#1abc9c' },
@@ -104,35 +105,19 @@ const ForecastFilter = (function() {
         return null;
     }
 
-    function forceFooterText(gridDom, count) {
-        const walk = document.createTreeWalker(gridDom, NodeFilter.SHOW_TEXT, {
-            acceptNode: function(node) {
-                if (/Records:\s*\d+\s*of\s*\d+/.test(node.nodeValue)) {
-                    return NodeFilter.FILTER_ACCEPT;
-                }
-                return NodeFilter.FILTER_SKIP;
+    function updateFooterTextNatively(grid, count) {
+        // EAM stores the "Records: X of Y" text in a specific toolbar text item
+        // Find the docked bottom toolbar, then find the tbtext component
+        const bbar = grid.getDockedItems('toolbar[dock="bottom"]')[0];
+        if (bbar) {
+            const textItem = bbar.down('tbtext');
+            if (textItem) {
+                // Suspend events briefly so we don't trigger layout recalculations multiple times
+                textItem.suspendEvents();
+                textItem.setText(`Records: ${count} of ${count}`);
+                textItem.resumeEvents();
             }
-        }, false);
-
-        let node;
-        while ((node = walk.nextNode())) {
-            node.nodeValue = `Records: ${count} of ${count}`;
         }
-    }
-
-    function setupSentinel(gridDom, count) {
-        if (observer) observer.disconnect();
-
-        observer = new MutationObserver(() => {
-            if (filterState !== 0) {
-                // Disconnect briefly to avoid triggering our own mutation loop
-                observer.disconnect();
-                forceFooterText(gridDom, count);
-                observer.observe(gridDom, { childList: true, subtree: true, characterData: true });
-            }
-        });
-
-        observer.observe(gridDom, { childList: true, subtree: true, characterData: true });
     }
 
     /** =========================
@@ -144,7 +129,9 @@ const ForecastFilter = (function() {
 
         const { grid } = ctx;
         const store = grid.getStore();
-        const gridDom = grid.getEl().dom;
+
+        // Prevent infinite loops if EAM reloads the store
+        store.suspendEvents();
 
         // 1. Restore native Total Count getter BEFORE doing anything else
         if (store._nativeGetTotalCount) {
@@ -155,13 +142,10 @@ const ForecastFilter = (function() {
         store.clearFilter();
 
         if (filterState === 0) {
-            if (observer) observer.disconnect();
-
-            // Explicitly force the DOM text back to the real unfiltered total
             const realCount = store.getCount();
-            forceFooterText(gridDom, realCount);
-
-            if (grid.view && grid.view.el) grid.view.el.setScrollTop(0);
+            updateFooterTextNatively(grid, realCount);
+            store.resumeEvents();
+            grid.getView().refresh();
             return;
         }
 
@@ -175,16 +159,14 @@ const ForecastFilter = (function() {
         const count = store.getCount();
 
         // 4. Override Native Total Count logic
-        if (!store._nativeGetTotalCount) {
-            store._nativeGetTotalCount = store.getTotalCount;
-        }
+        if (!store._nativeGetTotalCount) store._nativeGetTotalCount = store.getTotalCount;
         store.getTotalCount = function() { return count; };
 
-        // 5. Force DOM update and lock it
-        forceFooterText(gridDom, count);
-        setupSentinel(gridDom, count);
+        // 5. Update UI Natively
+        updateFooterTextNatively(grid, count);
 
-        // 6. Scroll snap to refresh view
+        store.resumeEvents();
+        grid.getView().refresh(); // Force ExtJS to redraw the grid with the filtered data
         if (grid.view && grid.view.el) grid.view.el.setScrollTop(0);
     }
 
@@ -202,12 +184,14 @@ const ForecastFilter = (function() {
         const ctx = getTargetContext();
         if (!ctx) return;
 
-        const { doc } = ctx;
+        const { doc, grid } = ctx;
+        const store = grid.getStore();
 
-        if (filterState !== 0 && doc !== lastKnownDoc) {
+        // Re-apply filter if the underlying store changes (e.g. user clicked Run)
+        if (filterState !== 0 && store.storeId !== lastKnownStoreId) {
             applyStoreFilter();
         }
-        lastKnownDoc = doc;
+        lastKnownStoreId = store.storeId;
 
         const dataspyInput = doc.querySelector('input[name="dataspylist"]');
         if (!dataspyInput || dataspyInput.offsetWidth === 0) return;
@@ -433,7 +417,7 @@ function formatDate(d) {
     /** =========================
      * GitHub Update Checker
      * ========================= */
-    const FORECAST_VERSION = '12.5.1'; // MUST MATCH YOUR SCRIPT HEADER VERSION
+    const FORECAST_VERSION = '12.5.3'; // MUST MATCH YOUR SCRIPT HEADER VERSION
 
     function isNewerVersion(oldVer, newVer) {
         const oldParts = oldVer.split('.').map(Number);
@@ -467,13 +451,13 @@ function formatDate(d) {
     }
 
     /** =========================
-     * UI Builders
+     * Quick Search Bar Builder (Stable DOM)
      * ========================= */
-
     function buildSearchUI() {
         if (window.self !== window.top) return;
         if (document.getElementById('apm-quick-search-container')) return;
 
+        // Pull native styling to match the header
         const referenceBtn = document.querySelector('.x-btn-inner') || document.body;
         const computedStyle = window.getComputedStyle(referenceBtn);
         const nativeColor = computedStyle.color || '#d1d1d1';
@@ -482,9 +466,10 @@ function formatDate(d) {
         const searchContainer = document.createElement('div');
         searchContainer.id = 'apm-quick-search-container';
 
+        // Fix to the left side, bypassing ExtJS layout rules
         searchContainer.style.position = 'fixed';
         searchContainer.style.top = '0';
-        searchContainer.style.left = '100px';
+        searchContainer.style.left = '110px';
         searchContainer.style.height = '42px';
         searchContainer.style.display = 'flex';
         searchContainer.style.alignItems = 'center';
@@ -1035,12 +1020,20 @@ function formatDate(d) {
         return modules;
     }
 
-    function isGridReady() {
-        const modules = getEAMModules();
-        const target = modules.find(m => m.sysFunction === 'WSJOBS');
-        if (target && target.document) {
-            const d = target.document;
-            return d.body && (d.querySelector('.x-grid-row') || d.querySelector('.uftid-newrec') || d.querySelector('input[name="ff_organization"]'));
+function isGridReady() {
+        const allWins = [window, ...Array.from(document.querySelectorAll('iframe')).map(f => f.contentWindow)];
+        for (const win of allWins) {
+            try {
+                if (win.Ext && win.Ext.ComponentQuery) {
+                    const grid = win.Ext.ComponentQuery.query('gridpanel').find(g =>
+                        g.columns && g.columns.length > 20 && g.rendered && !g.isDestroyed
+                    );
+                    // Check if grid exists, is rendered, and its store has finished its initial load
+                    if (grid && grid.getStore() && !grid.getStore().isLoading()) {
+                        return true;
+                    }
+                }
+            } catch (e) { continue; }
         }
         return false;
     }
@@ -1127,67 +1120,8 @@ async function navigateTo(tabText, menuPathArray) {
         return true;
     }
 
-    /** =========================
-     * UI Defocus & Toggle Manager
-     * ========================= */
-    function initializeForecastUI(toggleBtnId, panelId) {
-        const toggleBtn = document.getElementById(toggleBtnId);
-        const panel = document.getElementById(panelId);
-
-        if (!toggleBtn || !panel) return;
-
-        toggleBtn.onmousedown = function(e) {
-            e.preventDefault();
-            e.stopPropagation();
-            const isHidden = (panel.style.display === 'none' || panel.style.display === '');
-
-            if (isHidden) {
-                const rect = toggleBtn.getBoundingClientRect();
-                panel.style.top = (rect.bottom + 6) + 'px';
-                panel.style.left = rect.left + 'px';
-                panel.style.display = 'block';
-            } else {
-                panel.style.display = 'none';
-            }
-        };
-        toggleBtn.onclick = null;
-
-        // Native ExtJS Iframe Injection
-        const payloadId = 'apm-extjs-defocus-init-' + Date.now();
-        const scriptContent = `
-            (function() {
-                function hidePanel() {
-                    var p = document.getElementById('${panelId}');
-                    if (p && p.style.display !== 'none') p.style.display = 'none';
-                }
-                document.addEventListener('mousedown', function(e) {
-                    var p = document.getElementById('${panelId}');
-                    var b = document.getElementById('${toggleBtnId}');
-                    if (p && p.style.display !== 'none' && !p.contains(e.target) && (!b || !b.contains(e.target))) hidePanel();
-                }, true);
-                setInterval(function() {
-                    document.querySelectorAll('iframe').forEach(function(f) {
-                        try {
-                            var fWin = f.contentWindow;
-                            if (fWin && !fWin.__apm_defocus_bound) {
-                                if (fWin.Ext && fWin.Ext.getDoc) fWin.Ext.getDoc().on('mousedown', hidePanel);
-                                else if (fWin.document) fWin.document.addEventListener('mousedown', hidePanel, true);
-                                fWin.__apm_defocus_bound = true;
-                            }
-                        } catch(err) {}
-                    });
-                }, 1500);
-            })();
-        `;
-        const scriptEl = document.createElement('script');
-        scriptEl.id = payloadId;
-        scriptEl.textContent = scriptContent;
-        document.head.appendChild(scriptEl);
-        setTimeout(() => scriptEl.remove(), 100);
-    }
-
-    /** =========================
-     * Direct ExtJS API Bridge
+/** =========================
+     * Direct ExtJS API Bridge (Event-Driven)
      * ========================= */
     function applyForecastFiltersExtJS(filterData) {
         const payloadId = 'apm-extjs-payload-' + Date.now();
@@ -1197,7 +1131,7 @@ async function navigateTo(tabText, menuPathArray) {
                     var attempts = 0;
                     var maxAttempts = 40;
 
-                    function pollAndExecute() {
+                    function executeEngine() {
                         attempts++;
                         var targetExt = window.Ext;
                         var frames = document.querySelectorAll('iframe');
@@ -1214,42 +1148,35 @@ async function navigateTo(tabText, menuPathArray) {
                         }
 
                         if (!foundFrame || !targetExt || !targetExt.ComponentQuery) {
-                            if (attempts < maxAttempts) setTimeout(pollAndExecute, 250);
+                            if (attempts < maxAttempts) setTimeout(executeEngine, 250);
                             return;
                         }
 
+                        // Ensure form fields are actually rendered before proceeding
                         var orgFields = targetExt.ComponentQuery.query('[name=ff_organization]');
                         if (!orgFields || orgFields.length === 0) {
-                            if (attempts < maxAttempts) setTimeout(pollAndExecute, 250);
+                            if (attempts < maxAttempts) setTimeout(executeEngine, 250);
                             return;
                         }
 
                         var data = ${JSON.stringify(filterData)};
                         var needsAjaxWait = false;
 
-                        // 1. Change Dataspy FIRST (Dynamic Target)
+                        // 1. Change Dataspy (Dynamic Target)
                         if (!data.isClearMode) {
-                            // Define the target Dataspy based on the search mode
                             var targetDataspyName = data.isWoSearch ? 'All Work Orders' : 'Open Work Orders';
-
                             var combos = targetExt.ComponentQuery.query('combobox');
                             for (var c = 0; c < combos.length; c++) {
                                 var combo = combos[c];
                                 var store = combo.getStore && combo.getStore();
-
                                 if (store && combo.displayField) {
                                     var targetRecord = store.findRecord(combo.displayField, targetDataspyName, 0, false, false, true);
-
                                     if (targetRecord) {
                                         var rawId = targetRecord.get(combo.valueField);
-                                        if (typeof rawId === 'object' && rawId !== null) {
-                                            rawId = rawId.id || rawId.value;
-                                        }
+                                        if (typeof rawId === 'object' && rawId !== null) rawId = rawId.id || rawId.value;
 
                                         var currentVal = combo.getValue();
-                                        if (typeof currentVal === 'object' && currentVal !== null) {
-                                            currentVal = currentVal.id || currentVal.value;
-                                        }
+                                        if (typeof currentVal === 'object' && currentVal !== null) currentVal = currentVal.id || currentVal.value;
 
                                         if (String(currentVal) !== String(rawId)) {
                                             combo.setValue(rawId);
@@ -1262,11 +1189,9 @@ async function navigateTo(tabText, menuPathArray) {
                             }
                         }
 
-                        // 2. Helper to apply filters and run
                         function applyFiltersAndRun() {
                             function setExtField(nameAttr, value, operatorClass) {
                                 if (value === undefined || value === null) return;
-                                // Grabs the explicitly active/newly rendered component
                                 var fields = targetExt.ComponentQuery.query('[name=' + nameAttr + ']:not([destroyed=true])');
                                 if (!fields || fields.length === 0) return;
 
@@ -1338,27 +1263,35 @@ async function navigateTo(tabText, menuPathArray) {
                             }
                         }
 
-                        // 3. Active Network Polling for Re-rendered Components
+                        // 3. Native Event-Driven Execution (Replaces the Polling Loop)
                         if (needsAjaxWait) {
-                            var waitAttempts = 0;
-                            // Give EAM an initial 500ms to dispatch requests and destroy the old grid
-                            setTimeout(function waitForRebuild() {
-                                waitAttempts++;
-                                var isBusy = targetExt.Ajax.isLoading();
+                            var ajaxListener = function() {
+                                // Once the network goes quiet, unbind to prevent memory leaks
+                                if (!targetExt.Ajax.isLoading()) {
+                                    targetExt.Ajax.un('requestcomplete', ajaxListener);
+                                    targetExt.Ajax.un('requestexception', ajaxListener);
 
-                                if (isBusy && waitAttempts < 40) {
-                                    setTimeout(waitForRebuild, 250);
-                                } else {
-                                    // Network is quiet. Give the browser 400ms to physically draw the new text fields on the screen.
-                                    setTimeout(applyFiltersAndRun, 400);
+                                    // Give ExtJS a tiny 150ms buffer to physically draw the new text boxes
+                                    setTimeout(applyFiltersAndRun, 150);
                                 }
-                            }, 500);
+                            };
+
+                            // Bind directly to the ExtJS global Ajax queue
+                            targetExt.Ajax.on('requestcomplete', ajaxListener);
+                            targetExt.Ajax.on('requestexception', ajaxListener);
+
+                            // Failsafe timeout in case the request finished instantaneously
+                            setTimeout(function() {
+                                targetExt.Ajax.un('requestcomplete', ajaxListener);
+                                targetExt.Ajax.un('requestexception', ajaxListener);
+                                applyFiltersAndRun();
+                            }, 4000);
                         } else {
                             applyFiltersAndRun();
                         }
                     }
 
-                    pollAndExecute();
+                    executeEngine();
                 } catch(e) { console.error('APM ExtJS Execution Error:', e); }
             })();
         `;
@@ -1401,10 +1334,17 @@ async function navigateTo(tabText, menuPathArray) {
             return null;
         }
 
-        function extractEmployeeId() {
-            const match = document.body.innerText.match(/User\s*\(([^@)]+)/i);
-            if (match && match[1]) return match[1].toUpperCase();
-            return "ROSENDAH";
+function extractEmployeeId() {
+            // Check native EAM context first
+            if (window.EAM && window.EAM.Context && window.EAM.Context.employee) {
+                return window.EAM.Context.employee.toUpperCase();
+            }
+            // Check EAM AppData as backup
+            if (window.EAM && window.EAM.AppData && window.EAM.AppData.employee) {
+                return window.EAM.AppData.employee.toUpperCase();
+            }
+            console.warn("[Labor Tracker] No active user found in framework.");
+            return "";
         }
 
         async function fetchLaborData() {
@@ -1632,7 +1572,11 @@ async function navigateTo(tabText, menuPathArray) {
                     } else {
                         isVisible = !wasVisible;
                         applyDocking();
-                        if (isVisible) fetchLaborData();
+                        if (isVisible) {
+                            // Force cache invalidation every time the panel is opened
+                            laborCache.lastFetch = 0;
+                            fetchLaborData();
+                        }
                     }
                 };
                 document.addEventListener('mousemove', onMouseMove);
@@ -1879,62 +1823,124 @@ async function navigateTo(tabText, menuPathArray) {
     }
 
     /** =========================
-     * Toggle Button Injector
+     * Native ExtJS Toggle Button Injector
      * ========================= */
-    function injectToggleBtn() {
+    function injectToggleBtnNatively() {
         if (window.self !== window.top) return;
 
-        let toggleBtn = document.getElementById('eam-forecast-toggle');
-        if (!toggleBtn) {
-            const menuBtns = Array.from(document.querySelectorAll('.x-btn-mainmenuButton-toolbar-small'));
-            if (menuBtns.length === 0) return;
+        // 1. Establish Event Listeners (Once)
+        if (!window._apmForecastToggleBound) {
+            window._apmForecastToggleBound = true;
 
-            let maxLeft = -1;
-            let lastBtn = null;
+            // Handle panel toggle triggered from inside the ExtJS Sandbox
+            window.addEventListener('APM_TOGGLE_FORECAST', (e) => {
+                const panel = document.getElementById('eam-forecast-panel');
+                if (!panel) return;
 
-            menuBtns.forEach(btn => {
-                if (btn.offsetWidth > 0) {
-                    const left = parseInt(btn.style.left || 0, 10);
-                    if (left > maxLeft) { maxLeft = left; lastBtn = btn; }
+                if (panel.style.display === 'none' || panel.style.display === '') {
+                    panel.style.top = (e.detail.bottom + 6) + 'px';
+
+                    // Center the 460px wide panel under the button
+                    const panelWidth = 460;
+                    let targetLeft = e.detail.left + (e.detail.width / 2) - (panelWidth / 2);
+
+                    // Boundary Checks to prevent clipping off screen
+                    const screenWidth = window.innerWidth;
+                    if (targetLeft + panelWidth > screenWidth - 20) {
+                        targetLeft = screenWidth - panelWidth - 20;
+                    }
+                    if (targetLeft < 20) targetLeft = 20;
+
+                    panel.style.left = targetLeft + 'px';
+                    panel.style.display = 'block';
+                } else {
+                    panel.style.display = 'none';
                 }
             });
 
-            if (!lastBtn) return;
-            const parentContainer = lastBtn.parentElement;
+            // Defocus: Click outside to close (Top Window)
+            const hidePanel = (e) => {
+                const panel = document.getElementById('eam-forecast-panel');
+                const isClickOnBtn = e && e.target && (e.target.closest('#apm-forecast-ext-btn') || e.target.closest('#eam-forecast-toggle'));
 
-            const innerTextEl = lastBtn.querySelector('.x-btn-inner') || lastBtn;
-            const computedStyle = window.getComputedStyle(innerTextEl);
-            const nativeColor = computedStyle.color || '#d1d1d1';
-            const nativeFont = computedStyle.fontFamily || 'sans-serif';
-            const nativeSize = computedStyle.fontSize || '13px';
-            const nativeWeight = computedStyle.fontWeight || '600';
+                if (panel && panel.style.display === 'block' && (!e || (!panel.contains(e.target) && !isClickOnBtn))) {
+                    panel.style.display = 'none';
+                }
+            };
+            document.addEventListener('mousedown', hidePanel, true);
 
-            const newLeft = maxLeft + lastBtn.offsetWidth + 12;
-
-            toggleBtn = document.createElement('div');
-            toggleBtn.id = 'eam-forecast-toggle';
-            toggleBtn.className = 'rain-cloud-hover';
-
-            toggleBtn.style.cssText = `
-                position: absolute; left: ${newLeft}px; top: ${lastBtn.style.top || '0px'};
-                height: ${lastBtn.offsetHeight}px; display: flex; align-items: center;
-                cursor: pointer; padding: 0 10px; color: ${nativeColor};
-                font-family: ${nativeFont}; font-size: ${nativeSize}; font-weight: ${nativeWeight};
-                z-index: 9998; transition: color 0.15s; user-select: none;
-            `;
-
-            toggleBtn.innerHTML = `
-                <span style="margin-right: 6px;">Forecast</span>
-                ${SVG_CLOUD}
-            `;
-
-            toggleBtn.onmouseenter = () => { toggleBtn.style.color = '#ffffff'; };
-            toggleBtn.onmouseleave = () => { toggleBtn.style.color = nativeColor; };
-
-            parentContainer.appendChild(toggleBtn);
-
-            initializeForecastUI('eam-forecast-toggle', 'eam-forecast-panel');
+            // Defocus: Click inside iframes to close
+            setInterval(() => {
+                document.querySelectorAll('iframe').forEach(f => {
+                    try {
+                        const fWin = f.contentWindow;
+                        if (fWin && !fWin.__apm_forecast_defocus) {
+                            if (fWin.Ext && fWin.Ext.getDoc) fWin.Ext.getDoc().on('mousedown', hidePanel);
+                            else if (fWin.document) fWin.document.addEventListener('mousedown', hidePanel, true);
+                            fWin.__apm_forecast_defocus = true;
+                        }
+                    } catch(err) {}
+                });
+            }, 1500);
         }
+
+        // 2. Inject Native Ext Component Payload
+        const payloadId = 'apm-extjs-inject-btn-' + Date.now();
+        const scriptContent = `
+            (function() {
+                try {
+                    if (!window.Ext || !window.Ext.ComponentQuery) return;
+                    if (window.Ext.getCmp('apm-forecast-ext-btn')) return;
+
+                    var rawBtns = document.querySelectorAll('.x-btn-mainmenuButton-toolbar-small');
+                    if (rawBtns.length === 0) return;
+
+                    var visibleBtns = [];
+                    for (var i = 0; i < rawBtns.length; i++) {
+                        if (rawBtns[i].offsetWidth > 0) visibleBtns.push(rawBtns[i]);
+                    }
+                    if (visibleBtns.length === 0) return;
+
+                    var lastDomBtn = visibleBtns[visibleBtns.length - 1];
+                    var extEl = lastDomBtn.closest('.x-btn') || lastDomBtn;
+                    if (!extEl || !extEl.id) return;
+
+                    var extCmp = window.Ext.getCmp(extEl.id);
+                    if (!extCmp) return;
+
+                    var parentContainer = extCmp.up('toolbar') || extCmp.up('container');
+                    if (!parentContainer) return;
+
+                    var insertIndex = parentContainer.items.indexOf(extCmp) + 1;
+
+                    parentContainer.insert(insertIndex, {
+                        xtype: 'button',
+                        id: 'apm-forecast-ext-btn',
+                        ui: 'plain',
+                        margin: '0 0 0 12',
+                        html: '<div id="eam-forecast-toggle" class="rain-cloud-hover" style="display:flex; align-items:center; font-family:sans-serif; font-size:13px; font-weight:600; color:#d1d1d1; transition:color 0.15s; cursor:pointer;"><span style="margin-right:6px;">Forecast</span><svg viewBox="0 0 24 24" width="22" height="22" style="vertical-align: text-bottom; margin-bottom: 2px; overflow: visible;"><path class="lightning-bolt" d="M18,3 L5,16 L11,16 L7,26 L20,11 L13,11 Z" fill="#f1c40f"/><path d="M17.5,18 C20,18 22,16 22,13.5 C22,11.2 20.3,9.3 18,9 C17.5,6.2 15,4 12,4 C8.7,4 6,6.7 6,10 C6,10.1 6,10.1 6,10.1 C3.8,10.3 2,12.2 2,14.5 C2,17 4,19 6.5,19 L17.5,18 Z" fill="currentColor"/><path class="raindrop drop-1" d="M8,19 L7,23" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><path class="raindrop drop-2" d="M12,20 L11,24" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><path class="raindrop drop-3" d="M16,19 L15,23" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><path class="raindrop drop-4" d="M10,18 L9,22" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><path class="raindrop drop-5" d="M14,19 L13,23" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><path class="raindrop drop-6" d="M18,18 L17,22" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></div>',
+                        listeners: {
+                            el: {
+                                mouseenter: function() { var inner = document.getElementById('eam-forecast-toggle'); if (inner) inner.style.color = '#ffffff'; },
+                                mouseleave: function() { var inner = document.getElementById('eam-forecast-toggle'); if (inner) inner.style.color = '#d1d1d1'; }
+                            }
+                        },
+                        handler: function(btn) {
+                            var el = btn.getEl();
+                            // Package up the width of the button so the UI knows how to center itself
+                            window.dispatchEvent(new CustomEvent('APM_TOGGLE_FORECAST', {
+                                detail: { left: el.getX(), bottom: el.getY() + el.getHeight(), width: el.getWidth() }
+                            }));
+                        }
+                    });
+                } catch(e) { console.error('APM Native Button Injection Error:', e); }
+            })();
+        `;
+        const scriptEl = document.createElement('script');
+        scriptEl.id = payloadId;
+        scriptEl.textContent = scriptContent;
+        document.head.appendChild(scriptEl);
+        setTimeout(() => scriptEl.remove(), 100);
     }
 
     /** =========================
@@ -1964,7 +1970,7 @@ async function navigateTo(tabText, menuPathArray) {
         });
     }
 
-    /** =========================
+/** =========================
      * Unified Tool Initialization
      * ========================= */
     let initTO;
@@ -1972,8 +1978,8 @@ async function navigateTo(tabText, menuPathArray) {
         clearTimeout(initTO);
         initTO = setTimeout(() => {
             buildForecastUI();
-            injectToggleBtn();
-            buildSearchUI();
+            injectToggleBtnNatively(); // Changed
+            buildSearchUI()
         }, 150);
     });
     observer.observe(document.body, { childList: true, subtree: true });
@@ -1981,9 +1987,9 @@ async function navigateTo(tabText, menuPathArray) {
     // Initial Run
     setTimeout(() => {
         buildForecastUI();
-        injectToggleBtn();
-        buildSearchUI();
-        LaborTracker.init(); // Initialize the new floating tool
+        injectToggleBtnNatively(); // Changed
+        buildSearchUI()
+        LaborTracker.init();
     }, 1500);
 
 })();
