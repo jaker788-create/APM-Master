@@ -7,8 +7,8 @@
 // @icon         https://media.licdn.com/dms/image/v2/D5603AQGdCV0_LQKRfQ/profile-displayphoto-scale_100_100/B56ZyZLvQ5HgAg-/0/1772096519061?e=1773878400&v=beta&t=eWO1Jiy0-WbzG_yBv-SBrmmsVOPMexF57-q1Xh_VXCk
 // @match        https://us1.eam.hxgnsmartcloud.com/*
 // @match        https://eu1.eam.hxgnsmartcloud.com/*
-// @updateURL    https://drive.corp.amazon.com/documents/rosendah@/greasemonkey_scripts/APM-Master/nametag.user.js
-// @downloadURL  https://drive.corp.amazon.com/documents/rosendah@/greasemonkey_scripts/APM-Master/nametag.user.js
+// @updateURL    https://raw.githubusercontent.com/jaker788-create/APM-Master/main/nametag.user.js
+// @downloadURL  https://raw.githubusercontent.com/jaker788-create/APM-Master/main/nametag.user.js
 // @run-at       document-start
 // @grant        none
 // ==/UserScript==
