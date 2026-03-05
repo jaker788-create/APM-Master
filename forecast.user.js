@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         APM Master: Forecast Tool
 // @namespace    https://w.amazon.com/bin/view/Users/rosendah/APM-Master/
-// @version      12.5.4
+// @version      12.5.5
 // @description  Powerful WO Forecast Tool & Native Quick Search Bar. Manual edits to this script are not recomended, this is actively supported tool so Slack me for any issues and I can push an update! If you edit you will not receive auto updates
 // @author       Jacob Rosendahl & Thai Ho
 // @icon         https://media.licdn.com/dms/image/v2/D5603AQGdCV0_LQKRfQ/profile-displayphoto-scale_100_100/B56ZyZLvQ5HgAg-/0/1772096519061?e=1773878400&v=beta&t=eWO1Jiy0-WbzG_yBv-SBrmmsVOPMexF57-q1Xh_VXCk
@@ -10,10 +10,12 @@
 // @updateURL    https://drive.corp.amazon.com/view/rosendah@/greasemonkey_scripts/APM-Master/forecast.user.js
 // @downloadURL  https://drive.corp.amazon.com/view/rosendah@/greasemonkey_scripts/APM-Master/forecast.user.js
 // @run-at       document-idle
+// @grant        none
 // ==/UserScript==
 
 /* --------------------------------------------------------------------------
    RECENT FEATURES & BUG FIXES:
+   - v12.5.5 Bug Fix: added grant for security
    - v12.5.4 Feature: Added a manual start PTP timer based on the PTP tab context
    - v12.5.3 Optimize: Rewrote some legacy DOM checks and fixed wait functions with event driven ExtJS waits, even faster execution speed.
    - v12.5.2 Optimize: Rewrote the Forecast Button to natively inject itself into the toolbar and let the framework handle placement and rendering.
@@ -418,7 +420,7 @@ function formatDate(d) {
     /** =========================
      * GitHub Update Checker
      * ========================= */
-    const FORECAST_VERSION = '12.5.4'; // MUST MATCH YOUR SCRIPT HEADER VERSION
+    const FORECAST_VERSION = '12.5.5'; // MUST MATCH YOUR SCRIPT HEADER VERSION
 
     function isNewerVersion(oldVer, newVer) {
         const oldParts = oldVer.split('.').map(Number);
