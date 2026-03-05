@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         APM Master: WO Creator & Auto-Fill + Tab Re-Order
 // @namespace    https://w.amazon.com/bin/view/Users/rosendah/APM-Master/
-// @version      0.8.0
+// @version      0.8.1
 // @description  WO Cretion, Auto-Fill Engine, and LOTO Checklist Automation.
 // @author       Jacob Rosendahl
 // @icon         https://media.licdn.com/dms/image/v2/D5603AQGdCV0_LQKRfQ/profile-displayphoto-scale_100_100/B56ZyZLvQ5HgAg-/0/1772096519061?e=1773878400&v=beta&t=eWO1Jiy0-WbzG_yBv-SBrmmsVOPMexF57-q1Xh_VXCk
@@ -15,6 +15,7 @@
 
 /* --------------------------------------------------------------------------
    RECENT FEATURES & BUG FIXES:
+   - v0.8.1 Bug Fix: Fixed some security catch errors
    - v0.8.0 Optimize: Replaced fixed Ajax waits with native ExtJS event listeners for faster execution of autofilling. Signifigantly shrunk and simplified Menu UI
    - v0.7.3 Optimize: Removed WO Creator function as it diddn't have that much purpose.
    - v0.7.2: Feature: Added update notice in UI, added dynamic resizing with browser window scale, added help & tips
@@ -178,7 +179,7 @@
     /** =========================
      * GitHub Update Checker
      * ========================= */
-    const CURRENT_VERSION = '0.8.0'; // Manually bump this when you release new versions
+    const CURRENT_VERSION = '0.8.1'; // Manually bump this when you release new versions
 
     function isNewerVersion(oldVer, newVer) {
         const oldParts = oldVer.split('.').map(Number);
@@ -402,7 +403,7 @@
         let cols = [];
         const allDocs = [window.top, window];
         document.querySelectorAll('iframe').forEach(f => {
-            try { if (f.contentWindow && f.contentWindow.Ext) allDocs.push(f.contentWindow); } catch(e){}
+            try { if (f.src && f.src.includes('amazon.dev')) return; if (f.contentWindow && f.contentWindow.Ext) allDocs.push(f.contentWindow); } catch(e){}
         });
 
         for (const win of allDocs) {
@@ -429,7 +430,7 @@
         let tabs = [];
         const allDocs = [window.top, window];
         document.querySelectorAll('iframe').forEach(f => {
-            try { if (f.contentWindow && f.contentWindow.Ext) allDocs.push(f.contentWindow); } catch(e){}
+            try { if (f.src && f.src.includes('amazon.dev')) return; if (f.contentWindow && f.contentWindow.Ext) allDocs.push(f.contentWindow); } catch(e){}
         });
 
         for (const win of allDocs) {
@@ -586,7 +587,7 @@
     function forceRetagExtJs() {
         const allDocs = [window.top, window];
         document.querySelectorAll('iframe').forEach(f => {
-            try { if (f.contentWindow && f.contentWindow.Ext) allDocs.push(f.contentWindow); } catch(e){}
+            try { if (f.src && f.src.includes('amazon.dev')) return; if (f.contentWindow && f.contentWindow.Ext) allDocs.push(f.contentWindow); } catch(e){}
         });
         for (const win of allDocs) {
             if (win.Ext && win.Ext.ComponentQuery) {
@@ -605,7 +606,7 @@
 
         const allDocs = [window.top, window];
         document.querySelectorAll('iframe').forEach(f => {
-            try { if (f.contentWindow && f.contentWindow.Ext) allDocs.push(f.contentWindow); } catch(e){}
+           try { if (f.src && f.src.includes('amazon.dev')) return; if (f.contentWindow && f.contentWindow.Ext) allDocs.push(f.contentWindow); } catch(e){}
         });
 
         for (const win of allDocs) {
@@ -674,7 +675,7 @@
 
         const allDocs = [window.top, window];
         document.querySelectorAll('iframe').forEach(f => {
-            try { if (f.contentWindow && f.contentWindow.Ext) allDocs.push(f.contentWindow); } catch(e){}
+          try { if (f.src && f.src.includes('amazon.dev')) return; if (f.contentWindow && f.contentWindow.Ext) allDocs.push(f.contentWindow); } catch(e){}
         });
 
         for (const win of allDocs) {
@@ -742,7 +743,7 @@
     function applyPanelAutoClose() {
         const allDocs = [window.top.document, document];
         document.querySelectorAll('iframe').forEach(f => {
-            try { if (f.contentDocument) allDocs.push(f.contentDocument); } catch(e){}
+           try { if (f.src && f.src.includes('amazon.dev')) return; if (f.contentDocument) allDocs.push(f.contentDocument); } catch(e){}
         });
 
         // Define the handler ONCE on the top window
@@ -791,7 +792,7 @@
 
             const allDocs = [window.top.document, baseDoc, document];
             document.querySelectorAll('iframe').forEach(f => {
-                try { if (f.contentDocument) allDocs.push(f.contentDocument); } catch(e){}
+                try { if (f.src && f.src.includes('amazon.dev')) return; if (f.contentDocument) allDocs.push(f.contentDocument); } catch(e){}
             });
 
             for (const d of allDocs) {
@@ -1056,7 +1057,7 @@
         for (let i = 0; i < 20; i++) {
             const allDocs = [window.top, window];
             document.querySelectorAll('iframe').forEach(f => {
-                try { if (f.contentWindow && f.contentWindow.Ext) allDocs.push(f.contentWindow); } catch(e){}
+                try { if (f.src && f.src.includes('amazon.dev')) return; if (f.contentWindow && f.contentWindow.Ext) allDocs.push(f.contentWindow); } catch(e){}
             });
 
             for (const win of allDocs) {
@@ -1152,7 +1153,7 @@
         for (let i = 0; i < 15; i++) {
             const allDocs = [window.top, window];
             document.querySelectorAll('iframe').forEach(f => {
-                try { if (f.contentWindow && f.contentWindow.Ext) allDocs.push(f.contentWindow); } catch(e){}
+                try { if (f.src && f.src.includes('amazon.dev')) return; if (f.contentWindow && f.contentWindow.Ext) allDocs.push(f.contentWindow); } catch(e){}
             });
 
             for (const win of allDocs) {
@@ -1342,7 +1343,7 @@
             let activeTitle = '';
 
             const allDocs = [window.top.document, document];
-            document.querySelectorAll('iframe').forEach(f => { try { if (f.contentDocument) allDocs.push(f.contentDocument); } catch(e){} });
+            document.querySelectorAll('iframe').forEach(f => { try { if (f.src && f.src.includes('amazon.dev')) return; if (f.contentDocument) allDocs.push(f.contentDocument); } catch(e){} });
 
             for (const d of allDocs) {
                 if (!d) continue;
@@ -1488,7 +1489,7 @@
 
         const allDocs = [window.document];
         document.querySelectorAll('iframe').forEach(f => {
-            try { if (f.contentDocument) allDocs.push(f.contentDocument); } catch(e){}
+            try { if (f.src && f.src.includes('amazon.dev')) return; if (f.contentDocument) allDocs.push(f.contentDocument); } catch(e){}
         });
 
         // 1. Safely evaluate if Record View is visually active using ExtJS deep visibility
