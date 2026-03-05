@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         APM Master: WO Creator & Auto-Fill + Tab Re-Order
 // @namespace    https://w.amazon.com/bin/view/Users/rosendah/APM-Master/
-// @version      0.7.2
+// @version      0.8.0
 // @description  WO Cretion, Auto-Fill Engine, and LOTO Checklist Automation.
 // @author       Jacob Rosendahl
 // @icon         https://media.licdn.com/dms/image/v2/D5603AQGdCV0_LQKRfQ/profile-displayphoto-scale_100_100/B56ZyZLvQ5HgAg-/0/1772096519061?e=1773878400&v=beta&t=eWO1Jiy0-WbzG_yBv-SBrmmsVOPMexF57-q1Xh_VXCk
@@ -15,6 +15,8 @@
 
 /* --------------------------------------------------------------------------
    RECENT FEATURES & BUG FIXES:
+   - v0.8.0 Optimize: Replaced fixed Ajax waits with native ExtJS event listeners for faster execution of autofilling. Signifigantly shrunk and simplified Menu UI
+   - v0.7.3 Optimize: Removed WO Creator function as it diddn't have that much purpose.
    - v0.7.2: Feature: Added update notice in UI, added dynamic resizing with browser window scale, added help & tips
    - v0.6.14 Bug Fix: Removed problematic defocus logic
    - v0.6.13 Bug Fix: Abandoned the "run-once" tagging for a continuous audit loop. The script now monitors physical tab positions every 1.5s and snaps them back if EAM's AJAX updates revert the layout.
@@ -35,7 +37,7 @@
 
     const CONFIG = {
         afterFillDelayMs: 200,
-// ... rest of your script ...
+        // ... rest of your script ...
         searchLoadDelayMs: 1500,
         tabLoadDelayMs: 3000,
         retries: 10,
@@ -49,7 +51,6 @@
      * Data Management
      * ========================= */
     let presets = {
-        creator: {},
         autofill: {},
         config: {
             columnOrder: 'workordernum, description, equipment, organization, workorderstatus, workordertype, assignedto',
@@ -62,7 +63,6 @@
             const stored = localStorage.getItem('apm_presets_v1');
             if (stored) {
                 const parsed = JSON.parse(stored);
-                presets.creator = parsed.creator || {};
                 presets.autofill = parsed.autofill || {};
                 presets.config = parsed.config || presets.config;
                 if (!presets.config.tabOrder) presets.config.tabOrder = '';
@@ -74,8 +74,7 @@
         localStorage.setItem('apm_presets_v1', JSON.stringify(presets));
     }
 
-function getCurrentFormData() {
-        // Safely capture the PM checks field, allowing it to be completely blank
+    function getCurrentFormData() {
         const rawPm = document.getElementById('apm-c-pm-checks').value.trim();
         const pmParsed = rawPm === '' ? '' : parseInt(rawPm, 10);
 
@@ -83,13 +82,12 @@ function getCurrentFormData() {
             keyword: document.getElementById('apm-c-keyword')?.value.trim() || '',
             org: document.getElementById('apm-c-org').value.trim().toUpperCase(),
             eq: document.getElementById('apm-c-eq').value.trim().toUpperCase(),
-            desc: document.getElementById('apm-c-desc').value.trim(),
             type: document.getElementById('apm-c-type').value,
             status: document.getElementById('apm-c-status').value,
             exec: document.getElementById('apm-c-exec').value,
             safety: document.getElementById('apm-c-safety').value,
             lotoMode: document.getElementById('apm-c-loto-mode').value,
-            pmChecks: pmParsed, // Uses the safely parsed value
+            pmChecks: pmParsed,
             prob: document.getElementById('apm-c-prob').value.trim().toUpperCase(),
             fail: document.getElementById('apm-c-fail').value.trim().toUpperCase(),
             cause: document.getElementById('apm-c-cause').value.trim().toUpperCase(),
@@ -105,16 +103,12 @@ function getCurrentFormData() {
         if (document.getElementById('apm-c-keyword')) document.getElementById('apm-c-keyword').value = data.keyword || '';
         document.getElementById('apm-c-org').value = data.org || '';
         document.getElementById('apm-c-eq').value = data.eq || '';
-        document.getElementById('apm-c-desc').value = data.desc || '';
         document.getElementById('apm-c-type').value = data.type || '';
         document.getElementById('apm-c-status').value = data.status || '';
         document.getElementById('apm-c-exec').value = data.exec || '';
         document.getElementById('apm-c-safety').value = data.safety || '';
         document.getElementById('apm-c-loto-mode').value = data.lotoMode || 'none';
-
-        // FIXED: Strictly check for undefined so '0' doesn't get converted to a blank space
         document.getElementById('apm-c-pm-checks').value = data.pmChecks !== undefined ? data.pmChecks : '';
-
         document.getElementById('apm-c-prob').value = data.prob || '';
         document.getElementById('apm-c-fail').value = data.fail || '';
         document.getElementById('apm-c-cause').value = data.cause || '';
@@ -129,12 +123,16 @@ function getCurrentFormData() {
      * ========================= */
     const style = document.createElement('style');
     style.innerHTML = `
-        #apm-creator-panel select, #apm-creator-panel input { outline: none !important; }
+        #apm-creator-panel select, #apm-creator-panel input { outline: none !important; box-sizing: border-box; }
         .creator-btn { cursor: pointer; transition: background 0.2s; font-weight: bold; border-radius: 4px; border: none; padding: 6px 12px; font-size: 12px; }
         .preset-row { display: flex; gap: 8px; align-items: center; background: #2b343c; padding: 10px; border-radius: 6px; margin-bottom: 15px; }
-        .field-row { display: flex; gap: 10px; margin-bottom: 10px; align-items: center; }
+
+        /* Added min-width: 0 to force flex children to shrink */
+        .field-row { display: flex; gap: 10px; margin-bottom: 10px; align-items: center; min-width: 0; }
         .field-label { font-size: 12px; color: #b0bec5; white-space: nowrap; width: 100px; text-align: right; }
-        .field-input { flex-grow: 1; padding: 6px; border-radius: 4px; border: none; background: #ecf0f1; color: #2c3e50; }
+
+        /* Added min-width: 0 and width: 100% to prevent input blowout */
+        .field-input { flex-grow: 1; padding: 6px; border-radius: 4px; border: none; background: #ecf0f1; color: #2c3e50; min-width: 0; width: 100%; box-sizing: border-box; }
         .field-input.upper { text-transform: uppercase; }
 
         .apm-tab-btn { flex: 1; padding: 10px; text-align: center; cursor: pointer; font-weight: bold; transition: all 0.2s; border-bottom: 3px solid transparent; }
@@ -180,7 +178,7 @@ function getCurrentFormData() {
     /** =========================
      * GitHub Update Checker
      * ========================= */
-    const CURRENT_VERSION = '0.7.2'; // Manually bump this when you release new versions
+    const CURRENT_VERSION = '0.8.0'; // Manually bump this when you release new versions
 
     function isNewerVersion(oldVer, newVer) {
         const oldParts = oldVer.split('.').map(Number);
@@ -201,127 +199,111 @@ function getCurrentFormData() {
         fetch('https://raw.githubusercontent.com/jaker788-create/APM-Master/main/creator.user.js')
             .then(response => response.text())
             .then(text => {
-                const match = text.match(/\/\/\s*@version\s+([0-9\.]+)/);
-                if (match && match[1]) {
-                    const remoteVersion = match[1];
-                    if (isNewerVersion(CURRENT_VERSION, remoteVersion)) {
-                        const updateContainer = document.getElementById('apm-update-container');
-                        if (updateContainer) updateContainer.style.display = 'block';
-                        console.log(`[APM] Update available! Current: ${CURRENT_VERSION}, Remote: ${remoteVersion}`);
-                    }
+            const match = text.match(/\/\/\s*@version\s+([0-9\.]+)/);
+            if (match && match[1]) {
+                const remoteVersion = match[1];
+                if (isNewerVersion(CURRENT_VERSION, remoteVersion)) {
+                    const updateContainer = document.getElementById('apm-update-container');
+                    if (updateContainer) updateContainer.style.display = 'block';
+                    console.log(`[APM] Update available! Current: ${CURRENT_VERSION}, Remote: ${remoteVersion}`);
                 }
-            }).catch(e => console.warn('[APM] Update check failed silently.', e));
+            }
+        }).catch(e => console.warn('[APM] Update check failed silently.', e));
     }
 
-/** =========================
- * UI Builder (Panel) with Screen Boundary Checks
+    /** =========================
+ * UI Builder (Panel) - Compact Layout
  * ========================= */
-function buildCreatorUI() {
-    if (window.self !== window.top || document.getElementById('apm-creator-panel')) return;
+    function buildCreatorUI() {
+        if (window.self !== window.top || document.getElementById('apm-creator-panel')) return;
 
-    // State Variables MUST be declared at the top
-    let settingsMode = 'cols';
-    let isHelpOpen = false;
+        let settingsMode = 'cols';
+        let isHelpOpen = false;
 
-    loadPresets();
+        loadPresets();
 
-    const panel = document.createElement('div');
-    panel.id = 'apm-creator-panel';
+        const panel = document.createElement('div');
+        panel.id = 'apm-creator-panel';
 
-    // Base Styles
-    panel.style = 'position:fixed; z-index:99999; padding:15px; background:#35404a; color:white; border:1px solid #2c353c; border-radius:8px; box-shadow: 0px 8px 25px rgba(0,0,0,0.6); font-family:sans-serif; width: 480px; display:none;';
+        panel.style = 'position:fixed; z-index:99999; padding:15px; background:#35404a; color:white; border:1px solid #2c353c; border-radius:8px; box-shadow: 0px 8px 25px rgba(0,0,0,0.6); font-family:sans-serif; width: 380px; display:none;';
 
-    // Dynamic Positioning Logic
-    const margin = 20;
-    const vHeight = window.innerHeight;
-    const vWidth = window.innerWidth;
-    const panelWidth = 480;
-    const panelHeight = 650;
+        const margin = 20;
+        const vHeight = window.innerHeight;
+        const vWidth = window.innerWidth;
+        const panelWidth = 380;
+        const panelHeight = 550;
 
-    let topPos = 60;
-    let rightPos = margin;
+        let topPos = 60;
+        let rightPos = margin;
 
-    if (topPos + panelHeight > vHeight) {
-        topPos = Math.max(10, vHeight - panelHeight - margin);
-    }
+        if (topPos + panelHeight > vHeight) topPos = Math.max(10, vHeight - panelHeight - margin);
+        if (rightPos + panelWidth > vWidth) rightPos = Math.max(10, vWidth - panelWidth - margin);
 
-    if (rightPos + panelWidth > vWidth) {
-        rightPos = Math.max(10, vWidth - panelWidth - margin);
-    }
+        panel.style.top = topPos + 'px';
+        panel.style.right = rightPos + 'px';
 
-    panel.style.top = topPos + 'px';
-    panel.style.right = rightPos + 'px';
-
-    panel.innerHTML = `
+        panel.innerHTML = `
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
-            <h4 style="margin:0; font-size:18px; color:#ffffff; font-weight: normal;">APM Master <span style="color:#e74c3c; font-weight: bold;">Suite</span></h4>
-            <button id="apm-c-btn-close" style="background:#505f6e; color:#ffffff; border:none; padding: 4px 10px; border-radius:4px; cursor:pointer; font-size:14px; font-weight:bold;">✖</button>
+            <h4 style="margin:0; font-size:16px; color:#ffffff; font-weight: normal;">APM Master <span style="color:#3498db; font-weight: bold;">Auto-Fill</span></h4>
+            <button id="apm-c-btn-close" style="background:#505f6e; color:#ffffff; border:none; padding: 4px 10px; border-radius:4px; cursor:pointer; font-size:12px; font-weight:bold;">✖</button>
         </div>
 
-        <div id="apm-tab-container" style="display:flex; margin-bottom:15px; background:#2b343c; border-radius:6px; overflow:hidden;">
-            <div id="tab-autofill" class="apm-tab-btn apm-tab-active-autofill">Auto Fill</div>
-            <div id="tab-creator" class="apm-tab-btn apm-tab-inactive">Creator</div>
-            <div id="tab-settings" class="apm-tab-btn apm-tab-inactive">Tab Order</div>
+        <div id="apm-tab-container" style="display:flex; margin-bottom:12px; background:#2b343c; border-radius:6px; overflow:hidden;">
+            <div id="tab-autofill" class="apm-tab-btn apm-tab-active-autofill" style="padding:8px;">Auto Fill Profiles</div>
+            <div id="tab-settings" class="apm-tab-btn apm-tab-inactive" style="padding:8px;">UI Settings</div>
         </div>
 
         <div id="apm-main-fields" style="display:block;">
-            <div class="preset-row">
-                <select id="apm-c-preset-select" style="flex-grow:1; padding:6px; border-radius:4px; border:none; font-weight:bold; cursor:pointer;"></select>
+            <div class="preset-row" style="padding: 8px; margin-bottom: 12px;">
+                <select id="apm-c-preset-select" style="flex-grow:1; padding:4px; border-radius:4px; border:none; font-weight:bold; cursor:pointer; font-size:12px;"></select>
                 <button id="apm-c-btn-save" class="creator-btn" style="background:#3498db; color:white;">Save</button>
                 <button id="apm-c-btn-new" class="creator-btn" style="background:#2ecc71; color:white;">New</button>
                 <button id="apm-c-btn-del" class="creator-btn" style="background:#e74c3c; color:white;">Del</button>
             </div>
 
-            <div style="padding-right: 5px; margin-bottom: 15px;">
-                <div class="field-row" id="row-keyword" style="display:block;">
-                    <div class="field-label" style="color:#3498db; font-weight:bold;">WO Title:</div>
-                    <input type="text" id="apm-c-keyword" class="field-input" placeholder="Partial or full title match...">
+            <div style="padding: 0 4px; margin-bottom: 10px;">
+                <div class="field-row" style="margin-bottom: 10px;">
+                    <div class="field-label" style="color:#3498db; font-weight:bold; width: 65px; text-align: left;">Keyword:</div>
+                    <input type="text" id="apm-c-keyword" class="field-input" placeholder="Title match (e.g. pre-sort)..." style="font-family: monospace;">
                 </div>
 
-                <div class="field-row"><div class="field-label">Organization:</div><input type="text" id="apm-c-org" class="field-input upper"></div>
-                <div class="field-row"><div class="field-label">Equipment:</div><input type="text" id="apm-c-eq" class="field-input upper" placeholder="Search Term..."></div>
-                <div class="field-row" id="row-desc"><div class="field-label">Description:</div><input type="text" id="apm-c-desc" class="field-input"></div>
-
-                <div style="border-top: 1px solid #4a5a6a; margin: 12px 0;"></div>
-
-                <div style="display: flex; gap: 10px; margin-bottom: 10px;">
-                    <div style="flex: 1;">
-                        <div class="field-row"><div class="field-label" style="width: 50px;">Type:</div><select id="apm-c-type" class="field-input"><option value="">- Skip -</option><option value="Breakdown">Breakdown</option><option value="Corrective">Corrective</option><option value="Project">Project</option></select></div>
-                        <div class="field-row"><div class="field-label" style="width: 50px;">Status:</div><select id="apm-c-status" class="field-input"><option value="">- Skip -</option><option value="Open">Open</option><option value="In Progress">In Progress</option></select></div>
-                    </div>
-                    <div style="flex: 1;">
-                        <div class="field-row"><div class="field-label" style="width: 50px;">Exec:</div><select id="apm-c-exec" class="field-input"><option value="">- Skip -</option><option value="EXDN">EXDN</option><option value="EXDB">EXDB</option><option value="EXMW">EXMW</option><option value="EXOPS">EXOPS</option><option value="EXSHUT">EXSHUT</option></select></div>
-                        <div class="field-row"><div class="field-label" style="width: 50px;">Safety:</div><select id="apm-c-safety" class="field-input"><option value="">- Skip -</option><option value="No">No</option><option value="Yes">Yes</option></select></div>
-                    </div>
+                <div style="display: flex; gap: 8px; margin-bottom: 8px;">
+                    <div class="field-row" style="flex: 1; margin: 0;"><div class="field-label" style="width: 35px; text-align: left;">Org:</div><input type="text" id="apm-c-org" class="field-input upper" placeholder="Skip"></div>
+                    <div class="field-row" style="flex: 2; margin: 0;"><div class="field-label" style="width: 25px; text-align: left;">Eq:</div><input type="text" id="apm-c-eq" class="field-input upper" placeholder="Leave blank to skip"></div>
                 </div>
 
-                <div class="field-row" style="background: rgba(155, 89, 182, 0.15); border: 1px solid rgba(155, 89, 182, 0.4); padding: 8px; border-radius: 6px;">
-                    <div class="field-label" style="color:#c39bd3; font-weight:bold; width: 70px;">Checklists:</div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 8px;">
+                    <div class="field-row" style="margin:0;"><div class="field-label" style="width:40px; text-align: left;">Type:</div><select id="apm-c-type" class="field-input"><option value="">- Skip -</option><option value="Breakdown">Breakdown</option><option value="Corrective">Corrective</option><option value="Project">Project</option></select></div>
+                    <div class="field-row" style="margin:0;"><div class="field-label" style="width:45px; text-align: left;">Status:</div><select id="apm-c-status" class="field-input"><option value="">- Skip -</option><option value="Open">Open</option><option value="In Progress">In Progress</option></select></div>
+                    <div class="field-row" style="margin:0;"><div class="field-label" style="width:40px; text-align: left;">Exec:</div><select id="apm-c-exec" class="field-input"><option value="">- Skip -</option><option value="EXDN">EXDN</option><option value="EXDB">EXDB</option><option value="EXMW">EXMW</option><option value="EXOPS">EXOPS</option><option value="EXSHUT">EXSHUT</option></select></div>
+                    <div class="field-row" style="margin:0;"><div class="field-label" style="width:45px; text-align: left;">Safety:</div><select id="apm-c-safety" class="field-input"><option value="">- Skip -</option><option value="No">No</option><option value="Yes">Yes</option></select></div>
+                </div>
+
+                <div class="field-row" style="background: rgba(155, 89, 182, 0.15); border: 1px solid rgba(155, 89, 182, 0.4); padding: 6px 8px; border-radius: 6px; margin-bottom: 8px;">
+                    <div class="field-label" style="color:#c39bd3; font-weight:bold; width: 60px; text-align: left;">LOTO:</div>
                     <select id="apm-c-loto-mode" class="field-input" style="flex: 1; padding: 4px; font-size: 11px;">
-                        <option value="none">- Skip LOTO -</option>
-                        <option value="yes">LOTO: Yes</option>
-                        <option value="no">LOTO: No</option>
+                        <option value="none">- Skip -</option>
+                        <option value="yes">Yes</option>
+                        <option value="no">No</option>
                     </select>
-                    <div style="font-size: 11px; color: #b0bec5; margin: 0 8px; white-space: nowrap; font-weight: bold;">PMs:</div>
-                    <input type="number" id="apm-c-pm-checks" class="field-input" min="0" placeholder="Qty" style="width: 50px; padding: 4px; font-size: 12px; text-align: center; font-weight: bold;">
+                    <div style="font-size: 11px; color: #b0bec5; margin: 0 6px 0 10px; font-weight: bold;">PMs:</div>
+                    <input type="number" id="apm-c-pm-checks" class="field-input" min="0" placeholder="Qty" style="width: 45px; padding: 4px; text-align: center; font-weight: bold;">
                 </div>
 
-                <div style="display: flex; gap: 10px; margin-bottom: 10px;">
-                        <div style="flex: 1;">
-                            <div class="field-row"><div class="field-label" style="width: 50px;">Prob:</div><input type="text" id="apm-c-prob" class="field-input upper"></div>
-                            <div class="field-row"><div class="field-label" style="width: 50px;">Cause:</div><input type="text" id="apm-c-cause" class="field-input upper"></div>
-                        </div>
-                        <div style="flex: 1;">
-                            <div class="field-row"><div class="field-label" style="width: 50px;">Fail:</div><input type="text" id="apm-c-fail" class="field-input upper"></div>
-                            <div class="field-row"><div class="field-label" style="width: 50px;">Assign:</div><input type="text" id="apm-c-assign" class="field-input upper"></div>
-                        </div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 8px;">
+                    <div class="field-row" style="margin:0;"><div class="field-label" style="width:40px; text-align: left;">Prob:</div><input type="text" id="apm-c-prob" class="field-input upper"></div>
+                    <div class="field-row" style="margin:0;"><div class="field-label" style="width:45px; text-align: left;">Fail:</div><input type="text" id="apm-c-fail" class="field-input upper"></div>
+                    <div class="field-row" style="margin:0;"><div class="field-label" style="width:40px; text-align: left;">Cause:</div><input type="text" id="apm-c-cause" class="field-input upper"></div>
+                    <div class="field-row" style="margin:0;"><div class="field-label" style="width:45px; text-align: left;">Assign:</div><input type="text" id="apm-c-assign" class="field-input upper"></div>
                 </div>
 
-                <div class="field-row"><div class="field-label" style="width: 80px;">Start / End:</div><input type="date" id="apm-c-start" style="flex: 1; padding:4px; font-size:11px;"><span style="display:inline-block; width:15px; text-align:center;">-</span><input type="date" id="apm-c-end" style="flex: 1; padding:4px; font-size:11px;"></div>
-                <div class="field-row"><div class="field-label" style="width: 80px;">Comments:</div><input type="text" id="apm-c-close" class="field-input"></div>
+                <div style="display: flex; gap: 8px; margin-bottom: 8px;">
+                    <div class="field-row" style="flex: 1; margin: 0;"><div class="field-label" style="width: 40px; text-align: left;">Start:</div><input type="date" id="apm-c-start" class="field-input" style="padding:4px; font-size:11px;"></div>
+                    <div class="field-row" style="flex: 1; margin: 0;"><div class="field-label" style="width: 25px; text-align: left;">End:</div><input type="date" id="apm-c-end" class="field-input" style="padding:4px; font-size:11px;"></div>
+                </div>
+
+                <div class="field-row" style="margin:0;"><div class="field-label" style="width: 40px; text-align: left;">Notes:</div><input type="text" id="apm-c-close" class="field-input" placeholder="Closing comments..."></div>
             </div>
-
-            <button id="apm-c-btn-generate" style="width:100%; background:#e74c3c; color:white; border:none; padding:12px; border-radius:6px; cursor:pointer; font-weight:bold; font-size:14px; transition: background 0.2s; display:none;">⚡ Generate New Record</button>
         </div>
 
         <div id="apm-settings-fields" style="display:none;">
@@ -333,8 +315,7 @@ function buildCreatorUI() {
             <div style="color:#3498db; font-weight:bold; margin-bottom: 5px;" id="apm-s-title">Visual Order:</div>
             <div style="font-size:11px; color:#aaa; margin-bottom:10px;">Drag and drop to reorder. Syncs automatically.</div>
 
-            <div id="apm-s-col-list" style="background:#22292f; border:1px solid #45535e; border-radius:4px; padding:5px; min-height:60px; max-height:220px; overflow-y:auto; margin-bottom:10px;">
-                </div>
+            <div id="apm-s-col-list" style="background:#22292f; border:1px solid #45535e; border-radius:4px; padding:5px; min-height:60px; max-height:220px; overflow-y:auto; margin-bottom:10px;"></div>
 
             <button id="apm-s-btn-save-settings" style="width:100%; background:#2ecc71; color:white; border:none; padding:12px; border-radius:6px; cursor:pointer; font-weight:bold; font-size:14px;">Save Layout Order</button>
         </div>
@@ -343,13 +324,12 @@ function buildCreatorUI() {
             <h4 style="color:#3498db; margin: 0 0 12px 0; font-size: 15px;">APM Master Tips & Instructions</h4>
             <ul style="padding-left: 20px; margin: 0;">
                 <li style="margin-bottom: 10px;"><b style="color:white;">Auto-Fill Keys:</b> Link templates to Work Orders by entering keywords separated by commas (e.g., <code>pre-sort, repair</code>).</li>
-                <li style="margin-bottom: 10px;"><b style="color:white;">Creator:</b> Use this tab to manually generate new WO records with pre-filled fields.</li>
                 <li style="margin-bottom: 10px;"><b style="color:white;">Tab Order:</b> The script monitors grids and tabs. Drag to reorder and hit Save. The script injects tab order commands on page load for a quick and seamless change.</li>
                 <li style="margin-bottom: 0;"><b style="color:white;">Checklist Sync:</b> PM quantity auto-completes the specified number of lines on the 10-Tech tab.</li>
             </ul>
         </div>
 
-        <div style="margin-top: 15px; text-align: center;">
+        <div style="margin-top: 10px; text-align: center;">
             <span id="apm-c-btn-help" style="cursor: pointer; color: #7f8c8d; font-size: 11px; text-decoration: underline;">Help & Tips</span>
         </div>
 
@@ -359,7 +339,6 @@ function buildCreatorUI() {
     `;
     document.body.appendChild(panel);
 
-    // Interaction Logic
     document.getElementById('apm-c-btn-close').onclick = () => { panel.style.display = 'none'; };
 
     const selectEl = document.getElementById('apm-c-preset-select');
@@ -367,17 +346,13 @@ function buildCreatorUI() {
     const settingsFields = document.getElementById('apm-settings-fields');
     const helpFields = document.getElementById('apm-help-fields');
 
-    const tabCreator = document.getElementById('tab-creator');
     const tabAutofill = document.getElementById('tab-autofill');
     const tabSettings = document.getElementById('tab-settings');
-    const rowKw = document.getElementById('row-keyword');
-    const btnGen = document.getElementById('apm-c-btn-generate');
 
     const togCols = document.getElementById('apm-s-tog-cols');
     const togTabs = document.getElementById('apm-s-tog-tabs');
     const colListContainer = document.getElementById('apm-s-col-list');
 
-    // Help Toggle (View Swap)
     document.getElementById('apm-c-btn-help').onclick = () => {
         isHelpOpen = !isHelpOpen;
         const helpBtn = document.getElementById('apm-c-btn-help');
@@ -387,23 +362,19 @@ function buildCreatorUI() {
             mainFields.style.display = 'none';
             settingsFields.style.display = 'none';
             tabContainer.style.display = 'none';
-
             helpFields.style.display = 'block';
             helpBtn.textContent = '← Back to Tools';
             helpBtn.style.color = '#3498db';
         } else {
             resetTabs();
             if (activeTab === 'autofill') tabAutofill.onclick();
-            else if (activeTab === 'creator') tabCreator.onclick();
             else tabSettings.onclick();
         }
     };
 
     const resetTabs = () => {
-        tabCreator.style.background = 'transparent'; tabCreator.className = 'apm-tab-btn apm-tab-inactive';
         tabAutofill.style.background = 'transparent'; tabAutofill.className = 'apm-tab-btn apm-tab-inactive';
         tabSettings.style.background = 'transparent'; tabSettings.className = 'apm-tab-btn apm-tab-inactive';
-
         isHelpOpen = false;
         helpFields.style.display = 'none';
         document.getElementById('apm-tab-container').style.display = 'flex';
@@ -414,7 +385,7 @@ function buildCreatorUI() {
 
     const renderPresetOptions = () => {
         selectEl.innerHTML = '';
-        const targetList = activeTab === 'creator' ? presets.creator : presets.autofill;
+        const targetList = presets.autofill;
         for (const pName in targetList) {
             const opt = document.createElement('option');
             opt.value = pName; opt.textContent = pName;
@@ -427,7 +398,6 @@ function buildCreatorUI() {
         }
     };
 
-    // --- Probing Functions ---
     const probeExtGridColumns = () => {
         let cols = [];
         const allDocs = [window.top, window];
@@ -466,10 +436,10 @@ function buildCreatorUI() {
             if (win.Ext && win.Ext.ComponentQuery) {
                 const tabPanels = win.Ext.ComponentQuery.query('tabpanel');
                 const mainTabPanel = tabPanels.find(tp => tp.rendered && tp.items && tp.items.items.length > 3 &&
-                    tp.items.items.some(t => {
-                        let txt = t.title || t.text || '';
-                        return txt.includes('Activities') || txt.includes('Checklist') || txt.includes('Comments');
-                    }));
+                                                    tp.items.items.some(t => {
+                    let txt = t.title || t.text || '';
+                    return txt.includes('Activities') || txt.includes('Checklist') || txt.includes('Comments');
+                }));
 
                 if (mainTabPanel) {
                     mainTabPanel.items.items.forEach(t => {
@@ -548,19 +518,10 @@ function buildCreatorUI() {
     togCols.onclick = () => { settingsMode = 'cols'; loadSettingsView(); };
     togTabs.onclick = () => { settingsMode = 'tabs'; loadSettingsView(); };
 
-    tabCreator.onclick = () => {
-        activeTab = 'creator';
-        resetTabs(); tabCreator.className = 'apm-tab-btn apm-tab-active-creator';
-        mainFields.style.display = 'block'; settingsFields.style.display = 'none';
-        rowKw.style.display = 'none'; btnGen.style.display = 'block';
-        renderPresetOptions();
-    };
-
     tabAutofill.onclick = () => {
         activeTab = 'autofill';
         resetTabs(); tabAutofill.className = 'apm-tab-btn apm-tab-active-autofill';
         mainFields.style.display = 'block'; settingsFields.style.display = 'none';
-        rowKw.style.display = 'block'; btnGen.style.display = 'none';
         renderPresetOptions();
     };
 
@@ -572,9 +533,8 @@ function buildCreatorUI() {
     };
 
     document.getElementById('apm-c-btn-save').onclick = () => {
-        const targetList = activeTab === 'creator' ? presets.creator : presets.autofill;
         if (selectEl.value) {
-            targetList[selectEl.value] = getCurrentFormData();
+            presets.autofill[selectEl.value] = getCurrentFormData();
             savePresets();
         }
     };
@@ -582,17 +542,15 @@ function buildCreatorUI() {
     document.getElementById('apm-c-btn-new').onclick = () => {
         const name = prompt('New preset name:');
         if (name && name.trim()) {
-            const targetList = activeTab === 'creator' ? presets.creator : presets.autofill;
-            targetList[name.trim()] = getCurrentFormData();
+            presets.autofill[name.trim()] = getCurrentFormData();
             savePresets(); renderPresetOptions();
             selectEl.value = name.trim();
         }
     };
 
     document.getElementById('apm-c-btn-del').onclick = () => {
-        const targetList = activeTab === 'creator' ? presets.creator : presets.autofill;
         if (selectEl.value && confirm(`Delete preset "${selectEl.value}"?`)) {
-            delete targetList[selectEl.value];
+            delete presets.autofill[selectEl.value];
             savePresets(); renderPresetOptions();
         }
     };
@@ -614,18 +572,9 @@ function buildCreatorUI() {
         }
     };
 
-    document.getElementById('apm-c-btn-generate').onclick = () => { if (!isRunning) executeCreatorFlow(); };
+    if (activeTab === 'autofill') tabAutofill.onclick();
+    else tabSettings.onclick();
 
-    // Initialize Default View
-    if (activeTab === 'autofill') {
-        tabAutofill.onclick();
-    } else if (activeTab === 'creator') {
-        tabCreator.onclick();
-    } else {
-        tabSettings.onclick();
-    }
-
-    // Fire background update check
     checkForUpdates();
 }
 
@@ -647,7 +596,7 @@ function buildCreatorUI() {
         }
     }
 
-/** =========================
+    /** =========================
      * Grid Layout & Visual Order Auditing
      * ========================= */
     async function applyGridConsistency() {
@@ -732,10 +681,10 @@ function buildCreatorUI() {
             if (win.Ext && win.Ext.ComponentQuery) {
                 const tabPanels = win.Ext.ComponentQuery.query('tabpanel');
                 const mainTabPanel = tabPanels.find(tp => tp.rendered && !tp.isDestroyed && !tp.destroying && tp.items && tp.items.items.length > 3 &&
-                    tp.items.items.some(t => {
-                        let txt = t.title || t.text || '';
-                        return txt.includes('Activities') || txt.includes('Checklist') || txt.includes('Comments');
-                    }));
+                                                    tp.items.items.some(t => {
+                    let txt = t.title || t.text || '';
+                    return txt.includes('Activities') || txt.includes('Checklist') || txt.includes('Comments');
+                }));
 
                 if (mainTabPanel) {
                     let needsSorting = false;
@@ -787,7 +736,7 @@ function buildCreatorUI() {
         }
     }
 
-/** =========================
+    /** =========================
      * APM Panel Auto-Close Logic
      * ========================= */
     function applyPanelAutoClose() {
@@ -867,26 +816,41 @@ function buildCreatorUI() {
         } catch (e) { el.click?.(); }
     }
 
-    // Advanced Ajax Server Activity Checker
-    async function waitForAjax(win) {
-        let waited = 0;
-        while(waited < 10000) {
-            let isAjaxLoading = win.Ext && win.Ext.Ajax && win.Ext.Ajax.isLoading();
-            let hasMask = false;
-            try {
-                const masks = Array.from(win.document.querySelectorAll('.x-mask, .x-mask-msg')).filter(el => {
-                    const style = win.getComputedStyle(el);
-                    return style.display !== 'none' && style.visibility !== 'hidden' && el.offsetParent !== null;
-                });
-                if (masks.length > 0) hasMask = true;
-            } catch(e) {}
+    // Native ExtJS Event-Driven Ajax Listener
+    function waitForAjax(win) {
+        return new Promise((resolve) => {
+            const ext = win.Ext;
+            if (!ext || !ext.Ajax) {
+                resolve();
+                return;
+            }
 
-            if (!isAjaxLoading && !hasMask) break;
+            if (!ext.Ajax.isLoading()) {
+                resolve();
+                return;
+            }
 
-            await delay(200);
-            waited += 200;
-        }
-        await delay(200);
+            // Hook directly into the framework's global Ajax queue
+            const onComplete = function() {
+                if (!ext.Ajax.isLoading()) {
+                    ext.Ajax.un('requestcomplete', onComplete);
+                    ext.Ajax.un('requestexception', onComplete);
+
+                    // Give ExtJS 100ms to physically paint the DOM updates (like unmasking the UI)
+                    setTimeout(resolve, 100);
+                }
+            };
+
+            ext.Ajax.on('requestcomplete', onComplete);
+            ext.Ajax.on('requestexception', onComplete);
+
+            // 10-second failsafe in case a request hangs or gets silently aborted by EAM
+            setTimeout(() => {
+                ext.Ajax.un('requestcomplete', onComplete);
+                ext.Ajax.un('requestexception', onComplete);
+                resolve();
+            }, 10000);
+        });
     }
 
     function formatEAMDate(dateStr) {
@@ -902,13 +866,12 @@ function buildCreatorUI() {
     /** =========================
      * NATIVE ExtJS Engine Core
      * ========================= */
-
     // Pure ExtJS Model Setter (For standard text/date fields)
     function setExtModelDirect(activeExt, formPanel, fieldName, value) {
         if (!formPanel || !value) return false;
 
         const field = activeExt.ComponentQuery.query(`[name="${fieldName}"]`, formPanel)[0] ||
-                      activeExt.ComponentQuery.query(`[name="${fieldName}"]`)[0];
+              activeExt.ComponentQuery.query(`[name="${fieldName}"]`)[0];
 
         if (field) {
             if (typeof field.setReadOnly === 'function') field.setReadOnly(false);
@@ -930,7 +893,7 @@ function buildCreatorUI() {
         if (!activeExt || !formPanel || !value) return false;
 
         const field = activeExt.ComponentQuery.query(`[name="${name}"]`, formPanel)[0] ||
-                      activeExt.ComponentQuery.query(`[name="${name}"]`)[0];
+              activeExt.ComponentQuery.query(`[name="${name}"]`)[0];
 
         if (field) {
             // Unlock UI
@@ -965,12 +928,12 @@ function buildCreatorUI() {
         return false;
     }
 
-// Pure Combobox Data Store Setter (Unlocked and Case-Insensitive)
+    // Pure Combobox Data Store Setter (Unlocked and Case-Insensitive)
     async function setEamComboboxDirect(activeExt, formPanel, name, displayText) {
         if (!activeExt || !formPanel || !displayText) return false;
 
         const combo = activeExt.ComponentQuery.query(`uxcombobox[name="${name}"]`, formPanel)[0] ||
-                      activeExt.ComponentQuery.query(`uxcombobox[name="${name}"]`)[0];
+              activeExt.ComponentQuery.query(`uxcombobox[name="${name}"]`)[0];
 
         if (combo && combo.store) {
             // 1. Force unlock the dropdown (EAM locks Status on new records)
@@ -1140,7 +1103,6 @@ function buildCreatorUI() {
         // 3. Set standard fields purely into the ExtJS Model (Equipment removed from here)
         setStatus('Injecting Data Model...', '#f1c40f', true);
 
-        if (data.desc) setExtModelDirect(activeExt, mainForm, 'description', data.desc);
         if (data.exec) setExtModelDirect(activeExt, mainForm, 'udfchar13', data.exec);
         if (data.safety) setExtModelDirect(activeExt, mainForm, 'udfchar24', data.safety);
         if (data.close) setExtModelDirect(activeExt, mainForm, 'udfnote01', data.close);
@@ -1151,10 +1113,6 @@ function buildCreatorUI() {
 
         if (data.start) setExtModelDirect(activeExt, mainForm, 'schedstartdate', formatEAMDate(data.start));
         if (data.end) setExtModelDirect(activeExt, mainForm, 'schedenddate', formatEAMDate(data.end));
-
-        // 4. Set Dropdowns
-        if (data.type) await setEamComboboxDirect(activeExt, mainForm, 'workordertype', data.type);
-        if (data.status) await setEamComboboxDirect(activeExt, mainForm, 'workorderstatus', data.status);
 
         await delay(500);
 
@@ -1178,7 +1136,7 @@ function buildCreatorUI() {
         await waitForAjax(activeWin);
     }
 
-async function executeChecklistsNative(data) {
+    async function executeChecklistsNative(data) {
         const lotoMode = data.lotoMode;
         const pmChecks = data.pmChecks || 0;
 
@@ -1262,15 +1220,24 @@ async function executeChecklistsNative(data) {
         const handleUnsavedPopup = async () => {
             const msgBoxes = activeExt.ComponentQuery.query('messagebox');
             if (msgBoxes.length > 0) {
+                // Find visible message box natively
                 const mb = msgBoxes.find(m => !m.hidden || (typeof m.isVisible === 'function' && m.isVisible()));
                 if (mb) {
                     console.log("[APM] Catching unsaved changes popup. Auto-clicking 'Yes'...");
-                    const yesBtn = mb.query('button[itemId=yes], button[text=Yes]')[0];
-                    if (yesBtn) {
-                        if (yesBtn.handler) yesBtn.handler.call(yesBtn.scope || yesBtn, yesBtn);
-                        else yesBtn.fireEvent('click', yesBtn);
-                        await waitForAjax();
+
+                    // Natively trigger the callback function attached to the MessageBox instead of clicking the button
+                    if (mb.cfg && mb.cfg.fn) {
+                        mb.cfg.fn.call(mb.cfg.scope || mb, 'yes');
+                        mb.hide();
+                    } else {
+                        // Fallback to button click
+                        const yesBtn = mb.query('button[itemId=yes], button[text=Yes]')[0];
+                        if (yesBtn) {
+                            if (yesBtn.handler) yesBtn.handler.call(yesBtn.scope || yesBtn, yesBtn);
+                            else yesBtn.fireEvent('click', yesBtn);
+                        }
                     }
+                    await waitForAjax(activeWin);
                 }
             }
         };
@@ -1364,107 +1331,7 @@ async function executeChecklistsNative(data) {
     /** =========================
      * Execution Flows
      * ========================= */
-    async function executeCreatorFlow() {
-        if (window.self !== window.top) return;
-        if (isRunning) return;
-        isRunning = true;
-
-        try {
-            loadPresets();
-
-            const data = getCurrentFormData();
-            if (!data.eq) { setStatus('Equipment required.', '#e74c3c'); isRunning = false; return; }
-
-            document.getElementById('apm-creator-panel').style.display = 'none';
-
-            setStatus('Navigating to Work Orders...', '#f1c40f', true);
-
-            const activeTab = document.querySelector('.x-tab-active .x-tab-inner, .x-tab-active .x-tab-text');
-            let isWOActive = activeTab && activeTab.textContent.trim() === 'Work Orders';
-
-            if (!isWOActive) {
-                const workMenuBtn = Array.from(document.querySelectorAll('.x-btn-inner')).find(el => el.textContent.trim() === 'Work');
-                if (workMenuBtn) {
-                    clickLikeUser(workMenuBtn.closest('.x-btn') || workMenuBtn);
-                    let woMenuItem = null;
-                    for (let i = 0; i < 20; i++) {
-                        woMenuItem = Array.from(document.querySelectorAll('.x-menu-item-text')).find(el => el.textContent.trim() === 'Work Orders');
-                        if (woMenuItem) break;
-                        await delay(100);
-                    }
-                    if (woMenuItem) clickLikeUser(woMenuItem.closest('.x-menu-item') || woMenuItem);
-                }
-
-                for (let i = 0; i < 40; i++) {
-                    const checkTab = document.querySelector('.x-tab-active .x-tab-inner, .x-tab-active .x-tab-text');
-                    if (checkTab && checkTab.textContent.trim() === 'Work Orders') {
-                        isWOActive = true;
-                        break;
-                    }
-                    await delay(250);
-                }
-            }
-
-            if (!isWOActive) {
-                setStatus('Navigation Failed.', '#e74c3c', false);
-                isRunning = false;
-                return;
-            }
-
-            setStatus('Waiting for grid to load...', '#f1c40f', true);
-
-            const newBtnSelectors = ['.uftid-newrec', '.uft-id-newrec', '[data-qtip*="New Record"]', 'button[aria-label="New Record"]'];
-            const newBtn = await findWithRetry(document, newBtnSelectors, 50);
-
-            if (!newBtn) {
-                setStatus('Error: "New" button not found.', '#e74c3c', false);
-                isRunning = false;
-                return;
-            }
-
-            setStatus('Creating new record...', '#f1c40f', true);
-            const clickTarget = newBtn.closest('.x-btn') || newBtn;
-            clickLikeUser(clickTarget);
-            try { clickTarget.click(); } catch(e){}
-
-            // Wait for EAM's server response
-            await delay(1500);
-
-            let activeWin = window;
-            for (let i = 0; i < 15; i++) {
-                const allDocs = [window.top, window];
-                document.querySelectorAll('iframe').forEach(f => {
-                    try { if (f.contentWindow && f.contentWindow.Ext) allDocs.push(f.contentWindow); } catch(e){}
-                });
-                for (const w of allDocs) {
-                    if (w && w.Ext && w.Ext.ComponentQuery && w.Ext.ComponentQuery.query('form').find(f => f.id.includes('recordview'))) {
-                        activeWin = w; break;
-                    }
-                }
-                if (activeWin !== window) break;
-                await delay(200);
-            }
-
-            await delay(500);
-
-            // 1. Inject WO Record Data
-            await injectExtJSFieldsNative(data);
-
-            // 2. Inject Checklist Data (Triggers if either LOTO or PM Checks are configured)
-            if (data.lotoMode !== 'none' || data.pmChecks > 0) {
-                await executeChecklistsNative(data);
-            }
-
-            setStatus('Record Complete.', '#1abc9c');
-        } catch (e) {
-            console.error('[APM] Critical Error in executeCreatorFlow:', e);
-            setStatus('Script Error (See Console)', '#e74c3c');
-        } finally {
-            isRunning = false;
-        }
-    }
-
-async function executeAutoFillFlow(fallbackTitle) {
+    async function executeAutoFillFlow(fallbackTitle) {
         if (window.self !== window.top) return;
         if (isRunning) return;
         isRunning = true;
@@ -1542,52 +1409,63 @@ async function executeAutoFillFlow(fallbackTitle) {
     }
 
     /** =========================
-     * UI Injection Logic
+     * UI Injection & Alignment Logic (Dynamic DOM)
      * ========================= */
     function injectCreatorBtn() {
-        if (window.self !== window.top || document.getElementById('apm-creator-toggle')) return;
+        if (window.self !== window.top) return;
 
-        const menuBtns = Array.from(document.querySelectorAll('.x-btn-mainmenuButton-toolbar-small'));
-        if (menuBtns.length === 0) return;
+        // 1. Locate the Anchor (Forecast if available, else last native EAM button)
+        let anchorRect = null;
 
-        const parentContainer = menuBtns[0].parentElement;
-        if (!parentContainer) return;
+        // Target the native ExtJS wrapper for Forecast first
+        const forecastBtn = document.getElementById('apm-forecast-ext-btn') || document.getElementById('eam-forecast-toggle');
 
-        let maxRight = 0;
-        menuBtns.forEach(btn => {
-            if (btn.offsetWidth > 0) {
-                const left = parseInt(btn.style.left || 0, 10);
-                const right = left + btn.offsetWidth;
-                if (right > maxRight) maxRight = right;
+        if (forecastBtn && forecastBtn.getBoundingClientRect().width > 0) {
+            anchorRect = forecastBtn.getBoundingClientRect();
+        } else {
+            // Fallback: Find the last visible native EAM button
+            const rawBtns = Array.from(document.querySelectorAll('.x-btn-mainmenuButton-toolbar-small'));
+            const visibleBtns = rawBtns.filter(b => b.getBoundingClientRect().width > 0);
+            if (visibleBtns.length > 0) {
+                anchorRect = visibleBtns[visibleBtns.length - 1].getBoundingClientRect();
             }
-        });
-
-        let targetLeft = maxRight + 12;
-        const forecastBtn = document.getElementById('eam-forecast-toggle');
-        if (forecastBtn && forecastBtn.offsetWidth > 0) {
-            const fLeft = parseInt(forecastBtn.style.left || 0, 10);
-            const fRight = fLeft + forecastBtn.offsetWidth;
-            if (fRight + 12 > targetLeft) { targetLeft = fRight + 12; }
         }
 
-        const toggleBtn = document.createElement('div');
+        if (!anchorRect) return; // Header not drawn yet
+
+        let toggleBtn = document.getElementById('apm-creator-toggle');
+
+        // 2. If button exists, constantly update its location (handles window resizing!)
+        if (toggleBtn) {
+            toggleBtn.style.left = (anchorRect.right + 12) + 'px';
+            toggleBtn.style.top = anchorRect.top + 'px';
+            return;
+        }
+
+        // 3. Create the button natively in the DOM
+        toggleBtn = document.createElement('div');
         toggleBtn.id = 'apm-creator-toggle';
+
+        // Use FIXED positioning and append to BODY so EAM's framework cannot hide it
         toggleBtn.style.cssText = `
-            position: absolute; left: ${targetLeft}px; top: 0px;
-            height: 42px; display: flex; align-items: center;
+            position: fixed;
+            left: ${anchorRect.right + 12}px;
+            top: ${anchorRect.top}px;
+            height: ${anchorRect.height || 42}px;
+            display: flex; align-items: center;
             cursor: pointer; padding: 0 10px; color: #d1d1d1;
             font-family: sans-serif; font-size: 13px; font-weight: 600;
-            z-index: 9998; transition: color 0.15s; user-select: none;
+            z-index: 99999; transition: color 0.15s; user-select: none;
         `;
 
-        toggleBtn.innerHTML = `APM Suite <span style="color:#e74c3c; margin-left:4px;">+</span>`;
+        toggleBtn.innerHTML = `APM Suite <span style="color:#e74c3c; margin-left:4px; font-weight:bold;">+</span>`;
 
         toggleBtn.onmouseenter = () => { toggleBtn.style.color = '#fff'; };
         toggleBtn.onmouseleave = () => { toggleBtn.style.color = '#d1d1d1'; };
 
         toggleBtn.onclick = () => {
             const p = document.getElementById('apm-creator-panel');
-            const isHidden = p.style.display === 'none';
+            const isHidden = p.style.display === 'none' || p.style.display === '';
             if (isHidden) {
                 const rect = toggleBtn.getBoundingClientRect();
                 p.style.top = (rect.bottom + 6) + 'px';
@@ -1596,10 +1474,11 @@ async function executeAutoFillFlow(fallbackTitle) {
             } else { p.style.display = 'none'; }
         };
 
-        parentContainer.appendChild(toggleBtn);
+        // Append to BODY to bypass ExtJS layout managers completely
+        document.body.appendChild(toggleBtn);
     }
 
-/** =========================
+    /** =========================
      * AutoFill Trigger Logic
      * ========================= */
     function injectAutoFillTriggers() {
@@ -1693,12 +1572,12 @@ async function executeAutoFillFlow(fallbackTitle) {
         });
     }
 
-/** =========================
+    /** =========================
      * Global Watcher Loop
      * ========================= */
     setInterval(() => {
         buildCreatorUI();
-        injectCreatorBtn();
+        injectCreatorBtn(); // <--- Restored to DOM version
         injectAutoFillTriggers();
         checkForUpdates()
 
@@ -1714,18 +1593,18 @@ async function executeAutoFillFlow(fallbackTitle) {
     /** =========================
  * Window Resize Re-centering
  * ========================= */
-window.addEventListener('resize', () => {
-    const panel = document.getElementById('apm-creator-panel');
-    if (panel && panel.style.display !== 'none') {
-        const vHeight = window.innerHeight;
-        const panelHeight = panel.offsetHeight;
-        const currentTop = parseInt(panel.style.top);
+    window.addEventListener('resize', () => {
+        const panel = document.getElementById('apm-creator-panel');
+        if (panel && panel.style.display !== 'none') {
+            const vHeight = window.innerHeight;
+            const panelHeight = panel.offsetHeight;
+            const currentTop = parseInt(panel.style.top);
 
-        // If the bottom of the panel is now off-screen due to resize/zoom
-        if (currentTop + panelHeight > vHeight) {
-            panel.style.top = Math.max(10, vHeight - panelHeight - 20) + 'px';
+            // If the bottom of the panel is now off-screen due to resize/zoom
+            if (currentTop + panelHeight > vHeight) {
+                panel.style.top = Math.max(10, vHeight - panelHeight - 20) + 'px';
+            }
         }
-    }
-});
+    });
 
 })();
