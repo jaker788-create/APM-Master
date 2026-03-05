@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         APM Master: Forecast Tool
 // @namespace    https://w.amazon.com/bin/view/Users/rosendah/APM-Master/
-// @version      12.5.3
+// @version      12.5.4
 // @description  Powerful WO Forecast Tool & Native Quick Search Bar. Manual edits to this script are not recomended, this is actively supported tool so Slack me for any issues and I can push an update! If you edit you will not receive auto updates
 // @author       Jacob Rosendahl & Thai Ho
 // @icon         https://media.licdn.com/dms/image/v2/D5603AQGdCV0_LQKRfQ/profile-displayphoto-scale_100_100/B56ZyZLvQ5HgAg-/0/1772096519061?e=1773878400&v=beta&t=eWO1Jiy0-WbzG_yBv-SBrmmsVOPMexF57-q1Xh_VXCk
@@ -14,6 +14,7 @@
 
 /* --------------------------------------------------------------------------
    RECENT FEATURES & BUG FIXES:
+   - v12.5.4 Feature: Added a manual start PTP timer based on the PTP tab context
    - v12.5.3 Optimize: Rewrote some legacy DOM checks and fixed wait functions with event driven ExtJS waits, even faster execution speed.
    - v12.5.2 Optimize: Rewrote the Forecast Button to natively inject itself into the toolbar and let the framework handle placement and rendering.
    - v12.5.1 Feature: The Labor Tally function introduced in v12.3 is now a universal & moveable edge tab that fetches booked labor in the backround with a native server request. (Was real interesting to implement). Added manager mode to save multiple aliases for search.
@@ -417,7 +418,7 @@ function formatDate(d) {
     /** =========================
      * GitHub Update Checker
      * ========================= */
-    const FORECAST_VERSION = '12.5.3'; // MUST MATCH YOUR SCRIPT HEADER VERSION
+    const FORECAST_VERSION = '12.5.4'; // MUST MATCH YOUR SCRIPT HEADER VERSION
 
     function isNewerVersion(oldVer, newVer) {
         const oldParts = oldVer.split('.').map(Number);
@@ -1970,6 +1971,135 @@ function extractEmployeeId() {
         });
     }
 
+    /** =========================
+     * PTP Timer Engine (Manual Start)
+     * ========================= */
+    let ptpSeconds = 120;
+
+    function initPtpTimerUI() {
+        let timerUI = document.getElementById('apm-ptp-timer');
+        if (!timerUI) {
+            timerUI = document.createElement('div');
+            timerUI.id = 'apm-ptp-timer';
+            timerUI.style.cssText = `
+                position: fixed; top: 85px; right: 30px;
+                background: #34495e; color: white; padding: 6px 12px 6px 16px; border-radius: 30px;
+                font-family: sans-serif; font-size: 16px; font-weight: bold;
+                z-index: 100000; box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+                display: flex; align-items: center; gap: 10px; border: 2px solid #2c3e50;
+                user-select: none; pointer-events: auto; transition: all 0.2s;
+            `;
+            document.body.appendChild(timerUI);
+        }
+
+        if (!window._ptpTimerRunning) {
+            timerUI.innerHTML = `
+                <div id="apm-ptp-start-btn" style="display:flex; align-items:baseline; gap:8px; cursor:pointer;">
+                    <span style="font-size:12px; text-transform:uppercase; opacity:0.9; letter-spacing:0.5px; color:#f1c40f;">▶ Start PTP Timer</span>
+                    <span id="apm-ptp-time" style="font-family:monospace; font-size:20px; opacity:0.5;">02:00</span>
+                </div>
+                <div id="apm-ptp-close" style="cursor:pointer; font-size:14px; opacity:0.5; padding-left:4px; transition:opacity 0.2s;" title="Dismiss Timer">✖</div>
+            `;
+            timerUI.style.background = '#34495e';
+            timerUI.style.borderColor = '#2c3e50';
+
+            document.getElementById('apm-ptp-start-btn').onclick = startPtpCountdown;
+        }
+
+        // Close logic
+        const closeBtn = document.getElementById('apm-ptp-close');
+        closeBtn.onmouseover = function() { this.style.opacity = '1'; };
+        closeBtn.onmouseout = function() { this.style.opacity = '0.5'; };
+        closeBtn.onclick = () => {
+            timerUI.style.display = 'none';
+            if (window._ptpInterval) clearInterval(window._ptpInterval);
+            window._ptpTimerRunning = false;
+            window._ptpDismissed = true;
+        };
+
+        return timerUI;
+    }
+
+    function startPtpCountdown() {
+        window._ptpTimerRunning = true;
+        ptpSeconds = 120;
+
+        const timerUI = document.getElementById('apm-ptp-timer');
+        timerUI.style.background = '#e74c3c';
+        timerUI.style.borderColor = '#c0392b';
+
+        timerUI.innerHTML = `
+            <div style="display:flex; align-items:baseline; gap:8px;">
+                <span style="font-size:12px; text-transform:uppercase; opacity:0.9; letter-spacing:0.5px;">PTP Timer:</span>
+                <span id="apm-ptp-time" style="font-family:monospace; font-size:20px;">02:00</span>
+            </div>
+            <div id="apm-ptp-close" style="cursor:pointer; font-size:14px; opacity:0.7; padding-left:4px; transition:opacity 0.2s;" title="Dismiss Timer">✖</div>
+        `;
+
+        const closeBtn = document.getElementById('apm-ptp-close');
+        closeBtn.onmouseover = function() { this.style.opacity = '1'; };
+        closeBtn.onmouseout = function() { this.style.opacity = '0.7'; };
+        closeBtn.onclick = () => {
+            timerUI.style.display = 'none';
+            clearInterval(window._ptpInterval);
+            window._ptpTimerRunning = false;
+            window._ptpDismissed = true;
+        };
+
+        if (window._ptpInterval) clearInterval(window._ptpInterval);
+
+        window._ptpInterval = setInterval(() => {
+            ptpSeconds--;
+            const timeEl = document.getElementById('apm-ptp-time');
+            if (!timeEl) return;
+
+            if (ptpSeconds <= 0) {
+                clearInterval(window._ptpInterval);
+                timeEl.textContent = "READY";
+                timerUI.style.background = '#2ecc71';
+                timerUI.style.borderColor = '#27ae60';
+            } else {
+                const mins = Math.floor(ptpSeconds / 60);
+                const secs = ptpSeconds % 60;
+                timeEl.textContent = `0${mins}:${secs < 10 ? '0' : ''}${secs}`;
+            }
+        }, 1000);
+    }
+
+    function checkPtpStatus() {
+        if (window.self !== window.top) return;
+
+        let isPtpVisible = false;
+        const allDocs = [document, ...Array.from(document.querySelectorAll('iframe')).map(f => f.contentDocument).filter(Boolean)];
+
+        for (const doc of allDocs) {
+            const activeTabs = doc.querySelectorAll('.x-tab-active .x-tab-inner, .x-tab-active .x-tab-text');
+            for (let i = 0; i < activeTabs.length; i++) {
+                if (activeTabs[i].textContent.trim().toUpperCase().includes('PTP')) {
+                    isPtpVisible = true;
+                    break;
+                }
+            }
+            if (isPtpVisible) break;
+        }
+
+        const timerUI = document.getElementById('apm-ptp-timer');
+
+        if (isPtpVisible) {
+            if (!window._ptpDismissed) {
+                const ui = initPtpTimerUI();
+                if (ui.style.display === 'none') ui.style.display = 'flex';
+            }
+        } else {
+            if (timerUI && timerUI.style.display !== 'none') timerUI.style.display = 'none';
+            if (window._ptpTimerRunning || window._ptpDismissed) {
+                clearInterval(window._ptpInterval);
+                window._ptpTimerRunning = false;
+                window._ptpDismissed = false;
+            }
+        }
+    }
+
 /** =========================
      * Unified Tool Initialization
      * ========================= */
@@ -1978,18 +2108,24 @@ function extractEmployeeId() {
         clearTimeout(initTO);
         initTO = setTimeout(() => {
             buildForecastUI();
-            injectToggleBtnNatively(); // Changed
-            buildSearchUI()
+            injectToggleBtnNatively();
+            buildSearchUI();
+            checkPtpStatus(); // Immediate check on DOM changes
         }, 150);
     });
     observer.observe(document.body, { childList: true, subtree: true });
 
-    // Initial Run
+    // Initial Startup & Heartbeat
     setTimeout(() => {
         buildForecastUI();
-        injectToggleBtnNatively(); // Changed
-        buildSearchUI()
+        injectToggleBtnNatively();
+        buildSearchUI();
         LaborTracker.init();
+
+        // Establish heartbeat for PTP timer and persistent UI checks
+        setInterval(() => {
+            checkPtpStatus();
+        }, 1500);
     }, 1500);
 
 })();
