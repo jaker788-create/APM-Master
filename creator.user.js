@@ -20,14 +20,9 @@
    - v0.6.13 Bug Fix: Abandoned the "run-once" tagging for a continuous audit loop. The script now monitors physical tab positions every 1.5s and snaps them back if EAM's AJAX updates revert the layout.
    - v0.6.10 Feature: Menu will close if you click away
    - v0.6.9 Feature: UI improvements
-   - v0.6.8 Feature: Can fill out 10-tech (always yes/completed). Need to refine UI
-   - v0.6.7 Bug Fix: Native checklist navigate and check y/n works! Now to try 10-tech
-   - v0.6.6 Test: Iteration on checklist process
-   - v0.6.5 Bug Fix: Repaired autofill triggers, applied correct save command, adjusted checklist logic after some probing but may still need iterations to fix
-   - v0.6.4 Bug Fix: Minor APM tantrum because I was giving it an unsupported function, but it did not break the tab reorder function
-   - v0.6.2 Improved interface for tab reorder and added ability to adjust record view tabs
+   - v0.6.8 Feature: Can fill out 1-tech & 10-tech
    - v0.6.0 Added ability to reorder WO list view tabs
-   - v0.5.2 This is getting big... Record creaton fills out the first page sucessfully via ExtJS calls. Next to test and complete checklist fill.
+   - v0.5.2 This is getting big... Record creaton fills out the first page sucessfully via ExtJS calls.
    - v0.4.0 Engine Overhaul: Replaced all UI simulated clicks/typing with Native ExtJS Form Injection, Store Modification, and Ajax requests for Headless execution.
    - v0.3.10 Feature: Addded status message timeout of 8 seconds. Updated UI dropdown defaults from "-- None --" to "-- Skip --".
    -------------------------------------------------------------------------- */
@@ -355,7 +350,7 @@ function buildCreatorUI() {
         </div>
 
         <div style="margin-top: 15px; text-align: center;">
-            <span id="apm-c-btn-help" style="cursor: pointer; color: #7f8c8d; font-size: 11px; text-decoration: underline;">Toggle Help & Tips</span>
+            <span id="apm-c-btn-help" style="cursor: pointer; color: #7f8c8d; font-size: 11px; text-decoration: underline;">Help & Tips</span>
         </div>
 
         <div id="apm-update-container" style="display:none; margin-top: 15px; text-align: center;">
@@ -413,8 +408,8 @@ function buildCreatorUI() {
         helpFields.style.display = 'none';
         document.getElementById('apm-tab-container').style.display = 'flex';
         const helpBtn = document.getElementById('apm-c-btn-help');
-        helpBtn.textContent = 'Toggle Help & Tips';
-        helpBtn.style.color = '#7f8c8d';
+        helpBtn.textContent = 'Help & Tips';
+        helpBtn.style.color = '#3498db';
     };
 
     const renderPresetOptions = () => {
