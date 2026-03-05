@@ -1659,9 +1659,9 @@ async function navigateTo(tabText, menuPathArray) {
         applyForecastFiltersExtJS(extjsFilterData);
 
         if (mode === 'clear') {
-            setStatus(mode, 'Ready.', '#1abc9c');
+            setStatus(mode, '', '#1abc9c');
         } else {
-            setStatus(mode, 'Done.', '#18bc9c');
+            setStatus(mode, '', '#18bc9c');
             if (mode === 'quick') document.getElementById('apm-qs-input').value = '';
         }
 
