@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         APM Master: Forecast Tool
 // @namespace    https://w.amazon.com/bin/view/Users/rosendah/APM-Master/
-// @version      12.5.0
+// @version      12.5.1
 // @description  Powerful WO Forecast Tool & Native Quick Search Bar. Manual edits to this script are not recomended, this is actively supported tool so Slack me for any issues and I can push an update! If you edit you will not receive auto updates
 // @author       Jacob Rosendahl & Thai Ho
 // @icon         https://media.licdn.com/dms/image/v2/D5603AQGdCV0_LQKRfQ/profile-displayphoto-scale_100_100/B56ZyZLvQ5HgAg-/0/1772096519061?e=1773878400&v=beta&t=eWO1Jiy0-WbzG_yBv-SBrmmsVOPMexF57-q1Xh_VXCk
@@ -14,7 +14,7 @@
 
 /* --------------------------------------------------------------------------
    RECENT FEATURES & BUG FIXES:
-   - v12.5.0 Feature: The Labor Tally function introduced in v12.3 is now a universal & moveable edge tab that fetches booked labor in the backround with a native server request. (Was real interesting to implement)
+   - v12.5.1 Feature: The Labor Tally function introduced in v12.3 is now a universal & moveable edge tab that fetches booked labor in the backround with a native server request. (Was real interesting to implement). Added manager mode to save multiple aliases for search
    - v12.4.0 Feature: The 3-Way PM filter introduced in v12.2 now directly modifies the ExtJS stores rather than visually hiding rows. Now it is functionally as if you are only looking at PMs only or Non PMs only, no hidden records.
    - v12.3.4 Feature: Added internal update check and in menu notice. Cleaned up UI with removal of "Ready" status message
    - v12.3.3 Bug Fix: Fixed date format issue where systems would not be mm-dd-yyyy, added a date format override to conform with APM requirements always
@@ -433,7 +433,7 @@ function formatDate(d) {
     /** =========================
      * GitHub Update Checker
      * ========================= */
-    const FORECAST_VERSION = '12.5.0'; // MUST MATCH YOUR SCRIPT HEADER VERSION
+    const FORECAST_VERSION = '12.5.1'; // MUST MATCH YOUR SCRIPT HEADER VERSION
 
     function isNewerVersion(oldVer, newVer) {
         const oldParts = oldVer.split('.').map(Number);
@@ -1369,8 +1369,8 @@ async function navigateTo(tabText, menuPathArray) {
         setTimeout(() => scriptEl.remove(), 100);
     }
 
-/** =========================
-     * Labor Tracker Module (Omni-Edge & Background Fetch)
+    /** =========================
+     * Labor Tracker Module (Omni-Edge & Manager Mode)
      * ========================= */
     const LaborTracker = (function() {
         if (window.self !== window.top) return { init: function() {} };
@@ -1378,6 +1378,10 @@ async function navigateTo(tabText, menuPathArray) {
         let laborCache = { data: [], lastFetch: 0 };
         let activeTab = 7;
         let isFetching = false;
+
+        // Manager Mode State
+        let savedEmployees = JSON.parse(localStorage.getItem('apmLaborSavedEmps') || '[]');
+        let selectedEmployee = localStorage.getItem('apmLaborActiveEmp') || '';
 
         function extractEamIdAggressive() {
             const uuidPattern = /([a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12})/i;
@@ -1421,13 +1425,16 @@ async function navigateTo(tabText, menuPathArray) {
 
             const url = "https://us1.eam.hxgnsmartcloud.com/web/base/WSBOOK.HDR.xmlhttp";
             const currentTenant = window.EAM?.AppData?.tenant || "AMAZONRMENA_PRD";
+
+            // Inject Manager Mode Target
             const currentUser = extractEmployeeId();
+            const targetEmployee = selectedEmployee ? selectedEmployee : currentUser;
 
             const payload = new URLSearchParams({
                 GRID_ID: "1742", GRID_NAME: "WSBOOK_HDR", DATASPY_ID: "100696",
                 USER_FUNCTION_NAME: "WSBOOK", SYSTEM_FUNCTION_NAME: "WSBOOK",
                 CURRENT_TAB_NAME: "HDR", COMPONENT_INFO_TYPE: "DATA_ONLY",
-                employee: currentUser, tenant: currentTenant, eamid: currentEamId,
+                employee: targetEmployee, tenant: currentTenant, eamid: currentEamId,
                 NUMBER_OF_ROWS_FIRST_RETURNED: "5000"
             });
 
@@ -1483,6 +1490,23 @@ async function navigateTo(tabText, menuPathArray) {
             return { total, breakdown };
         }
 
+        function renderEmpSelect() {
+            const sel = document.getElementById('apm-labor-emp-select');
+            const lbl = document.getElementById('apm-labor-target-label');
+            if (!sel || !lbl) return;
+
+            sel.innerHTML = '<option value="">-- Self --</option>';
+            savedEmployees.forEach(emp => {
+                const opt = document.createElement('option');
+                opt.value = emp;
+                opt.textContent = emp;
+                if (emp === selectedEmployee) opt.selected = true;
+                sel.appendChild(opt);
+            });
+
+            lbl.textContent = 'Target: ' + (selectedEmployee || 'Self');
+        }
+
         function injectUI() {
             if (document.getElementById('apm-labor-trigger')) return;
 
@@ -1506,6 +1530,19 @@ async function navigateTo(tabText, menuPathArray) {
             const panel = document.createElement('div');
             panel.id = 'apm-labor-panel';
             panel.innerHTML = `
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 8px;">
+                    <span style="font-size:11px; color:#bdc3c7; font-weight:bold;" id="apm-labor-target-label">Target: Self</span>
+                    <button id="apm-labor-mgr-toggle" style="background:transparent; color:#3498db; border:none; padding:0; cursor:pointer; font-size:10px; text-decoration:underline;">Manager Mode ⚙️</button>
+                </div>
+                <div id="apm-labor-mgr-panel" style="display:none; background:#2b343c; padding:8px; border-radius:4px; margin-bottom:10px; gap:6px; flex-direction:column;">
+                    <div style="display:flex; gap:6px;">
+                        <select id="apm-labor-emp-select" style="flex-grow:1; padding:4px; border-radius:3px; border:none; background:#ecf0f1; color:#2c3e50; font-size:11px; font-weight:bold; cursor:pointer; text-transform:uppercase;">
+                        </select>
+                        <button id="apm-labor-emp-add" style="background:#3498db; color:white; border:none; padding:4px 8px; border-radius:3px; cursor:pointer; font-weight:bold;" title="Add User">+</button>
+                        <button id="apm-labor-emp-rem" style="background:#e74c3c; color:white; border:none; padding:4px 8px; border-radius:3px; cursor:pointer; font-weight:bold;" title="Remove User">-</button>
+                    </div>
+                </div>
+
                 <div class="labor-tabs">
                     <div class="labor-tab" data-d="1">Today</div>
                     <div class="labor-tab" data-d="2">2-Day</div>
@@ -1518,6 +1555,8 @@ async function navigateTo(tabText, menuPathArray) {
 
             document.body.appendChild(trigger);
             document.body.appendChild(panel);
+
+            renderEmpSelect();
 
             let dockInfo = JSON.parse(localStorage.getItem('apmLaborDockPos') || '{"edge":"right","pos":300}');
             let isVisible = false;
@@ -1555,22 +1594,16 @@ async function navigateTo(tabText, menuPathArray) {
 
             trigger.onmousedown = (e) => {
                 let isDragging = false;
-                let startX = e.clientX;
-                let startY = e.clientY;
+                let startX = e.clientX, startY = e.clientY;
                 let rect = trigger.getBoundingClientRect();
-                let offsetX = startX - rect.left;
-                let offsetY = startY - rect.top;
-
-                let wasVisible = isVisible; // Cache state before click/drag
+                let offsetX = startX - rect.left, offsetY = startY - rect.top;
+                let wasVisible = isVisible;
 
                 const onMouseMove = (moveEvent) => {
                     if (!isDragging && (Math.abs(moveEvent.clientX - startX) > 5 || Math.abs(moveEvent.clientY - startY) > 5)) {
                         isDragging = true;
                         trigger.style.transition = 'none';
-                        if (isVisible) {
-                            isVisible = false;
-                            applyDocking();
-                        }
+                        if (isVisible) { isVisible = false; applyDocking(); }
                     }
                     if (isDragging) {
                         trigger.style.right = trigger.style.bottom = 'auto';
@@ -1597,14 +1630,56 @@ async function navigateTo(tabText, menuPathArray) {
                         localStorage.setItem('apmLaborDockPos', JSON.stringify(dockInfo));
                         applyDocking();
                     } else {
-                        isVisible = !wasVisible; // Toggle correctly
+                        isVisible = !wasVisible;
                         applyDocking();
                         if (isVisible) fetchLaborData();
                     }
                 };
-
                 document.addEventListener('mousemove', onMouseMove);
                 document.addEventListener('mouseup', onMouseUp);
+            };
+
+            // Manager Mode Events
+            document.getElementById('apm-labor-mgr-toggle').onclick = () => {
+                const p = document.getElementById('apm-labor-mgr-panel');
+                p.style.display = p.style.display === 'none' ? 'flex' : 'none';
+            };
+
+            document.getElementById('apm-labor-emp-add').onclick = () => {
+                const alias = prompt("Enter employee alias (e.g. ROSENDAH):");
+                if (alias && alias.trim()) {
+                    const cleanAlias = alias.trim().toUpperCase();
+                    if (!savedEmployees.includes(cleanAlias)) {
+                        savedEmployees.push(cleanAlias);
+                        localStorage.setItem('apmLaborSavedEmps', JSON.stringify(savedEmployees));
+                    }
+                    selectedEmployee = cleanAlias;
+                    localStorage.setItem('apmLaborActiveEmp', selectedEmployee);
+                    renderEmpSelect();
+                    laborCache.lastFetch = 0; // Invalidate cache
+                    fetchLaborData();
+                }
+            };
+
+            document.getElementById('apm-labor-emp-rem').onclick = () => {
+                if (!selectedEmployee) return;
+                if (confirm("Remove " + selectedEmployee + " from saved list?")) {
+                    savedEmployees = savedEmployees.filter(e => e !== selectedEmployee);
+                    localStorage.setItem('apmLaborSavedEmps', JSON.stringify(savedEmployees));
+                    selectedEmployee = '';
+                    localStorage.setItem('apmLaborActiveEmp', selectedEmployee);
+                    renderEmpSelect();
+                    laborCache.lastFetch = 0; // Invalidate cache
+                    fetchLaborData();
+                }
+            };
+
+            document.getElementById('apm-labor-emp-select').onchange = (e) => {
+                selectedEmployee = e.target.value;
+                localStorage.setItem('apmLaborActiveEmp', selectedEmployee);
+                renderEmpSelect();
+                laborCache.lastFetch = 0; // Invalidate cache for new user
+                fetchLaborData();
             };
 
             // Close on outside click
