@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         APM Master: Forecast Tool
 // @namespace    https://w.amazon.com/bin/view/Users/rosendah/APM-Master/
-// @version      12.3.4
+// @version      12.4.0
 // @description  Powerful WO Forecast Tool & Native Quick Search Bar. Manual edits to this script are not recomended, this is actively supported tool so Slack me for any issues and I can push an update! If you edit you will not receive auto updates
 // @author       Jacob Rosendahl & Thai Ho
 // @icon         https://media.licdn.com/dms/image/v2/D5603AQGdCV0_LQKRfQ/profile-displayphoto-scale_100_100/B56ZyZLvQ5HgAg-/0/1772096519061?e=1773878400&v=beta&t=eWO1Jiy0-WbzG_yBv-SBrmmsVOPMexF57-q1Xh_VXCk
@@ -14,16 +14,14 @@
 
 /* --------------------------------------------------------------------------
    RECENT FEATURES & BUG FIXES:
+   - v12.4.0 Feature: The 3-Way PM filter now directly modifies the ExtJS stores rather than visually hiding rows. Now it is functionally as if you are only looking at PMs only or Non PMs only, no hidden records.
    - v12.3.4 Feature: Added internal update check and in menu notice. Cleaned up UI with removal of "Ready" status message
    - v12.3.3 Bug Fix: Fixed date format issue where systems would not be mm-dd-yyyy, added a date format override to conform with APM requirements always
-   - v12.3.2 Bug Fix: Removed legacy hardcoded site/org so that it defaults to -all sites- with no save data rather than DWA2.
    - v12.3.1 Feature: Implemented a Booked Labor tally (today, 2 days, 7 days). The tooltip will auto pop and leave based on the iframe visibility of Booked Labor By Employee. Natively commands server and extracts response for rapid results (was a PITA to do)
    - v12.2.3 Bug Fix: UI Menu defocus events were getting trapped inside iframes, added native ExtJS listener for mouse events.
    - v12.2.1 Feature: When performing WO Search the dataspy is now changed to "All Work Orders" to ensure any searched WO will come up. When performing Forecast search it is set back to "Open Work Orders"
    - v12.2.0 Feature: Implemented a filter toggle in the main list view to actively modify rows and show only PMs, Non PMs, or show all.
-   - v12.1.4 Bug Fix: Fixed an edge case where user might have the global search field in the top right filled, triggering a search makes sure its cleared.
    - v12.1.3 Feature: Upgraded "Past Due" checkbox to a dynamic toggle button.
-   - v12.1.2 Optimize: Flipped the date logic to use Start Date for start of selected date range. Changed Today search to use Start Date.
    - V12.1.1 Feature: Synced Relative dates to Custom Dates on switch.
    - v12.1.0 Feature: Merged native-blended "Quick Search" bar into the top header. Shares the high-speed engine for instant WO lookups.
    - v12.1.0 Feature: Added "Custom Dates" grid toggle to Forecast menu to replace week dropdown when specific dates are needed.
@@ -78,162 +76,172 @@
     let selectedOrg = '';
 
 /** =========================
- * Forecast Module: 3-State PM Filter & Observer
+ * 3-Way PM Non-PM Filter
  * ========================= */
 const ForecastFilter = (function() {
     let filterState = 0; // 0: All, 1: PMs, 2: Non-PMs
-    let cachedCellClass = null;
-    let gridObserver = null;
     let lastKnownDoc = null;
+    let observer = null;
 
-    const TARGET_COLUMN = 'Original PM Due Date';
+    const TARGET_DATA_INDEX = 'duedate'; // Confirmed
     const STATES = [
         { label: 'Filter: Show All', bg: '#7f8c8d' },
         { label: 'Filter: PMs Only', bg: '#1abc9c' },
         { label: 'Filter: Non-PMs', bg: '#3498db' }
     ];
 
-    function applyFilterToRows(rows) {
-        if (!cachedCellClass || filterState === 0) {
-            rows.forEach(r => r.style.display = '');
+    function getTargetContext() {
+        const allWins = [window, ...Array.from(document.querySelectorAll('iframe')).map(f => f.contentWindow)];
+        for (const win of allWins) {
+            try {
+                if (win.Ext && win.Ext.ComponentQuery) {
+                    const grid = win.Ext.ComponentQuery.query('gridpanel').find(g =>
+                        g.columns && g.columns.length > 20 && g.rendered && !g.isDestroyed
+                    );
+                    if (grid) return { win, doc: win.document, grid };
+                }
+            } catch (e) { continue; }
+        }
+        return null;
+    }
+
+    function forceFooterText(gridDom, count) {
+        const walk = document.createTreeWalker(gridDom, NodeFilter.SHOW_TEXT, {
+            acceptNode: function(node) {
+                if (/Records:\s*\d+\s*of\s*\d+/.test(node.nodeValue)) {
+                    return NodeFilter.FILTER_ACCEPT;
+                }
+                return NodeFilter.FILTER_SKIP;
+            }
+        }, false);
+
+        let node;
+        while ((node = walk.nextNode())) {
+            node.nodeValue = `Records: ${count} of ${count}`;
+        }
+    }
+
+    function setupSentinel(gridDom, count) {
+        if (observer) observer.disconnect();
+
+        observer = new MutationObserver(() => {
+            if (filterState !== 0) {
+                // Disconnect briefly to avoid triggering our own mutation loop
+                observer.disconnect();
+                forceFooterText(gridDom, count);
+                observer.observe(gridDom, { childList: true, subtree: true, characterData: true });
+            }
+        });
+
+        observer.observe(gridDom, { childList: true, subtree: true, characterData: true });
+    }
+
+    /** =========================
+     * Main Filter Engine
+     * ========================= */
+    function applyStoreFilter() {
+        const ctx = getTargetContext();
+        if (!ctx) return;
+
+        const { grid } = ctx;
+        const store = grid.getStore();
+        const gridDom = grid.getEl().dom;
+
+        // 1. Restore native Total Count getter BEFORE doing anything else
+        if (store._nativeGetTotalCount) {
+            store.getTotalCount = store._nativeGetTotalCount;
+        }
+
+        // 2. Clear filters so the store retrieves all records
+        store.clearFilter();
+
+        if (filterState === 0) {
+            if (observer) observer.disconnect();
+
+            // Explicitly force the DOM text back to the real unfiltered total
+            const realCount = store.getCount();
+            forceFooterText(gridDom, realCount);
+
+            if (grid.view && grid.view.el) grid.view.el.setScrollTop(0);
             return;
         }
 
-        rows.forEach(row => {
-            const targetCell = row.querySelector(`.${cachedCellClass}`);
-            const cellValue = targetCell ? targetCell.textContent.trim() : '';
-            const isBlank = (cellValue === '' || cellValue === '&nbsp;' || cellValue === ' ');
-
-            if (filterState === 1 && isBlank) {
-                row.style.display = 'none';
-            } else if (filterState === 2 && !isBlank) {
-                row.style.display = 'none';
-            } else {
-                row.style.display = '';
-            }
+        // 3. Apply Logical Filter
+        store.filterBy((record) => {
+            const val = record.get(TARGET_DATA_INDEX);
+            const isBlank = (!val || val.toString().trim() === "" || val === null);
+            return filterState === 1 ? !isBlank : isBlank;
         });
-    }
 
-    function setupGridObserver(activeDoc) {
-        if (gridObserver) {
-            gridObserver.disconnect();
+        const count = store.getCount();
+
+        // 4. Override Native Total Count logic
+        if (!store._nativeGetTotalCount) {
+            store._nativeGetTotalCount = store.getTotalCount;
         }
+        store.getTotalCount = function() { return count; };
 
-        // ExtJS grids append new rows into the item container during virtual scroll
-        const gridBody = activeDoc.querySelector('.x-grid-item-container, .x-grid-view');
-        if (!gridBody) return;
+        // 5. Force DOM update and lock it
+        forceFooterText(gridDom, count);
+        setupSentinel(gridDom, count);
 
-        gridObserver = new MutationObserver((mutations) => {
-            if (filterState === 0) return;
-
-            let newRows = [];
-            mutations.forEach(mut => {
-                mut.addedNodes.forEach(node => {
-                    if (node.nodeType === 1) { // Element node
-                        if (node.classList.contains('x-grid-row')) {
-                            newRows.push(node);
-                        } else {
-                            // ExtJS wraps rows in table.x-grid-item
-                            const rowsInside = Array.from(node.querySelectorAll('tr.x-grid-row'));
-                            if (rowsInside.length > 0) newRows.push(...rowsInside);
-                        }
-                    }
-                });
-            });
-
-            if (newRows.length > 0) {
-                applyFilterToRows(newRows);
-            }
-        });
-
-        gridObserver.observe(gridBody, { childList: true, subtree: true });
-        lastKnownDoc = activeDoc;
+        // 6. Scroll snap to refresh view
+        if (grid.view && grid.view.el) grid.view.el.setScrollTop(0);
     }
 
-    function toggleGridFilter(activeDoc, btn) {
+    function toggleGridFilter(btn) {
         filterState = (filterState + 1) % 3;
         btn.style.background = STATES[filterState].bg;
         btn.textContent = STATES[filterState].label;
-
-        if (filterState !== 0) {
-            const headerSpans = Array.from(activeDoc.querySelectorAll('.x-column-header-text, .x-column-header-inner'));
-            const targetSpan = headerSpans.find(h => h.textContent && h.textContent.includes(TARGET_COLUMN));
-            const targetHeader = targetSpan ? targetSpan.closest('.x-column-header') : null;
-
-            if (!targetHeader) {
-                alert(`Column "${TARGET_COLUMN}" not found. Please add it to your grid view.`);
-                filterState = 0;
-                btn.style.background = STATES[0].bg;
-                btn.textContent = STATES[0].label;
-                return;
-            }
-
-            cachedCellClass = `x-grid-cell-${targetHeader.id}`;
-        }
-
-        // Apply to currently visible rows
-        const currentRows = activeDoc.querySelectorAll('tr.x-grid-row');
-        applyFilterToRows(Array.from(currentRows));
-
-        // Attach observer for future scroll events
-        setupGridObserver(activeDoc);
+        applyStoreFilter();
     }
 
+    /**
+     * Injection Loop
+     */
     function injectForecastFilter() {
-        const activeTab = document.querySelector('[role="tabpanel"][aria-hidden="false"] iframe');
-        const activeDoc = activeTab && activeTab.contentDocument ? activeTab.contentDocument : document;
+        const ctx = getTargetContext();
+        if (!ctx) return;
 
-        // If the document changed (e.g., navigated away and back), reattach observer if filter is active
-        if (filterState !== 0 && activeDoc !== lastKnownDoc) {
-            setupGridObserver(activeDoc);
+        const { doc } = ctx;
+
+        if (filterState !== 0 && doc !== lastKnownDoc) {
+            applyStoreFilter();
         }
+        lastKnownDoc = doc;
 
-        const dataspyInput = activeDoc.querySelector('input[name="dataspylist"]');
+        const dataspyInput = doc.querySelector('input[name="dataspylist"]');
         if (!dataspyInput || dataspyInput.offsetWidth === 0) return;
 
         const toolbarContainer = dataspyInput.closest('.x-box-target');
-        if (!toolbarContainer) return;
+        if (!toolbarContainer || doc.getElementById('apm-list-pm-btn')) return;
 
-        if (activeDoc.getElementById('apm-list-pm-btn')) return;
-
-        const btn = activeDoc.createElement('button');
+        const btn = doc.createElement('button');
         btn.id = 'apm-list-pm-btn';
         btn.textContent = STATES[filterState].label;
-
         btn.style.cssText = `
-            position: absolute;
-            left: 270px;
-            top: 9px;
-            z-index: 1000;
-            padding: 4px 10px;
-            background: ${STATES[filterState].bg};
-            color: white;
-            border: none;
-            border-radius: 4px;
-            font-weight: bold;
-            cursor: pointer;
-            font-size: 11px;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.3);
-            transition: background 0.2s;
+            position: absolute; left: 270px; top: 9px; z-index: 1000;
+            padding: 4px 10px; background: ${STATES[filterState].bg};
+            color: white; border: none; border-radius: 4px;
+            font-weight: bold; cursor: pointer; font-size: 11px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.3); transition: background 0.2s;
         `;
 
         btn.onclick = (e) => {
             e.preventDefault();
-            toggleGridFilter(activeDoc, btn);
+            toggleGridFilter(btn);
         };
 
         toolbarContainer.appendChild(btn);
     }
 
-    // Expose init to global script scope
     return {
         init: function() {
-            setInterval(injectForecastFilter, 1000);
+            setInterval(injectForecastFilter, 1500);
         }
     };
 })();
 
-// Initialize the filter engine
 ForecastFilter.init();
 
     /** =========================
@@ -426,7 +434,7 @@ function formatDate(d) {
     /** =========================
      * GitHub Update Checker
      * ========================= */
-    const FORECAST_VERSION = '12.3.4'; // MUST MATCH YOUR SCRIPT HEADER VERSION
+    const FORECAST_VERSION = '12.4.0'; // MUST MATCH YOUR SCRIPT HEADER VERSION
 
     function isNewerVersion(oldVer, newVer) {
         const oldParts = oldVer.split('.').map(Number);
@@ -642,9 +650,12 @@ function formatDate(d) {
                     <h4 style="color: #1abc9c; margin: 10px 0 5px 0; font-size: 13px;">3. Power User Shortcuts</h4>
                     <ul style="margin: 0 0 10px 0; padding-left: 20px; font-size: 12px; color: #bdc3c7; line-height: 1.4;">
                         <li><strong>Alt + T (Quick Today):</strong> The "Thunderbolt" shortcut. Press this anywhere in EAM to instantly run a search for Today's Work Orders.</li>
-                        <li><strong>Alt + C (Quick Clear):</strong> Press this to instantly clear all search fields in the EAM grid. Perfect for when you need a blank slate.</li>
+                        <li><strong>Alt + C (Quick Clear):</strong>This will instantly clear all search fields if you need to manually search something</li>
                     </ul>
 
+                    <h4 style="color: #1abc9c; margin: 10px 0 5px 0; font-size: 13px;">4. Fast Booked Labor Check</h4>
+                    <ul style="margin: 0 0 10px 0; padding-left: 20px; font-size: 12px; color: #bdc3c7; line-height: 1.4;">
+                        <li>If you go to the "Book Labor By Employee" tab, a popup will show with the options to auto sum your booked labor ranging from 1 day, 2 days, and 7 days.
                     <div style="text-align:left; margin-top: 10px; border-top: 1px solid #4a5a6a; padding-top:10px;">
                         <button id="eam-guide-back-btn" style="background:transparent; color:#3498db; border:none; padding: 0; cursor: pointer; font-size: 11px; text-decoration: underline;">🔙 Back to Tool</button>
                     </div>
