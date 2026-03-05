@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         APM Master: Forecast Tool
 // @namespace    https://w.amazon.com/bin/view/Users/rosendah/APM-Master/
-// @version      12.5.5
+// @version      12.5.6
 // @description  Powerful WO Forecast Tool & Native Quick Search Bar. Manual edits to this script are not recomended, this is actively supported tool so Slack me for any issues and I can push an update! If you edit you will not receive auto updates
 // @author       Jacob Rosendahl & Thai Ho
 // @icon         https://media.licdn.com/dms/image/v2/D5603AQGdCV0_LQKRfQ/profile-displayphoto-scale_100_100/B56ZyZLvQ5HgAg-/0/1772096519061?e=1773878400&v=beta&t=eWO1Jiy0-WbzG_yBv-SBrmmsVOPMexF57-q1Xh_VXCk
@@ -15,7 +15,7 @@
 
 /* --------------------------------------------------------------------------
    RECENT FEATURES & BUG FIXES:
-   - v12.5.5 Bug Fix: added grant for security
+   - v12.5.6 Bug Fix: added grant for security and fixed a critical error catch to prevent crashes with the ptp timer
    - v12.5.4 Feature: Added a manual start PTP timer based on the PTP tab context
    - v12.5.3 Optimize: Rewrote some legacy DOM checks and fixed wait functions with event driven ExtJS waits, even faster execution speed.
    - v12.5.2 Optimize: Rewrote the Forecast Button to natively inject itself into the toolbar and let the framework handle placement and rendering.
@@ -420,7 +420,7 @@ function formatDate(d) {
     /** =========================
      * GitHub Update Checker
      * ========================= */
-    const FORECAST_VERSION = '12.5.5'; // MUST MATCH YOUR SCRIPT HEADER VERSION
+    const FORECAST_VERSION = '12.5.6'; // MUST MATCH YOUR SCRIPT HEADER VERSION
 
     function isNewerVersion(oldVer, newVer) {
         const oldParts = oldVer.split('.').map(Number);
@@ -2068,11 +2068,20 @@ function extractEmployeeId() {
         }, 1000);
     }
 
-    function checkPtpStatus() {
+function checkPtpStatus() {
         if (window.self !== window.top) return;
 
         let isPtpVisible = false;
-        const allDocs = [document, ...Array.from(document.querySelectorAll('iframe')).map(f => f.contentDocument).filter(Boolean)];
+
+        // SAFELY scan documents, ignoring cross-origin iframes
+        const allDocs = [document];
+        document.querySelectorAll('iframe').forEach(f => {
+            try {
+                // Abort before touching cross-origin frames
+                if (f.src && f.src.includes('amazon.dev')) return;
+                if (f.contentDocument) allDocs.push(f.contentDocument);
+            } catch(e) {} // Silently catch any other CORS errors
+        });
 
         for (const doc of allDocs) {
             const activeTabs = doc.querySelectorAll('.x-tab-active .x-tab-inner, .x-tab-active .x-tab-text');
