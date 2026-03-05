@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         APM Master: Forecast Tool
 // @namespace    https://w.amazon.com/bin/view/Users/rosendah/APM-Master/
-// @version      12.4.0
+// @version      12.5.0
 // @description  Powerful WO Forecast Tool & Native Quick Search Bar. Manual edits to this script are not recomended, this is actively supported tool so Slack me for any issues and I can push an update! If you edit you will not receive auto updates
 // @author       Jacob Rosendahl & Thai Ho
 // @icon         https://media.licdn.com/dms/image/v2/D5603AQGdCV0_LQKRfQ/profile-displayphoto-scale_100_100/B56ZyZLvQ5HgAg-/0/1772096519061?e=1773878400&v=beta&t=eWO1Jiy0-WbzG_yBv-SBrmmsVOPMexF57-q1Xh_VXCk
@@ -14,13 +14,12 @@
 
 /* --------------------------------------------------------------------------
    RECENT FEATURES & BUG FIXES:
-   - v12.4.0 Feature: The 3-Way PM filter now directly modifies the ExtJS stores rather than visually hiding rows. Now it is functionally as if you are only looking at PMs only or Non PMs only, no hidden records.
+   - v12.5.0 Feature: The Labor Tally function introduced in v12.3 is now a universal & moveable edge tab that fetches booked labor in the backround with a native server request. (Was real interesting to implement)
+   - v12.4.0 Feature: The 3-Way PM filter introduced in v12.2 now directly modifies the ExtJS stores rather than visually hiding rows. Now it is functionally as if you are only looking at PMs only or Non PMs only, no hidden records.
    - v12.3.4 Feature: Added internal update check and in menu notice. Cleaned up UI with removal of "Ready" status message
    - v12.3.3 Bug Fix: Fixed date format issue where systems would not be mm-dd-yyyy, added a date format override to conform with APM requirements always
-   - v12.3.1 Feature: Implemented a Booked Labor tally (today, 2 days, 7 days). The tooltip will auto pop and leave based on the iframe visibility of Booked Labor By Employee. Natively commands server and extracts response for rapid results (was a PITA to do)
    - v12.2.3 Bug Fix: UI Menu defocus events were getting trapped inside iframes, added native ExtJS listener for mouse events.
    - v12.2.1 Feature: When performing WO Search the dataspy is now changed to "All Work Orders" to ensure any searched WO will come up. When performing Forecast search it is set back to "Open Work Orders"
-   - v12.2.0 Feature: Implemented a filter toggle in the main list view to actively modify rows and show only PMs, Non PMs, or show all.
    - v12.1.3 Feature: Upgraded "Past Due" checkbox to a dynamic toggle button.
    - V12.1.1 Feature: Synced Relative dates to Custom Dates on switch.
    - v12.1.0 Feature: Merged native-blended "Quick Search" bar into the top header. Shares the high-speed engine for instant WO lookups.
@@ -434,7 +433,7 @@ function formatDate(d) {
     /** =========================
      * GitHub Update Checker
      * ========================= */
-    const FORECAST_VERSION = '12.4.0'; // MUST MATCH YOUR SCRIPT HEADER VERSION
+    const FORECAST_VERSION = '12.5.0'; // MUST MATCH YOUR SCRIPT HEADER VERSION
 
     function isNewerVersion(oldVer, newVer) {
         const oldParts = oldVer.split('.').map(Number);
@@ -653,9 +652,10 @@ function formatDate(d) {
                         <li><strong>Alt + C (Quick Clear):</strong>This will instantly clear all search fields if you need to manually search something</li>
                     </ul>
 
-                    <h4 style="color: #1abc9c; margin: 10px 0 5px 0; font-size: 13px;">4. Fast Booked Labor Check</h4>
+<h4 style="color: #1abc9c; margin: 10px 0 5px 0; font-size: 13px;">4. Fast Booked Labor Check</h4>
                     <ul style="margin: 0 0 10px 0; padding-left: 20px; font-size: 12px; color: #bdc3c7; line-height: 1.4;">
-                        <li>If you go to the "Book Labor By Employee" tab, a popup will show with the options to auto sum your booked labor ranging from 1 day, 2 days, and 7 days.
+                        <li>Use the floating "LABOR TALLY ⏱️" tab on the edge of your screen to instantly check your hours from anywhere in EAM. You can drag and snap it to any edge of your browser.</li>
+                    </ul>
                     <div style="text-align:left; margin-top: 10px; border-top: 1px solid #4a5a6a; padding-top:10px;">
                         <button id="eam-guide-back-btn" style="background:transparent; color:#3498db; border:none; padding: 0; cursor: pointer; font-size: 11px; text-decoration: underline;">🔙 Back to Tool</button>
                     </div>
@@ -1369,164 +1369,299 @@ async function navigateTo(tabText, menuPathArray) {
         setTimeout(() => scriptEl.remove(), 100);
     }
 
-    /** =========================
-     * Labor Sum Module (Native Extraction)
+/** =========================
+     * Labor Tracker Module (Omni-Edge & Background Fetch)
      * ========================= */
-    const LaborSum = (function() {
-        let localLaborData = [];
+    const LaborTracker = (function() {
+        if (window.self !== window.top) return { init: function() {} };
 
-        function generateValidDates(daysBack) {
-            const dates = [];
-            for (let i = 0; i < daysBack; i++) {
-                const d = new Date();
-                d.setDate(d.getDate() - i);
-                const pad = (n) => String(n).padStart(2, '0');
-                dates.push(`${pad(d.getMonth() + 1)}/${pad(d.getDate())}/${d.getFullYear()}`);
+        let laborCache = { data: [], lastFetch: 0 };
+        let activeTab = 7;
+        let isFetching = false;
+
+        function extractEamIdAggressive() {
+            const uuidPattern = /([a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12})/i;
+            if (window.EAM && window.EAM.AppData && window.EAM.AppData.eamid) return window.EAM.AppData.eamid;
+            const cookieMatch = document.cookie.match(new RegExp(`eamid=${uuidPattern.source}`, 'i'));
+            if (cookieMatch) return cookieMatch[1];
+            const pageHTML = document.documentElement.innerHTML;
+            const htmlMatch = pageHTML.match(new RegExp(`eamid["'=:%&?]+${uuidPattern.source}`, 'i'));
+            if (htmlMatch) return htmlMatch[1];
+            const frames = document.querySelectorAll('iframe');
+            for (let f of frames) {
+                if (f.src) {
+                    const srcMatch = f.src.match(new RegExp(`eamid=${uuidPattern.source}`, 'i'));
+                    if (srcMatch) return srcMatch[1];
+                }
             }
-            return dates;
+            return null;
         }
 
-        function buildUI() {
-            if (document.getElementById('apm-labor-sum-ui')) return;
-            const panel = document.createElement('div');
-            panel.id = 'apm-labor-sum-ui';
-            panel.style.cssText = `position:fixed; bottom:20px; right:20px; z-index:99999; background:#2c3e50; color:white; padding:15px; border-radius:8px; font-family:sans-serif; width:280px; box-shadow:0 4px 15px rgba(0,0,0,0.5); border:1px solid #34495e; display:none;`;
-            panel.innerHTML = `
-                <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #4a5a6a; padding-bottom:10px; margin-bottom:12px;">
-                    <strong style="color:#1abc9c; font-size:15px;">⏱️ Labor Auto-Sum</strong>
-                    <span id="apm-labor-status" style="font-size:10px; color:#bdc3c7; background:#34495e; padding:2px 6px; border-radius:10px;">Idle</span>
-                </div>
-                <div style="display:flex; gap:8px; margin-bottom:15px;">
-                    <button id="apm-labor-today" style="flex:1; padding:6px; background:#3498db; border:none; border-radius:4px; color:white; cursor:pointer; font-weight:bold; font-size:12px;">Today</button>
-                    <button id="apm-labor-2day" style="flex:1; padding:6px; background:#2980b9; border:none; border-radius:4px; color:white; cursor:pointer; font-weight:bold; font-size:12px;">2 Days</button>
-                    <button id="apm-labor-7day" style="flex:1; padding:6px; background:#34495e; border:none; border-radius:4px; color:white; cursor:pointer; font-weight:bold; font-size:12px;">7 Days</button>
-                </div>
-                <div id="apm-labor-results" style="font-size:13px; line-height:1.6; color:#ecf0f1; background:#1e272e; padding:10px; border-radius:6px; min-height:60px;">
-                    <div style="text-align:center; color:#7f8c8d; font-style:italic;">Click range to sum records.</div>
-                </div>`;
-            document.body.appendChild(panel);
-            document.getElementById('apm-labor-today').onclick = () => runFetch('today');
-            document.getElementById('apm-labor-2day').onclick = () => runFetch('2day');
-            document.getElementById('apm-labor-7day').onclick = () => runFetch('7day');
+        function extractEmployeeId() {
+            const match = document.body.innerText.match(/User\s*\(([^@)]+)/i);
+            if (match && match[1]) return match[1].toUpperCase();
+            return "ROSENDAH";
         }
 
-        function renderData(mode) {
-            const resultsDiv = document.getElementById('apm-labor-results');
-            const statusEl = document.getElementById('apm-labor-status');
-            if (!resultsDiv || !statusEl) return;
+        async function fetchLaborData() {
+            if (Date.now() - laborCache.lastFetch < 900000 && laborCache.data.length > 0) {
+                updateUIState();
+                return;
+            }
 
-            const daysToPull = mode === 'today' ? 1 : (mode === '2day' ? 2 : 8);
-            const validDates = generateValidDates(daysToPull);
-            const dailyTotals = {}; let grandTotal = 0;
+            isFetching = true;
+            updateUIState("Loading...");
 
-            localLaborData.forEach(r => {
-                const dateClean = (r.datework || '').split(' ')[0];
-                const hours = parseFloat(String(r.hrswork).replace(',', '.')) || 0;
-                if (!validDates.includes(dateClean)) return;
-                dailyTotals[dateClean] = (dailyTotals[dateClean] || 0) + hours;
-                grandTotal += hours;
+            const currentEamId = extractEamIdAggressive();
+            if (!currentEamId) {
+                isFetching = false;
+                updateUIState("Session Error");
+                return;
+            }
+
+            const url = "https://us1.eam.hxgnsmartcloud.com/web/base/WSBOOK.HDR.xmlhttp";
+            const currentTenant = window.EAM?.AppData?.tenant || "AMAZONRMENA_PRD";
+            const currentUser = extractEmployeeId();
+
+            const payload = new URLSearchParams({
+                GRID_ID: "1742", GRID_NAME: "WSBOOK_HDR", DATASPY_ID: "100696",
+                USER_FUNCTION_NAME: "WSBOOK", SYSTEM_FUNCTION_NAME: "WSBOOK",
+                CURRENT_TAB_NAME: "HDR", COMPONENT_INFO_TYPE: "DATA_ONLY",
+                employee: currentUser, tenant: currentTenant, eamid: currentEamId,
+                NUMBER_OF_ROWS_FIRST_RETURNED: "5000"
             });
 
-            let html = `<div style="display:flex; justify-content:space-between; border-bottom:1px solid #34495e; padding-bottom:6px; margin-bottom:8px;"><span style="font-weight:bold; color:#bdc3c7;">Total:</span><span style="font-weight:bold; color:#1abc9c; font-size:16px;">${grandTotal.toFixed(2)} hrs</span></div>`;
-            validDates.forEach(date => {
-                if (dailyTotals[date] !== undefined) {
-                    html += `<div style="display:flex; justify-content:space-between; margin-bottom:4px;"><span style="color:#95a5a6;">${date === validDates[0] ? 'Today' : date}</span><span style="font-weight:bold; color:#ecf0f1;">${dailyTotals[date].toFixed(2)} hrs</span></div>`;
+            try {
+                const response = await fetch(url, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8', 'X-Requested-With': 'XMLHttpRequest' },
+                    body: payload.toString()
+                });
+
+                const text = await response.text();
+                if (text.trim().startsWith('<') || text.includes('System Error')) {
+                    updateUIState("Server Rejected");
+                    isFetching = false;
+                    return;
+                }
+
+                const jsonStart = text.indexOf('{');
+                if (jsonStart === -1) throw new Error("No JSON found");
+
+                const dataObj = JSON.parse(text.substring(jsonStart));
+                laborCache.data = dataObj?.pageData?.grid?.GRIDRESULT?.GRID?.DATA || [];
+                laborCache.lastFetch = Date.now();
+
+            } catch (err) {
+                updateUIState("Data Error");
+            } finally {
+                isFetching = false;
+                updateUIState();
+            }
+        }
+
+        function calculateLabor(daysParam) {
+            const now = new Date();
+            now.setHours(0, 0, 0, 0);
+            let total = 0;
+            let breakdown = {};
+
+            laborCache.data.forEach(r => {
+                const rDate = new Date(r.datework);
+                rDate.setHours(0, 0, 0, 0);
+                const diffDays = Math.floor((now - rDate) / (1000 * 3600 * 24));
+                const maxDaysAgo = daysParam === 7 ? 7 : daysParam - 1;
+
+                if (diffDays <= maxDaysAgo && diffDays >= 0) {
+                    const hrs = parseFloat(r.hrswork);
+                    if (!isNaN(hrs)) {
+                        total += hrs;
+                        breakdown[r.datework] = (breakdown[r.datework] || 0) + hrs;
+                    }
                 }
             });
-            resultsDiv.innerHTML = html;
-            statusEl.textContent = 'Idle';
+            return { total, breakdown };
         }
 
-        window.addEventListener('message', (e) => {
-            if (!e.data) return;
-            if (e.data.type === 'APM_LABOR_DATA') { localLaborData = e.data.records; renderData(e.data.mode); }
-            if (e.data.type === 'APM_LABOR_STATUS') {
-                const s = document.getElementById('apm-labor-status');
-                if (s) s.textContent = e.data.msg;
+        function injectUI() {
+            if (document.getElementById('apm-labor-trigger')) return;
+
+            const style = document.createElement('style');
+            style.innerHTML = `
+                #apm-labor-trigger { position: fixed; background: #3498db; color: white; padding: 10px; cursor: pointer; font-weight: bold; font-size: 12px; z-index: 2147483647; box-shadow: 0 0 10px rgba(0,0,0,0.5); transition: background 0.2s; user-select: none; display: flex; align-items: center; justify-content: center; white-space: nowrap; }
+                #apm-labor-trigger:hover { background: #2980b9; }
+                #apm-labor-panel { position: fixed; width: 260px; background: #35404a; border: 1px solid #4a5a6a; border-radius: 8px; padding: 15px; z-index: 2147483646; transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1); display: flex; flex-direction: column; box-shadow: 0 0 20px rgba(0,0,0,0.6); }
+                .labor-tabs { display: flex; gap: 2px; background: #2b343c; border-radius: 4px; overflow: hidden; margin-bottom: 15px; }
+                .labor-tab { flex: 1; padding: 8px; text-align: center; font-size: 11px; cursor: pointer; color: #b0bec5; font-weight: bold; transition: 0.2s; user-select: none; }
+                .labor-tab.active { background: #3498db; color: white; }
+                .labor-total { font-size: 32px; font-weight: bold; text-align: center; margin: 10px 0; color: #ecf0f1; }
+                .labor-row { display: flex; justify-content: space-between; padding: 6px 10px; border-bottom: 1px solid #4a5a6a; font-size: 12px; color: #bdc3c7; }
+            `;
+            document.head.appendChild(style);
+
+            const trigger = document.createElement('div');
+            trigger.id = 'apm-labor-trigger';
+            trigger.innerHTML = "LABOR TALLY ⏱️";
+
+            const panel = document.createElement('div');
+            panel.id = 'apm-labor-panel';
+            panel.innerHTML = `
+                <div class="labor-tabs">
+                    <div class="labor-tab" data-d="1">Today</div>
+                    <div class="labor-tab" data-d="2">2-Day</div>
+                    <div class="labor-tab active" data-d="7">7-Day</div>
+                </div>
+                <div id="labor-sum-box" class="labor-total">0.00 <span style="font-size:14px; color:#7f8c8d;">hrs</span></div>
+                <div id="labor-breakdown-box" style="max-height: 200px; overflow-y: auto;"></div>
+                <button id="labor-force-refresh" style="margin-top:15px; background:#4a5a6a; color:white; border:none; padding:8px; border-radius:4px; cursor:pointer; font-size:11px; transition: background 0.2s;">Refresh from Server</button>
+            `;
+
+            document.body.appendChild(trigger);
+            document.body.appendChild(panel);
+
+            let dockInfo = JSON.parse(localStorage.getItem('apmLaborDockPos') || '{"edge":"right","pos":300}');
+            let isVisible = false;
+
+            function applyDocking() {
+                let maxPos = (dockInfo.edge === 'top' || dockInfo.edge === 'bottom') ? window.innerWidth : window.innerHeight;
+                dockInfo.pos = Math.max(30, Math.min(maxPos - 30, dockInfo.pos));
+
+                trigger.style.left = trigger.style.right = trigger.style.top = trigger.style.bottom = '';
+                panel.style.left = panel.style.right = panel.style.top = panel.style.bottom = '';
+                trigger.style.transition = 'background 0.2s, transform 0.2s ease-out';
+                trigger.style.writingMode = trigger.style.textOrientation = '';
+
+                const offset = '34px';
+
+                if (dockInfo.edge === 'right') {
+                    trigger.style.right = '0'; trigger.style.top = dockInfo.pos + 'px'; trigger.style.transform = 'translateY(-50%)'; trigger.style.writingMode = 'vertical-rl'; trigger.style.borderRadius = '8px 0 0 8px';
+                    panel.style.right = offset; panel.style.top = dockInfo.pos + 'px'; panel.style.transform = isVisible ? 'translate(0%, -50%)' : 'translate(calc(100% + 50px), -50%)';
+                }
+                else if (dockInfo.edge === 'left') {
+                    trigger.style.left = '0'; trigger.style.top = dockInfo.pos + 'px'; trigger.style.transform = 'translateY(-50%)'; trigger.style.writingMode = 'vertical-lr'; trigger.style.textOrientation = 'mixed'; trigger.style.borderRadius = '0 8px 8px 0';
+                    panel.style.left = offset; panel.style.top = dockInfo.pos + 'px'; panel.style.transform = isVisible ? 'translate(0%, -50%)' : 'translate(calc(-100% - 50px), -50%)';
+                }
+                else if (dockInfo.edge === 'top') {
+                    trigger.style.top = '0'; trigger.style.left = dockInfo.pos + 'px'; trigger.style.transform = 'translateX(-50%)'; trigger.style.borderRadius = '0 0 8px 8px';
+                    panel.style.top = offset; panel.style.left = dockInfo.pos + 'px'; panel.style.transform = isVisible ? 'translate(-50%, 0%)' : 'translate(-50%, calc(-100% - 50px))';
+                }
+                else if (dockInfo.edge === 'bottom') {
+                    trigger.style.bottom = '0'; trigger.style.left = dockInfo.pos + 'px'; trigger.style.transform = 'translateX(-50%)'; trigger.style.borderRadius = '8px 8px 0 0';
+                    panel.style.bottom = offset; panel.style.left = dockInfo.pos + 'px'; panel.style.transform = isVisible ? 'translate(-50%, 0%)' : 'translate(-50%, calc(100% + 50px))';
+                }
             }
-        });
 
-        function runFetch(mode) {
-            const resultsDiv = document.getElementById('apm-labor-results');
-            if (resultsDiv) resultsDiv.innerHTML = `<div style="text-align:center; color:#f1c40f;">Native Extraction Active...</div>`;
-            document.getElementById('apm-labor-status').textContent = 'Active';
+            applyDocking();
 
-            const payloadId = 'apm-extjs-labor-' + Date.now();
-            const scriptEl = document.createElement('script');
-            scriptEl.id = payloadId;
-            scriptEl.textContent = `(function() {
-                try {
-                    var tExt = window.Ext; var frames = document.querySelectorAll('iframe'); var tDoc = document;
-                    for (var i=0; i<frames.length; i++) {
-                        var f = frames[i];
-                        if (f.src && f.src.indexOf('SYSTEM_FUNCTION_NAME=WSBOOK') > -1) {
-                            if (window.getComputedStyle(f).visibility !== 'hidden' && (!f.parentElement || !f.parentElement.classList.contains('x-hidden-offsets'))) {
-                                if (f.contentWindow && f.contentWindow.Ext) { tExt = f.contentWindow.Ext; tDoc = f.contentDocument; break; }
-                            }
+            trigger.onmousedown = (e) => {
+                let isDragging = false;
+                let startX = e.clientX;
+                let startY = e.clientY;
+                let rect = trigger.getBoundingClientRect();
+                let offsetX = startX - rect.left;
+                let offsetY = startY - rect.top;
+
+                let wasVisible = isVisible; // Cache state before click/drag
+
+                const onMouseMove = (moveEvent) => {
+                    if (!isDragging && (Math.abs(moveEvent.clientX - startX) > 5 || Math.abs(moveEvent.clientY - startY) > 5)) {
+                        isDragging = true;
+                        trigger.style.transition = 'none';
+                        if (isVisible) {
+                            isVisible = false;
+                            applyDocking();
                         }
                     }
-                    if (!tExt || !tExt.ComponentQuery) return;
-
-                    var combos = tExt.ComponentQuery.query('combobox[name="dataspylist"]');
-                    var activeCombo = null;
-                    for(var c=0; c<combos.length; c++) { if (combos[c].el && tDoc.body.contains(combos[c].el.dom)) { activeCombo = combos[c]; break; } }
-
-                    var needsWait = false;
-                    if (activeCombo && String(activeCombo.getValue()) !== '100696') {
-                        var rec = activeCombo.getStore().findRecord(activeCombo.valueField, '100696', 0, false, false, true);
-                        if (rec) { activeCombo.setValue(rec.get(activeCombo.valueField)); activeCombo.fireEvent('select', activeCombo, rec); needsWait = true; }
+                    if (isDragging) {
+                        trigger.style.right = trigger.style.bottom = 'auto';
+                        trigger.style.left = (moveEvent.clientX - offsetX) + 'px';
+                        trigger.style.top = (moveEvent.clientY - offsetY) + 'px';
+                        trigger.style.transform = 'none';
                     }
+                };
 
-                    function execute() {
-                        var grid = null; var grids = tExt.ComponentQuery.query('readonlygrid, gridpanel');
-                        for(var g=0; g<grids.length; g++) { if (grids[g].el && tDoc.body.contains(grids[g].el.dom)) { grid = grids[g]; break; } }
-                        var btn = null; var btns = tExt.ComponentQuery.query('button[text=Run]');
-                        for(var b=0; b<btns.length; b++) { if (btns[b].el && tDoc.body.contains(btns[b].el.dom)) { btn = btns[b]; break; } }
+                const onMouseUp = (upEvent) => {
+                    document.removeEventListener('mousemove', onMouseMove);
+                    document.removeEventListener('mouseup', onMouseUp);
 
-                        if (!grid || !btn) return;
+                    if (isDragging) {
+                        let cx = upEvent.clientX, cy = upEvent.clientY, w = window.innerWidth, h = window.innerHeight;
+                        let distTop = cy, distBottom = h - cy, distLeft = cx, distRight = w - cx;
+                        let min = Math.min(distTop, distBottom, distLeft, distRight);
 
-                        var interceptor = function(c, o) { if (o && o.params) { if (typeof o.params === 'string') o.params = o.params.replace(/NUMBER_OF_ROWS_FIRST_RETURNED=\\\\d+/g, 'NUMBER_OF_ROWS_FIRST_RETURNED=5000'); else o.params.NUMBER_OF_ROWS_FIRST_RETURNED = 5000; } };
-                        tExt.Ajax.on('beforerequest', interceptor);
-                        if (btn.handler) btn.handler.call(btn.scope || btn, btn); else btn.fireEvent('click', btn);
+                        if (min === distRight) { dockInfo.edge = 'right'; dockInfo.pos = cy; }
+                        else if (min === distLeft) { dockInfo.edge = 'left'; dockInfo.pos = cy; }
+                        else if (min === distTop) { dockInfo.edge = 'top'; dockInfo.pos = cx; }
+                        else { dockInfo.edge = 'bottom'; dockInfo.pos = cx; }
 
-                        var pollCount = 0;
-                        function pollData() {
-                            pollCount++;
-                            var store = grid.getStore();
-                            if (tExt.Ajax.isLoading() || store.isLoading()) {
-                                if (pollCount < 40) setTimeout(pollData, 250);
-                            } else {
-                                tExt.Ajax.un('beforerequest', interceptor);
-                                var data = []; store.each(function(r) { data.push(r.data); });
-                                window.top.postMessage({ type: 'APM_LABOR_DATA', records: data, mode: '${mode}' }, '*');
-                            }
-                        }
-                        setTimeout(pollData, 400);
+                        localStorage.setItem('apmLaborDockPos', JSON.stringify(dockInfo));
+                        applyDocking();
+                    } else {
+                        isVisible = !wasVisible; // Toggle correctly
+                        applyDocking();
+                        if (isVisible) fetchLaborData();
                     }
-                    setTimeout(execute, needsWait ? 1500 : 100);
-                } catch(e) { console.error('Labor Sum Error:', e); }
-            })();`;
-            document.head.appendChild(scriptEl);
-            setTimeout(() => { if(scriptEl.parentNode) scriptEl.parentNode.removeChild(scriptEl); }, 100);
+                };
+
+                document.addEventListener('mousemove', onMouseMove);
+                document.addEventListener('mouseup', onMouseUp);
+            };
+
+            // Close on outside click
+            document.addEventListener('mousedown', (e) => {
+                if (isVisible && !panel.contains(e.target) && !trigger.contains(e.target)) {
+                    isVisible = false;
+                    applyDocking();
+                }
+            });
+
+            panel.querySelectorAll('.labor-tab').forEach(t => t.onclick = (e) => {
+                panel.querySelectorAll('.labor-tab').forEach(x => x.classList.remove('active'));
+                e.target.classList.add('active');
+                activeTab = parseInt(e.target.getAttribute('data-d'));
+                if (!isFetching) updateUIState();
+            });
+
+            document.getElementById('labor-force-refresh').onclick = () => {
+                laborCache.lastFetch = 0;
+                fetchLaborData();
+            };
+
+            window.addEventListener('resize', () => applyDocking());
+        }
+
+        function updateUIState(errorMsg = null) {
+            const sumBox = document.getElementById('labor-sum-box');
+            const list = document.getElementById('labor-breakdown-box');
+
+            if (errorMsg) {
+                sumBox.innerHTML = `<span style="font-size:16px; color:#e74c3c;">${errorMsg}</span>`;
+                if (errorMsg === "Loading...") sumBox.innerHTML = `<span style="font-size:16px; color:#f39c12;">${errorMsg}</span>`;
+                list.innerHTML = '';
+                return;
+            }
+
+            const { total, breakdown } = calculateLabor(activeTab);
+            sumBox.innerHTML = `${total.toFixed(2)} <span style="font-size:14px; color:#7f8c8d;">hrs</span>`;
+
+            list.innerHTML = '';
+            const sortedDates = Object.keys(breakdown).sort((a,b) => new Date(b) - new Date(a));
+
+            if (sortedDates.length === 0) {
+                list.innerHTML = '<div style="text-align:center; padding:10px; color:#7f8c8d; font-size:12px;">No labor records found.</div>';
+            } else {
+                sortedDates.forEach(d => {
+                    const row = document.createElement('div');
+                    row.className = 'labor-row';
+                    row.innerHTML = `<span>${d}</span> <strong>${breakdown[d].toFixed(2)}</strong>`;
+                    list.appendChild(row);
+                });
+            }
         }
 
         return {
-            syncVisibility: function() {
-                const frames = Array.from(document.querySelectorAll('iframe'));
-                const wsbookActive = frames.find(f => {
-                    if (!f.src || f.src.indexOf('SYSTEM_FUNCTION_NAME=WSBOOK') === -1) return false;
-                    const style = window.getComputedStyle(f);
-                    const parentHidden = f.parentElement && f.parentElement.classList.contains('x-hidden-offsets');
-                    return style.visibility !== 'hidden' && style.display !== 'none' && !parentHidden;
-                });
-
-                const ui = document.getElementById('apm-labor-sum-ui');
-                if (wsbookActive) {
-                    if (!ui) buildUI();
-                    document.getElementById('apm-labor-sum-ui').style.display = 'block';
-                } else if (ui) {
-                    ui.style.display = 'none';
-                }
+            init: function() {
+                setTimeout(injectUI, 1500);
             }
         };
     })();
@@ -1764,20 +1899,16 @@ async function navigateTo(tabText, menuPathArray) {
             buildForecastUI();
             injectToggleBtn();
             buildSearchUI();
-            LaborSum.syncVisibility();
         }, 150);
     });
     observer.observe(document.body, { childList: true, subtree: true });
-
-    // State Polling: Hard-check visibility every 1.5s as a fallback for cached tabs
-    setInterval(() => LaborSum.syncVisibility(), 1500);
 
     // Initial Run
     setTimeout(() => {
         buildForecastUI();
         injectToggleBtn();
         buildSearchUI();
-        LaborSum.syncVisibility();
+        LaborTracker.init(); // Initialize the new floating tool
     }, 1500);
 
 })();
