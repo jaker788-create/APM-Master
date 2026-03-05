@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         APM Master: WO Creator & Auto-Fill + Tab Re-Order
 // @namespace    https://w.amazon.com/bin/view/Users/rosendah/APM-Master/
-// @version      0.7.0
+// @version      0.7.2
 // @description  WO Cretion, Auto-Fill Engine, and LOTO Checklist Automation.
 // @author       Jacob Rosendahl
 // @icon         https://media.licdn.com/dms/image/v2/D5603AQGdCV0_LQKRfQ/profile-displayphoto-scale_100_100/B56ZyZLvQ5HgAg-/0/1772096519061?e=1773878400&v=beta&t=eWO1Jiy0-WbzG_yBv-SBrmmsVOPMexF57-q1Xh_VXCk
@@ -15,6 +15,7 @@
 
 /* --------------------------------------------------------------------------
    RECENT FEATURES & BUG FIXES:
+   - v0.7.2: Feature: Added update notice in UI, added dynamic resizing with browser window scale, added help & tips
    - v0.6.14 Bug Fix: Removed problematic defocus logic
    - v0.6.13 Bug Fix: Abandoned the "run-once" tagging for a continuous audit loop. The script now monitors physical tab positions every 1.5s and snaps them back if EAM's AJAX updates revert the layout.
    - v0.6.10 Feature: Menu will close if you click away
@@ -47,7 +48,7 @@
     };
 
     let isRunning = false;
-    let activeTab = 'creator';
+    let activeTab = 'autofill';
 
     /** =========================
      * Data Management
@@ -184,7 +185,7 @@ function getCurrentFormData() {
     /** =========================
      * GitHub Update Checker
      * ========================= */
-    const CURRENT_VERSION = '0.7.0'; // Manually bump this when you release new versions
+    const CURRENT_VERSION = '0.7.2'; // Manually bump this when you release new versions
 
     function isNewerVersion(oldVer, newVer) {
         const oldParts = oldVer.split('.').map(Number);
@@ -218,372 +219,420 @@ function getCurrentFormData() {
     }
 
 /** =========================
-     * UI Builder (Panel)
-     * ========================= */
+ * UI Builder (Panel) with Screen Boundary Checks
+ * ========================= */
+function buildCreatorUI() {
+    if (window.self !== window.top || document.getElementById('apm-creator-panel')) return;
+
+    // State Variables MUST be declared at the top
     let settingsMode = 'cols';
+    let isHelpOpen = false;
 
-    function buildCreatorUI() {
-        if (window.self !== window.top || document.getElementById('apm-creator-panel')) return;
+    loadPresets();
 
-        loadPresets();
+    const panel = document.createElement('div');
+    panel.id = 'apm-creator-panel';
 
-        const panel = document.createElement('div');
-        panel.id = 'apm-creator-panel';
-        panel.style = 'position:fixed; z-index:99999; padding:15px; background:#35404a; color:white; border:1px solid #2c353c; border-radius:8px; box-shadow: 0px 8px 25px rgba(0,0,0,0.6); font-family:sans-serif; width: 480px; display:none; top: 60px; right: 20px;';
+    // Base Styles
+    panel.style = 'position:fixed; z-index:99999; padding:15px; background:#35404a; color:white; border:1px solid #2c353c; border-radius:8px; box-shadow: 0px 8px 25px rgba(0,0,0,0.6); font-family:sans-serif; width: 480px; display:none;';
 
-        panel.innerHTML = `
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
-                <h4 style="margin:0; font-size:18px; color:#ffffff; font-weight: normal;">APM Master <span style="color:#e74c3c; font-weight: bold;">Suite</span></h4>
-                <button id="apm-c-btn-close" style="background:#505f6e; color:#ffffff; border:none; padding: 4px 10px; border-radius:4px; cursor:pointer; font-size:14px; font-weight:bold;">✖</button>
+    // Dynamic Positioning Logic
+    const margin = 20;
+    const vHeight = window.innerHeight;
+    const vWidth = window.innerWidth;
+    const panelWidth = 480;
+    const panelHeight = 650;
+
+    let topPos = 60;
+    let rightPos = margin;
+
+    if (topPos + panelHeight > vHeight) {
+        topPos = Math.max(10, vHeight - panelHeight - margin);
+    }
+
+    if (rightPos + panelWidth > vWidth) {
+        rightPos = Math.max(10, vWidth - panelWidth - margin);
+    }
+
+    panel.style.top = topPos + 'px';
+    panel.style.right = rightPos + 'px';
+
+    panel.innerHTML = `
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+            <h4 style="margin:0; font-size:18px; color:#ffffff; font-weight: normal;">APM Master <span style="color:#e74c3c; font-weight: bold;">Suite</span></h4>
+            <button id="apm-c-btn-close" style="background:#505f6e; color:#ffffff; border:none; padding: 4px 10px; border-radius:4px; cursor:pointer; font-size:14px; font-weight:bold;">✖</button>
+        </div>
+
+        <div id="apm-tab-container" style="display:flex; margin-bottom:15px; background:#2b343c; border-radius:6px; overflow:hidden;">
+            <div id="tab-autofill" class="apm-tab-btn apm-tab-active-autofill">Auto Fill</div>
+            <div id="tab-creator" class="apm-tab-btn apm-tab-inactive">Creator</div>
+            <div id="tab-settings" class="apm-tab-btn apm-tab-inactive">Tab Order</div>
+        </div>
+
+        <div id="apm-main-fields" style="display:block;">
+            <div class="preset-row">
+                <select id="apm-c-preset-select" style="flex-grow:1; padding:6px; border-radius:4px; border:none; font-weight:bold; cursor:pointer;"></select>
+                <button id="apm-c-btn-save" class="creator-btn" style="background:#3498db; color:white;">Save</button>
+                <button id="apm-c-btn-new" class="creator-btn" style="background:#2ecc71; color:white;">New</button>
+                <button id="apm-c-btn-del" class="creator-btn" style="background:#e74c3c; color:white;">Del</button>
             </div>
 
-            <div style="display:flex; margin-bottom:15px; background:#2b343c; border-radius:6px; overflow:hidden;">
-                <div id="tab-settings" class="apm-tab-btn apm-tab-active-autofill">Tab Order</div>
-                <div id="tab-creator" class="apm-tab-btn apm-tab-inactive">Creator</div>
-                <div id="tab-autofill" class="apm-tab-btn apm-tab-inactive">Auto Fill</div>
-            </div>
-
-            <div id="apm-main-fields" style="display:none;">
-                <div class="preset-row">
-                    <select id="apm-c-preset-select" style="flex-grow:1; padding:6px; border-radius:4px; border:none; font-weight:bold; cursor:pointer;"></select>
-                    <button id="apm-c-btn-save" class="creator-btn" style="background:#3498db; color:white;">Save</button>
-                    <button id="apm-c-btn-new" class="creator-btn" style="background:#2ecc71; color:white;">New</button>
-                    <button id="apm-c-btn-del" class="creator-btn" style="background:#e74c3c; color:white;">Del</button>
+            <div style="padding-right: 5px; margin-bottom: 15px;">
+                <div class="field-row" id="row-keyword" style="display:block;">
+                    <div class="field-label" style="color:#3498db; font-weight:bold;">WO Title:</div>
+                    <input type="text" id="apm-c-keyword" class="field-input" placeholder="Partial or full title match...">
                 </div>
 
-                <div style="padding-right: 5px; margin-bottom: 15px;">
-                    <div class="field-row" id="row-keyword" style="display:none;">
-                        <div class="field-label" style="color:#3498db; font-weight:bold;">WO Title:</div>
-                        <input type="text" id="apm-c-keyword" class="field-input" placeholder="Partial or full title match...">
+                <div class="field-row"><div class="field-label">Organization:</div><input type="text" id="apm-c-org" class="field-input upper"></div>
+                <div class="field-row"><div class="field-label">Equipment:</div><input type="text" id="apm-c-eq" class="field-input upper" placeholder="Search Term..."></div>
+                <div class="field-row" id="row-desc"><div class="field-label">Description:</div><input type="text" id="apm-c-desc" class="field-input"></div>
+
+                <div style="border-top: 1px solid #4a5a6a; margin: 12px 0;"></div>
+
+                <div style="display: flex; gap: 10px; margin-bottom: 10px;">
+                    <div style="flex: 1;">
+                        <div class="field-row"><div class="field-label" style="width: 50px;">Type:</div><select id="apm-c-type" class="field-input"><option value="">- Skip -</option><option value="Breakdown">Breakdown</option><option value="Corrective">Corrective</option><option value="Project">Project</option></select></div>
+                        <div class="field-row"><div class="field-label" style="width: 50px;">Status:</div><select id="apm-c-status" class="field-input"><option value="">- Skip -</option><option value="Open">Open</option><option value="In Progress">In Progress</option></select></div>
                     </div>
+                    <div style="flex: 1;">
+                        <div class="field-row"><div class="field-label" style="width: 50px;">Exec:</div><select id="apm-c-exec" class="field-input"><option value="">- Skip -</option><option value="EXDN">EXDN</option><option value="EXDB">EXDB</option><option value="EXMW">EXMW</option><option value="EXOPS">EXOPS</option><option value="EXSHUT">EXSHUT</option></select></div>
+                        <div class="field-row"><div class="field-label" style="width: 50px;">Safety:</div><select id="apm-c-safety" class="field-input"><option value="">- Skip -</option><option value="No">No</option><option value="Yes">Yes</option></select></div>
+                    </div>
+                </div>
 
-                    <div class="field-row"><div class="field-label">Organization:</div><input type="text" id="apm-c-org" class="field-input upper"></div>
-                    <div class="field-row"><div class="field-label">Equipment:</div><input type="text" id="apm-c-eq" class="field-input upper" placeholder="Search Term..."></div>
-                    <div class="field-row" id="row-desc"><div class="field-label">Description:</div><input type="text" id="apm-c-desc" class="field-input"></div>
+                <div class="field-row" style="background: rgba(155, 89, 182, 0.15); border: 1px solid rgba(155, 89, 182, 0.4); padding: 8px; border-radius: 6px;">
+                    <div class="field-label" style="color:#c39bd3; font-weight:bold; width: 70px;">Checklists:</div>
+                    <select id="apm-c-loto-mode" class="field-input" style="flex: 1; padding: 4px; font-size: 11px;">
+                        <option value="none">- Skip LOTO -</option>
+                        <option value="yes">LOTO: Yes</option>
+                        <option value="no">LOTO: No</option>
+                    </select>
+                    <div style="font-size: 11px; color: #b0bec5; margin: 0 8px; white-space: nowrap; font-weight: bold;">PMs:</div>
+                    <input type="number" id="apm-c-pm-checks" class="field-input" min="0" placeholder="Qty" style="width: 50px; padding: 4px; font-size: 12px; text-align: center; font-weight: bold;">
+                </div>
 
-                    <div style="border-top: 1px solid #4a5a6a; margin: 12px 0;"></div>
-
-                    <div style="display: flex; gap: 10px; margin-bottom: 10px;">
+                <div style="display: flex; gap: 10px; margin-bottom: 10px;">
                         <div style="flex: 1;">
-                            <div class="field-row"><div class="field-label" style="width: 50px;">Type:</div><select id="apm-c-type" class="field-input"><option value="">- Skip -</option><option value="Breakdown">Breakdown</option><option value="Corrective">Corrective</option><option value="Project">Project</option></select></div>
-                            <div class="field-row"><div class="field-label" style="width: 50px;">Status:</div><select id="apm-c-status" class="field-input"><option value="">- Skip -</option><option value="Open">Open</option><option value="In Progress">In Progress</option></select></div>
+                            <div class="field-row"><div class="field-label" style="width: 50px;">Prob:</div><input type="text" id="apm-c-prob" class="field-input upper"></div>
+                            <div class="field-row"><div class="field-label" style="width: 50px;">Cause:</div><input type="text" id="apm-c-cause" class="field-input upper"></div>
                         </div>
                         <div style="flex: 1;">
-                            <div class="field-row"><div class="field-label" style="width: 50px;">Exec:</div><select id="apm-c-exec" class="field-input"><option value="">- Skip -</option><option value="EXDN">EXDN</option><option value="EXDB">EXDB</option><option value="EXMW">EXMW</option><option value="EXOPS">EXOPS</option><option value="EXSHUT">EXSHUT</option></select></div>
-                            <div class="field-row"><div class="field-label" style="width: 50px;">Safety:</div><select id="apm-c-safety" class="field-input"><option value="">- Skip -</option><option value="No">No</option><option value="Yes">Yes</option></select></div>
+                            <div class="field-row"><div class="field-label" style="width: 50px;">Fail:</div><input type="text" id="apm-c-fail" class="field-input upper"></div>
+                            <div class="field-row"><div class="field-label" style="width: 50px;">Assign:</div><input type="text" id="apm-c-assign" class="field-input upper"></div>
                         </div>
-                    </div>
-
-                    <div class="field-row" style="background: rgba(155, 89, 182, 0.15); border: 1px solid rgba(155, 89, 182, 0.4); padding: 8px; border-radius: 6px;">
-                        <div class="field-label" style="color:#c39bd3; font-weight:bold; width: 70px;">Checklists:</div>
-                        <select id="apm-c-loto-mode" class="field-input" style="flex: 1; padding: 4px; font-size: 11px;">
-                            <option value="none">- Skip LOTO -</option>
-                            <option value="yes">LOTO: Yes</option>
-                            <option value="no">LOTO: No</option>
-                        </select>
-                        <div style="font-size: 11px; color: #b0bec5; margin: 0 8px; white-space: nowrap; font-weight: bold;">PMs:</div>
-                        <input type="number" id="apm-c-pm-checks" class="field-input" min="0" placeholder="Qty" style="width: 50px; padding: 4px; font-size: 12px; text-align: center; font-weight: bold;">
-                    </div>
-
-                    <div style="display: flex; gap: 10px; margin-bottom: 10px;">
-                         <div style="flex: 1;">
-                             <div class="field-row"><div class="field-label" style="width: 50px;">Prob:</div><input type="text" id="apm-c-prob" class="field-input upper"></div>
-                             <div class="field-row"><div class="field-label" style="width: 50px;">Cause:</div><input type="text" id="apm-c-cause" class="field-input upper"></div>
-                         </div>
-                         <div style="flex: 1;">
-                             <div class="field-row"><div class="field-label" style="width: 50px;">Fail:</div><input type="text" id="apm-c-fail" class="field-input upper"></div>
-                             <div class="field-row"><div class="field-label" style="width: 50px;">Assign:</div><input type="text" id="apm-c-assign" class="field-input upper"></div>
-                         </div>
-                    </div>
-
-                    <div class="field-row"><div class="field-label" style="width: 80px;">Start / End:</div><input type="date" id="apm-c-start" style="flex: 1; padding:4px; font-size:11px;"><span style="display:inline-block; width:15px; text-align:center;">-</span><input type="date" id="apm-c-end" style="flex: 1; padding:4px; font-size:11px;"></div>
-                    <div class="field-row"><div class="field-label" style="width: 80px;">Comments:</div><input type="text" id="apm-c-close" class="field-input"></div>
                 </div>
 
-                <button id="apm-c-btn-generate" style="width:100%; background:#e74c3c; color:white; border:none; padding:12px; border-radius:6px; cursor:pointer; font-weight:bold; font-size:14px; transition: background 0.2s;">⚡ Generate New Record</button>
+                <div class="field-row"><div class="field-label" style="width: 80px;">Start / End:</div><input type="date" id="apm-c-start" style="flex: 1; padding:4px; font-size:11px;"><span style="display:inline-block; width:15px; text-align:center;">-</span><input type="date" id="apm-c-end" style="flex: 1; padding:4px; font-size:11px;"></div>
+                <div class="field-row"><div class="field-label" style="width: 80px;">Comments:</div><input type="text" id="apm-c-close" class="field-input"></div>
             </div>
 
-            <div id="apm-settings-fields">
-                <div style="display:flex; margin-bottom:10px; background:#22292f; border-radius:4px; overflow:hidden;">
-                    <div id="apm-s-tog-cols" style="flex:1; text-align:center; padding:8px; cursor:pointer; font-size:12px; font-weight:bold; background:#3498db; color:#fff;">Grid Columns</div>
-                    <div id="apm-s-tog-tabs" style="flex:1; text-align:center; padding:8px; cursor:pointer; font-size:12px; font-weight:bold; color:#7f8c8d;">Record Tabs</div>
+            <button id="apm-c-btn-generate" style="width:100%; background:#e74c3c; color:white; border:none; padding:12px; border-radius:6px; cursor:pointer; font-weight:bold; font-size:14px; transition: background 0.2s; display:none;">⚡ Generate New Record</button>
+        </div>
+
+        <div id="apm-settings-fields" style="display:none;">
+            <div style="display:flex; margin-bottom:10px; background:#22292f; border-radius:4px; overflow:hidden;">
+                <div id="apm-s-tog-cols" style="flex:1; text-align:center; padding:8px; cursor:pointer; font-size:12px; font-weight:bold; background:#3498db; color:#fff;">Grid Columns</div>
+                <div id="apm-s-tog-tabs" style="flex:1; text-align:center; padding:8px; cursor:pointer; font-size:12px; font-weight:bold; color:#7f8c8d;">Record Tabs</div>
+            </div>
+
+            <div style="color:#3498db; font-weight:bold; margin-bottom: 5px;" id="apm-s-title">Visual Order:</div>
+            <div style="font-size:11px; color:#aaa; margin-bottom:10px;">Drag and drop to reorder. Syncs automatically.</div>
+
+            <div id="apm-s-col-list" style="background:#22292f; border:1px solid #45535e; border-radius:4px; padding:5px; min-height:60px; max-height:220px; overflow-y:auto; margin-bottom:10px;">
                 </div>
 
-                <div style="color:#3498db; font-weight:bold; margin-bottom: 5px;" id="apm-s-title">Visual Order:</div>
-                <div style="font-size:11px; color:#aaa; margin-bottom:10px;">Drag and drop to reorder. Syncs automatically.</div>
+            <button id="apm-s-btn-save-settings" style="width:100%; background:#2ecc71; color:white; border:none; padding:12px; border-radius:6px; cursor:pointer; font-weight:bold; font-size:14px;">Save Layout Order</button>
+        </div>
 
-                <div id="apm-s-col-list" style="background:#22292f; border:1px solid #45535e; border-radius:4px; padding:5px; min-height:60px; max-height:220px; overflow-y:auto; margin-bottom:10px;">
-                    </div>
+        <div id="apm-help-fields" style="display:none; padding: 15px; background: #22292f; border-radius: 6px; font-size: 13px; color: #b0bec5; line-height: 1.6; border: 1px solid #45535e;">
+            <h4 style="color:#3498db; margin: 0 0 12px 0; font-size: 15px;">APM Master Tips & Instructions</h4>
+            <ul style="padding-left: 20px; margin: 0;">
+                <li style="margin-bottom: 10px;"><b style="color:white;">Auto-Fill Keys:</b> Link templates to Work Orders by entering keywords separated by commas (e.g., <code>pre-sort, repair</code>).</li>
+                <li style="margin-bottom: 10px;"><b style="color:white;">Creator:</b> Use this tab to manually generate new WO records with pre-filled fields.</li>
+                <li style="margin-bottom: 10px;"><b style="color:white;">Tab Order:</b> The script monitors grids and tabs. Drag to reorder and hit Save. The script injects tab order commands on page load for a quick and seamless change.</li>
+                <li style="margin-bottom: 0;"><b style="color:white;">Checklist Sync:</b> PM quantity auto-completes the specified number of lines on the 10-Tech tab.</li>
+            </ul>
+        </div>
 
-                <button id="apm-s-btn-save-settings" style="width:100%; background:#2ecc71; color:white; border:none; padding:12px; border-radius:6px; cursor:pointer; font-weight:bold; font-size:14px;">Save Layout Order</button>
-            </div>
+        <div style="margin-top: 15px; text-align: center;">
+            <span id="apm-c-btn-help" style="cursor: pointer; color: #7f8c8d; font-size: 11px; text-decoration: underline;">Toggle Help & Tips</span>
+        </div>
 
-            <div id="apm-help-fields" style="display:none; padding: 10px; background: #22292f; border-radius: 6px; font-size: 12px; color: #b0bec5; line-height: 1.5;">
-                <h4 style="color:#3498db; margin: 0 0 10px 0;">APM Master Tips & Instructions</h4>
-                <ul style="padding-left: 20px; margin: 0;">
-                    <li style="margin-bottom: 8px;"><b style="color:white;">Tab Order:</b> The script constantly monitors EAM grids and tabs. Drag the items to match your preferred layout and hit Save. The script will force EAM to obey this order.</li>
-                    <li style="margin-bottom: 8px;"><b style="color:white;">Auto-Fill Keys:</b> To link a template to a Work Order, enter keywords separated by commas in the 'WO Title' field (e.g., <code>pre-sort, repair, filter</code>).</li>
-                    <li style="margin-bottom: 8px;"><b style="color:white;">Checklist Sync:</b> Select LOTO Yes/No to bypass the 1-Tech prompt. Entering a 'PMs' quantity forces the engine to auto-complete that exact number of lines on the 10-Tech activity tab.</li>
-                    <li><b style="color:white;">Hotkeys:</b> If your global keyboard shortcuts stop working, ensure you click outside of EAM dropdown menus to release the focus hook.</li>
-                </ul>
-            </div>
+        <div id="apm-update-container" style="display:none; margin-top: 15px; text-align: center;">
+            <a href="https://raw.githubusercontent.com/jaker788-create/APM-Master/main/creator.user.js" target="_blank" style="display:inline-block; background:#f39c12; color:white; padding:8px 15px; border-radius:4px; font-weight:bold; text-decoration:none; font-size:13px; transition: background 0.2s; box-shadow: 0 2px 5px rgba(0,0,0,0.2);">✨ Update Available</a>
+        </div>
+    `;
+    document.body.appendChild(panel);
 
-            <div style="margin-top: 15px; text-align: center;">
-                <span id="apm-c-btn-help" style="cursor: pointer; color: #7f8c8d; font-size: 11px; text-decoration: underline;">Toggle Help & Tips</span>
-            </div>
+    // Interaction Logic
+    document.getElementById('apm-c-btn-close').onclick = () => { panel.style.display = 'none'; };
 
-            <div id="apm-update-container" style="display:none; margin-top: 15px; text-align: center;">
-                <a href="https://raw.githubusercontent.com/jaker788-create/APM-Master/main/creator.user.js" target="_blank" style="display:inline-block; background:#f39c12; color:white; padding:8px 15px; border-radius:4px; font-weight:bold; text-decoration:none; font-size:13px; transition: background 0.2s; box-shadow: 0 2px 5px rgba(0,0,0,0.2);">✨ Update Available</a>
-            </div>
-        `;
-        document.body.appendChild(panel);
+    const selectEl = document.getElementById('apm-c-preset-select');
+    const mainFields = document.getElementById('apm-main-fields');
+    const settingsFields = document.getElementById('apm-settings-fields');
+    const helpFields = document.getElementById('apm-help-fields');
 
-        // Interaction Logic
-        document.getElementById('apm-c-btn-close').onclick = () => { panel.style.display = 'none'; };
+    const tabCreator = document.getElementById('tab-creator');
+    const tabAutofill = document.getElementById('tab-autofill');
+    const tabSettings = document.getElementById('tab-settings');
+    const rowKw = document.getElementById('row-keyword');
+    const btnGen = document.getElementById('apm-c-btn-generate');
 
-        const selectEl = document.getElementById('apm-c-preset-select');
-        const mainFields = document.getElementById('apm-main-fields');
-        const settingsFields = document.getElementById('apm-settings-fields');
-        const helpFields = document.getElementById('apm-help-fields');
+    const togCols = document.getElementById('apm-s-tog-cols');
+    const togTabs = document.getElementById('apm-s-tog-tabs');
+    const colListContainer = document.getElementById('apm-s-col-list');
 
-        const tabCreator = document.getElementById('tab-creator');
-        const tabAutofill = document.getElementById('tab-autofill');
-        const tabSettings = document.getElementById('tab-settings');
-        const rowKw = document.getElementById('row-keyword');
-        const btnGen = document.getElementById('apm-c-btn-generate');
+    // Help Toggle (View Swap)
+    document.getElementById('apm-c-btn-help').onclick = () => {
+        isHelpOpen = !isHelpOpen;
+        const helpBtn = document.getElementById('apm-c-btn-help');
+        const tabContainer = document.getElementById('apm-tab-container');
 
-        const togCols = document.getElementById('apm-s-tog-cols');
-        const togTabs = document.getElementById('apm-s-tog-tabs');
-        const colListContainer = document.getElementById('apm-s-col-list');
+        if (isHelpOpen) {
+            mainFields.style.display = 'none';
+            settingsFields.style.display = 'none';
+            tabContainer.style.display = 'none';
 
-        // Help Toggle
-        document.getElementById('apm-c-btn-help').onclick = () => {
-            helpFields.style.display = helpFields.style.display === 'none' ? 'block' : 'none';
-        };
-
-        const resetTabs = () => {
-            tabCreator.style.background = 'transparent'; tabCreator.className = 'apm-tab-btn apm-tab-inactive';
-            tabAutofill.style.background = 'transparent'; tabAutofill.className = 'apm-tab-btn apm-tab-inactive';
-            tabSettings.style.background = 'transparent'; tabSettings.className = 'apm-tab-btn apm-tab-inactive';
-            helpFields.style.display = 'none';
-        };
-
-        const renderPresetOptions = () => {
-            selectEl.innerHTML = '';
-            const targetList = activeTab === 'creator' ? presets.creator : presets.autofill;
-            for (const pName in targetList) {
-                const opt = document.createElement('option');
-                opt.value = pName; opt.textContent = pName;
-                selectEl.appendChild(opt);
-            }
-            if (Object.keys(targetList).length > 0) {
-                applyPresetData(targetList[Object.keys(targetList)[0]]);
-            } else {
-                applyPresetData({});
-            }
-        };
-
-        // --- Probing Functions ---
-        const probeExtGridColumns = () => {
-            let cols = [];
-            const allDocs = [window.top, window];
-            document.querySelectorAll('iframe').forEach(f => {
-                try { if (f.contentWindow && f.contentWindow.Ext) allDocs.push(f.contentWindow); } catch(e){}
-            });
-
-            for (const win of allDocs) {
-                if (win.Ext && win.Ext.ComponentQuery) {
-                    const grids = win.Ext.ComponentQuery.query('gridpanel');
-                    const mainGrid = grids.find(g => g.columns && g.columns.length > 20 && g.rendered);
-                    if (mainGrid && mainGrid.headerCt) {
-                        mainGrid.headerCt.items.items.forEach(col => {
-                            if (col.rendered && (!col.isHidden || !col.isHidden()) && col.dataIndex) {
-                                let cleanText = (col.text || col.dataIndex).replace(/<[^>]*>?/gm, '').trim();
-                                if (cleanText && cleanText !== '&#160;') {
-                                    cols.push({ index: col.dataIndex, text: cleanText });
-                                }
-                            }
-                        });
-                        break;
-                    }
-                }
-            }
-            return cols;
-        };
-
-        const probeExtTabs = () => {
-            let tabs = [];
-            const allDocs = [window.top, window];
-            document.querySelectorAll('iframe').forEach(f => {
-                try { if (f.contentWindow && f.contentWindow.Ext) allDocs.push(f.contentWindow); } catch(e){}
-            });
-
-            for (const win of allDocs) {
-                if (win.Ext && win.Ext.ComponentQuery) {
-                    const tabPanels = win.Ext.ComponentQuery.query('tabpanel');
-                    const mainTabPanel = tabPanels.find(tp => tp.rendered && tp.items && tp.items.items.length > 3 &&
-                        tp.items.items.some(t => {
-                            let txt = t.title || t.text || '';
-                            return txt.includes('Activities') || txt.includes('Checklist') || txt.includes('Comments');
-                        }));
-
-                    if (mainTabPanel) {
-                        mainTabPanel.items.items.forEach(t => {
-                            if (!t.tab || (typeof t.tab.isHidden === 'function' && t.tab.isHidden())) return;
-                            let cleanText = (t.title || t.text || '').replace(/<[^>]*>?/gm, '').trim();
-                            if (cleanText && cleanText !== '&#160;') {
-                                tabs.push({ index: cleanText, text: cleanText });
-                            }
-                        });
-                        break;
-                    }
-                }
-            }
-            return tabs;
-        };
-
-        const renderDragList = (itemsArray, emptyMsg) => {
-            colListContainer.innerHTML = '';
-            if (itemsArray.length === 0) {
-                colListContainer.innerHTML = `<div style="color:#7f8c8d; text-align:center; padding:10px;">${emptyMsg}</div>`;
-                return;
-            }
-
-            itemsArray.forEach(c => {
-                const item = document.createElement('div');
-                item.draggable = true;
-                item.dataset.index = c.index;
-                item.className = 'apm-col-item';
-                item.innerHTML = `<span><b style="color:#3498db;">☰</b> &nbsp; ${c.text}</span> <span style="color:#7f8c8d; font-size:10px;">[${settingsMode === 'cols' ? c.index : 'Tab'}]</span>`;
-
-                item.ondragstart = (e) => {
-                    e.dataTransfer.setData('text/plain', '');
-                    item.classList.add('dragging');
-                };
-                item.ondragend = () => { item.classList.remove('dragging'); };
-                colListContainer.appendChild(item);
-            });
-        };
-
-        colListContainer.ondragover = (e) => {
-            e.preventDefault();
-            const dragging = document.querySelector('.dragging');
-            if (!dragging) return;
-
-            const siblings = [...colListContainer.querySelectorAll('.apm-col-item:not(.dragging)')];
-            const nextSibling = siblings.find(sibling => {
-                const box = sibling.getBoundingClientRect();
-                return e.clientY <= box.top + box.height / 2;
-            });
-
-            if (nextSibling) { colListContainer.insertBefore(dragging, nextSibling); }
-            else { colListContainer.appendChild(dragging); }
-        };
-
-        const performAutoFetch = () => {
-            if (settingsMode === 'cols') {
-                const cols = probeExtGridColumns();
-                renderDragList(cols, 'No grid found. Open the Work Orders screen.');
-            } else {
-                const tabs = probeExtTabs();
-                renderDragList(tabs, 'No record tabs found. Open a Work Order.');
-            }
-        };
-
-        const loadSettingsView = () => {
-            if (settingsMode === 'cols') {
-                togCols.style.background = '#3498db'; togCols.style.color = '#fff';
-                togTabs.style.background = 'transparent'; togTabs.style.color = '#7f8c8d';
-            } else {
-                togTabs.style.background = '#3498db'; togTabs.style.color = '#fff';
-                togCols.style.background = 'transparent'; togCols.style.color = '#7f8c8d';
-            }
-            performAutoFetch();
-        };
-
-        togCols.onclick = () => { settingsMode = 'cols'; loadSettingsView(); };
-        togTabs.onclick = () => { settingsMode = 'tabs'; loadSettingsView(); };
-
-        tabCreator.onclick = () => {
-            activeTab = 'creator';
-            resetTabs(); tabCreator.className = 'apm-tab-btn apm-tab-active-creator';
-            mainFields.style.display = 'block'; settingsFields.style.display = 'none';
-            rowKw.style.display = 'none'; btnGen.style.display = 'block';
-            renderPresetOptions();
-        };
-
-        tabAutofill.onclick = () => {
-            activeTab = 'autofill';
-            resetTabs(); tabAutofill.className = 'apm-tab-btn apm-tab-active-autofill';
-            mainFields.style.display = 'block'; settingsFields.style.display = 'none';
-            rowKw.style.display = 'block'; btnGen.style.display = 'none';
-            renderPresetOptions();
-        };
-
-        tabSettings.onclick = () => {
-            activeTab = 'settings';
-            resetTabs(); tabSettings.className = 'apm-tab-btn apm-tab-active-autofill';
-            mainFields.style.display = 'none'; settingsFields.style.display = 'block';
-            loadSettingsView();
-        };
-
-        document.getElementById('apm-c-btn-save').onclick = () => {
-            const targetList = activeTab === 'creator' ? presets.creator : presets.autofill;
-            if (selectEl.value) {
-                targetList[selectEl.value] = getCurrentFormData();
-                savePresets();
-            }
-        };
-
-        document.getElementById('apm-c-btn-new').onclick = () => {
-            const name = prompt('New preset name:');
-            if (name && name.trim()) {
-                const targetList = activeTab === 'creator' ? presets.creator : presets.autofill;
-                targetList[name.trim()] = getCurrentFormData();
-                savePresets(); renderPresetOptions();
-                selectEl.value = name.trim();
-            }
-        };
-
-        document.getElementById('apm-c-btn-del').onclick = () => {
-            const targetList = activeTab === 'creator' ? presets.creator : presets.autofill;
-            if (selectEl.value && confirm(`Delete preset "${selectEl.value}"?`)) {
-                delete targetList[selectEl.value];
-                savePresets(); renderPresetOptions();
-            }
-        };
-
-        document.getElementById('apm-s-btn-save-settings').onclick = () => {
-            const items = [...colListContainer.querySelectorAll('.apm-col-item')];
-            if (items.length > 0) {
-                const orderStr = items.map(el => el.dataset.index).join(', ');
-                if (settingsMode === 'cols') {
-                    presets.config.columnOrder = orderStr;
-                    setStatus('Grid Column order saved!', '#2ecc71');
-                } else {
-                    presets.config.tabOrder = orderStr;
-                    setStatus('Record Tab order saved!', '#2ecc71');
-                }
-                savePresets();
-            } else {
-                setStatus('No items to save.', '#e74c3c');
-            }
-        };
-
-        document.getElementById('apm-c-btn-generate').onclick = () => { if (!isRunning) executeCreatorFlow(); };
-
-        // Initialize Default View
-        if (activeTab === 'settings') {
-            tabSettings.onclick();
-        } else if (activeTab === 'creator') {
-            tabCreator.onclick();
+            helpFields.style.display = 'block';
+            helpBtn.textContent = '← Back to Tools';
+            helpBtn.style.color = '#3498db';
         } else {
-            tabAutofill.onclick();
+            resetTabs();
+            if (activeTab === 'autofill') tabAutofill.onclick();
+            else if (activeTab === 'creator') tabCreator.onclick();
+            else tabSettings.onclick();
+        }
+    };
+
+    const resetTabs = () => {
+        tabCreator.style.background = 'transparent'; tabCreator.className = 'apm-tab-btn apm-tab-inactive';
+        tabAutofill.style.background = 'transparent'; tabAutofill.className = 'apm-tab-btn apm-tab-inactive';
+        tabSettings.style.background = 'transparent'; tabSettings.className = 'apm-tab-btn apm-tab-inactive';
+
+        isHelpOpen = false;
+        helpFields.style.display = 'none';
+        document.getElementById('apm-tab-container').style.display = 'flex';
+        const helpBtn = document.getElementById('apm-c-btn-help');
+        helpBtn.textContent = 'Toggle Help & Tips';
+        helpBtn.style.color = '#7f8c8d';
+    };
+
+    const renderPresetOptions = () => {
+        selectEl.innerHTML = '';
+        const targetList = activeTab === 'creator' ? presets.creator : presets.autofill;
+        for (const pName in targetList) {
+            const opt = document.createElement('option');
+            opt.value = pName; opt.textContent = pName;
+            selectEl.appendChild(opt);
+        }
+        if (Object.keys(targetList).length > 0) {
+            applyPresetData(targetList[Object.keys(targetList)[0]]);
+        } else {
+            applyPresetData({});
+        }
+    };
+
+    // --- Probing Functions ---
+    const probeExtGridColumns = () => {
+        let cols = [];
+        const allDocs = [window.top, window];
+        document.querySelectorAll('iframe').forEach(f => {
+            try { if (f.contentWindow && f.contentWindow.Ext) allDocs.push(f.contentWindow); } catch(e){}
+        });
+
+        for (const win of allDocs) {
+            if (win.Ext && win.Ext.ComponentQuery) {
+                const grids = win.Ext.ComponentQuery.query('gridpanel');
+                const mainGrid = grids.find(g => g.columns && g.columns.length > 20 && g.rendered);
+                if (mainGrid && mainGrid.headerCt) {
+                    mainGrid.headerCt.items.items.forEach(col => {
+                        if (col.rendered && (!col.isHidden || !col.isHidden()) && col.dataIndex) {
+                            let cleanText = (col.text || col.dataIndex).replace(/<[^>]*>?/gm, '').trim();
+                            if (cleanText && cleanText !== '&#160;') {
+                                cols.push({ index: col.dataIndex, text: cleanText });
+                            }
+                        }
+                    });
+                    break;
+                }
+            }
+        }
+        return cols;
+    };
+
+    const probeExtTabs = () => {
+        let tabs = [];
+        const allDocs = [window.top, window];
+        document.querySelectorAll('iframe').forEach(f => {
+            try { if (f.contentWindow && f.contentWindow.Ext) allDocs.push(f.contentWindow); } catch(e){}
+        });
+
+        for (const win of allDocs) {
+            if (win.Ext && win.Ext.ComponentQuery) {
+                const tabPanels = win.Ext.ComponentQuery.query('tabpanel');
+                const mainTabPanel = tabPanels.find(tp => tp.rendered && tp.items && tp.items.items.length > 3 &&
+                    tp.items.items.some(t => {
+                        let txt = t.title || t.text || '';
+                        return txt.includes('Activities') || txt.includes('Checklist') || txt.includes('Comments');
+                    }));
+
+                if (mainTabPanel) {
+                    mainTabPanel.items.items.forEach(t => {
+                        if (!t.tab || (typeof t.tab.isHidden === 'function' && t.tab.isHidden())) return;
+                        let cleanText = (t.title || t.text || '').replace(/<[^>]*>?/gm, '').trim();
+                        if (cleanText && cleanText !== '&#160;') {
+                            tabs.push({ index: cleanText, text: cleanText });
+                        }
+                    });
+                    break;
+                }
+            }
+        }
+        return tabs;
+    };
+
+    const renderDragList = (itemsArray, emptyMsg) => {
+        colListContainer.innerHTML = '';
+        if (itemsArray.length === 0) {
+            colListContainer.innerHTML = `<div style="color:#7f8c8d; text-align:center; padding:10px;">${emptyMsg}</div>`;
+            return;
         }
 
-        // Fire background update check
-        checkForUpdates();
+        itemsArray.forEach(c => {
+            const item = document.createElement('div');
+            item.draggable = true;
+            item.dataset.index = c.index;
+            item.className = 'apm-col-item';
+            item.innerHTML = `<span><b style="color:#3498db;">☰</b> &nbsp; ${c.text}</span> <span style="color:#7f8c8d; font-size:10px;">[${settingsMode === 'cols' ? c.index : 'Tab'}]</span>`;
+
+            item.ondragstart = (e) => {
+                e.dataTransfer.setData('text/plain', '');
+                item.classList.add('dragging');
+            };
+            item.ondragend = () => { item.classList.remove('dragging'); };
+            colListContainer.appendChild(item);
+        });
+    };
+
+    colListContainer.ondragover = (e) => {
+        e.preventDefault();
+        const dragging = document.querySelector('.dragging');
+        if (!dragging) return;
+
+        const siblings = [...colListContainer.querySelectorAll('.apm-col-item:not(.dragging)')];
+        const nextSibling = siblings.find(sibling => {
+            const box = sibling.getBoundingClientRect();
+            return e.clientY <= box.top + box.height / 2;
+        });
+
+        if (nextSibling) { colListContainer.insertBefore(dragging, nextSibling); }
+        else { colListContainer.appendChild(dragging); }
+    };
+
+    const performAutoFetch = () => {
+        if (settingsMode === 'cols') {
+            const cols = probeExtGridColumns();
+            renderDragList(cols, 'No grid found. Open the Work Orders screen.');
+        } else {
+            const tabs = probeExtTabs();
+            renderDragList(tabs, 'No record tabs found. Open a Work Order.');
+        }
+    };
+
+    const loadSettingsView = () => {
+        if (settingsMode === 'cols') {
+            togCols.style.background = '#3498db'; togCols.style.color = '#fff';
+            togTabs.style.background = 'transparent'; togTabs.style.color = '#7f8c8d';
+        } else {
+            togTabs.style.background = '#3498db'; togTabs.style.color = '#fff';
+            togCols.style.background = 'transparent'; togCols.style.color = '#7f8c8d';
+        }
+        performAutoFetch();
+    };
+
+    togCols.onclick = () => { settingsMode = 'cols'; loadSettingsView(); };
+    togTabs.onclick = () => { settingsMode = 'tabs'; loadSettingsView(); };
+
+    tabCreator.onclick = () => {
+        activeTab = 'creator';
+        resetTabs(); tabCreator.className = 'apm-tab-btn apm-tab-active-creator';
+        mainFields.style.display = 'block'; settingsFields.style.display = 'none';
+        rowKw.style.display = 'none'; btnGen.style.display = 'block';
+        renderPresetOptions();
+    };
+
+    tabAutofill.onclick = () => {
+        activeTab = 'autofill';
+        resetTabs(); tabAutofill.className = 'apm-tab-btn apm-tab-active-autofill';
+        mainFields.style.display = 'block'; settingsFields.style.display = 'none';
+        rowKw.style.display = 'block'; btnGen.style.display = 'none';
+        renderPresetOptions();
+    };
+
+    tabSettings.onclick = () => {
+        activeTab = 'settings';
+        resetTabs(); tabSettings.className = 'apm-tab-btn apm-tab-active-autofill';
+        mainFields.style.display = 'none'; settingsFields.style.display = 'block';
+        loadSettingsView();
+    };
+
+    document.getElementById('apm-c-btn-save').onclick = () => {
+        const targetList = activeTab === 'creator' ? presets.creator : presets.autofill;
+        if (selectEl.value) {
+            targetList[selectEl.value] = getCurrentFormData();
+            savePresets();
+        }
+    };
+
+    document.getElementById('apm-c-btn-new').onclick = () => {
+        const name = prompt('New preset name:');
+        if (name && name.trim()) {
+            const targetList = activeTab === 'creator' ? presets.creator : presets.autofill;
+            targetList[name.trim()] = getCurrentFormData();
+            savePresets(); renderPresetOptions();
+            selectEl.value = name.trim();
+        }
+    };
+
+    document.getElementById('apm-c-btn-del').onclick = () => {
+        const targetList = activeTab === 'creator' ? presets.creator : presets.autofill;
+        if (selectEl.value && confirm(`Delete preset "${selectEl.value}"?`)) {
+            delete targetList[selectEl.value];
+            savePresets(); renderPresetOptions();
+        }
+    };
+
+    document.getElementById('apm-s-btn-save-settings').onclick = () => {
+        const items = [...colListContainer.querySelectorAll('.apm-col-item')];
+        if (items.length > 0) {
+            const orderStr = items.map(el => el.dataset.index).join(', ');
+            if (settingsMode === 'cols') {
+                presets.config.columnOrder = orderStr;
+                setStatus('Grid Column order saved!', '#2ecc71');
+            } else {
+                presets.config.tabOrder = orderStr;
+                setStatus('Record Tab order saved!', '#2ecc71');
+            }
+            savePresets();
+        } else {
+            setStatus('No items to save.', '#e74c3c');
+        }
+    };
+
+    document.getElementById('apm-c-btn-generate').onclick = () => { if (!isRunning) executeCreatorFlow(); };
+
+    // Initialize Default View
+    if (activeTab === 'autofill') {
+        tabAutofill.onclick();
+    } else if (activeTab === 'creator') {
+        tabCreator.onclick();
+    } else {
+        tabSettings.onclick();
     }
+
+    // Fire background update check
+    checkForUpdates();
+}
 
     /** =========================
      * UI Customizations (Grid & Tabs)
@@ -1568,37 +1617,47 @@ async function executeAutoFillFlow(fallbackTitle) {
             try { if (f.contentDocument) allDocs.push(f.contentDocument); } catch(e){}
         });
 
-        // 1. Safely evaluate if Record View is visually active on the screen
+        // 1. Safely evaluate if Record View is visually active using ExtJS deep visibility
         let isRecordViewActive = false;
         let realWoTitle = "";
 
-        allDocs.forEach(d => {
-            if (!d) return;
-            const descInputs = d.querySelectorAll('input[name="description"]');
-            descInputs.forEach(el => {
-                const rect = el.getBoundingClientRect();
-                if (rect.width > 0 && rect.height > 0) {
+        const allWins = [window.top, window];
+        document.querySelectorAll('iframe').forEach(f => {
+            try { if (f.contentWindow) allWins.push(f.contentWindow); } catch(err){}
+        });
+
+        allWins.forEach(win => {
+            if (win.Ext && win.Ext.ComponentQuery) {
+                const forms = win.Ext.ComponentQuery.query('form');
+                // Use ExtJS native isVisible(true) for deep hierarchy checking
+                const rvForm = forms.find(f => f.id && f.id.includes('recordview') && typeof f.isVisible === 'function' && f.isVisible(true));
+
+                if (rvForm) {
                     isRecordViewActive = true;
-                    if (el.value) realWoTitle = el.value.trim().toLowerCase();
+                    // Extract value directly from the ExtJS model, completely bypassing DOM
+                    const descField = rvForm.getForm().findField('description');
+                    if (descField) {
+                        realWoTitle = (descField.getValue() || '').trim().toLowerCase();
+                    }
                 }
-            });
+            }
         });
 
         // 2. Main Trigger Loop
         allDocs.forEach(d => {
             if (!d) return;
 
+            // Global Purge: If not looking at Record View, destroy all autofill buttons instantly and abort
+            if (!isRecordViewActive || !realWoTitle) {
+                d.querySelectorAll('#apm-btn-do-autofill').forEach(btn => btn.remove());
+                return;
+            }
+
             const titles = d.querySelectorAll('.recorddesc');
             titles.forEach(titleEl => {
                 if (titleEl.getAttribute('aria-labelledby') && titleEl.getAttribute('aria-labelledby').includes('module_header')) {
                     const parent = titleEl.parentElement;
                     const existingBtn = parent.querySelector('#apm-btn-do-autofill');
-
-                    // If we are NOT visually looking at a Record View, execute a kill command on the button and skip
-                    if (!isRecordViewActive || !realWoTitle) {
-                        if (existingBtn) existingBtn.remove();
-                        return;
-                    }
 
                     // 3. Keyword Match Scanner
                     let hasMatch = false;
@@ -1646,6 +1705,7 @@ async function executeAutoFillFlow(fallbackTitle) {
         buildCreatorUI();
         injectCreatorBtn();
         injectAutoFillTriggers();
+        checkForUpdates()
 
         // Let the script autonomously search for and fix Grids and Tabs continuously
         applyGridConsistency();
@@ -1655,5 +1715,22 @@ async function executeAutoFillFlow(fallbackTitle) {
         applyPanelAutoClose()
 
     }, 1500);
+
+    /** =========================
+ * Window Resize Re-centering
+ * ========================= */
+window.addEventListener('resize', () => {
+    const panel = document.getElementById('apm-creator-panel');
+    if (panel && panel.style.display !== 'none') {
+        const vHeight = window.innerHeight;
+        const panelHeight = panel.offsetHeight;
+        const currentTop = parseInt(panel.style.top);
+
+        // If the bottom of the panel is now off-screen due to resize/zoom
+        if (currentTop + panelHeight > vHeight) {
+            panel.style.top = Math.max(10, vHeight - panelHeight - 20) + 'px';
+        }
+    }
+});
 
 })();
