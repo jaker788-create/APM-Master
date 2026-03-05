@@ -1,8 +1,8 @@
 // ==UserScript==
 // @name         APM Master: ColorCode & Nametags
 // @namespace    https://w.amazon.com/bin/view/Users/rosendah/APM-Master/
-// @version      3.10.1
-// @description  Full Restoration: ColorCode UI + Session Engine + Physical Linkifier.
+// @version      4.0.1
+// @description  Full Restoration: ColorCode UI + Session Engine + Physical Linkifier + Native Store Filtering.
 // @author       Jacob Rosendahl
 // @icon         https://media.licdn.com/dms/image/v2/D5603AQGdCV0_LQKRfQ/profile-displayphoto-scale_100_100/B56ZyZLvQ5HgAg-/0/1772096519061?e=1773878400&v=beta&t=eWO1Jiy0-WbzG_yBv-SBrmmsVOPMexF57-q1Xh_VXCk
 // @match        https://us1.eam.hxgnsmartcloud.com/*
@@ -15,10 +15,11 @@
 
 /* --------------------------------------------------------------------------
    RECENT FEATURES & BUG FIXES:
-   - v3.10.1 Bug Fix: Accidentally pushed test build with unfinish session snapshot and in app update
+   - v4.0.1 Feature: Internal update checker and notice in the menu
+   - v4.0.0 Feature: Upgraded Nametag filtering to use Native ExtJS Store filtering instead of CSS hiding.
    - v3.10.0 Feature: Changed theme apply to apply directly to memory rather than using a link hijack, more reliable and seamless
-   - v3.9.11 Feature: You can now click on any custom tags and it will hide all other rows in the grid withough that same tag,
-     had to abandon the CSS rendering for physical injection, slight but insignifigant performance hit. Row fill color is still a CSS overlay with HW accelaration.
+   - v3.9.11 Feature: You can now click on any custom tags and it will hide all other rows in the grid without that same tag,
+     had to abandon the CSS rendering for physical tag injection, slight but insignifigant performance hit. Row fill color is still a CSS overlay with HW accelaration.
    - v3.9.11 Bug Fix: After much trying, CSS stamping for links was abandoned due to reliability issues, its a small performance hit. Back to physical injection.
    - v3.9.0 UI/UX: Replaced the Uniform Highlight checkbox with a sleek toggle switch for Uniform vs. Alternating Shading.
    - v3.8.0 Feature: Added System Theme selector. Automatically injects &uitheme modifiers.
@@ -50,13 +51,14 @@
     let rules = JSON.parse(localStorage.getItem(STORAGE_KEY_RULES)) || [];
     let settings = JSON.parse(localStorage.getItem(STORAGE_KEY_SETTINGS)) || { uniformHighlight: false, theme: 'default' };
 
+    // Global state for toggling
+    window.activeNametagFilter = null; 
+    let footerObserver = null;
+
     /** =========================
      * 1. Theme Engine (Native Pre-Boot Hijack)
      * ========================= */
     (function enforceThemeNative() {
-        // Allow this to run inside EAM's iframes so the Grid and Record Views get themed
-
-        // Pull the desired theme directly from your existing settings
         let savedTheme = '';
         try {
             const savedSettings = JSON.parse(localStorage.getItem(STORAGE_KEY_SETTINGS)) || {};
@@ -65,25 +67,19 @@
             }
         } catch (e) {}
 
-        if (!savedTheme) return; // Exit if no custom theme is selected
+        if (!savedTheme) return;
 
-        // Guarantee global namespaces exist before EAM starts executing
         window.EAM = window.EAM || {};
         window.Ext = window.Ext || {};
 
-        // 1. Lock the CSS_PATH variable. EAM will request this specific CSS file natively.
         try {
             Object.defineProperty(window.EAM, 'CSS_PATH', {
-                configurable: true,
-                enumerable: true,
-                get: () => savedTheme,
-                set: () => {} // Silently reject any attempts by EAM to overwrite this
+                configurable: true, enumerable: true, get: () => savedTheme, set: () => {}
             });
         } catch (e) {
-            window.EAM.CSS_PATH = savedTheme; // Fallback
+            window.EAM.CSS_PATH = savedTheme;
         }
 
-        // 2. Intercept the ExtJS boot sequence and force it to use your theme's JSON manifest
         const originalBeforeLoad = window.Ext.beforeLoad;
         window.Ext.beforeLoad = function(tags) {
             window.Ext.manifest = 'eam/' + savedTheme + '.json';
@@ -93,7 +89,85 @@
         };
     })();
 
- /** =========================
+    /** =========================
+     * ExtJS Store & Footer Engine (v4.0)
+     * ========================= */
+    function getTargetContext() {
+        const allWins = [window, ...Array.from(document.querySelectorAll('iframe')).map(f => f.contentWindow)];
+        for (const win of allWins) {
+            try {
+                if (win.Ext && win.Ext.ComponentQuery) {
+                    const grid = win.Ext.ComponentQuery.query('gridpanel').find(g => 
+                        g.columns && g.columns.length > 20 && g.rendered && !g.isDestroyed
+                    );
+                    if (grid) return { win, doc: win.document, grid };
+                }
+            } catch (e) { continue; }
+        }
+        return null;
+    }
+
+    function forceFooterText(gridDom, count) {
+        const walk = document.createTreeWalker(gridDom, NodeFilter.SHOW_TEXT, {
+            acceptNode: function(node) {
+                if (/Records:\s*\d+\s*of\s*\d+/.test(node.nodeValue)) return NodeFilter.FILTER_ACCEPT;
+                return NodeFilter.FILTER_SKIP;
+            }
+        }, false);
+        let node;
+        while ((node = walk.nextNode())) node.nodeValue = `Records: ${count} of ${count}`;
+    }
+
+    function setupFooterSentinel(gridDom, count) {
+        if (footerObserver) footerObserver.disconnect();
+        footerObserver = new MutationObserver(() => {
+            if (window.activeNametagFilter) {
+                footerObserver.disconnect();
+                forceFooterText(gridDom, count);
+                footerObserver.observe(gridDom, { childList: true, subtree: true, characterData: true });
+            }
+        });
+        footerObserver.observe(gridDom, { childList: true, subtree: true, characterData: true });
+    }
+
+    function applyNametagFilter(kw) {
+        const ctx = getTargetContext();
+        if (!ctx) return;
+        
+        const { grid } = ctx;
+        const store = grid.getStore();
+        const gridDom = grid.getEl().dom;
+        
+        if (footerObserver) footerObserver.disconnect();
+        if (store._nativeGetTotalCount) store.getTotalCount = store._nativeGetTotalCount;
+        
+        store.clearFilter();
+        
+        if (!kw) {
+            const realCount = store.getCount();
+            forceFooterText(gridDom, realCount);
+            if (grid.view && grid.view.el) grid.view.el.setScrollTop(0);
+            return;
+        }
+        
+        const searchStr = kw.toLowerCase();
+        store.filterBy(record => {
+            // Flatten all data values in the row to perfectly mimic the old CSS search
+            const values = Object.values(record.data).map(v => v ? String(v).toLowerCase() : '');
+            return values.some(v => v.includes(searchStr));
+        });
+        
+        const count = store.getCount();
+        if (!store._nativeGetTotalCount) store._nativeGetTotalCount = store.getTotalCount;
+        store.getTotalCount = function() { return count; };
+        
+        forceFooterText(gridDom, count);
+        setupFooterSentinel(gridDom, count);
+        
+        if (grid.view && grid.view.el) grid.view.el.setScrollTop(0);
+    }
+
+    /** =========================
      * 4. Main Initialization & UI
      * ========================= */
     document.addEventListener('DOMContentLoaded', () => {
@@ -163,10 +237,6 @@
         `;
         document.head.appendChild(style);
 
-        let activeFilterStyle = document.createElement('style');
-        activeFilterStyle.id = 'apm-filter-style';
-        document.head.appendChild(activeFilterStyle);
-
         if (window.self === window.top) {
             let filterBanner = document.createElement('div');
             filterBanner.id = 'apm-filter-banner';
@@ -176,7 +246,7 @@
         window.addEventListener('message', (e) => {
             if (e.data.type === 'APM_SET_FILTER') {
                 const kw = e.data.kw;
-                activeFilterStyle.innerHTML = kw ? `.x-grid-item:not([data-apm-row-text*="${kw.replace(/"/g, '\\"')}"]) { display: none !important; }` : '';
+                window.activeNametagFilter = kw; // Sync state locally across all frames
 
                 if (window.self === window.top) {
                     const banner = document.getElementById('apm-filter-banner');
@@ -186,6 +256,11 @@
                     } else {
                         banner.style.display = 'none';
                     }
+                    
+                    // The top window orchestrates the Store logic natively
+                    applyNametagFilter(kw);
+
+                    // Broadcast down so all frames know the active keyword (for toggle logic)
                     document.querySelectorAll('iframe').forEach(f => {
                         try { if (f.contentWindow) f.contentWindow.postMessage(e.data, '*'); } catch(err){}
                     });
@@ -236,7 +311,6 @@
         function processGrid() {
             if (observer) observer.disconnect();
 
-            // 1. Helper defined globally for this function so both blocks can use it
             const buildSafeWoUrl = (woNum) => {
                 const host = window.location.hostname;
                 let url = `https://${host}/web/base/logindisp?tenant=${LINK_CONFIG.tenant}&FROMEMAIL=YES&SYSTEM_FUNCTION_NAME=${LINK_CONFIG.userFuncName}&USER_FUNCTION_NAME=${LINK_CONFIG.userFuncName}&workordernum=${woNum}`;
@@ -254,14 +328,12 @@
                     let colorRuleApplied = false;
                     const cells = row.querySelectorAll('.x-grid-cell-inner');
 
-                    // Clean Orphans
                     row.querySelectorAll('.apm-nametag').forEach(tag => {
                         const kw = tag.getAttribute('data-filter-kw');
                         const isStillValid = rules.some(r => r.search.toLowerCase() === kw && r.showTag && lowerText.includes(kw));
                         if (!isStillValid) tag.remove();
                     });
 
-                    // Apply active rules
                     for (let rule of rules) {
                         const searchStr = rule.search.toLowerCase();
 
@@ -283,7 +355,7 @@
                                             t.className = 'apm-nametag';
                                             t.style.backgroundColor = `var(--cc-color-${safeId})`;
                                             t.innerHTML = formattedTagText;
-                                            t.title = `Click to show "${rule.search}" only`;
+                                            t.title = `Click to show "${rule.search}" only (Click again to undo)`;
                                             t.setAttribute('data-filter-kw', searchStr);
                                             cell.appendChild(t);
                                         } else {
@@ -297,7 +369,6 @@
                     }
                 } catch (e) { }
 
-                // Physical Linkifier (Grid)
                 try {
                     row.querySelectorAll('.x-grid-cell-inner').forEach(cell => {
                         if (cell.hasAttribute('data-apm-linkified')) return;
@@ -335,7 +406,6 @@
                 } catch (e) { }
             });
 
-            // Physical Linkifier (Headers)
             try {
                 document.querySelectorAll('span.recordcode').forEach(el => {
                     if (el.hasAttribute('data-wo-num')) return;
@@ -387,7 +457,14 @@
                 e.stopPropagation();
             } else if (e.target.classList.contains('apm-nametag')) {
                 e.preventDefault(); e.stopPropagation();
-                triggerFilter(e.target.getAttribute('data-filter-kw'));
+                const clickedKw = e.target.getAttribute('data-filter-kw');
+                
+                // Toggle Logic: If it's already active, send null to clear it. Otherwise, apply it.
+                if (window.activeNametagFilter === clickedKw) {
+                    triggerFilter(null); 
+                } else {
+                    triggerFilter(clickedKw); 
+                }
             } else if (e.target.id === 'apm-filter-banner') {
                 e.preventDefault(); e.stopPropagation();
                 triggerFilter(null);
@@ -406,6 +483,45 @@
             document.getElementById('cc-fill').checked = false;
         }
 
+/** =========================
+         * GitHub Update Checker
+         * ========================= */
+        const NAMETAG_VERSION = '4.0.1'; // MUST MATCH YOUR SCRIPT HEADER VERSION
+
+        function isNewerVersion(oldVer, newVer) {
+            const oldParts = oldVer.split('.').map(Number);
+            const newParts = newVer.split('.').map(Number);
+            for (let i = 0; i < Math.max(oldParts.length, newParts.length); i++) {
+                const o = oldParts[i] || 0;
+                const n = newParts[i] || 0;
+                if (n > o) return true;
+                if (n < o) return false;
+            }
+            return false;
+        }
+
+        function autoCheckUpdate() {
+            if (window._apmColorCodeUpdateChecked) return;
+            window._apmColorCodeUpdateChecked = true;
+
+            fetch('https://raw.githubusercontent.com/jaker788-create/APM-Master/main/nametag.user.js')
+                .then(response => response.text())
+                .then(text => {
+                    const match = text.match(/\/\/\s*@version\s+([0-9\.]+)/);
+                    if (match && match[1]) {
+                        const remoteVersion = match[1];
+                        if (isNewerVersion(NAMETAG_VERSION, remoteVersion)) {
+                            const updateContainer = document.getElementById('cc-update-container');
+                            if (updateContainer) updateContainer.style.display = 'block';
+                            console.log(`[ColorCode] Update available! Current: ${NAMETAG_VERSION}, Remote: ${remoteVersion}`);
+                        }
+                    }
+                }).catch(e => console.warn('[ColorCode] Update check failed silently.', e));
+        }
+
+        /** =========================
+         * Menu Builder & Event Binding
+         * ========================= */
         function buildMenu() {
             if (window.self !== window.top || document.getElementById('apm-colorcode-panel')) return;
             const panel = document.createElement('div');
@@ -463,7 +579,7 @@
 
                 <div id="cc-guide-container" style="display:none; max-height: 380px; overflow-y: auto; padding-right: 6px;">
                     <p>This tool scans your grid for specific keywords. When it finds a match, it highlights the row or injects a nametag.</p>
-                    <h4>1. Filtering</h4><ul><li>Click any injected nametag to instantly filter the grid to show only rows matching that keyword.</li><li>Click the red warning banner at the top to clear the filter.</li></ul>
+                    <h4>1. Filtering</h4><ul><li>Click any injected nametag to instantly filter the grid to show only rows matching that keyword. Click it again to toggle the filter off.</li><li>Click the red warning banner at the top to clear the filter.</li></ul>
                     <h4>2. Row Backgrounds & Priority</h4><ul><li>Check <strong>Fill</strong> to color the background of the row.</li><li>Use <strong>▲ / ▼</strong> to move important rules to the top (highest rule wins the color).</li></ul>
                     <h4>3. The Linkifier</h4><ul><li>Click WO numbers to open them. Click the space <em>next</em> to the number to instantly copy the link.</li></ul>
                 </div>
@@ -472,6 +588,10 @@
                     <button id="cc-import-btn" class="cc-footer-btn" title="Paste a config code from a teammate">📥 Import</button>
                     <button id="cc-help-btn" class="cc-footer-btn" style="background:transparent; color:#3498db; border:1px solid #3498db; width: 110px;">ℹ️ Help & Tips</button>
                     <button id="cc-export-btn" class="cc-footer-btn" title="Copy your config code to the clipboard">📤 Export</button>
+                </div>
+                
+                <div id="cc-update-container" style="display:none; margin-top: 10px; text-align: center;">
+                    <a href="https://raw.githubusercontent.com/jaker788-create/APM-Master/main/nametag.user.js" target="_blank" style="display:inline-block; width: 100%; box-sizing: border-box; background:#f39c12; color:white; padding:6px 12px; border-radius:4px; font-weight:bold; text-decoration:none; font-size:12px; transition: background 0.2s; box-shadow: 0 2px 5px rgba(0,0,0,0.2);">✨ Update Available</a>
                 </div>
             `;
             document.body.appendChild(panel);
@@ -672,7 +792,7 @@
         });
         observer.observe(document.body, { childList: true, subtree: true });
 
-        // Trigger background update check on load
-        autoCheckUpdate();
+        // Trigger background update check if the function exists
+        if (typeof autoCheckUpdate === 'function') autoCheckUpdate();
     });
 })();
