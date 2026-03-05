@@ -52,7 +52,7 @@
     let settings = JSON.parse(localStorage.getItem(STORAGE_KEY_SETTINGS)) || { uniformHighlight: false, theme: 'default' };
 
     // Global state for toggling
-    window.activeNametagFilter = null; 
+    window.activeNametagFilter = null;
     let footerObserver = null;
 
     /** =========================
@@ -97,7 +97,7 @@
         for (const win of allWins) {
             try {
                 if (win.Ext && win.Ext.ComponentQuery) {
-                    const grid = win.Ext.ComponentQuery.query('gridpanel').find(g => 
+                    const grid = win.Ext.ComponentQuery.query('gridpanel').find(g =>
                         g.columns && g.columns.length > 20 && g.rendered && !g.isDestroyed
                     );
                     if (grid) return { win, doc: win.document, grid };
@@ -133,37 +133,37 @@
     function applyNametagFilter(kw) {
         const ctx = getTargetContext();
         if (!ctx) return;
-        
+
         const { grid } = ctx;
         const store = grid.getStore();
         const gridDom = grid.getEl().dom;
-        
+
         if (footerObserver) footerObserver.disconnect();
         if (store._nativeGetTotalCount) store.getTotalCount = store._nativeGetTotalCount;
-        
+
         store.clearFilter();
-        
+
         if (!kw) {
             const realCount = store.getCount();
             forceFooterText(gridDom, realCount);
             if (grid.view && grid.view.el) grid.view.el.setScrollTop(0);
             return;
         }
-        
+
         const searchStr = kw.toLowerCase();
         store.filterBy(record => {
             // Flatten all data values in the row to perfectly mimic the old CSS search
             const values = Object.values(record.data).map(v => v ? String(v).toLowerCase() : '');
             return values.some(v => v.includes(searchStr));
         });
-        
+
         const count = store.getCount();
         if (!store._nativeGetTotalCount) store._nativeGetTotalCount = store.getTotalCount;
         store.getTotalCount = function() { return count; };
-        
+
         forceFooterText(gridDom, count);
         setupFooterSentinel(gridDom, count);
-        
+
         if (grid.view && grid.view.el) grid.view.el.setScrollTop(0);
     }
 
@@ -256,7 +256,7 @@
                     } else {
                         banner.style.display = 'none';
                     }
-                    
+
                     // The top window orchestrates the Store logic natively
                     applyNametagFilter(kw);
 
@@ -458,12 +458,12 @@
             } else if (e.target.classList.contains('apm-nametag')) {
                 e.preventDefault(); e.stopPropagation();
                 const clickedKw = e.target.getAttribute('data-filter-kw');
-                
+
                 // Toggle Logic: If it's already active, send null to clear it. Otherwise, apply it.
                 if (window.activeNametagFilter === clickedKw) {
-                    triggerFilter(null); 
+                    triggerFilter(null);
                 } else {
-                    triggerFilter(clickedKw); 
+                    triggerFilter(clickedKw);
                 }
             } else if (e.target.id === 'apm-filter-banner') {
                 e.preventDefault(); e.stopPropagation();
@@ -483,7 +483,7 @@
             document.getElementById('cc-fill').checked = false;
         }
 
-/** =========================
+        /** =========================
          * GitHub Update Checker
          * ========================= */
         const NAMETAG_VERSION = '4.0.1'; // MUST MATCH YOUR SCRIPT HEADER VERSION
@@ -511,9 +511,14 @@
                     if (match && match[1]) {
                         const remoteVersion = match[1];
                         if (isNewerVersion(NAMETAG_VERSION, remoteVersion)) {
+                            console.log(`[ColorCode] Update available! Current: ${NAMETAG_VERSION}, Remote: ${remoteVersion}`);
+
+                            // 1. Set global flag in case menu isn't built yet
+                            window._apmColorCodeHasUpdate = true;
+
+                            // 2. Unhide immediately if menu is already built
                             const updateContainer = document.getElementById('cc-update-container');
                             if (updateContainer) updateContainer.style.display = 'block';
-                            console.log(`[ColorCode] Update available! Current: ${NAMETAG_VERSION}, Remote: ${remoteVersion}`);
                         }
                     }
                 }).catch(e => console.warn('[ColorCode] Update check failed silently.', e));
@@ -526,6 +531,10 @@
             if (window.self !== window.top || document.getElementById('apm-colorcode-panel')) return;
             const panel = document.createElement('div');
             panel.id = 'apm-colorcode-panel';
+
+            // Read global flag to determine initial visibility
+            const updateDisplay = window._apmColorCodeHasUpdate ? 'block' : 'none';
+
             panel.innerHTML = `
                 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px; border-bottom: 1px solid #4a5a6a; padding-bottom: 10px;">
                     <h4 style="margin:0; font-size:16px; color:#ffffff; font-weight: normal;">ColorCode & <span style="color:#1abc9c; font-weight: bold;">Nametags</span> 🎨</h4>
@@ -589,8 +598,8 @@
                     <button id="cc-help-btn" class="cc-footer-btn" style="background:transparent; color:#3498db; border:1px solid #3498db; width: 110px;">ℹ️ Help & Tips</button>
                     <button id="cc-export-btn" class="cc-footer-btn" title="Copy your config code to the clipboard">📤 Export</button>
                 </div>
-                
-                <div id="cc-update-container" style="display:none; margin-top: 10px; text-align: center;">
+
+                <div id="cc-update-container" style="display:${updateDisplay}; margin-top: 10px; text-align: center;">
                     <a href="https://raw.githubusercontent.com/jaker788-create/APM-Master/main/nametag.user.js" target="_blank" style="display:inline-block; width: 100%; box-sizing: border-box; background:#f39c12; color:white; padding:6px 12px; border-radius:4px; font-weight:bold; text-decoration:none; font-size:12px; transition: background 0.2s; box-shadow: 0 2px 5px rgba(0,0,0,0.2);">✨ Update Available</a>
                 </div>
             `;
