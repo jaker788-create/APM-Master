@@ -1,23 +1,25 @@
 // ==UserScript==
 // @name         APM Master: ColorCode & Nametags
 // @namespace    https://w.amazon.com/bin/view/Users/rosendah/APM-Master/
-// @version      3.9.13
-// @description  Physical Icon Injection + Zero-Math Hitboxes.
+// @version      3.10.1
+// @description  Full Restoration: ColorCode UI + Session Engine + Physical Linkifier.
 // @author       Jacob Rosendahl
 // @icon         https://media.licdn.com/dms/image/v2/D5603AQGdCV0_LQKRfQ/profile-displayphoto-scale_100_100/B56ZyZLvQ5HgAg-/0/1772096519061?e=1773878400&v=beta&t=eWO1Jiy0-WbzG_yBv-SBrmmsVOPMexF57-q1Xh_VXCk
 // @match        https://us1.eam.hxgnsmartcloud.com/*
 // @match        https://eu1.eam.hxgnsmartcloud.com/*
+// @updateURL    https://drive.corp.amazon.com/documents/rosendah@/greasemonkey_scripts/APM-Master/nametag.user.js
+// @downloadURL  https://drive.corp.amazon.com/documents/rosendah@/greasemonkey_scripts/APM-Master/nametag.user.js
 // @run-at       document-start
 // @grant        none
 // ==/UserScript==
 
 /* --------------------------------------------------------------------------
    RECENT FEATURES & BUG FIXES:
+   - v3.10.1 Bug Fix: Accidentally pushed test build with unfinish session snapshot and in app update
+   - v3.10.0 Feature: Changed theme apply to apply directly to memory rather than using a link hijack, more reliable and seamless
    - v3.9.11 Feature: You can now click on any custom tags and it will hide all other rows in the grid withough that same tag,
      had to abandon the CSS rendering for physical injection, slight but insignifigant performance hit. Row fill color is still a CSS overlay with HW accelaration.
    - v3.9.11 Bug Fix: After much trying, CSS stamping for links was abandoned due to reliability issues, its a small performance hit. Back to physical injection.
-   - v3.9.1  Bug Fix: Fixed the theme injection to work on all routes getting to APM that I know of with a intercept, inject,
-     and redirect and session store 10 sec timeout to prevent infinite redirect loop.
    - v3.9.0 UI/UX: Replaced the Uniform Highlight checkbox with a sleek toggle switch for Uniform vs. Alternating Shading.
    - v3.8.0 Feature: Added System Theme selector. Automatically injects &uitheme modifiers.
    - v3.5.0 Feature: Integrated a "Help & Tips" guide directly into the UI.
@@ -36,6 +38,9 @@
 
     const STORAGE_KEY_RULES = 'apm_colorcode_rules';
     const STORAGE_KEY_SETTINGS = 'apm_colorcode_settings';
+    const STORAGE_KEY_SESSION = 'apm_session_snapshot';
+    const TAB_ID = Date.now() + Math.random().toString(36).substr(2, 9);
+
     const LINK_CONFIG = {
         tenant: "AMAZONRMENA_PRD",
         userFuncName: "WSJOBS",
@@ -46,84 +51,55 @@
     let settings = JSON.parse(localStorage.getItem(STORAGE_KEY_SETTINGS)) || { uniformHighlight: false, theme: 'default' };
 
     /** =========================
-     * 1. Theme Engine & URL Sanitizer
+     * 1. Theme Engine (Native Pre-Boot Hijack)
      * ========================= */
-    function enforceTheme() {
-        if (window.self !== window.top) return;
+    (function enforceThemeNative() {
+        // Allow this to run inside EAM's iframes so the Grid and Record Views get themed
 
-        const currentUrl = new URL(window.location.href);
-        const path = currentUrl.pathname.toLowerCase();
-
-        if (path.includes('/web/base/common') && currentUrl.searchParams.has('uitheme')) {
-            currentUrl.searchParams.delete('uitheme');
-            window.location.replace(currentUrl.toString());
-            return;
-        }
-
-        if (!settings.theme || settings.theme === 'default') return;
-        if (path.includes('/sso/') || path.includes('ssoservlet') || path.includes('xmlhttp')) return;
-
-        if (path.includes('/web/base/')) {
-            const currentThemeParam = currentUrl.searchParams.get('uitheme');
-            if (currentThemeParam === settings.theme) return;
-
-            const lastRedirect = parseInt(sessionStorage.getItem('apm_theme_last_redirect') || '0');
-            if (Date.now() - lastRedirect < 10000) return;
-
-            sessionStorage.setItem('apm_theme_last_redirect', Date.now().toString());
-
-            const safeUrl = new URL(window.location.origin + '/web/base/logindisp');
-            safeUrl.searchParams.set('tenant', LINK_CONFIG.tenant);
-            safeUrl.searchParams.set('uitheme', settings.theme);
-
-            if (currentUrl.searchParams.has('workordernum')) {
-                safeUrl.searchParams.set('workordernum', currentUrl.searchParams.get('workordernum'));
-                safeUrl.searchParams.set('SYSTEM_FUNCTION_NAME', currentUrl.searchParams.get('SYSTEM_FUNCTION_NAME') || 'WSJOBS');
-                safeUrl.searchParams.set('USER_FUNCTION_NAME', currentUrl.searchParams.get('USER_FUNCTION_NAME') || 'WSJOBS');
+        // Pull the desired theme directly from your existing settings
+        let savedTheme = '';
+        try {
+            const savedSettings = JSON.parse(localStorage.getItem(STORAGE_KEY_SETTINGS)) || {};
+            if (savedSettings.theme && savedSettings.theme !== 'default') {
+                savedTheme = savedSettings.theme;
             }
+        } catch (e) {}
 
-            window.location.replace(safeUrl.toString());
+        if (!savedTheme) return; // Exit if no custom theme is selected
+
+        // Guarantee global namespaces exist before EAM starts executing
+        window.EAM = window.EAM || {};
+        window.Ext = window.Ext || {};
+
+        // 1. Lock the CSS_PATH variable. EAM will request this specific CSS file natively.
+        try {
+            Object.defineProperty(window.EAM, 'CSS_PATH', {
+                configurable: true,
+                enumerable: true,
+                get: () => savedTheme,
+                set: () => {} // Silently reject any attempts by EAM to overwrite this
+            });
+        } catch (e) {
+            window.EAM.CSS_PATH = savedTheme; // Fallback
         }
-    }
-    enforceTheme();
 
+        // 2. Intercept the ExtJS boot sequence and force it to use your theme's JSON manifest
+        const originalBeforeLoad = window.Ext.beforeLoad;
+        window.Ext.beforeLoad = function(tags) {
+            window.Ext.manifest = 'eam/' + savedTheme + '.json';
+            if (typeof originalBeforeLoad === 'function') {
+                try { originalBeforeLoad(tags); } catch (err) {}
+            }
+        };
+    })();
+
+ /** =========================
+     * 4. Main Initialization & UI
+     * ========================= */
     document.addEventListener('DOMContentLoaded', () => {
         let observer;
         let editingRuleId = null;
 
-        /** =========================
-         * GitHub Update Engine
-         * ========================= */
-        const GITHUB_RAW_URL = 'https://raw.githubusercontent.com/jaker788-create/APM-Master/main/nametag.user.js';
-
-        async function checkForManualUpdate() {
-            try {
-                const response = await fetch(GITHUB_RAW_URL);
-                const text = await response.text();
-                
-                // Use Regex to find the version in the remote file
-                const versionMatch = text.match(/@version\s+([\d.]+)/);
-                if (versionMatch && versionMatch[1]) {
-                    const remoteVer = versionMatch[1];
-                    const localVer = '3.9.13'; // Match this to your current metadata version
-
-                    if (remoteVer.localeCompare(localVer, undefined, { numeric: true, sensitivity: 'base' }) > 0) {
-                        if (confirm(`🚀 New Version Found: v${remoteVer}\n(Current: v${localVer})\n\nWould you like to install the update now?`)) {
-                            window.location.href = GITHUB_RAW_URL;
-                        }
-                    } else {
-                        alert(`✅ You are up to date! (v${localVer})`);
-                    }
-                }
-            } catch (e) {
-                console.error("[APM Master] GitHub Update Check Failed:", e);
-                alert("❌ Update check failed. Ensure you are connected to the network.");
-            }
-        }
-        
-        /** =========================
-         * 2. Core UI & Injection Styles
-         * ========================= */
         const style = document.createElement('style');
         style.innerHTML = `
             .apm-nametag {
@@ -140,7 +116,6 @@
 
             .apm-wo-link { color: #007bff !important; text-decoration: underline !important; font-weight: bold !important; cursor: pointer; }
 
-            /* Physical Icon Styling */
             .apm-copy-icon {
                 display: inline-block;
                 background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='13' height='13' viewBox='0 0 24 24' fill='none' stroke='%23007bff' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='9' y='9' width='13' height='13' rx='2' ry='2'%3E%3C/rect%3E%3Cpath d='M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1'%3E%3C/path%3E%3C/svg%3E");
@@ -153,7 +128,17 @@
                 opacity: 1;
             }
 
-            /* Menu UI */
+            #apm-update-banner {
+                position: fixed; top: -50px; left: 50%; transform: translateX(-50%);
+                background: #2980b9; color: white; padding: 10px 25px;
+                border-radius: 0 0 15px 15px; font-weight: bold; font-size: 14px;
+                cursor: pointer; z-index: 2147483647; box-shadow: 0 4px 15px rgba(0,0,0,0.4);
+                transition: top 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+                display: flex; align-items: center; gap: 10px;
+            }
+            #apm-update-banner.visible { top: 0px; }
+            #apm-update-banner:hover { background: #3498db; }
+
             #apm-colorcode-panel { position: fixed; z-index: 99999; padding: 15px; background: #35404a; color: white; border: 1px solid #2c353c; border-radius: 8px; box-shadow: 0px 8px 25px rgba(0,0,0,0.6); font-family: sans-serif; width: 380px; display: none; flex-direction: column; }
             #apm-colorcode-panel input[type="text"] { width: 100%; padding: 8px; margin-bottom: 10px; border-radius: 4px; border: none; background: #ecf0f1; color: #2c3e50; font-family: inherit; }
             .rule-item { display: flex; justify-content: space-between; align-items: center; background: #2b343c; padding: 6px 8px; border-radius: 4px; margin-bottom: 6px; border-left: 4px solid #1abc9c; }
@@ -209,14 +194,10 @@
         });
 
         function triggerFilter(kw) {
-            if (window.self === window.top) {
-                window.postMessage({ type: 'APM_SET_FILTER', kw: kw }, '*');
-            } else {
-                window.top.postMessage({ type: 'APM_SET_FILTER', kw: kw }, '*');
-            }
+            if (window.self === window.top) window.postMessage({ type: 'APM_SET_FILTER', kw: kw }, '*');
+            else window.top.postMessage({ type: 'APM_SET_FILTER', kw: kw }, '*');
         }
 
-        // --- Dynamic Colors ---
         function hexToRgbVals(hex) {
             let r = parseInt(hex.slice(1, 3), 16), g = parseInt(hex.slice(3, 5), 16), b = parseInt(hex.slice(5, 7), 16);
             return `${r}, ${g}, ${b}`;
@@ -252,15 +233,18 @@
             if (ds.innerHTML !== css) ds.innerHTML = css;
         }
 
-        /** =========================
-         * 3. Core Grid Processing
-         * ========================= */
-        function processGrid(root = document) {
+        function processGrid() {
+            if (observer) observer.disconnect();
 
-            if (observer && root === document) observer.disconnect();
-            const rows = root.querySelectorAll('.x-grid-item');
+            // 1. Helper defined globally for this function so both blocks can use it
+            const buildSafeWoUrl = (woNum) => {
+                const host = window.location.hostname;
+                let url = `https://${host}/web/base/logindisp?tenant=${LINK_CONFIG.tenant}&FROMEMAIL=YES&SYSTEM_FUNCTION_NAME=${LINK_CONFIG.userFuncName}&USER_FUNCTION_NAME=${LINK_CONFIG.userFuncName}&workordernum=${woNum}`;
+                if (settings.theme && settings.theme !== 'default') url += `&uitheme=${settings.theme}`;
+                return url;
+            };
 
-            rows.forEach(row => {
+            document.querySelectorAll('.x-grid-item').forEach(row => {
                 try {
                     const text = row.textContent;
                     const lowerText = text.toLowerCase();
@@ -270,24 +254,23 @@
                     let colorRuleApplied = false;
                     const cells = row.querySelectorAll('.x-grid-cell-inner');
 
-                    // 1. Purge tags that no longer have a matching, active rule
+                    // Clean Orphans
                     row.querySelectorAll('.apm-nametag').forEach(tag => {
                         const kw = tag.getAttribute('data-filter-kw');
                         const isStillValid = rules.some(r => r.search.toLowerCase() === kw && r.showTag && lowerText.includes(kw));
                         if (!isStillValid) tag.remove();
                     });
 
+                    // Apply active rules
                     for (let rule of rules) {
                         const searchStr = rule.search.toLowerCase();
 
                         if (lowerText.includes(searchStr)) {
-                            // Apply background color to the highest priority match
                             if (!colorRuleApplied && rule.fill) {
                                 row.setAttribute('data-cc-rule', rule.id);
                                 colorRuleApplied = true;
                             }
 
-                            // Handle Nametags
                             if (rule.showTag && rule.tag) {
                                 cells.forEach(cell => {
                                     if (cell.textContent.toLowerCase().includes(searchStr)) {
@@ -296,8 +279,7 @@
                                         const formattedTagText = rule.tag.replace(/\\n/g, '<br>');
 
                                         if (!existingTag) {
-                                            // Create new tag
-                                            const t = root.createElement('div');
+                                            const t = document.createElement('div');
                                             t.className = 'apm-nametag';
                                             t.style.backgroundColor = `var(--cc-color-${safeId})`;
                                             t.innerHTML = formattedTagText;
@@ -305,20 +287,17 @@
                                             t.setAttribute('data-filter-kw', searchStr);
                                             cell.appendChild(t);
                                         } else {
-                                            // Live-update existing tag in case the user edited the text/color
                                             existingTag.style.backgroundColor = `var(--cc-color-${safeId})`;
-                                            if (existingTag.innerHTML !== formattedTagText) {
-                                                existingTag.innerHTML = formattedTagText;
-                                            }
+                                            if (existingTag.innerHTML !== formattedTagText) existingTag.innerHTML = formattedTagText;
                                         }
                                     }
                                 });
                             }
                         }
                     }
-                } catch (e) { /* Ignore ExtJS skeleton rows */ }
+                } catch (e) { }
 
-                // Physical Injection Logic
+                // Physical Linkifier (Grid)
                 try {
                     row.querySelectorAll('.x-grid-cell-inner').forEach(cell => {
                         if (cell.hasAttribute('data-apm-linkified')) return;
@@ -326,9 +305,7 @@
                         const match = cell.textContent.match(LINK_CONFIG.woPattern);
                         if (match) {
                             const woNum = match[1];
-                            const baseQuery = `tenant=${LINK_CONFIG.tenant}&FROMEMAIL=YES&SYSTEM_FUNCTION_NAME=WSJOBS&USER_FUNCTION_NAME=${LINK_CONFIG.userFuncName}&workordernum=${woNum}`;
-                            const copyUrl = `https://us1.eam.hxgnsmartcloud.com/web/base/logindisp?${baseQuery}`;
-                            const openUrl = (settings.theme && settings.theme !== 'default') ? `${copyUrl}&uitheme=${settings.theme}` : copyUrl;
+                            const safeUrl = buildSafeWoUrl(woNum);
 
                             cell.setAttribute('data-apm-linkified', 'true');
 
@@ -337,17 +314,15 @@
                                     const container = document.createElement('span');
                                     container.style.whiteSpace = 'nowrap';
 
-                                    // Native Link element handles opening naturally
                                     const link = document.createElement('a');
                                     link.className = 'apm-wo-link';
                                     link.textContent = woNum;
-                                    link.href = openUrl;
+                                    link.href = safeUrl;
                                     link.target = '_blank';
 
-                                    // Dedicated copy element
                                     const copyIcon = document.createElement('span');
                                     copyIcon.className = 'apm-copy-icon';
-                                    copyIcon.setAttribute('data-wo-copy-url', copyUrl);
+                                    copyIcon.setAttribute('data-wo-copy-url', safeUrl);
 
                                     container.appendChild(link);
                                     container.appendChild(copyIcon);
@@ -360,20 +335,22 @@
                 } catch (e) { }
             });
 
-            // Header Icon Sync
+            // Physical Linkifier (Headers)
             try {
                 document.querySelectorAll('span.recordcode').forEach(el => {
                     if (el.hasAttribute('data-wo-num')) return;
+
                     const match = el.textContent.match(LINK_CONFIG.woPattern);
                     if (match) {
                         const woNum = match[1];
-                        const baseQuery = `tenant=${LINK_CONFIG.tenant}&FROMEMAIL=YES&SYSTEM_FUNCTION_NAME=WSJOBS&USER_FUNCTION_NAME=${LINK_CONFIG.userFuncName}&workordernum=${woNum}`;
+                        const safeUrl = buildSafeWoUrl(woNum);
 
                         el.setAttribute('data-wo-num', woNum);
 
                         const copyIcon = document.createElement('span');
                         copyIcon.className = 'apm-copy-icon';
-                        copyIcon.setAttribute('data-wo-copy-url', `https://us1.eam.hxgnsmartcloud.com/web/base/logindisp?${baseQuery}`);
+                        copyIcon.setAttribute('data-wo-copy-url', safeUrl);
+
                         el.appendChild(copyIcon);
                     }
                 });
@@ -382,14 +359,9 @@
             if (observer) observer.observe(document.body, { childList: true, subtree: true });
         }
 
-        /** =========================
-         * 4. Zero-Math Event Capture
-         * ========================= */
         window.addEventListener('click', (e) => {
-            // 1. Direct Click on Physical Copy Icon
             if (e.target.classList.contains('apm-copy-icon')) {
                 e.preventDefault(); e.stopPropagation();
-
                 const copyUrl = e.target.getAttribute('data-wo-copy-url');
                 const targetEl = e.target;
 
@@ -411,31 +383,22 @@
                 } else {
                     doFallback(copyUrl);
                 }
-
-            // 2. Click on Hyperlink
             } else if (e.target.classList.contains('apm-wo-link') || e.target.closest('a.apm-wo-link')) {
-                e.stopPropagation(); // Just stop ExtJS from processing the row click, let the native <a> tag open the tab
-
-            // 3. Tag Filter Click
+                e.stopPropagation();
             } else if (e.target.classList.contains('apm-nametag')) {
                 e.preventDefault(); e.stopPropagation();
                 triggerFilter(e.target.getAttribute('data-filter-kw'));
-
-            // 4. Banner Clear Click
             } else if (e.target.id === 'apm-filter-banner') {
                 e.preventDefault(); e.stopPropagation();
                 triggerFilter(null);
             }
         }, true);
 
-        /** =========================
-         * 5. UI Panel & Setup
-         * ========================= */
         function resetForm() {
             editingRuleId = null;
             document.getElementById('cc-search').value = '';
             document.getElementById('cc-tag').value = '';
-            document.getElementById('cc-add-btn').textContent = 'Save';
+            document.getElementById('cc-add-btn').textContent = 'Save Rule';
             document.getElementById('cc-add-btn').style.background = '#1abc9c';
             document.getElementById('cc-cancel-btn').style.display = 'none';
             document.getElementById('cc-color').value = '#e74c3c';
@@ -465,7 +428,7 @@
                             </div>
                             <div style="display:flex; gap: 6px;">
                                 <button id="cc-cancel-btn" style="background:#7f8c8d; color:white; border:none; padding: 6px 10px; border-radius:4px; cursor:pointer; display:none;">Cancel</button>
-                                <button id="cc-add-btn" style="background:#1abc9c; color:white; border:none; padding: 6px 12px; border-radius:4px; cursor:pointer;">Save</button>
+                                <button id="cc-add-btn" style="background:#1abc9c; color:white; border:none; padding: 6px 12px; border-radius:4px; cursor:pointer;">Save Rule</button>
                             </div>
                         </div>
                     </div>
@@ -500,29 +463,13 @@
 
                 <div id="cc-guide-container" style="display:none; max-height: 380px; overflow-y: auto; padding-right: 6px;">
                     <p>This tool scans your grid for specific keywords. When it finds a match, it highlights the row or injects a nametag.</p>
-                    <h4>1. Filtering</h4>
-                    <ul>
-                        <li>Click any injected nametag to instantly filter the grid to show only rows matching that keyword.</li>
-                        <li>Click the red warning banner at the top to clear the filter.</li>
-                    </ul>
-                    <h4>2. Row Backgrounds & Priority</h4>
-                    <ul>
-                        <li>Check <strong>Fill</strong> to color the background of the row.</li>
-                        <li>Use <strong>▲ / ▼</strong> to move important rules to the top (highest rule wins the color).</li>
-                    </ul>
-                    <h4>3. The Linkifier</h4>
-                    <ul>
-                        <li>Click WO numbers to open them. Click the space <em>next</em> to the number to instantly copy the link.</li>
-                    </ul>
-                    <h4>4. Sharing</h4>
-                    <ul>
-                        <li>Use <strong>Export</strong> and <strong>Import</strong> to share setups with teammates.</li>
-                    </ul>
+                    <h4>1. Filtering</h4><ul><li>Click any injected nametag to instantly filter the grid to show only rows matching that keyword.</li><li>Click the red warning banner at the top to clear the filter.</li></ul>
+                    <h4>2. Row Backgrounds & Priority</h4><ul><li>Check <strong>Fill</strong> to color the background of the row.</li><li>Use <strong>▲ / ▼</strong> to move important rules to the top (highest rule wins the color).</li></ul>
+                    <h4>3. The Linkifier</h4><ul><li>Click WO numbers to open them. Click the space <em>next</em> to the number to instantly copy the link.</li></ul>
                 </div>
 
                 <div style="display:flex; justify-content:space-between; align-items:center; margin-top:10px; border-top: 1px solid #4a5a6a; padding-top:10px;">
                     <button id="cc-import-btn" class="cc-footer-btn" title="Paste a config code from a teammate">📥 Import</button>
-                    <button id="cc-update-btn" class="cc-footer-btn" style="background:#2980b9;">🔄 Check Update</button>
                     <button id="cc-help-btn" class="cc-footer-btn" style="background:transparent; color:#3498db; border:1px solid #3498db; width: 110px;">ℹ️ Help & Tips</button>
                     <button id="cc-export-btn" class="cc-footer-btn" title="Copy your config code to the clipboard">📤 Export</button>
                 </div>
@@ -558,15 +505,11 @@
             };
 
             document.getElementById('cc-setting-theme').onchange = (e) => {
-                const selectedTheme = e.target.value;
-                settings.theme = selectedTheme;
+                settings.theme = e.target.value;
                 localStorage.setItem(STORAGE_KEY_SETTINGS, JSON.stringify(settings));
 
                 if (confirm('Applying a new UI Theme requires EAM to reload. Reload now?')) {
-                    const cleanUrl = new URL(window.location.origin + '/web/base/logindisp');
-                    cleanUrl.searchParams.set('tenant', LINK_CONFIG.tenant);
-                    if (selectedTheme !== 'default') cleanUrl.searchParams.set('uitheme', selectedTheme);
-                    window.location.replace(cleanUrl.toString());
+                    window.location.reload();
                 }
             };
 
@@ -589,17 +532,17 @@
             document.getElementById('cc-export-btn').onclick = () => {
                 try {
                     const b64 = btoa(unescape(encodeURIComponent(JSON.stringify(rules))));
-                    navigator.clipboard.writeText(b64).then(() => alert('Configuration code copied to clipboard!\n\nPaste this in Slack or email to share your setup.'));
+                    navigator.clipboard.writeText(b64).then(() => alert('Configuration code copied to clipboard!'));
                 } catch (e) { alert('Error generating export code.'); }
             };
 
-            document.getElementById('cc-import-btn').onclick = () => { 
+            document.getElementById('cc-import-btn').onclick = () => {
                 const input = prompt('Paste your teammate\'s configuration code here:');
                 if (input && input.trim()) {
                     try {
                         const importedRules = JSON.parse(decodeURIComponent(escape(atob(input.trim()))));
                         if (!Array.isArray(importedRules) || importedRules.length === 0) return alert('No valid rules found.');
-                        if (confirm('Do you want to REPLACE your existing rules entirely?\n\n[OK] = Replace.\n[Cancel] = Append to bottom.')) {
+                        if (confirm('Replace existing rules?')) {
                             rules = importedRules;
                         } else {
                             importedRules.forEach(r => { r.id = Date.now() + Math.random(); rules.push(r); });
@@ -608,10 +551,7 @@
                     } catch (e) { alert('Invalid configuration code.'); }
                 }
             };
-            // NEW: Update Button Slot
-            document.getElementById('cc-update-btn').onclick = () => {
-                checkForManualUpdate();
-            };
+
             renderRules();
         }
 
@@ -731,6 +671,8 @@
             window.apmMasterTO = setTimeout(() => { injectToolbar(); buildMenu(); processGrid(); }, 150);
         });
         observer.observe(document.body, { childList: true, subtree: true });
-        setTimeout(processGrid, 2000);
+
+        // Trigger background update check on load
+        autoCheckUpdate();
     });
 })();
