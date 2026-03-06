@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         APM Master: Forecast Tool
 // @namespace    https://w.amazon.com/bin/view/Users/rosendah/APM-Master/
-// @version      12.5.9
+// @version      12.5.10
 // @description  Powerful WO Forecast Tool & Native Quick Search Bar. Manual edits to this script are not recomended, this is actively supported tool so Slack me for any issues and I can push an update! If you edit you will not receive auto updates
 // @author       Jacob Rosendahl & Thai Ho
 // @icon         https://media.licdn.com/dms/image/v2/D5603AQGdCV0_LQKRfQ/profile-displayphoto-scale_100_100/B56ZyZLvQ5HgAg-/0/1772096519061?e=1773878400&v=beta&t=eWO1Jiy0-WbzG_yBv-SBrmmsVOPMexF57-q1Xh_VXCk
@@ -17,7 +17,7 @@
 
 /* --------------------------------------------------------------------------
    RECENT FEATURES & BUG FIXES:
-   - v12.5.7 Bug Fix: Added some prevention of navigation issues, like getting to the compliance screen. Added some initial code to support PTP theming
+   - v12.5.10 Bug Fix: Reolved an issue where a user without screen cache would end u on Compliance WOs and the script could not see the grid was ready on Work Orders. Improved "Cold Start" navigation to handle this and now directly check ExtJS store to see if we're on WO screen
    - v12.5.6 Bug Fix: added grant for security and fixed a critical error catch to prevent crashes with the ptp timer
    - v12.5.4 Feature: Added a manual start PTP timer based on the PTP tab context
    - v12.5.3 Optimize: Rewrote some legacy DOM checks and fixed wait functions with event driven ExtJS waits, even faster execution speed.
@@ -82,25 +82,34 @@
     // 3. CLONE KILLER: Stop execution in regular non-PTP iframes
     if (window.self !== window.top) return;
 
-    async function navigateTo(tabText, menuPathArray) {
+    async function navigateTo(tabText, menuPathArray, targetScreenCode = 'WSJOBS') {
         const payloadId = 'apm-extjs-nav-' + Date.now();
         const scriptContent = `
             (function() {
                 try {
                     if (!window.Ext || !window.Ext.ComponentQuery) return;
 
-                    // Clean string helper (ignores "Compliance")
                     function isExactMatch(rawText, target) {
                         if (!rawText) return false;
-                        var cleanText = rawText.replace(/<[^>]*>?/gm, '').trim();
-                        return (cleanText === target) || (cleanText.indexOf(target) > -1 && cleanText.toUpperCase().indexOf('COMPLIANCE') === -1);
+                        var cleanText = rawText.replace(/<[^>]*>?/gm, '').replace(/&nbsp;/g, ' ').trim();
+                        if (cleanText.toUpperCase().indexOf('COMPLIANCE') > -1) return false;
+
+                        if (cleanText === target) return true;
+                        if (cleanText.indexOf(target + ' ') === 0 || cleanText.indexOf(target + '(') === 0) return true;
+
+                        // Handle EAM user preference where screen codes are shown in text (e.g., "WSJOBS - Work Orders")
+                        if (cleanText.indexOf('- ' + target) > -1) return true;
+
+                        return false;
                     }
 
                     // 1. FAST PATH (Native Tab Switch)
-                    var tabs = window.Ext.ComponentQuery.query('tab');
+                    var tabs = window.Ext.ComponentQuery.query('tab:not([hidden=true]):not([destroyed=true])');
                     var targetTab = null;
                     for (var i=0; i<tabs.length; i++) {
                         if (isExactMatch(tabs[i].text, "${tabText}")) {
+                            var rawTabStr = JSON.stringify(tabs[i].initialConfig || {}) + tabs[i].text;
+                            if ("${targetScreenCode}" === "WSJOBS" && rawTabStr.indexOf('CTJOBS') > -1) continue;
                             targetTab = tabs[i];
                             break;
                         }
@@ -132,6 +141,11 @@
                                 var childItem = null;
                                 for (var k=0; k<menuItems.length; k++) {
                                     if (isExactMatch(menuItems[k].text, paths[1])) {
+                                        // CRITICAL FIX: Ensure we don't accidentally click CTJOBS (Contractor Work Orders)
+                                        var rawObj = JSON.stringify(menuItems[k].initialConfig || {}) + (menuItems[k].action || '') + (menuItems[k].itemId || '') + menuItems[k].text;
+                                        if ("${targetScreenCode}" === "WSJOBS" && rawObj.indexOf('CTJOBS') > -1) {
+                                            continue;
+                                        }
                                         childItem = menuItems[k];
                                         break;
                                     }
@@ -147,7 +161,7 @@
                             }, 150);
                         }
                     }
-                } catch(e) { console.error('APM ExtJS Nav Error:', e); }
+                } catch(e) {}
             })();
         `;
         const scriptEl = document.createElement('script');
@@ -567,7 +581,7 @@ function formatDate(d) {
     /** =========================
      * GitHub Update Checker
      * ========================= */
-    const FORECAST_VERSION = '12.5.9'; // MUST MATCH YOUR SCRIPT HEADER VERSION
+    const FORECAST_VERSION = '12.5.10'; // MUST MATCH YOUR SCRIPT HEADER VERSION
 
     function isNewerVersion(oldVer, newVer) {
         const oldParts = oldVer.split('.').map(Number);
@@ -1100,17 +1114,30 @@ function formatDate(d) {
         const scriptContent = `
             (function() {
                 try {
-                    // 1. Find the WSJOBS iframe Ext context
-                    var targetExt = window.Ext;
+                    // 1. Find the Ext context dynamically by hunting for the wsjobs store
+                    var targetExt = null;
+                    var allWins = [window];
                     var frames = document.querySelectorAll('iframe');
                     for (var i=0; i<frames.length; i++) {
-                        if (frames[i].src && frames[i].src.includes('SYSTEM_FUNCTION_NAME=WSJOBS')) {
-                            if (frames[i].contentWindow && frames[i].contentWindow.Ext) {
-                                targetExt = frames[i].contentWindow.Ext;
-                                break;
+                        try { if (frames[i].contentWindow) allWins.push(frames[i].contentWindow); } catch(e) {}
+                    }
+
+                    for (var i=0; i<allWins.length; i++) {
+                        var win = allWins[i];
+                        if (win.Ext && win.Ext.ComponentQuery) {
+                            var grids = win.Ext.ComponentQuery.query('gridpanel:not([destroyed=true])');
+                            for (var j=0; j<grids.length; j++) {
+                                var store = grids[j].getStore ? grids[j].getStore() : null;
+                                if (store && store.storeId && store.storeId.toLowerCase().indexOf('wsjobs') > -1) {
+                                    targetExt = win.Ext;
+                                    break;
+                                }
                             }
                         }
+                        if (targetExt) break;
                     }
+
+                    if (!targetExt) targetExt = window.Ext; // Fallback
                     if (!targetExt || !targetExt.ComponentQuery) return;
 
                     // 2. Query ExtJS memory for common "Expand" buttons or "List View" tabs
@@ -1126,27 +1153,17 @@ function formatDate(d) {
                         var elements = targetExt.ComponentQuery.query(queries[q]);
                         for (var j=0; j<elements.length; j++) {
                             var el = elements[j];
-                            // Skip if ExtJS knows it is currently hidden from the user
                             if (el.hidden || (el.isHidden && el.isHidden())) continue;
 
-                            // Execute natively
-                            if (el.handler) {
-                                el.handler.call(el.scope || el, el);
-                                return;
-                            } else if (el.isTab) {
-                                var tabPanel = el.up('tabpanel');
-                                if (tabPanel) tabPanel.setActiveTab(el);
-                                else el.fireEvent('click', el);
-                                return;
-                            } else {
-                                el.fireEvent('click', el);
-                                return;
-                            }
+                            if (el.handler) { el.handler.call(el.scope || el, el); return; }
+                            else if (el.isTab) { var tp = el.up('tabpanel'); if (tp) tp.setActiveTab(el); else el.fireEvent('click', el); return; }
+                            else { el.fireEvent('click', el); return; }
                         }
                     }
-                } catch(e) { console.warn('APM List View Error:', e); }
+                } catch(e) {}
             })();
         `;
+
         const scriptEl = document.createElement('script');
         scriptEl.id = payloadId;
         scriptEl.textContent = scriptContent;
@@ -1171,103 +1188,27 @@ function formatDate(d) {
     }
 
 function isGridReady() {
-        const allWins = [window, ...Array.from(document.querySelectorAll('iframe')).map(f => f.contentWindow)];
-        for (const win of allWins) {
+        const frames = [window, ...Array.from(document.querySelectorAll('iframe')).map(f => {
+            try { return f.contentWindow; } catch(e) { return null; }
+        }).filter(Boolean)];
+
+        for (const win of frames) {
             try {
                 if (win.Ext && win.Ext.ComponentQuery) {
-                    const grid = win.Ext.ComponentQuery.query('gridpanel').find(g =>
-                        g.columns && g.columns.length > 20 && g.rendered && !g.isDestroyed
-                    );
-                    // Check if grid exists, is rendered, and its store has finished its initial load
-                    if (grid && grid.getStore() && !grid.getStore().isLoading()) {
-                        return true;
-                    }
-                }
-            } catch (e) { continue; }
-        }
-        return false;
-    }
-
-async function navigateTo(tabText, menuPathArray) {
-        const payloadId = 'apm-extjs-nav-' + Date.now();
-        const scriptContent = `
-            (function() {
-                try {
-                    if (!window.Ext || !window.Ext.ComponentQuery) return;
-
-                    // 1. FAST PATH (Native Tab Switch)
-                    var tabs = window.Ext.ComponentQuery.query('tab');
-                    var targetTab = null;
-                    for (var i=0; i<tabs.length; i++) {
-                        // Use indexOf instead of exact match to account for EAM formatting
-                        if (tabs[i].text && tabs[i].text.indexOf("${tabText}") > -1) {
-                            targetTab = tabs[i];
-                            break;
-                        }
-                    }
-
-                    if (targetTab) {
-                        // Force a native DOM click on the Ext component to trigger EAM's routing
-                        if (targetTab.el && targetTab.el.dom) {
-                            targetTab.el.dom.click();
-                        } else {
-                            targetTab.fireEvent('click', targetTab);
-                        }
-                        return;
-                    }
-
-                    // 2. COLD START PATH
-                    var paths = ${JSON.stringify(menuPathArray)};
-                    if (paths.length === 2) {
-                        var btns = window.Ext.ComponentQuery.query('button');
-                        var topBtn = null;
-                        for (var j=0; j<btns.length; j++) {
-                            if (btns[j].text && btns[j].text.indexOf(paths[0]) > -1 && btns[j].showMenu) {
-                                topBtn = btns[j];
-                                break;
+                    const grids = win.Ext.ComponentQuery.query('gridpanel:not([destroyed=true])');
+                    for (const grid of grids) {
+                        if (grid.rendered && grid.getStore) {
+                            const store = grid.getStore();
+                            // Lock onto the specific EAM Work Order store ID discovered in the probe
+                            if (store && store.storeId && store.storeId.toLowerCase().includes('wsjobs') && !store.isLoading()) {
+                                return true;
                             }
                         }
-
-                        if (topBtn) {
-                            topBtn.showMenu(); // Lazy Load trigger
-
-                            setTimeout(function() {
-                                var menuItems = window.Ext.ComponentQuery.query('menuitem');
-                                var childItem = null;
-                                for (var k=0; k<menuItems.length; k++) {
-                                    if (menuItems[k].text && menuItems[k].text.indexOf(paths[1]) > -1) {
-                                        childItem = menuItems[k];
-                                        break;
-                                    }
-                                }
-
-                                if (childItem) {
-                                    if (childItem.handler) {
-                                        childItem.handler.call(childItem.scope || childItem, childItem);
-                                    } else if (childItem.el && childItem.el.dom) {
-                                        childItem.el.dom.click();
-                                    } else {
-                                        childItem.fireEvent('click', childItem);
-                                    }
-                                }
-
-                                // Clean up menus AFTER the click fires
-                                if (window.Ext.menu && window.Ext.menu.Manager) {
-                                    window.Ext.menu.Manager.hideAll();
-                                }
-                            }, 150);
-                        }
                     }
-                } catch(e) { console.error('APM ExtJS Nav Error:', e); }
-            })();
-        `;
-        const scriptEl = document.createElement('script');
-        scriptEl.id = payloadId;
-        scriptEl.textContent = scriptContent;
-        document.head.appendChild(scriptEl);
-        setTimeout(() => scriptEl.remove(), 100);
-
-        return true;
+                }
+            } catch (e) {}
+        }
+        return false;
     }
 
 /** =========================
@@ -1283,28 +1224,43 @@ async function navigateTo(tabText, menuPathArray) {
 
                     function executeEngine() {
                         attempts++;
-                        var targetExt = window.Ext;
+
+                        // 1. Find active Ext context dynamically via wsjobs store
+                        var targetExt = null;
+                        var allWins = [window];
                         var frames = document.querySelectorAll('iframe');
                         var foundFrame = false;
 
                         for (var i=0; i<frames.length; i++) {
-                            if (frames[i].src && frames[i].src.includes('SYSTEM_FUNCTION_NAME=WSJOBS')) {
-                                if (frames[i].contentWindow && frames[i].contentWindow.Ext) {
-                                    targetExt = frames[i].contentWindow.Ext;
-                                    foundFrame = true;
-                                    break;
+                            try { if (frames[i].contentWindow) allWins.push(frames[i].contentWindow); } catch(e) {}
+                        }
+
+                        for (var i=0; i<allWins.length; i++) {
+                            var win = allWins[i];
+                            if (win.Ext && win.Ext.ComponentQuery) {
+                                var grids = win.Ext.ComponentQuery.query('gridpanel:not([destroyed=true])');
+                                for (var j=0; j<grids.length; j++) {
+                                    var store = grids[j].getStore ? grids[j].getStore() : null;
+                                    if (store && store.storeId && store.storeId.toLowerCase().indexOf('wsjobs') > -1) {
+                                        targetExt = win.Ext;
+                                        foundFrame = true;
+                                        break;
+                                    }
                                 }
                             }
+                            if (foundFrame) break;
                         }
+
+                        if (!targetExt) targetExt = window.Ext;
 
                         if (!foundFrame || !targetExt || !targetExt.ComponentQuery) {
                             if (attempts < maxAttempts) setTimeout(executeEngine, 250);
                             return;
                         }
 
-                        // Ensure form fields are actually rendered before proceeding
-                        var orgFields = targetExt.ComponentQuery.query('[name=ff_organization]');
-                        if (!orgFields || orgFields.length === 0) {
+                        // 2. Verify Form is ready (Work Order Number field always exists)
+                        var woFields = targetExt.ComponentQuery.query('[name=ff_workordernum]:not([destroyed=true])');
+                        if (!woFields || woFields.length === 0) {
                             if (attempts < maxAttempts) setTimeout(executeEngine, 250);
                             return;
                         }
@@ -1899,7 +1855,7 @@ function extractEmployeeId() {
         else triggerThunderstrike();
 
         // 1. Native Tab Jump or Menu Build
-        await navigateTo('Work Orders', ['Work', 'Work Orders']);
+        await navigateTo('Work Orders', ['Work', 'Work Orders'], 'WSJOBS');
 
         // 2. Poll for Grid Readiness
         setStatus(mode, 'Expanding...', '#f1c40f');
