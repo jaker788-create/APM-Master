@@ -15,7 +15,7 @@
 
 /* --------------------------------------------------------------------------
    RECENT FEATURES & BUG FIXES:
-   - v0.8.2 Bug Fix: Fixed some security catch errors
+   - v0.8.1 Bug Fix: Fixed some security catch errors
    - v0.8.0 Optimize: Replaced fixed Ajax waits with native ExtJS event listeners for faster execution of autofilling. Signifigantly shrunk and simplified Menu UI
    - v0.7.3 Optimize: Removed WO Creator function as it diddn't have that much purpose.
    - v0.7.2: Feature: Added update notice in UI, added dynamic resizing with browser window scale, added help & tips
@@ -281,13 +281,13 @@
                 </div>
 
                 <div class="field-row" style="background: rgba(155, 89, 182, 0.15); border: 1px solid rgba(155, 89, 182, 0.4); padding: 6px 8px; border-radius: 6px; margin-bottom: 8px;">
-                    <div class="field-label" style="color:#c39bd3; font-weight:bold; width: 60px; text-align: left;">LOTO:</div>
+                    <div class="field-label" style="color:#c39bd3; font-weight:bold; width: 60px; text-align: left;">1-Tech:</div>
                     <select id="apm-c-loto-mode" class="field-input" style="flex: 1; padding: 4px; font-size: 11px;">
                         <option value="none">- Skip -</option>
                         <option value="yes">Yes</option>
                         <option value="no">No</option>
                     </select>
-                    <div style="font-size: 11px; color: #b0bec5; margin: 0 6px 0 10px; font-weight: bold;">PMs:</div>
+                    <div style="font-size: 11px; color: #b0bec5; margin: 0 6px 0 10px; font-weight: bold;">10-Tech:</div>
                     <input type="number" id="apm-c-pm-checks" class="field-input" min="0" placeholder="Qty" style="width: 45px; padding: 4px; text-align: center; font-weight: bold;">
                 </div>
 
@@ -1479,7 +1479,7 @@
         document.body.appendChild(toggleBtn);
     }
 
-/** =========================
+    /** =========================
      * AutoFill Trigger Logic
      * ========================= */
     function injectAutoFillTriggers() {
@@ -1497,6 +1497,7 @@
 
         document.querySelectorAll('iframe').forEach(f => {
             try {
+                // FIX: Ask for .Ext inside the try/catch so it fails safely on amazon.dev
                 if (f.contentWindow && f.contentWindow.Ext) {
                     allWins.push(f.contentWindow);
                 }
@@ -1524,7 +1525,7 @@
             } catch(err) {}
         });
 
-        // Capture values into constants to resolve ESLint "no-loop-func"
+        // FIX: Capture values into constants to resolve ESLint "no-loop-func"
         const currentWoTitle = foundTitle;
         const isFormReady = isRecordViewActive;
 
