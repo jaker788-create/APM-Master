@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         APM Master: Forecast Tool
 // @namespace    https://w.amazon.com/bin/view/Users/rosendah/APM-Master/
-// @version      12.5.10
+// @version      12.5.11
 // @description  Powerful WO Forecast Tool & Native Quick Search Bar. Manual edits to this script are not recomended, this is actively supported tool so Slack me for any issues and I can push an update! If you edit you will not receive auto updates
 // @author       Jacob Rosendahl & Thai Ho
 // @icon         https://media.licdn.com/dms/image/v2/D5603AQGdCV0_LQKRfQ/profile-displayphoto-scale_100_100/B56ZyZLvQ5HgAg-/0/1772096519061?e=1773878400&v=beta&t=eWO1Jiy0-WbzG_yBv-SBrmmsVOPMexF57-q1Xh_VXCk
@@ -17,6 +17,7 @@
 
 /* --------------------------------------------------------------------------
    RECENT FEATURES & BUG FIXES:
+   - v12.5.11 Bug Fix: Fixed failed navigation when using screen cache, which was broken from the prior no screen cache fix. Tested with and without SC and it works now.
    - v12.5.10 Bug Fix: Reolved an issue where a user without screen cache would end u on Compliance WOs and the script could not see the grid was ready on Work Orders. Improved "Cold Start" navigation to handle this and now directly check ExtJS store to see if we're on WO screen
    - v12.5.6 Bug Fix: added grant for security and fixed a critical error catch to prevent crashes with the ptp timer
    - v12.5.4 Feature: Added a manual start PTP timer based on the PTP tab context
@@ -46,30 +47,66 @@
 (function() {
     'use strict';
 
-/** =========================
-     * PTP Theme Routing & CSS Bridge (theme temp removed)
-     * ========================= */
     // 3. CLONE KILLER: Stop execution in regular non-PTP iframes
     if (window.self !== window.top) return;
 
     /** =========================
-     * Global Hotkey Routing
+     * Global Hotkey Routing (ExtJS Hook)
      * ========================= */
-    window.addEventListener('keydown', (e) => {
-        if (e.altKey && (e.code === 'KeyT' || e.key.toLowerCase() === 't')) {
-            e.preventDefault(); e.stopPropagation();
-            if (window.self !== window.top) window.top.postMessage({ apmMaster: 'hotkey', action: 'today' }, '*');
-            else if (typeof executeForecast === 'function' && !window.isRunning) executeForecast('today');
-        }
-        if (e.altKey && (e.code === 'KeyC' || e.key.toLowerCase() === 'c')) {
-            e.preventDefault(); e.stopPropagation();
-            const isOnWorkOrders = window.location.href.includes('WSJOBS') || window.location.href.includes('CTJOBS');
-            if (window.self !== window.top) window.top.postMessage({ apmMaster: 'hotkey', action: 'clear', isWO: isOnWorkOrders }, '*');
-            else if (isOnWorkOrders && typeof executeForecast === 'function' && !window.isRunning) executeForecast('clear');
-        }
-    }, true);
+    (function initHotkeys() {
+        const handleHotkey = (action, isWO = false) => {
+            if (window.self !== window.top) {
+                window.top.postMessage({ apmMaster: 'hotkey', action: action, isWO: isWO }, '*');
+            } else if (typeof executeForecast === 'function' && !window.isRunning) {
+                executeForecast(action);
+            }
+        };
 
-    // Listen for hotkeys bubbling up from iframes
+        const checkKey = (e) => {
+            if (e.altKey && (e.code === 'KeyT' || e.key.toLowerCase() === 't')) {
+                e.preventDefault(); e.stopPropagation();
+                handleHotkey('today');
+                return true;
+            }
+            if (e.altKey && (e.code === 'KeyC' || e.key.toLowerCase() === 'c')) {
+                e.preventDefault(); e.stopPropagation();
+                let isOnWorkOrders = false;
+                try { isOnWorkOrders = (window.EAM && window.EAM.AppData && window.EAM.AppData.systemFunction.includes('JOBS')) || window.location.href.includes('JOBS'); } catch(err){}
+                handleHotkey('clear', isOnWorkOrders);
+                return true;
+            }
+            return false;
+        };
+
+        window.addEventListener('keydown', checkKey, true);
+
+        const bindExtJS = () => {
+            try {
+                if (window.Ext && window.Ext.getDoc) {
+                    const extDoc = window.Ext.getDoc();
+                    if (!extDoc.hasApmHotkeys) {
+                        extDoc.on('keydown', (e) => {
+                            if (checkKey(e.browserEvent || e)) {
+                                e.stopEvent();
+                            }
+                        });
+                        extDoc.hasApmHotkeys = true;
+                    }
+                }
+            } catch (err) {}
+        };
+
+        if (window.Ext) {
+            bindExtJS();
+        } else {
+            let attempts = 0;
+            const iv = setInterval(() => {
+                if (window.Ext) { bindExtJS(); clearInterval(iv); }
+                if (++attempts > 20) clearInterval(iv);
+            }, 500);
+        }
+    })();
+
     if (window.self === window.top) {
         window.addEventListener('message', (e) => {
             if (e.data && e.data.apmMaster === 'hotkey' && typeof executeForecast === 'function' && !window.isRunning) {
@@ -78,9 +115,6 @@
             }
         });
     }
-
-    // 3. CLONE KILLER: Stop execution in regular non-PTP iframes
-    if (window.self !== window.top) return;
 
     async function navigateTo(tabText, menuPathArray, targetScreenCode = 'WSJOBS') {
         const payloadId = 'apm-extjs-nav-' + Date.now();
@@ -92,30 +126,33 @@
                     function isExactMatch(rawText, target) {
                         if (!rawText) return false;
                         var cleanText = rawText.replace(/<[^>]*>?/gm, '').replace(/&nbsp;/g, ' ').trim();
+
                         if (cleanText.toUpperCase().indexOf('COMPLIANCE') > -1) return false;
 
                         if (cleanText === target) return true;
                         if (cleanText.indexOf(target + ' ') === 0 || cleanText.indexOf(target + '(') === 0) return true;
-
-                        // Handle EAM user preference where screen codes are shown in text (e.g., "WSJOBS - Work Orders")
                         if (cleanText.indexOf('- ' + target) > -1) return true;
-
                         return false;
                     }
 
                     // 1. FAST PATH (Native Tab Switch)
-                    var tabs = window.Ext.ComponentQuery.query('tab:not([hidden=true]):not([destroyed=true])');
+                    var tabs = window.Ext.ComponentQuery.query('tab:not([destroyed=true])');
                     var targetTab = null;
                     for (var i=0; i<tabs.length; i++) {
                         if (isExactMatch(tabs[i].text, "${tabText}")) {
-                            var rawTabStr = JSON.stringify(tabs[i].initialConfig || {}) + tabs[i].text;
-                            if ("${targetScreenCode}" === "WSJOBS" && rawTabStr.indexOf('CTJOBS') > -1) continue;
+                            var tabIdStr = (tabs[i].id || '') + (tabs[i].itemId || '');
+                            if (tabs[i].initialConfig) tabIdStr += (tabs[i].initialConfig.itemId || '') + (tabs[i].initialConfig.id || '');
+                            if ("${targetScreenCode}" === "WSJOBS" && tabIdStr.indexOf('CTJOBS') > -1) continue;
+
                             targetTab = tabs[i];
                             break;
                         }
                     }
 
                     if (targetTab) {
+                        var tp = targetTab.up('tabpanel');
+                        if (tp && tp.setActiveTab) tp.setActiveTab(targetTab);
+
                         if (targetTab.el && targetTab.el.dom) targetTab.el.dom.click();
                         else targetTab.fireEvent('click', targetTab);
                         return;
@@ -124,11 +161,14 @@
                     // 2. COLD START PATH (Menu Traversal)
                     var paths = ${JSON.stringify(menuPathArray)};
                     if (paths.length === 2) {
-                        var btns = window.Ext.ComponentQuery.query('button');
+                        // Ensure we only click a VISIBLE top menu button
+                        var btns = window.Ext.ComponentQuery.query('button:not([destroyed=true])');
                         var topBtn = null;
                         for (var j=0; j<btns.length; j++) {
-                            if (isExactMatch(btns[j].text, paths[0]) && btns[j].showMenu) {
-                                topBtn = btns[j];
+                            var b = btns[j];
+                            if (b.hidden || (typeof b.isHidden === 'function' && b.isHidden())) continue;
+                            if (isExactMatch(b.text, paths[0]) && b.showMenu) {
+                                topBtn = b;
                                 break;
                             }
                         }
@@ -136,32 +176,43 @@
                         if (topBtn) {
                             topBtn.showMenu();
 
-                            setTimeout(function() {
-                                var menuItems = window.Ext.ComponentQuery.query('menuitem');
+                            var attempts = 0;
+                            var menuIv = setInterval(function() {
+                                attempts++;
+
+                                // FIX: Scoped Query! Only look inside the menu we just opened, ignoring cached ghosts.
+                                if (!topBtn.menu) return;
+                                var menuItems = topBtn.menu.query('menuitem:not([destroyed=true])');
                                 var childItem = null;
+
                                 for (var k=0; k<menuItems.length; k++) {
-                                    if (isExactMatch(menuItems[k].text, paths[1])) {
-                                        // CRITICAL FIX: Ensure we don't accidentally click CTJOBS (Contractor Work Orders)
-                                        var rawObj = JSON.stringify(menuItems[k].initialConfig || {}) + (menuItems[k].action || '') + (menuItems[k].itemId || '') + menuItems[k].text;
-                                        if ("${targetScreenCode}" === "WSJOBS" && rawObj.indexOf('CTJOBS') > -1) {
-                                            continue;
-                                        }
-                                        childItem = menuItems[k];
+                                    var item = menuItems[k];
+                                    if (isExactMatch(item.text, paths[1])) {
+                                        var rawObjStr = (item.action || '') + (item.itemId || '') + (item.id || '');
+                                        if (item.initialConfig) rawObjStr += (item.initialConfig.action || '') + (item.initialConfig.itemId || '');
+                                        if ("${targetScreenCode}" === "WSJOBS" && rawObjStr.indexOf('CTJOBS') > -1) continue;
+
+                                        childItem = item;
                                         break;
                                     }
                                 }
 
                                 if (childItem) {
+                                    clearInterval(menuIv);
                                     if (childItem.handler) childItem.handler.call(childItem.scope || childItem, childItem);
                                     else if (childItem.el && childItem.el.dom) childItem.el.dom.click();
                                     else childItem.fireEvent('click', childItem);
-                                }
 
-                                if (window.Ext.menu && window.Ext.menu.Manager) window.Ext.menu.Manager.hideAll();
-                            }, 150);
+                                    setTimeout(function() {
+                                        if (window.Ext.menu && window.Ext.menu.Manager) window.Ext.menu.Manager.hideAll();
+                                    }, 150);
+                                } else if (attempts > 20) {
+                                    clearInterval(menuIv);
+                                }
+                            }, 100);
                         }
                     }
-                } catch(e) {}
+                } catch(e) { console.warn("APM Navigation Error:", e); }
             })();
         `;
         const scriptEl = document.createElement('script');
@@ -173,26 +224,20 @@
         return true;
     }
 
-     // Date Format Override
-    // Wait for Ext to be available before applying the override
     var overrideDate = function() {
         if (typeof Ext !== 'undefined' && Ext.form && Ext.form.field && Ext.form.field.Date) {
             Ext.override(Ext.form.field.Date, {
-                format: 'm/d/Y', // Forces MM/DD/YYYY
+                format: 'm/d/Y',
                 altFormats: 'm/d/Y|n/j/Y|n/j/y|m/j/y|n/d/y|m/j/Y|n/d/Y|m-d-y|m-d-Y|m/d|m-d|md|mdy|mdY|d|Y-m-d|n-j|n/j'
             });
             console.log('APM-Master: Date format override applied.');
         } else {
-            // Retry if Ext isn't ready yet
             setTimeout(overrideDate, 100);
         }
     };
 
     overrideDate();
 
-    /** =========================
-     * Engine Configuration
-     * ========================= */
     const CONFIG = {
         respectUsability: true,
         afterFillDelayMs: 100,
@@ -206,15 +251,11 @@
     let isStopped = false;
     let isRunning = false;
 
-    // Site Data State
     let savedOrgs = [];
     let selectedOrg = '';
 
-/** =========================
- * 3-Way PM Non-PM Filter (Native ExtJS Upgrade)
- * ========================= */
 const ForecastFilter = (function() {
-    let filterState = 0; // 0: All, 1: PMs, 2: Non-PMs
+    let filterState = 0;
     let lastKnownStoreId = null;
 
     const TARGET_DATA_INDEX = 'duedate';
@@ -230,7 +271,7 @@ const ForecastFilter = (function() {
             try {
                 if (win.Ext && win.Ext.ComponentQuery) {
                     const grid = win.Ext.ComponentQuery.query('gridpanel').find(g =>
-                        g.columns && g.columns.length > 20 && g.rendered && !g.isDestroyed
+                        g.columns && g.columns.length >= 3 && g.rendered && !g.isDestroyed
                     );
                     if (grid) return { win, doc: win.document, grid };
                 }
@@ -240,13 +281,10 @@ const ForecastFilter = (function() {
     }
 
     function updateFooterTextNatively(grid, count) {
-        // EAM stores the "Records: X of Y" text in a specific toolbar text item
-        // Find the docked bottom toolbar, then find the tbtext component
         const bbar = grid.getDockedItems('toolbar[dock="bottom"]')[0];
         if (bbar) {
             const textItem = bbar.down('tbtext');
             if (textItem) {
-                // Suspend events briefly so we don't trigger layout recalculations multiple times
                 textItem.suspendEvents();
                 textItem.setText(`Records: ${count} of ${count}`);
                 textItem.resumeEvents();
@@ -254,9 +292,6 @@ const ForecastFilter = (function() {
         }
     }
 
-    /** =========================
-     * Main Filter Engine
-     * ========================= */
     function applyStoreFilter() {
         const ctx = getTargetContext();
         if (!ctx) return;
@@ -264,15 +299,12 @@ const ForecastFilter = (function() {
         const { grid } = ctx;
         const store = grid.getStore();
 
-        // Prevent infinite loops if EAM reloads the store
         store.suspendEvents();
 
-        // 1. Restore native Total Count getter BEFORE doing anything else
         if (store._nativeGetTotalCount) {
             store.getTotalCount = store._nativeGetTotalCount;
         }
 
-        // 2. Clear filters so the store retrieves all records
         store.clearFilter();
 
         if (filterState === 0) {
@@ -283,7 +315,6 @@ const ForecastFilter = (function() {
             return;
         }
 
-        // 3. Apply Logical Filter
         store.filterBy((record) => {
             const val = record.get(TARGET_DATA_INDEX);
             const isBlank = (!val || val.toString().trim() === "" || val === null);
@@ -292,15 +323,13 @@ const ForecastFilter = (function() {
 
         const count = store.getCount();
 
-        // 4. Override Native Total Count logic
         if (!store._nativeGetTotalCount) store._nativeGetTotalCount = store.getTotalCount;
         store.getTotalCount = function() { return count; };
 
-        // 5. Update UI Natively
         updateFooterTextNatively(grid, count);
 
         store.resumeEvents();
-        grid.getView().refresh(); // Force ExtJS to redraw the grid with the filtered data
+        grid.getView().refresh();
         if (grid.view && grid.view.el) grid.view.el.setScrollTop(0);
     }
 
@@ -311,9 +340,6 @@ const ForecastFilter = (function() {
         applyStoreFilter();
     }
 
-    /**
-     * Injection Loop
-     */
     function injectForecastFilter() {
         const ctx = getTargetContext();
         if (!ctx) return;
@@ -321,7 +347,6 @@ const ForecastFilter = (function() {
         const { doc, grid } = ctx;
         const store = grid.getStore();
 
-        // Re-apply filter if the underlying store changes (e.g. user clicked Run)
         if (filterState !== 0 && store.storeId !== lastKnownStoreId) {
             applyStoreFilter();
         }
@@ -361,9 +386,6 @@ const ForecastFilter = (function() {
 
 ForecastFilter.init();
 
-    /** =========================
-     * Styles & Animations
-     * ========================= */
     const style = document.createElement('style');
     style.innerHTML = `
         @keyframes rain-fall {
@@ -419,7 +441,6 @@ ForecastFilter.init();
         .org-btn-add:hover { background: #3498db !important; }
         .org-btn-rem:hover { background: #e74c3c !important; }
 
-        /* Sliding Toggle Switch */
         .eam-slider-switch { position: relative; display: inline-block; width: 34px; height: 18px; margin: 0; flex-shrink: 0; }
         .eam-slider-switch input { opacity: 0; width: 0; height: 0; }
         .eam-slider-track { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: rgba(52, 152, 219, 0.2); transition: .3s; border-radius: 18px; border: 1px solid #3498db; }
@@ -442,9 +463,6 @@ ForecastFilter.init();
         </svg>
     `;
 
-    /** =========================
-     * Storage & State Logic
-     * ========================= */
     function loadPreferences() {
         try {
             const saved = localStorage.getItem(STORAGE_KEY);
@@ -465,9 +483,8 @@ ForecastFilter.init();
 
                 return prefs;
             }
-        } catch (e) { console.warn('[APM Forecast] Failed to load preferences:', e); }
+        } catch (e) {}
 
-        // Clean initial state
         savedOrgs = [];
         selectedOrg = '';
         return null;
@@ -487,7 +504,6 @@ ForecastFilter.init();
         const todayToggle = document.getElementById('eam-today-only-toggle');
         if (todayToggle) prefsToSave.todayOnly = todayToggle.checked;
 
-        // Save Mode States
         const advSite = document.getElementById('eam-adv-site');
         const customDates = document.getElementById('eam-custom-dates');
         if (advSite) prefsToSave.isSimpleMode = advSite.style.display === 'none';
@@ -499,11 +515,10 @@ ForecastFilter.init();
         if (custEnd) prefsToSave.customEnd = custEnd.value;
 
         try { localStorage.setItem(STORAGE_KEY, JSON.stringify(prefsToSave)); }
-        catch(e) { console.error('[APM Forecast] Failed to save preferences:', e); }
+        catch(e) { }
     }
 
-function setStatus(mode, msg, color) {
-        // Only render the global UI banner in the top window
+    function setStatus(mode, msg, color) {
         if (window.self !== window.top) return;
 
         let banner = document.getElementById('apm-global-status');
@@ -523,22 +538,18 @@ function setStatus(mode, msg, color) {
 
         const cleanMsg = (msg || '').trim().toLowerCase();
 
-        // Hide the banner completely if idle, done, or empty
         if (!cleanMsg || cleanMsg === 'ready' || cleanMsg === 'done') {
             banner.style.display = 'none';
             return;
         }
 
-        // Display active process or error
         banner.textContent = msg;
         banner.style.color = color || '#ffffff';
         banner.style.border = `2px solid ${color || '#34495e'}`;
         banner.style.display = 'block';
 
-        // Clear any existing timeouts
         if (window._apmStatusTO) clearTimeout(window._apmStatusTO);
 
-        // Auto-hide error messages (red) after 4 seconds so they don't get stuck
         if (color === '#e74c3c') {
             window._apmStatusTO = setTimeout(() => {
                 banner.style.display = 'none';
@@ -554,10 +565,7 @@ function setStatus(mode, msg, color) {
         setTimeout(() => { if (overlay.parentNode) overlay.parentNode.removeChild(overlay); if (bolt.parentNode) bolt.parentNode.removeChild(bolt); }, 1000);
     }
 
-    /** =========================
-     * Date Logic By Thai Ho
-     * ========================= */
-function formatDate(d) {
+    function formatDate(d) {
         const day = String(d.getDate()).padStart(2, '0');
         const month = String(d.getMonth() + 1).padStart(2, '0');
         return `${month}/${day}/${d.getFullYear()}`;
@@ -578,10 +586,7 @@ function formatDate(d) {
         return { start: formatDate(startD), end: formatDate(endD) };
     }
 
-    /** =========================
-     * GitHub Update Checker
-     * ========================= */
-    const FORECAST_VERSION = '12.5.10'; // MUST MATCH YOUR SCRIPT HEADER VERSION
+    const FORECAST_VERSION = '12.5.11';
 
     function isNewerVersion(oldVer, newVer) {
         const oldParts = oldVer.split('.').map(Number);
@@ -608,20 +613,15 @@ function formatDate(d) {
                     if (isNewerVersion(FORECAST_VERSION, remoteVersion)) {
                         const updateContainer = document.getElementById('eam-update-container');
                         if (updateContainer) updateContainer.style.display = 'block';
-                        console.log(`[Forecast] Update available! Current: ${FORECAST_VERSION}, Remote: ${remoteVersion}`);
                     }
                 }
-            }).catch(e => console.warn('[Forecast] Update check failed silently.', e));
+            }).catch(e => {});
     }
 
-    /** =========================
-     * Quick Search Bar Builder (Stable DOM)
-     * ========================= */
     function buildSearchUI() {
         if (window.self !== window.top) return;
         if (document.getElementById('apm-quick-search-container')) return;
 
-        // Pull native styling to match the header
         const referenceBtn = document.querySelector('.x-btn-inner') || document.body;
         const computedStyle = window.getComputedStyle(referenceBtn);
         const nativeColor = computedStyle.color || '#d1d1d1';
@@ -630,7 +630,6 @@ function formatDate(d) {
         const searchContainer = document.createElement('div');
         searchContainer.id = 'apm-quick-search-container';
 
-        // Fix to the left side, bypassing ExtJS layout rules
         searchContainer.style.position = 'fixed';
         searchContainer.style.top = '0';
         searchContainer.style.left = '110px';
@@ -823,12 +822,10 @@ function formatDate(d) {
             document.getElementById('eam-btn-today').onmouseover = function() { this.style.backgroundColor = '#2980b9'; };
             document.getElementById('eam-btn-today').onmouseout = function() { this.style.backgroundColor = '#3498db'; };
 
-            // Render Site Code Options
             const renderOrgs = () => {
                 const select = document.getElementById('eam-org-select');
                 if (!select) return;
 
-                // Empty string acts as the visual and logical default
                 select.innerHTML = '<option value="">-- All Sites --</option>';
 
                 savedOrgs.forEach(org => {
@@ -843,7 +840,6 @@ function formatDate(d) {
             };
 
             const checkboxes = Array.from(panel.querySelectorAll('#eam-day-checkboxes input[type="checkbox"]'));
-
 
             function updateCheckboxVisuals() {
                 const userChecked = checkboxes.filter(cb => cb.dataset.explicit === "true").map(cb => parseInt(cb.value, 10));
@@ -888,7 +884,6 @@ function formatDate(d) {
                 });
             }
 
-            // Slider UI Logic
             const todayToggle = document.getElementById('eam-today-only-toggle');
             const todayToggleText = document.getElementById('eam-today-toggle-text');
 
@@ -905,7 +900,6 @@ function formatDate(d) {
                 saveAllPreferences();
             });
 
-            // Always Load Prefs
             let weekToSet = "0";
             let isSimpleMode = true;
             let isCustomDateMode = false;
@@ -937,7 +931,6 @@ function formatDate(d) {
             updateTodayToggleUI();
             document.getElementById('eam-week-select').value = weekToSet;
 
-            // Date Mode Display Logic
             const dateModeBtn = document.getElementById('eam-date-mode-toggle');
             const relDates = document.getElementById('eam-relative-dates');
             const custDates = document.getElementById('eam-custom-dates');
@@ -958,7 +951,6 @@ function formatDate(d) {
             dateModeBtn.onclick = () => {
                 isCustomDateMode = !isCustomDateMode;
 
-                // Sync Relative dates to Custom Dates on switch
                 if (isCustomDateMode) {
                     const weekSelect = document.getElementById('eam-week-select');
                     const isCumulative = weekSelect.dataset.cumulative === "true";
@@ -981,7 +973,6 @@ function formatDate(d) {
                 saveAllPreferences();
             };
 
-            // Simple Mode Display Logic
             const modeBtn = document.getElementById('eam-mode-toggle');
             const advSite = document.getElementById('eam-adv-site');
             const advAssigned = document.getElementById('eam-adv-assigned');
@@ -1011,7 +1002,6 @@ function formatDate(d) {
                 saveAllPreferences();
             };
 
-            // Site Code Manager Buttons
             document.getElementById('eam-add-org-btn').onclick = () => {
                 const newOrg = prompt('Enter new Site Code (Org):');
 
@@ -1043,7 +1033,7 @@ function formatDate(d) {
 
                 if (confirm(`Are you sure you want to remove ${current} from your list?`)) {
                     savedOrgs = savedOrgs.filter(o => o !== current);
-                    selectedOrg = ''; // Reset to All Sites
+                    selectedOrg = '';
                     renderOrgs();
                     saveAllPreferences();
                 }
@@ -1078,14 +1068,10 @@ function formatDate(d) {
                 });
             });
 
-            // Fire background update check
             checkForUpdates();
         }
     }
 
-    /** =========================
-     * Engine Utilities (Direct Control Of EAM ExtJS Framework)
-     * ========================= */
     const delay = (ms) => new Promise(res => setTimeout(res, ms));
 
     function closeAllExtMenus() {
@@ -1114,7 +1100,6 @@ function formatDate(d) {
         const scriptContent = `
             (function() {
                 try {
-                    // 1. Find the Ext context dynamically by hunting for the wsjobs store
                     var targetExt = null;
                     var allWins = [window];
                     var frames = document.querySelectorAll('iframe');
@@ -1137,10 +1122,9 @@ function formatDate(d) {
                         if (targetExt) break;
                     }
 
-                    if (!targetExt) targetExt = window.Ext; // Fallback
+                    if (!targetExt) targetExt = window.Ext;
                     if (!targetExt || !targetExt.ComponentQuery) return;
 
-                    // 2. Query ExtJS memory for common "Expand" buttons or "List View" tabs
                     var queries = [
                         'button[cls~=uftid-collapseright]',
                         'button[tooltip*="Expand Right"]',
@@ -1163,14 +1147,13 @@ function formatDate(d) {
                 } catch(e) {}
             })();
         `;
-
         const scriptEl = document.createElement('script');
         scriptEl.id = payloadId;
         scriptEl.textContent = scriptContent;
         document.head.appendChild(scriptEl);
         setTimeout(() => scriptEl.remove(), 100);
 
-        await delay(150); // Allow framework animation to finish
+        await delay(150);
     }
 
     function getEAMModules() {
@@ -1199,7 +1182,6 @@ function isGridReady() {
                     for (const grid of grids) {
                         if (grid.rendered && grid.getStore) {
                             const store = grid.getStore();
-                            // Lock onto the specific EAM Work Order store ID discovered in the probe
                             if (store && store.storeId && store.storeId.toLowerCase().includes('wsjobs') && !store.isLoading()) {
                                 return true;
                             }
@@ -1211,9 +1193,6 @@ function isGridReady() {
         return false;
     }
 
-/** =========================
-     * Direct ExtJS API Bridge (Event-Driven)
-     * ========================= */
     function applyForecastFiltersExtJS(filterData) {
         const payloadId = 'apm-extjs-payload-' + Date.now();
         const scriptContent = `
@@ -1225,7 +1204,6 @@ function isGridReady() {
                     function executeEngine() {
                         attempts++;
 
-                        // 1. Find active Ext context dynamically via wsjobs store
                         var targetExt = null;
                         var allWins = [window];
                         var frames = document.querySelectorAll('iframe');
@@ -1258,7 +1236,6 @@ function isGridReady() {
                             return;
                         }
 
-                        // 2. Verify Form is ready (Work Order Number field always exists)
                         var woFields = targetExt.ComponentQuery.query('[name=ff_workordernum]:not([destroyed=true])');
                         if (!woFields || woFields.length === 0) {
                             if (attempts < maxAttempts) setTimeout(executeEngine, 250);
@@ -1268,7 +1245,6 @@ function isGridReady() {
                         var data = ${JSON.stringify(filterData)};
                         var needsAjaxWait = false;
 
-                        // 1. Change Dataspy (Dynamic Target)
                         if (!data.isClearMode) {
                             var targetDataspyName = data.isWoSearch ? 'All Work Orders' : 'Open Work Orders';
                             var combos = targetExt.ComponentQuery.query('combobox');
@@ -1360,33 +1336,30 @@ function isGridReady() {
                             }
 
                             if (!data.isClearMode) {
-                                var runBtns = targetExt.ComponentQuery.query('button[text=Run]:not([destroyed=true])');
-                                if (runBtns && runBtns.length > 0) {
-                                    var runBtn = runBtns[0];
-                                    if (runBtn.handler) runBtn.handler.call(runBtn.scope || runBtn, runBtn);
-                                    else runBtn.fireEvent('click', runBtn);
-                                }
+                                setTimeout(function() {
+                                    var runBtns = targetExt.ComponentQuery.query('button[text=Run]:not([destroyed=true])');
+                                    if (runBtns && runBtns.length > 0) {
+                                        var runBtn = runBtns.find(function(b) { return !b.hidden && (!b.isHidden || !b.isHidden()); }) || runBtns[0];
+                                        if (runBtn) {
+                                            if (runBtn.handler) runBtn.handler.call(runBtn.scope || runBtn, runBtn);
+                                            else runBtn.fireEvent('click', runBtn);
+                                        }
+                                    }
+                                }, 250);
                             }
                         }
 
-                        // 3. Native Event-Driven Execution (Replaces the Polling Loop)
                         if (needsAjaxWait) {
                             var ajaxListener = function() {
-                                // Once the network goes quiet, unbind to prevent memory leaks
                                 if (!targetExt.Ajax.isLoading()) {
                                     targetExt.Ajax.un('requestcomplete', ajaxListener);
                                     targetExt.Ajax.un('requestexception', ajaxListener);
-
-                                    // Give ExtJS a tiny 150ms buffer to physically draw the new text boxes
                                     setTimeout(applyFiltersAndRun, 150);
                                 }
                             };
-
-                            // Bind directly to the ExtJS global Ajax queue
                             targetExt.Ajax.on('requestcomplete', ajaxListener);
                             targetExt.Ajax.on('requestexception', ajaxListener);
 
-                            // Failsafe timeout in case the request finished instantaneously
                             setTimeout(function() {
                                 targetExt.Ajax.un('requestcomplete', ajaxListener);
                                 targetExt.Ajax.un('requestexception', ajaxListener);
@@ -1408,9 +1381,6 @@ function isGridReady() {
         setTimeout(() => scriptEl.remove(), 100);
     }
 
-    /** =========================
-     * Labor Tracker Module (Omni-Edge & Manager Mode)
-     * ========================= */
     const LaborTracker = (function() {
         if (window.self !== window.top) return { init: function() {} };
 
@@ -1418,7 +1388,6 @@ function isGridReady() {
         let activeTab = 7;
         let isFetching = false;
 
-        // Manager Mode State
         let savedEmployees = JSON.parse(localStorage.getItem('apmLaborSavedEmps') || '[]');
         let selectedEmployee = localStorage.getItem('apmLaborActiveEmp') || '';
 
@@ -1441,11 +1410,9 @@ function isGridReady() {
         }
 
 function extractEmployeeId() {
-            // Check native EAM context first
             if (window.EAM && window.EAM.Context && window.EAM.Context.employee) {
                 return window.EAM.Context.employee.toUpperCase();
             }
-            // Check EAM AppData as backup
             if (window.EAM && window.EAM.AppData && window.EAM.AppData.employee) {
                 return window.EAM.AppData.employee.toUpperCase();
             }
@@ -1472,7 +1439,6 @@ function extractEmployeeId() {
             const url = "https://us1.eam.hxgnsmartcloud.com/web/base/WSBOOK.HDR.xmlhttp";
             const currentTenant = window.EAM?.AppData?.tenant || "AMAZONRMENA_PRD";
 
-            // Inject Manager Mode Target
             const currentUser = extractEmployeeId();
             const targetEmployee = selectedEmployee ? selectedEmployee : currentUser;
 
@@ -1679,7 +1645,6 @@ function extractEmployeeId() {
                         isVisible = !wasVisible;
                         applyDocking();
                         if (isVisible) {
-                            // Force cache invalidation every time the panel is opened
                             laborCache.lastFetch = 0;
                             fetchLaborData();
                         }
@@ -1689,7 +1654,6 @@ function extractEmployeeId() {
                 document.addEventListener('mouseup', onMouseUp);
             };
 
-            // Manager Mode Events
             document.getElementById('apm-labor-mgr-toggle').onclick = () => {
                 const p = document.getElementById('apm-labor-mgr-panel');
                 p.style.display = p.style.display === 'none' ? 'flex' : 'none';
@@ -1706,7 +1670,7 @@ function extractEmployeeId() {
                     selectedEmployee = cleanAlias;
                     localStorage.setItem('apmLaborActiveEmp', selectedEmployee);
                     renderEmpSelect();
-                    laborCache.lastFetch = 0; // Invalidate cache
+                    laborCache.lastFetch = 0;
                     fetchLaborData();
                 }
             };
@@ -1719,7 +1683,7 @@ function extractEmployeeId() {
                     selectedEmployee = '';
                     localStorage.setItem('apmLaborActiveEmp', selectedEmployee);
                     renderEmpSelect();
-                    laborCache.lastFetch = 0; // Invalidate cache
+                    laborCache.lastFetch = 0;
                     fetchLaborData();
                 }
             };
@@ -1728,11 +1692,10 @@ function extractEmployeeId() {
                 selectedEmployee = e.target.value;
                 localStorage.setItem('apmLaborActiveEmp', selectedEmployee);
                 renderEmpSelect();
-                laborCache.lastFetch = 0; // Invalidate cache for new user
+                laborCache.lastFetch = 0;
                 fetchLaborData();
             };
 
-            // Close on outside click
             document.addEventListener('mousedown', (e) => {
                 if (isVisible && !panel.contains(e.target) && !trigger.contains(e.target)) {
                     isVisible = false;
@@ -1791,13 +1754,9 @@ function extractEmployeeId() {
         };
     })();
 
-/** =========================
-     * Master Flow Logic
-     * ========================= */
     async function executeForecast(mode = 'normal') {
         if (window.self !== window.top) return;
 
-        // 1. SPAM-CLICK & CRASH GUARD
         if (isRunning) return;
         try {
             if (window.Ext && window.Ext.Ajax && window.Ext.Ajax.isLoading()) {
@@ -1812,7 +1771,7 @@ function extractEmployeeId() {
             quickSearchText = document.getElementById('apm-qs-input').value.trim();
             if (!quickSearchText) { setStatus(mode, 'Enter WO.', '#e74c3c'); return; }
         } else if (mode === 'clear') {
-            // Leave empty
+
         } else if (mode === 'today') {
             const todayFormatted = formatDate(new Date());
             dates = { start: todayFormatted, end: todayFormatted };
@@ -1838,7 +1797,7 @@ function extractEmployeeId() {
             shiftText = document.getElementById('eam-shift-text').value.trim();
             descText = document.getElementById('eam-desc-text').value.trim();
             descOp = document.getElementById('eam-desc-op').value;
-            // Captures the "" if All Sites is selected, or "DWA2" if a site is picked
+
             orgText = document.getElementById('eam-org-select').value.trim().toUpperCase();
         }
 
@@ -1854,10 +1813,8 @@ function extractEmployeeId() {
         else if (mode === 'clear') setStatus(mode, 'Clearing...', '#f1c40f');
         else triggerThunderstrike();
 
-        // 1. Native Tab Jump or Menu Build
         await navigateTo('Work Orders', ['Work', 'Work Orders'], 'WSJOBS');
 
-        // 2. Poll for Grid Readiness
         setStatus(mode, 'Expanding...', '#f1c40f');
         let gridFound = false;
         for (let i = 0; i < 40; i++) {
@@ -1871,14 +1828,10 @@ function extractEmployeeId() {
             return;
         }
 
-        // Expand to List View natively
         await returnToListView();
 
         setStatus(mode, mode === 'clear' ? 'Wiping Fields...' : 'Injecting API...', '#f1c40f');
 
-    /** =========================
-     * Configuration Logic
-     * ========================= */
         const todayOnlyCheckbox = document.getElementById('eam-today-only-toggle');
         const isTodayOnly = todayOnlyCheckbox && todayOnlyCheckbox.checked;
 
@@ -1897,12 +1850,9 @@ function extractEmployeeId() {
                 endOpClass = 'fo_lte';
             }
         }
-    /** =========================
-     * ExtJS Payload Construction
-     * ========================= */
         const extjsFilterData = {
             isClearMode: mode === 'clear',
-            isWoSearch: mode === 'quick', // Flags the payload to change the Dataspy
+            isWoSearch: mode === 'quick',
             org: (mode === 'quick' || mode === 'clear') ? '' : orgText,
             woNum: (mode === 'quick') ? quickSearchText : (mode === 'clear' ? '' : null),
             desc: (mode === 'quick' || mode === 'clear') ? '' : descText,
@@ -1915,7 +1865,6 @@ function extractEmployeeId() {
             endOpClass: endOpClass
         };
 
-        // 3. Fire Native Filter Execution
         applyForecastFiltersExtJS(extjsFilterData);
 
         if (mode === 'clear') {
@@ -1928,17 +1877,12 @@ function extractEmployeeId() {
         isRunning = false;
     }
 
-    /** =========================
-     * Native ExtJS Toggle Button Injector
-     * ========================= */
     function injectToggleBtnNatively() {
         if (window.self !== window.top) return;
 
-        // 1. Establish Event Listeners (Once)
         if (!window._apmForecastToggleBound) {
             window._apmForecastToggleBound = true;
 
-            // Handle panel toggle triggered from inside the ExtJS Sandbox
             window.addEventListener('APM_TOGGLE_FORECAST', (e) => {
                 const panel = document.getElementById('eam-forecast-panel');
                 if (!panel) return;
@@ -1946,11 +1890,9 @@ function extractEmployeeId() {
                 if (panel.style.display === 'none' || panel.style.display === '') {
                     panel.style.top = (e.detail.bottom + 6) + 'px';
 
-                    // Center the 460px wide panel under the button
                     const panelWidth = 460;
                     let targetLeft = e.detail.left + (e.detail.width / 2) - (panelWidth / 2);
 
-                    // Boundary Checks to prevent clipping off screen
                     const screenWidth = window.innerWidth;
                     if (targetLeft + panelWidth > screenWidth - 20) {
                         targetLeft = screenWidth - panelWidth - 20;
@@ -1964,7 +1906,6 @@ function extractEmployeeId() {
                 }
             });
 
-            // Defocus: Click outside to close (Top Window)
             const hidePanel = (e) => {
                 const panel = document.getElementById('eam-forecast-panel');
                 const isClickOnBtn = e && e.target && (e.target.closest('#apm-forecast-ext-btn') || e.target.closest('#eam-forecast-toggle'));
@@ -1975,7 +1916,6 @@ function extractEmployeeId() {
             };
             document.addEventListener('mousedown', hidePanel, true);
 
-            // Defocus: Click inside iframes to close
             setInterval(() => {
                 document.querySelectorAll('iframe').forEach(f => {
                     try {
@@ -1990,7 +1930,6 @@ function extractEmployeeId() {
             }, 1500);
         }
 
-        // 2. Inject Native Ext Component Payload
         const payloadId = 'apm-extjs-inject-btn-' + Date.now();
         const scriptContent = `
             (function() {
@@ -2033,7 +1972,6 @@ function extractEmployeeId() {
                         },
                         handler: function(btn) {
                             var el = btn.getEl();
-                            // Package up the width of the button so the UI knows how to center itself
                             window.dispatchEvent(new CustomEvent('APM_TOGGLE_FORECAST', {
                                 detail: { left: el.getX(), bottom: el.getY() + el.getHeight(), width: el.getWidth() }
                             }));
@@ -2049,9 +1987,6 @@ function extractEmployeeId() {
         setTimeout(() => scriptEl.remove(), 100);
     }
 
-    /** =========================
-     * PTP Timer Engine (Manual Start)
-     * ========================= */
     let ptpSeconds = 120;
 
     function initPtpTimerUI() {
@@ -2084,7 +2019,6 @@ function extractEmployeeId() {
             document.getElementById('apm-ptp-start-btn').onclick = startPtpCountdown;
         }
 
-        // Close logic
         const closeBtn = document.getElementById('apm-ptp-close');
         closeBtn.onmouseover = function() { this.style.opacity = '1'; };
         closeBtn.onmouseout = function() { this.style.opacity = '0.5'; };
@@ -2149,14 +2083,12 @@ function checkPtpStatus() {
 
         let isPtpVisible = false;
 
-        // SAFELY scan documents, ignoring cross-origin iframes
         const allDocs = [document];
         document.querySelectorAll('iframe').forEach(f => {
             try {
-                // Abort before touching cross-origin frames
                 if (f.src && f.src.includes('amazon.dev')) return;
                 if (f.contentDocument) allDocs.push(f.contentDocument);
-            } catch(e) {} // Silently catch any other CORS errors
+            } catch(e) {}
         });
 
         for (const doc of allDocs) {
@@ -2187,9 +2119,6 @@ function checkPtpStatus() {
         }
     }
 
-/** =========================
-     * Unified Tool Initialization
-     * ========================= */
     let initTO;
     const observer = new MutationObserver(() => {
         clearTimeout(initTO);
@@ -2197,19 +2126,17 @@ function checkPtpStatus() {
             buildForecastUI();
             injectToggleBtnNatively();
             buildSearchUI();
-            checkPtpStatus(); // Immediate check on DOM changes
+            checkPtpStatus();
         }, 150);
     });
     observer.observe(document.body, { childList: true, subtree: true });
 
-    // Initial Startup & Heartbeat
     setTimeout(() => {
         buildForecastUI();
         injectToggleBtnNatively();
         buildSearchUI();
         LaborTracker.init();
 
-        // Establish heartbeat for PTP timer and persistent UI checks
         setInterval(() => {
             checkPtpStatus();
         }, 1500);
