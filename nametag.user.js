@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         APM Master: ColorCode & Nametags
 // @namespace    https://w.amazon.com/bin/view/Users/rosendah/APM-Master/
-// @version      4.0.1
+// @version      4.0.2
 // @description  Full Restoration: ColorCode UI + Session Engine + Physical Linkifier + Native Store Filtering.
 // @author       Jacob Rosendahl
 // @icon         https://media.licdn.com/dms/image/v2/D5603AQGdCV0_LQKRfQ/profile-displayphoto-scale_100_100/B56ZyZLvQ5HgAg-/0/1772096519061?e=1773878400&v=beta&t=eWO1Jiy0-WbzG_yBv-SBrmmsVOPMexF57-q1Xh_VXCk
@@ -15,6 +15,7 @@
 
 /* --------------------------------------------------------------------------
    RECENT FEATURES & BUG FIXES:
+   - v4.0.2 Bug Fix: Fixed an issue with linkify injection causing high performance drain
    - v4.0.1 Feature: Internal update checker and notice in the menu
    - v4.0.0 Feature: Upgraded Nametag filtering to use Native ExtJS Store filtering instead of CSS hiding.
    - v3.10.0 Feature: Changed theme apply to apply directly to memory rather than using a link hijack, more reliable and seamless
@@ -322,12 +323,17 @@
                 try {
                     const text = row.textContent;
                     const lowerText = text.toLowerCase();
+
+                    // PERFORMANCE FIX: Abort immediately if the row's text hasn't changed since last pass
+                    if (row.getAttribute('data-apm-row-text') === lowerText) return;
+
                     row.setAttribute('data-apm-row-text', lowerText);
                     row.removeAttribute('data-cc-rule');
 
                     let colorRuleApplied = false;
                     const cells = row.querySelectorAll('.x-grid-cell-inner');
 
+                    // Cleanup old tags safely
                     row.querySelectorAll('.apm-nametag').forEach(tag => {
                         const kw = tag.getAttribute('data-filter-kw');
                         const isStillValid = rules.some(r => r.search.toLowerCase() === kw && r.showTag && lowerText.includes(kw));
@@ -351,13 +357,8 @@
                                         const formattedTagText = rule.tag.replace(/\\n/g, '<br>');
 
                                         if (!existingTag) {
-                                            const t = document.createElement('div');
-                                            t.className = 'apm-nametag';
-                                            t.style.backgroundColor = `var(--cc-color-${safeId})`;
-                                            t.innerHTML = formattedTagText;
-                                            t.title = `Click to show "${rule.search}" only (Click again to undo)`;
-                                            t.setAttribute('data-filter-kw', searchStr);
-                                            cell.appendChild(t);
+                                            // Faster injection method that doesn't trigger layout thrashing
+                                            cell.insertAdjacentHTML('beforeend', `<div class="apm-nametag" style="background-color: var(--cc-color-${safeId})" title="Click to show '${rule.search}' only (Click again to undo)" data-filter-kw="${searchStr}">${formattedTagText}</div>`);
                                         } else {
                                             existingTag.style.backgroundColor = `var(--cc-color-${safeId})`;
                                             if (existingTag.innerHTML !== formattedTagText) existingTag.innerHTML = formattedTagText;
@@ -374,32 +375,21 @@
                         if (cell.hasAttribute('data-apm-linkified')) return;
 
                         const match = cell.textContent.match(LINK_CONFIG.woPattern);
-                        if (match) {
+                        if (match && !cell.querySelector('.apm-wo-link')) {
                             const woNum = match[1];
                             const safeUrl = buildSafeWoUrl(woNum);
 
-                            cell.setAttribute('data-apm-linkified', 'true');
+                            // EXTJS CRASH FIX: Use string replacement instead of destroying childNodes.
+                            // This preserves the outer cell wrapper that ExtJS tracks for selection events.
+                            const originalHtml = cell.innerHTML;
+                            const newHtml = originalHtml.replace(
+                                LINK_CONFIG.woPattern,
+                                `<span style="white-space:nowrap"><a class="apm-wo-link" href="${safeUrl}" target="_blank">$1</a><span class="apm-copy-icon" data-wo-copy-url="${safeUrl}"></span></span>`
+                            );
 
-                            for (let node of cell.childNodes) {
-                                if (node.nodeType === 3 && node.textContent.includes(woNum)) {
-                                    const container = document.createElement('span');
-                                    container.style.whiteSpace = 'nowrap';
-
-                                    const link = document.createElement('a');
-                                    link.className = 'apm-wo-link';
-                                    link.textContent = woNum;
-                                    link.href = safeUrl;
-                                    link.target = '_blank';
-
-                                    const copyIcon = document.createElement('span');
-                                    copyIcon.className = 'apm-copy-icon';
-                                    copyIcon.setAttribute('data-wo-copy-url', safeUrl);
-
-                                    container.appendChild(link);
-                                    container.appendChild(copyIcon);
-                                    node.replaceWith(container);
-                                    break;
-                                }
+                            if (originalHtml !== newHtml) {
+                                cell.innerHTML = newHtml;
+                                cell.setAttribute('data-apm-linkified', 'true');
                             }
                         }
                     });
@@ -416,12 +406,7 @@
                         const safeUrl = buildSafeWoUrl(woNum);
 
                         el.setAttribute('data-wo-num', woNum);
-
-                        const copyIcon = document.createElement('span');
-                        copyIcon.className = 'apm-copy-icon';
-                        copyIcon.setAttribute('data-wo-copy-url', safeUrl);
-
-                        el.appendChild(copyIcon);
+                        el.insertAdjacentHTML('beforeend', `<span class="apm-copy-icon" data-wo-copy-url="${safeUrl}"></span>`);
                     }
                 });
             } catch (e) { }
@@ -483,10 +468,10 @@
             document.getElementById('cc-fill').checked = false;
         }
 
-        /** =========================
+/** =========================
          * GitHub Update Checker
          * ========================= */
-        const NAMETAG_VERSION = '4.0.1'; // MUST MATCH YOUR SCRIPT HEADER VERSION
+        const NAMETAG_VERSION = '4.0.2'; // MUST MATCH YOUR SCRIPT HEADER VERSION
 
         function isNewerVersion(oldVer, newVer) {
             const oldParts = oldVer.split('.').map(Number);
@@ -500,7 +485,7 @@
             return false;
         }
 
-        function autoCheckUpdate() {
+        function checkForUpdates() {
             if (window._apmColorCodeUpdateChecked) return;
             window._apmColorCodeUpdateChecked = true;
 
@@ -513,15 +498,15 @@
                         if (isNewerVersion(NAMETAG_VERSION, remoteVersion)) {
                             console.log(`[ColorCode] Update available! Current: ${NAMETAG_VERSION}, Remote: ${remoteVersion}`);
 
-                            // 1. Set global flag in case menu isn't built yet
+                            // Save state globally so the menu knows to show the button even if opened later
                             window._apmColorCodeHasUpdate = true;
 
-                            // 2. Unhide immediately if menu is already built
+                            // Unhide immediately if the menu happens to already be open
                             const updateContainer = document.getElementById('cc-update-container');
                             if (updateContainer) updateContainer.style.display = 'block';
                         }
                     }
-                }).catch(e => console.warn('[ColorCode] Update check failed silently.', e));
+                }).catch(e => console.warn('[ColorCode] Update check failed.', e));
         }
 
         /** =========================
@@ -591,6 +576,7 @@
                     <h4>1. Filtering</h4><ul><li>Click any injected nametag to instantly filter the grid to show only rows matching that keyword. Click it again to toggle the filter off.</li><li>Click the red warning banner at the top to clear the filter.</li></ul>
                     <h4>2. Row Backgrounds & Priority</h4><ul><li>Check <strong>Fill</strong> to color the background of the row.</li><li>Use <strong>▲ / ▼</strong> to move important rules to the top (highest rule wins the color).</li></ul>
                     <h4>3. The Linkifier</h4><ul><li>Click WO numbers to open them. Click the space <em>next</em> to the number to instantly copy the link.</li></ul>
+                    <h4>4. Sorting</h4><ul><li>Click on a nametag and instantly filter by that tag only. Performed natively in the APM Framework, it truly filters, rather than a visual hiding trick.</li></ul>
                 </div>
 
                 <div style="display:flex; justify-content:space-between; align-items:center; margin-top:10px; border-top: 1px solid #4a5a6a; padding-top:10px;">
@@ -599,8 +585,14 @@
                     <button id="cc-export-btn" class="cc-footer-btn" title="Copy your config code to the clipboard">📤 Export</button>
                 </div>
 
-                <div id="cc-update-container" style="display:${updateDisplay}; margin-top: 10px; text-align: center;">
-                    <a href="https://raw.githubusercontent.com/jaker788-create/APM-Master/main/nametag.user.js" target="_blank" style="display:inline-block; width: 100%; box-sizing: border-box; background:#f39c12; color:white; padding:6px 12px; border-radius:4px; font-weight:bold; text-decoration:none; font-size:12px; transition: background 0.2s; box-shadow: 0 2px 5px rgba(0,0,0,0.2);">✨ Update Available</a>
+<div style="display:flex; justify-content:space-between; align-items:center; margin-top:10px; border-top: 1px solid #4a5a6a; padding-top:10px;">
+                    <button id="cc-import-btn" class="cc-footer-btn" title="Paste a config code from a teammate">📥 Import</button>
+                    <button id="cc-help-btn" class="cc-footer-btn" style="background:transparent; color:#3498db; border:1px solid #3498db; width: 110px;">ℹ️ Help & Tips</button>
+                    <button id="cc-export-btn" class="cc-footer-btn" title="Copy your config code to the clipboard">📤 Export</button>
+                </div>
+
+                <div id="cc-update-container" style="display:${window._apmColorCodeHasUpdate ? 'block' : 'none'}; margin-top: 12px; text-align: center;">
+                    <a href="https://raw.githubusercontent.com/jaker788-create/APM-Master/main/nametag.user.js" target="_blank" style="display:inline-block; width: 100%; box-sizing: border-box; background:#e67e22; color:white; padding:8px 12px; border-radius:4px; font-weight:bold; text-decoration:none; font-size:13px; transition: background 0.2s; box-shadow: 0 4px 6px rgba(0,0,0,0.3);">✨ Install Update</a>
                 </div>
             `;
             document.body.appendChild(panel);
@@ -801,7 +793,7 @@
         });
         observer.observe(document.body, { childList: true, subtree: true });
 
-        // Trigger background update check if the function exists
-        if (typeof autoCheckUpdate === 'function') autoCheckUpdate();
+// Trigger background update check
+        checkForUpdates();
     });
 })();
