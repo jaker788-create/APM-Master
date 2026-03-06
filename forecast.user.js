@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         APM Master: Forecast Tool
 // @namespace    https://w.amazon.com/bin/view/Users/rosendah/APM-Master/
-// @version      12.5.8
+// @version      12.5.9
 // @description  Powerful WO Forecast Tool & Native Quick Search Bar. Manual edits to this script are not recomended, this is actively supported tool so Slack me for any issues and I can push an update! If you edit you will not receive auto updates
 // @author       Jacob Rosendahl & Thai Ho
 // @icon         https://media.licdn.com/dms/image/v2/D5603AQGdCV0_LQKRfQ/profile-displayphoto-scale_100_100/B56ZyZLvQ5HgAg-/0/1772096519061?e=1773878400&v=beta&t=eWO1Jiy0-WbzG_yBv-SBrmmsVOPMexF57-q1Xh_VXCk
@@ -47,148 +47,8 @@
     'use strict';
 
 /** =========================
-     * PTP Theme Routing & CSS Bridge
+     * PTP Theme Routing & CSS Bridge (theme temp removed)
      * ========================= */
-    const isPTP = location.hostname.includes('amazon.dev');
-
-    // 1. CHILD IFRAME LOGIC (Executes inside Sparsy)
-    if (isPTP) {
-        const STYLE_ID = 'apm-ptp-dark-patch';
-        const DARK_THEMES = new Set(['theme-hex-dark', 'theme-dark', 'dark', '']);
-
-        const APM_MASTER_CSS = `
-            #root {
-              --bg: #1a1a1a; --bg-2: #242424; --bg-3: #2c3e50;
-              --fg: #ecf0f1; --fg-muted: #bdc3c7;
-              --border: #3f3f3f; --border-slate: #34495e;
-              --primary: #1abc9c; --tickmark: #1abc9c;
-              --link: #3498db; --link-hover: #1abc9c;
-              --color-background-container-header-clzg6q: var(--bg-3) !important;
-              --color-background-status-warning-03nxlw: var(--bg-3) !important;
-              --color-border-status-warning-3feumr: var(--border-slate) !important;
-            }
-            #root, #root main { background-color: var(--bg) !important; color: var(--fg) !important; }
-            #root [class^="awsui_header_"], #root [class^="awsui_root_"][class*="awsui_variant-"],
-            #root [class*="awsui_header-secondary_"], #root [class*="awsui_header-sticky-enabled_"],
-            #root th[class*="awsui_header-cell_"], #root [class*="awsui_header-cell-content_"] {
-              background-color: var(--bg-3) !important; color: var(--fg) !important; border-color: var(--border-slate) !important;
-            }
-            #root svg rect, #root svg circle { fill: none !important; }
-            #root [class*="awsui_checkbox-control_"]:has(input:checked),
-            #root [role="radiogroup"] [class*="awsui_radio-control_"]:has(input:checked),
-            #root [role="switch"][aria-checked="true"] {
-              color: var(--tickmark) !important; background-color: var(--primary) !important;
-            }
-            #root button[type="submit"] { background-color: var(--primary) !important; border-color: var(--primary) !important; color: #ffffff !important; }
-            #root button, #root [role="button"] { background-color: var(--bg-3) !important; border: 1px solid var(--border-slate) !important; color: var(--fg) !important; }
-            #root svg path, #root svg circle, #root svg rect { stroke: currentColor !important; fill: currentColor !important; }
-        `;
-
-        function themeValue() {
-            // Check both potential storage keys just in case
-            const val = localStorage.getItem('apmUiTheme') || localStorage.getItem('apm_colorcode_settings');
-            if (!val) return 'theme-dark';
-            try {
-                // Handle case where ColorCode saved it as a JSON object
-                if (val.startsWith('{')) return JSON.parse(val).theme || 'theme-dark';
-            } catch(e) {}
-            return val.trim().toLowerCase();
-        }
-
-        function themeIsDark() { return DARK_THEMES.has(themeValue()); }
-
-        function applyDarkCss(on) {
-            const existing = document.getElementById(STYLE_ID);
-            if (on && !existing) {
-                const style = document.createElement('style');
-                style.id = STYLE_ID;
-                style.textContent = APM_MASTER_CSS;
-                (document.head || document.documentElement).appendChild(style);
-            } else if (!on && existing) {
-                existing.remove();
-            }
-        }
-
-        function refresh() { applyDarkCss(themeIsDark()); }
-
-        function requestParentTheme() {
-            try { if (window.parent && window.parent !== window) window.parent.postMessage({ apmMaster: 'getTheme' }, '*'); } catch {}
-        }
-
-        window.addEventListener('message', (e) => {
-            const d = e.data;
-            if (!d || !d.apmMaster) return;
-            if (d.apmMaster === 'theme' || d.apmMaster === 'setTheme') {
-                if (typeof d.value === 'string') {
-                    try { localStorage.setItem('apmUiTheme', d.value); } catch {}
-                    refresh();
-                }
-            }
-        });
-
-        window.addEventListener('storage', (e) => {
-            if (e.key === 'apmUiTheme' || e.key === 'apm_colorcode_settings') refresh();
-        });
-
-        // Wait for the Cloudscape root element to exist before attempting injection
-        const ptpObserver = new MutationObserver((mutations, obs) => {
-            if (document.getElementById('root') || document.querySelector('main')) {
-                refresh();
-                obs.disconnect(); // Stop observing once we've injected
-            }
-        });
-        ptpObserver.observe(document.documentElement, { childList: true, subtree: true });
-
-        requestParentTheme();
-
-        // Failsafe brute-force loop
-        let tries = 0;
-        const iv = setInterval(() => {
-            refresh();
-            if (++tries > 40 || document.getElementById(STYLE_ID)) clearInterval(iv);
-        }, 150);
-
-        return; // Halt script execution for the iframe here
-    }
-
-    // 2. PARENT BROADCASTER LOGIC (Executes in EAM)
-    if (window.self === window.top) {
-        window.addEventListener('message', (e) => {
-            const d = e.data;
-            if (d && d.apmMaster === 'getTheme') {
-                let sendVal = 'theme-dark';
-                try {
-                    // Pull from the new unified ColorCode settings object
-                    const settings = JSON.parse(localStorage.getItem('apm_colorcode_settings')) || {};
-                    if (settings.theme) sendVal = settings.theme;
-                } catch(err) {}
-
-                try {
-                    const target = (e.origin && e.origin !== 'null') ? e.origin : '*';
-                    e.source?.postMessage({ apmMaster: 'theme', value: sendVal }, target);
-                } catch {}
-            }
-        });
-
-        function broadcastTheme(val) {
-            try {
-                for (let i = 0; i < window.frames.length; i++) {
-                    window.frames[i].postMessage({ apmMaster: 'setTheme', value: val }, '*');
-                }
-            } catch {}
-        }
-
-        // Listen for changes to the specific ColorCode settings object
-        window.addEventListener('storage', (e) => {
-            if (e.key === 'apm_colorcode_settings') {
-                try {
-                    const newTheme = JSON.parse(e.newValue).theme;
-                    broadcastTheme(newTheme);
-                } catch(err) {}
-            }
-        });
-    }
-
     // 3. CLONE KILLER: Stop execution in regular non-PTP iframes
     if (window.self !== window.top) return;
 
@@ -707,7 +567,7 @@ function formatDate(d) {
     /** =========================
      * GitHub Update Checker
      * ========================= */
-    const FORECAST_VERSION = '12.5.8'; // MUST MATCH YOUR SCRIPT HEADER VERSION
+    const FORECAST_VERSION = '12.5.9'; // MUST MATCH YOUR SCRIPT HEADER VERSION
 
     function isNewerVersion(oldVer, newVer) {
         const oldParts = oldVer.split('.').map(Number);

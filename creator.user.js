@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         APM Master: WO Creator & Auto-Fill + Tab Re-Order
 // @namespace    https://w.amazon.com/bin/view/Users/rosendah/APM-Master/
-// @version      0.8.1
+// @version      0.8.2
 // @description  WO Cretion, Auto-Fill Engine, and LOTO Checklist Automation.
 // @author       Jacob Rosendahl
 // @icon         https://media.licdn.com/dms/image/v2/D5603AQGdCV0_LQKRfQ/profile-displayphoto-scale_100_100/B56ZyZLvQ5HgAg-/0/1772096519061?e=1773878400&v=beta&t=eWO1Jiy0-WbzG_yBv-SBrmmsVOPMexF57-q1Xh_VXCk
@@ -15,7 +15,7 @@
 
 /* --------------------------------------------------------------------------
    RECENT FEATURES & BUG FIXES:
-   - v0.8.1 Bug Fix: Fixed some security catch errors
+   - v0.8.2 Bug Fix: Fixed some security catch errors
    - v0.8.0 Optimize: Replaced fixed Ajax waits with native ExtJS event listeners for faster execution of autofilling. Signifigantly shrunk and simplified Menu UI
    - v0.7.3 Optimize: Removed WO Creator function as it diddn't have that much purpose.
    - v0.7.2: Feature: Added update notice in UI, added dynamic resizing with browser window scale, added help & tips
@@ -179,7 +179,7 @@
     /** =========================
      * GitHub Update Checker
      * ========================= */
-    const CURRENT_VERSION = '0.8.1'; // Manually bump this when you release new versions
+    const CURRENT_VERSION = '0.8.2'; // Manually bump this when you release new versions
 
     function isNewerVersion(oldVer, newVer) {
         const oldParts = oldVer.split('.').map(Number);
@@ -1479,7 +1479,7 @@
         document.body.appendChild(toggleBtn);
     }
 
-    /** =========================
+/** =========================
      * AutoFill Trigger Logic
      * ========================= */
     function injectAutoFillTriggers() {
@@ -1487,67 +1487,74 @@
 
         loadPresets();
 
-        const allDocs = [window.document];
-        document.querySelectorAll('iframe').forEach(f => {
-            try { if (f.src && f.src.includes('amazon.dev')) return; if (f.contentDocument) allDocs.push(f.contentDocument); } catch(e){}
-        });
-
-        // 1. Safely evaluate if Record View is visually active using ExtJS deep visibility
+        // --- DECLARE LOCAL STATE ---
         let isRecordViewActive = false;
-        let realWoTitle = "";
+        let foundTitle = "";
 
+        // 1. Gather visible contexts safely
         const allWins = [window.top, window];
+        const allDocs = [window.document];
+
         document.querySelectorAll('iframe').forEach(f => {
-            try { if (f.contentWindow) allWins.push(f.contentWindow); } catch(err){}
+            try {
+                if (f.contentWindow && f.contentWindow.Ext) {
+                    allWins.push(f.contentWindow);
+                }
+                if (f.contentDocument) {
+                    allDocs.push(f.contentDocument);
+                }
+            } catch(err){}
         });
 
+        // 2. Scan ExtJS contexts for an active Record View form
         allWins.forEach(win => {
-            if (win.Ext && win.Ext.ComponentQuery) {
-                const forms = win.Ext.ComponentQuery.query('form');
-                // Use ExtJS native isVisible(true) for deep hierarchy checking
-                const rvForm = forms.find(f => f.id && f.id.includes('recordview') && typeof f.isVisible === 'function' && f.isVisible(true));
+            try {
+                if (win.Ext && win.Ext.ComponentQuery) {
+                    const forms = win.Ext.ComponentQuery.query('form');
+                    const rvForm = forms.find(f => f.id && f.id.includes('recordview') && typeof f.isVisible === 'function' && f.isVisible(true));
 
-                if (rvForm) {
-                    isRecordViewActive = true;
-                    // Extract value directly from the ExtJS model, completely bypassing DOM
-                    const descField = rvForm.getForm().findField('description');
-                    if (descField) {
-                        realWoTitle = (descField.getValue() || '').trim().toLowerCase();
+                    if (rvForm) {
+                        isRecordViewActive = true;
+                        const descField = rvForm.getForm().findField('description');
+                        if (descField) {
+                            foundTitle = (descField.getValue() || '').trim().toLowerCase();
+                        }
                     }
                 }
-            }
+            } catch(err) {}
         });
 
-        // 2. Main Trigger Loop
+        // Capture values into constants to resolve ESLint "no-loop-func"
+        const currentWoTitle = foundTitle;
+        const isFormReady = isRecordViewActive;
+
+        // 3. Inject/Remove buttons
         allDocs.forEach(d => {
             if (!d) return;
 
-            // Global Purge: If not looking at Record View, destroy all autofill buttons instantly and abort
-            if (!isRecordViewActive || !realWoTitle) {
+            if (!isFormReady || !currentWoTitle) {
                 d.querySelectorAll('#apm-btn-do-autofill').forEach(btn => btn.remove());
                 return;
             }
 
             const titles = d.querySelectorAll('.recorddesc');
             titles.forEach(titleEl => {
-                if (titleEl.getAttribute('aria-labelledby') && titleEl.getAttribute('aria-labelledby').includes('module_header')) {
+                if (titleEl.getAttribute('aria-labelledby')?.includes('module_header')) {
                     const parent = titleEl.parentElement;
                     const existingBtn = parent.querySelector('#apm-btn-do-autofill');
 
-                    // 3. Keyword Match Scanner
                     let hasMatch = false;
                     for (const key in presets.autofill) {
                         const kwString = presets.autofill[key].keyword;
                         if (!kwString) continue;
 
-                        const keywords = kwString.split(',').map(k => k.trim().toLowerCase()).filter(k => k.length > 0);
-                        if (keywords.some(k => realWoTitle.includes(k))) {
+                        const keywords = kwString.split(',').map(k => k.trim().toLowerCase()).filter(Boolean);
+                        if (keywords.some(k => currentWoTitle.includes(k))) {
                             hasMatch = true;
                             break;
                         }
                     }
 
-                    // 4. Dom Manipulation
                     if (hasMatch && !existingBtn) {
                         const btn = d.createElement('button');
                         btn.id = 'apm-btn-do-autofill';
