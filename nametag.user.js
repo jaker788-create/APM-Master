@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         APM Master: ColorCode & Nametags
 // @namespace    https://w.amazon.com/bin/view/Users/rosendah/APM-Master/
-// @version      4.0.2
+// @version      4.0.3
 // @description  Full Restoration: ColorCode UI + Session Engine + Physical Linkifier + Native Store Filtering.
 // @author       Jacob Rosendahl
 // @icon         https://media.licdn.com/dms/image/v2/D5603AQGdCV0_LQKRfQ/profile-displayphoto-scale_100_100/B56ZyZLvQ5HgAg-/0/1772096519061?e=1773878400&v=beta&t=eWO1Jiy0-WbzG_yBv-SBrmmsVOPMexF57-q1Xh_VXCk
@@ -471,7 +471,7 @@
 /** =========================
          * GitHub Update Checker
          * ========================= */
-        const NAMETAG_VERSION = '4.0.2'; // MUST MATCH YOUR SCRIPT HEADER VERSION
+        const NAMETAG_VERSION = '4.0.3'; // MUST MATCH YOUR SCRIPT HEADER VERSION
 
         function isNewerVersion(oldVer, newVer) {
             const oldParts = oldVer.split('.').map(Number);
@@ -580,12 +580,6 @@
                 </div>
 
                 <div style="display:flex; justify-content:space-between; align-items:center; margin-top:10px; border-top: 1px solid #4a5a6a; padding-top:10px;">
-                    <button id="cc-import-btn" class="cc-footer-btn" title="Paste a config code from a teammate">📥 Import</button>
-                    <button id="cc-help-btn" class="cc-footer-btn" style="background:transparent; color:#3498db; border:1px solid #3498db; width: 110px;">ℹ️ Help & Tips</button>
-                    <button id="cc-export-btn" class="cc-footer-btn" title="Copy your config code to the clipboard">📤 Export</button>
-                </div>
-
-<div style="display:flex; justify-content:space-between; align-items:center; margin-top:10px; border-top: 1px solid #4a5a6a; padding-top:10px;">
                     <button id="cc-import-btn" class="cc-footer-btn" title="Paste a config code from a teammate">📥 Import</button>
                     <button id="cc-help-btn" class="cc-footer-btn" style="background:transparent; color:#3498db; border:1px solid #3498db; width: 110px;">ℹ️ Help & Tips</button>
                     <button id="cc-export-btn" class="cc-footer-btn" title="Copy your config code to the clipboard">📤 Export</button>
