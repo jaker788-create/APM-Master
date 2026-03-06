@@ -1,12 +1,14 @@
 // ==UserScript==
 // @name         APM Master: Forecast Tool
 // @namespace    https://w.amazon.com/bin/view/Users/rosendah/APM-Master/
-// @version      12.5.6
+// @version      12.5.7
 // @description  Powerful WO Forecast Tool & Native Quick Search Bar. Manual edits to this script are not recomended, this is actively supported tool so Slack me for any issues and I can push an update! If you edit you will not receive auto updates
 // @author       Jacob Rosendahl & Thai Ho
 // @icon         https://media.licdn.com/dms/image/v2/D5603AQGdCV0_LQKRfQ/profile-displayphoto-scale_100_100/B56ZyZLvQ5HgAg-/0/1772096519061?e=1773878400&v=beta&t=eWO1Jiy0-WbzG_yBv-SBrmmsVOPMexF57-q1Xh_VXCk
 // @match        https://us1.eam.hxgnsmartcloud.com/*
 // @match        https://eu1.eam.hxgnsmartcloud.com/*
+// @match        https://*.insights.amazon.dev/*
+// @match        https://*.apm-es.gps.amazon.dev/*
 // @updateURL    https://drive.corp.amazon.com/view/rosendah@/greasemonkey_scripts/APM-Master/forecast.user.js
 // @downloadURL  https://drive.corp.amazon.com/view/rosendah@/greasemonkey_scripts/APM-Master/forecast.user.js
 // @run-at       document-idle
@@ -15,6 +17,7 @@
 
 /* --------------------------------------------------------------------------
    RECENT FEATURES & BUG FIXES:
+   - v12.5.7 Bug Fix: Added some prevention of navigation issues, like getting to the comoliance screen. Added some initial code to support PTP theming
    - v12.5.6 Bug Fix: added grant for security and fixed a critical error catch to prevent crashes with the ptp timer
    - v12.5.4 Feature: Added a manual start PTP timer based on the PTP tab context
    - v12.5.3 Optimize: Rewrote some legacy DOM checks and fixed wait functions with event driven ExtJS waits, even faster execution speed.
@@ -43,6 +46,235 @@
 (function() {
     'use strict';
 
+/** =========================
+     * PTP Theme Routing & CSS Bridge
+     * ========================= */
+    const isPTP = location.hostname.includes('amazon.dev');
+
+    // 1. CHILD IFRAME LOGIC
+    if (isPTP) {
+        const STYLE_ID = 'apm-ptp-dark-patch';
+        const DARK_THEMES = new Set(['theme-hex-dark', 'theme-dark', 'dark', '']);
+
+        const APM_MASTER_CSS = `
+            #root {
+              --bg: #1a1a1a; --bg-2: #242424; --bg-3: #2c3e50;
+              --fg: #ecf0f1; --fg-muted: #bdc3c7;
+              --border: #3f3f3f; --border-slate: #34495e;
+              --primary: #1abc9c; --tickmark: #1abc9c;
+              --link: #3498db; --link-hover: #1abc9c;
+              --color-background-container-header-clzg6q: var(--bg-3) !important;
+              --color-background-status-warning-03nxlw: var(--bg-3) !important;
+              --color-border-status-warning-3feumr: var(--border-slate) !important;
+            }
+            #root, #root main { background-color: var(--bg) !important; color: var(--fg) !important; }
+            #root [class^="awsui_header_"], #root [class^="awsui_root_"][class*="awsui_variant-"],
+            #root [class*="awsui_header-secondary_"], #root [class*="awsui_header-sticky-enabled_"],
+            #root th[class*="awsui_header-cell_"], #root [class*="awsui_header-cell-content_"] {
+              background-color: var(--bg-3) !important; color: var(--fg) !important; border-color: var(--border-slate) !important;
+            }
+            #root svg rect, #root svg circle { fill: none !important; }
+            #root [class*="awsui_checkbox-control_"]:has(input:checked),
+            #root [role="radiogroup"] [class*="awsui_radio-control_"]:has(input:checked),
+            #root [role="switch"][aria-checked="true"] {
+              color: var(--tickmark) !important; background-color: var(--primary) !important;
+            }
+            #root button[type="submit"] { background-color: var(--primary) !important; border-color: var(--primary) !important; color: #ffffff !important; }
+            #root button, #root [role="button"] { background-color: var(--bg-3) !important; border: 1px solid var(--border-slate) !important; color: var(--fg) !important; }
+            #root svg path, #root svg circle, #root svg rect { stroke: currentColor !important; fill: currentColor !important; }
+        `;
+
+        function themeValue() {
+            const val = localStorage.getItem('apmUiTheme');
+            return (val === null) ? 'theme-dark' : val.trim().toLowerCase();
+        }
+        function themeIsDark() { return DARK_THEMES.has(themeValue()); }
+
+        function applyDarkCss(on) {
+            const existing = document.getElementById(STYLE_ID);
+            if (on && !existing) {
+                const style = document.createElement('style');
+                style.id = STYLE_ID;
+                style.textContent = APM_MASTER_CSS;
+                (document.head || document.documentElement).appendChild(style);
+            } else if (!on && existing) {
+                existing.remove();
+            }
+        }
+
+        function refresh() { applyDarkCss(themeIsDark()); }
+
+        function requestParentTheme() {
+            try { if (window.parent && window.parent !== window) window.parent.postMessage({ apmMaster: 'getTheme' }, '*'); } catch {}
+        }
+
+        window.addEventListener('message', (e) => {
+            const d = e.data;
+            if (!d || !d.apmMaster) return;
+            if (d.apmMaster === 'theme' || d.apmMaster === 'setTheme') {
+                if (typeof d.value === 'string') {
+                    try { localStorage.setItem('apmUiTheme', d.value); } catch {}
+                    refresh();
+                }
+            }
+        });
+
+        window.addEventListener('storage', (e) => { if (e.key === 'apmUiTheme') refresh(); });
+
+        refresh();
+        requestParentTheme();
+        let tries = 0;
+        const iv = setInterval(() => {
+            refresh();
+            if (++tries > 40 || themeValue()) clearInterval(iv);
+        }, 150);
+
+        return;
+    }
+
+    // 2. PARENT BROADCASTER LOGIC
+    if (window.self === window.top) {
+        const KEY = 'apmUiTheme';
+
+        window.addEventListener('message', (e) => {
+            const d = e.data;
+            if (d && d.apmMaster === 'getTheme') {
+                const sendVal = localStorage.getItem(KEY) || 'theme-dark';
+                try {
+                    const target = (e.origin && e.origin !== 'null') ? e.origin : '*';
+                    e.source?.postMessage({ apmMaster: 'theme', value: sendVal }, target);
+                } catch {}
+            }
+        });
+
+        function broadcastTheme(val) {
+            try {
+                for (let i = 0; i < window.frames.length; i++) {
+                    window.frames[i].postMessage({ apmMaster: 'setTheme', value: val }, '*');
+                }
+            } catch {}
+        }
+
+        try {
+            const _set = localStorage.setItem;
+            localStorage.setItem = function(k, v) {
+                const r = _set.apply(this, arguments);
+                if (k === KEY) broadcastTheme(v);
+                return r;
+            };
+        } catch {}
+
+        window.addEventListener('storage', (e) => { if (e.key === KEY) broadcastTheme(e.newValue || ''); });
+    }
+
+    /** =========================
+     * Global Hotkey Routing
+     * ========================= */
+    window.addEventListener('keydown', (e) => {
+        if (e.altKey && (e.code === 'KeyT' || e.key.toLowerCase() === 't')) {
+            e.preventDefault(); e.stopPropagation();
+            if (window.self !== window.top) window.top.postMessage({ apmMaster: 'hotkey', action: 'today' }, '*');
+            else if (typeof executeForecast === 'function' && !window.isRunning) executeForecast('today');
+        }
+        if (e.altKey && (e.code === 'KeyC' || e.key.toLowerCase() === 'c')) {
+            e.preventDefault(); e.stopPropagation();
+            const isOnWorkOrders = window.location.href.includes('WSJOBS') || window.location.href.includes('CTJOBS');
+            if (window.self !== window.top) window.top.postMessage({ apmMaster: 'hotkey', action: 'clear', isWO: isOnWorkOrders }, '*');
+            else if (isOnWorkOrders && typeof executeForecast === 'function' && !window.isRunning) executeForecast('clear');
+        }
+    }, true);
+
+    // Listen for hotkeys bubbling up from iframes
+    if (window.self === window.top) {
+        window.addEventListener('message', (e) => {
+            if (e.data && e.data.apmMaster === 'hotkey' && typeof executeForecast === 'function' && !window.isRunning) {
+                if (e.data.action === 'clear' && !e.data.isWO) return;
+                executeForecast(e.data.action);
+            }
+        });
+    }
+
+    // 3. CLONE KILLER: Stop execution in regular non-PTP iframes
+    if (window.self !== window.top) return;
+
+    async function navigateTo(tabText, menuPathArray) {
+        const payloadId = 'apm-extjs-nav-' + Date.now();
+        const scriptContent = `
+            (function() {
+                try {
+                    if (!window.Ext || !window.Ext.ComponentQuery) return;
+
+                    // Clean string helper (ignores "Compliance")
+                    function isExactMatch(rawText, target) {
+                        if (!rawText) return false;
+                        var cleanText = rawText.replace(/<[^>]*>?/gm, '').trim();
+                        return (cleanText === target) || (cleanText.indexOf(target) > -1 && cleanText.toUpperCase().indexOf('COMPLIANCE') === -1);
+                    }
+
+                    // 1. FAST PATH (Native Tab Switch)
+                    var tabs = window.Ext.ComponentQuery.query('tab');
+                    var targetTab = null;
+                    for (var i=0; i<tabs.length; i++) {
+                        if (isExactMatch(tabs[i].text, "${tabText}")) {
+                            targetTab = tabs[i];
+                            break;
+                        }
+                    }
+
+                    if (targetTab) {
+                        if (targetTab.el && targetTab.el.dom) targetTab.el.dom.click();
+                        else targetTab.fireEvent('click', targetTab);
+                        return;
+                    }
+
+                    // 2. COLD START PATH (Menu Traversal)
+                    var paths = ${JSON.stringify(menuPathArray)};
+                    if (paths.length === 2) {
+                        var btns = window.Ext.ComponentQuery.query('button');
+                        var topBtn = null;
+                        for (var j=0; j<btns.length; j++) {
+                            if (isExactMatch(btns[j].text, paths[0]) && btns[j].showMenu) {
+                                topBtn = btns[j];
+                                break;
+                            }
+                        }
+
+                        if (topBtn) {
+                            topBtn.showMenu();
+
+                            setTimeout(function() {
+                                var menuItems = window.Ext.ComponentQuery.query('menuitem');
+                                var childItem = null;
+                                for (var k=0; k<menuItems.length; k++) {
+                                    if (isExactMatch(menuItems[k].text, paths[1])) {
+                                        childItem = menuItems[k];
+                                        break;
+                                    }
+                                }
+
+                                if (childItem) {
+                                    if (childItem.handler) childItem.handler.call(childItem.scope || childItem, childItem);
+                                    else if (childItem.el && childItem.el.dom) childItem.el.dom.click();
+                                    else childItem.fireEvent('click', childItem);
+                                }
+
+                                if (window.Ext.menu && window.Ext.menu.Manager) window.Ext.menu.Manager.hideAll();
+                            }, 150);
+                        }
+                    }
+                } catch(e) { console.error('APM ExtJS Nav Error:', e); }
+            })();
+        `;
+        const scriptEl = document.createElement('script');
+        scriptEl.id = payloadId;
+        scriptEl.textContent = scriptContent;
+        document.head.appendChild(scriptEl);
+        setTimeout(() => scriptEl.remove(), 100);
+
+        return true;
+    }
+
+     // Date Format Override
     // Wait for Ext to be available before applying the override
     var overrideDate = function() {
         if (typeof Ext !== 'undefined' && Ext.form && Ext.form.field && Ext.form.field.Date) {
@@ -420,7 +652,7 @@ function formatDate(d) {
     /** =========================
      * GitHub Update Checker
      * ========================= */
-    const FORECAST_VERSION = '12.5.6'; // MUST MATCH YOUR SCRIPT HEADER VERSION
+    const FORECAST_VERSION = '12.5.7'; // MUST MATCH YOUR SCRIPT HEADER VERSION
 
     function isNewerVersion(oldVer, newVer) {
         const oldParts = oldVer.split('.').map(Number);
@@ -1944,33 +2176,6 @@ function extractEmployeeId() {
         scriptEl.textContent = scriptContent;
         document.head.appendChild(scriptEl);
         setTimeout(() => scriptEl.remove(), 100);
-    }
-
-    /** =========================
-     * Hotkey Routing Logic
-     * ========================= */
-    window.addEventListener('keydown', (e) => {
-        if (e.altKey && e.key.toLowerCase() === 't') {
-            e.preventDefault();
-            if (window.self !== window.top) window.parent.postMessage({ type: 'APM_RUN_TODAY_FORECAST' }, '*');
-            else if (!isRunning) executeForecast('today');
-        }
-        if (e.altKey && e.key.toLowerCase() === 'c') {
-            e.preventDefault();
-            if (window.self !== window.top) window.parent.postMessage({ type: 'APM_RUN_CLEAR_FORECAST' }, '*');
-            else if (!isRunning) executeForecast('clear');
-        }
-    }, true);
-
-    if (window.self === window.top) {
-        window.addEventListener('message', (e) => {
-            if (e.data && e.data.type === 'APM_RUN_TODAY_FORECAST') {
-                if (!isRunning) executeForecast('today');
-            }
-            if (e.data && e.data.type === 'APM_RUN_CLEAR_FORECAST') {
-                if (!isRunning) executeForecast('clear');
-            }
-        });
     }
 
     /** =========================
