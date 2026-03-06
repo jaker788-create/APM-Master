@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         APM Master: Forecast Tool
 // @namespace    https://w.amazon.com/bin/view/Users/rosendah/APM-Master/
-// @version      12.5.7
+// @version      12.5.8
 // @description  Powerful WO Forecast Tool & Native Quick Search Bar. Manual edits to this script are not recomended, this is actively supported tool so Slack me for any issues and I can push an update! If you edit you will not receive auto updates
 // @author       Jacob Rosendahl & Thai Ho
 // @icon         https://media.licdn.com/dms/image/v2/D5603AQGdCV0_LQKRfQ/profile-displayphoto-scale_100_100/B56ZyZLvQ5HgAg-/0/1772096519061?e=1773878400&v=beta&t=eWO1Jiy0-WbzG_yBv-SBrmmsVOPMexF57-q1Xh_VXCk
@@ -17,7 +17,7 @@
 
 /* --------------------------------------------------------------------------
    RECENT FEATURES & BUG FIXES:
-   - v12.5.7 Bug Fix: Added some prevention of navigation issues, like getting to the comoliance screen. Added some initial code to support PTP theming
+   - v12.5.7 Bug Fix: Added some prevention of navigation issues, like getting to the compliance screen. Added some initial code to support PTP theming
    - v12.5.6 Bug Fix: added grant for security and fixed a critical error catch to prevent crashes with the ptp timer
    - v12.5.4 Feature: Added a manual start PTP timer based on the PTP tab context
    - v12.5.3 Optimize: Rewrote some legacy DOM checks and fixed wait functions with event driven ExtJS waits, even faster execution speed.
@@ -51,7 +51,7 @@
      * ========================= */
     const isPTP = location.hostname.includes('amazon.dev');
 
-    // 1. CHILD IFRAME LOGIC
+    // 1. CHILD IFRAME LOGIC (Executes inside Sparsy)
     if (isPTP) {
         const STYLE_ID = 'apm-ptp-dark-patch';
         const DARK_THEMES = new Set(['theme-hex-dark', 'theme-dark', 'dark', '']);
@@ -85,9 +85,16 @@
         `;
 
         function themeValue() {
-            const val = localStorage.getItem('apmUiTheme');
-            return (val === null) ? 'theme-dark' : val.trim().toLowerCase();
+            // Check both potential storage keys just in case
+            const val = localStorage.getItem('apmUiTheme') || localStorage.getItem('apm_colorcode_settings');
+            if (!val) return 'theme-dark';
+            try {
+                // Handle case where ColorCode saved it as a JSON object
+                if (val.startsWith('{')) return JSON.parse(val).theme || 'theme-dark';
+            } catch(e) {}
+            return val.trim().toLowerCase();
         }
+
         function themeIsDark() { return DARK_THEMES.has(themeValue()); }
 
         function applyDarkCss(on) {
@@ -119,27 +126,43 @@
             }
         });
 
-        window.addEventListener('storage', (e) => { if (e.key === 'apmUiTheme') refresh(); });
+        window.addEventListener('storage', (e) => {
+            if (e.key === 'apmUiTheme' || e.key === 'apm_colorcode_settings') refresh();
+        });
 
-        refresh();
+        // Wait for the Cloudscape root element to exist before attempting injection
+        const ptpObserver = new MutationObserver((mutations, obs) => {
+            if (document.getElementById('root') || document.querySelector('main')) {
+                refresh();
+                obs.disconnect(); // Stop observing once we've injected
+            }
+        });
+        ptpObserver.observe(document.documentElement, { childList: true, subtree: true });
+
         requestParentTheme();
+
+        // Failsafe brute-force loop
         let tries = 0;
         const iv = setInterval(() => {
             refresh();
-            if (++tries > 40 || themeValue()) clearInterval(iv);
+            if (++tries > 40 || document.getElementById(STYLE_ID)) clearInterval(iv);
         }, 150);
 
-        return;
+        return; // Halt script execution for the iframe here
     }
 
-    // 2. PARENT BROADCASTER LOGIC
+    // 2. PARENT BROADCASTER LOGIC (Executes in EAM)
     if (window.self === window.top) {
-        const KEY = 'apmUiTheme';
-
         window.addEventListener('message', (e) => {
             const d = e.data;
             if (d && d.apmMaster === 'getTheme') {
-                const sendVal = localStorage.getItem(KEY) || 'theme-dark';
+                let sendVal = 'theme-dark';
+                try {
+                    // Pull from the new unified ColorCode settings object
+                    const settings = JSON.parse(localStorage.getItem('apm_colorcode_settings')) || {};
+                    if (settings.theme) sendVal = settings.theme;
+                } catch(err) {}
+
                 try {
                     const target = (e.origin && e.origin !== 'null') ? e.origin : '*';
                     e.source?.postMessage({ apmMaster: 'theme', value: sendVal }, target);
@@ -155,17 +178,19 @@
             } catch {}
         }
 
-        try {
-            const _set = localStorage.setItem;
-            localStorage.setItem = function(k, v) {
-                const r = _set.apply(this, arguments);
-                if (k === KEY) broadcastTheme(v);
-                return r;
-            };
-        } catch {}
-
-        window.addEventListener('storage', (e) => { if (e.key === KEY) broadcastTheme(e.newValue || ''); });
+        // Listen for changes to the specific ColorCode settings object
+        window.addEventListener('storage', (e) => {
+            if (e.key === 'apm_colorcode_settings') {
+                try {
+                    const newTheme = JSON.parse(e.newValue).theme;
+                    broadcastTheme(newTheme);
+                } catch(err) {}
+            }
+        });
     }
+
+    // 3. CLONE KILLER: Stop execution in regular non-PTP iframes
+    if (window.self !== window.top) return;
 
     /** =========================
      * Global Hotkey Routing
@@ -603,17 +628,47 @@ ForecastFilter.init();
         catch(e) { console.error('[APM Forecast] Failed to save preferences:', e); }
     }
 
-    function setStatus(mode, msg, color) {
-        if (mode === 'quick') {
-            const el = document.getElementById('apm-qs-status');
-            if (el) {
-                el.textContent = msg;
-                if (color) { el.style.color = color; el.style.opacity = '1'; }
-                else { el.style.color = ''; el.style.opacity = '0.7'; }
-            }
-        } else {
-            const el = document.getElementById('eam-status');
-            if (el) { el.textContent = msg; if (color) el.style.color = color; }
+function setStatus(mode, msg, color) {
+        // Only render the global UI banner in the top window
+        if (window.self !== window.top) return;
+
+        let banner = document.getElementById('apm-global-status');
+        if (!banner) {
+            banner = document.createElement('div');
+            banner.id = 'apm-global-status';
+            banner.style.cssText = `
+                position: fixed; top: 15px; left: 50%; transform: translateX(-50%);
+                z-index: 999999; padding: 8px 24px; border-radius: 30px;
+                font-family: sans-serif; font-weight: bold; font-size: 14px;
+                background-color: #2c3e50; box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+                display: none; text-align: center; pointer-events: none;
+                transition: opacity 0.2s ease-in-out;
+            `;
+            document.body.appendChild(banner);
+        }
+
+        const cleanMsg = (msg || '').trim().toLowerCase();
+
+        // Hide the banner completely if idle, done, or empty
+        if (!cleanMsg || cleanMsg === 'ready' || cleanMsg === 'done') {
+            banner.style.display = 'none';
+            return;
+        }
+
+        // Display active process or error
+        banner.textContent = msg;
+        banner.style.color = color || '#ffffff';
+        banner.style.border = `2px solid ${color || '#34495e'}`;
+        banner.style.display = 'block';
+
+        // Clear any existing timeouts
+        if (window._apmStatusTO) clearTimeout(window._apmStatusTO);
+
+        // Auto-hide error messages (red) after 4 seconds so they don't get stuck
+        if (color === '#e74c3c') {
+            window._apmStatusTO = setTimeout(() => {
+                banner.style.display = 'none';
+            }, 4000);
         }
     }
 
@@ -652,7 +707,7 @@ function formatDate(d) {
     /** =========================
      * GitHub Update Checker
      * ========================= */
-    const FORECAST_VERSION = '12.5.7'; // MUST MATCH YOUR SCRIPT HEADER VERSION
+    const FORECAST_VERSION = '12.5.8'; // MUST MATCH YOUR SCRIPT HEADER VERSION
 
     function isNewerVersion(oldVer, newVer) {
         const oldParts = oldVer.split('.').map(Number);
