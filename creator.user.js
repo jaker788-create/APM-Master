@@ -15,7 +15,7 @@
 
 /* --------------------------------------------------------------------------
    RECENT FEATURES & BUG FIXES:
-   - v0.8.3 Optimize: Refined UI & wording for clarity. Signifigantly improved checklist performance and context awareness, will no longer hang on an unexpected tab and auto nav to the right checklist do minimal waiting.
+   - v0.8.3 Optimize: Refined UI & wording for clarity. Signifigantly improved checklist performance and context awareness, will no longer hang on an unexpected tab and auto nav to the right checklist with minimal waiting between actions.
    - v0.8.1 Bug Fix: Fixed some security catch errors.
    - v0.8.0 Optimize: Replaced fixed Ajax waits with native ExtJS event listeners for faster execution of autofilling. Signifigantly shrunk and simplified Menu UI.
    - v0.7.3 Optimize: Removed WO Creator function as it diddn't have that much purpose.
