@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         APM Master: WO Creator & Auto-Fill + Tab Re-Order
 // @namespace    https://w.amazon.com/bin/view/Users/rosendah/APM-Master/
-// @version      0.8.2
+// @version      0.8.3
 // @description  WO Cretion, Auto-Fill Engine, and LOTO Checklist Automation.
 // @author       Jacob Rosendahl
 // @icon         https://media.licdn.com/dms/image/v2/D5603AQGdCV0_LQKRfQ/profile-displayphoto-scale_100_100/B56ZyZLvQ5HgAg-/0/1772096519061?e=1773878400&v=beta&t=eWO1Jiy0-WbzG_yBv-SBrmmsVOPMexF57-q1Xh_VXCk
@@ -15,16 +15,17 @@
 
 /* --------------------------------------------------------------------------
    RECENT FEATURES & BUG FIXES:
-   - v0.8.1 Bug Fix: Fixed some security catch errors
-   - v0.8.0 Optimize: Replaced fixed Ajax waits with native ExtJS event listeners for faster execution of autofilling. Signifigantly shrunk and simplified Menu UI
+   - v0.8.3 Optimize: Refined UI & wording for clarity. Signifigantly improved checklist performance and context awareness, will no longer hang on an unexpected tab and auto nav to the right checklist do minimal waiting.
+   - v0.8.1 Bug Fix: Fixed some security catch errors.
+   - v0.8.0 Optimize: Replaced fixed Ajax waits with native ExtJS event listeners for faster execution of autofilling. Signifigantly shrunk and simplified Menu UI.
    - v0.7.3 Optimize: Removed WO Creator function as it diddn't have that much purpose.
-   - v0.7.2: Feature: Added update notice in UI, added dynamic resizing with browser window scale, added help & tips
-   - v0.6.14 Bug Fix: Removed problematic defocus logic
+   - v0.7.2: Feature: Added update notice in UI, added dynamic resizing with browser window scale, added help & tips.
+   - v0.6.14 Bug Fix: Removed problematic defocus logic.
    - v0.6.13 Bug Fix: Abandoned the "run-once" tagging for a continuous audit loop. The script now monitors physical tab positions every 1.5s and snaps them back if EAM's AJAX updates revert the layout.
-   - v0.6.10 Feature: Menu will close if you click away
-   - v0.6.9 Feature: UI improvements
-   - v0.6.8 Feature: Can fill out 1-tech & 10-tech
-   - v0.6.0 Added ability to reorder WO list view tabs
+   - v0.6.10 Feature: Menu will close if you click away.
+   - v0.6.9 Feature: UI improvements.
+   - v0.6.8 Feature: Can fill out 1-tech & 10-tech.
+   - v0.6.0 Added ability to reorder WO list view tabs.
    - v0.5.2 This is getting big... Record creaton fills out the first page sucessfully via ExtJS calls.
    - v0.4.0 Engine Overhaul: Replaced all UI simulated clicks/typing with Native ExtJS Form Injection, Store Modification, and Ajax requests for Headless execution.
    - v0.3.10 Feature: Addded status message timeout of 8 seconds. Updated UI dropdown defaults from "-- None --" to "-- Skip --".
@@ -179,7 +180,7 @@
     /** =========================
      * GitHub Update Checker
      * ========================= */
-    const CURRENT_VERSION = '0.8.2'; // Manually bump this when you release new versions
+    const CURRENT_VERSION = '0.8.3'; // Manually bump this when you release new versions
 
     function isNewerVersion(oldVer, newVer) {
         const oldParts = oldVer.split('.').map(Number);
@@ -213,8 +214,8 @@
     }
 
     /** =========================
- * UI Builder (Panel) - Compact Layout
- * ========================= */
+     * UI Builder (Panel) - Compact Layout
+     * ========================= */
     function buildCreatorUI() {
         if (window.self !== window.top || document.getElementById('apm-creator-panel')) return;
 
@@ -245,7 +246,7 @@
 
         panel.innerHTML = `
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
-            <h4 style="margin:0; font-size:16px; color:#ffffff; font-weight: normal;">APM Master <span style="color:#3498db; font-weight: bold;">Auto-Fill</span></h4>
+            <h4 style="margin:0; font-size:16px; color:#ffffff; font-weight: normal;">APM Suite <span style="color:#3498db; font-weight: bold;">Auto-Fill</span></h4>
             <button id="apm-c-btn-close" style="background:#505f6e; color:#ffffff; border:none; padding: 4px 10px; border-radius:4px; cursor:pointer; font-size:12px; font-weight:bold;">✖</button>
         </div>
 
@@ -255,55 +256,62 @@
         </div>
 
         <div id="apm-main-fields" style="display:block;">
-            <div class="preset-row" style="padding: 8px; margin-bottom: 12px;">
-                <select id="apm-c-preset-select" style="flex-grow:1; padding:4px; border-radius:4px; border:none; font-weight:bold; cursor:pointer; font-size:12px;"></select>
-                <button id="apm-c-btn-save" class="creator-btn" style="background:#3498db; color:white;">Save</button>
-                <button id="apm-c-btn-new" class="creator-btn" style="background:#2ecc71; color:white;">New</button>
-                <button id="apm-c-btn-del" class="creator-btn" style="background:#e74c3c; color:white;">Del</button>
+
+            <div style="background: rgba(0,0,0,0.25); padding: 10px; border-radius: 6px; margin-bottom: 15px; border: 1px solid #45535e;">
+                <div style="font-size: 11px; color: #b0bec5; margin-bottom: 6px; font-weight: bold;">Active Template:</div>
+                <div style="display: flex; gap: 6px;">
+                    <select id="apm-c-preset-select" style="flex-grow:1; padding:6px; border-radius:4px; border:none; font-weight:bold; cursor:pointer; font-size:12px; background: #ecf0f1; color: #2c3e50;"></select>
+                    <button id="apm-c-btn-save" class="creator-btn" style="background:#3498db; color:white;" title="Overwrite the selected template with current inputs">Update</button>
+                    <button id="apm-c-btn-new" class="creator-btn" style="background:#2ecc71; color:white;" title="Create a new template">New / Copy</button>
+                    <button id="apm-c-btn-del" class="creator-btn" style="background:#e74c3c; color:white; padding: 6px 10px;" title="Delete this template">✖</button>
+                </div>
             </div>
 
             <div style="padding: 0 4px; margin-bottom: 10px;">
-                <div class="field-row" style="margin-bottom: 10px;">
-                    <div class="field-label" style="color:#3498db; font-weight:bold; width: 65px; text-align: left;">Keyword:</div>
-                    <input type="text" id="apm-c-keyword" class="field-input" placeholder="Title match (e.g. pre-sort)..." style="font-family: monospace;">
+                <div class="field-row" style="margin-bottom: 12px;">
+                    <div class="field-label" style="color:#f39c12; font-weight:bold; width: 55px; text-align: left;">Match:</div>
+                    <input type="text" id="apm-c-keyword" class="field-input" placeholder="e.g., pre-sort, repair, jam" style="font-family: monospace; border: 1px solid #f39c12;">
                 </div>
 
                 <div style="display: flex; gap: 8px; margin-bottom: 8px;">
-                    <div class="field-row" style="flex: 1; margin: 0;"><div class="field-label" style="width: 35px; text-align: left;">Org:</div><input type="text" id="apm-c-org" class="field-input upper" placeholder="Skip"></div>
-                    <div class="field-row" style="flex: 2; margin: 0;"><div class="field-label" style="width: 25px; text-align: left;">Eq:</div><input type="text" id="apm-c-eq" class="field-input upper" placeholder="Leave blank to skip"></div>
+                    <div class="field-row" style="flex: 1; margin: 0;"><div class="field-label" style="width: 35px; text-align: left;">Org:</div><input type="text" id="apm-c-org" class="field-input upper" placeholder="Ignore"></div>
+                    <div class="field-row" style="flex: 2; margin: 0;"><div class="field-label" style="width: 35px; text-align: left;">Equip:</div><input type="text" id="apm-c-eq" class="field-input upper" placeholder="Leave blank to ignore"></div>
                 </div>
 
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 8px;">
-                    <div class="field-row" style="margin:0;"><div class="field-label" style="width:40px; text-align: left;">Type:</div><select id="apm-c-type" class="field-input"><option value="">- Skip -</option><option value="Breakdown">Breakdown</option><option value="Corrective">Corrective</option><option value="Project">Project</option></select></div>
-                    <div class="field-row" style="margin:0;"><div class="field-label" style="width:45px; text-align: left;">Status:</div><select id="apm-c-status" class="field-input"><option value="">- Skip -</option><option value="Open">Open</option><option value="In Progress">In Progress</option></select></div>
-                    <div class="field-row" style="margin:0;"><div class="field-label" style="width:40px; text-align: left;">Exec:</div><select id="apm-c-exec" class="field-input"><option value="">- Skip -</option><option value="EXDN">EXDN</option><option value="EXDB">EXDB</option><option value="EXMW">EXMW</option><option value="EXOPS">EXOPS</option><option value="EXSHUT">EXSHUT</option></select></div>
-                    <div class="field-row" style="margin:0;"><div class="field-label" style="width:45px; text-align: left;">Safety:</div><select id="apm-c-safety" class="field-input"><option value="">- Skip -</option><option value="No">No</option><option value="Yes">Yes</option></select></div>
+                    <div class="field-row" style="margin:0;"><div class="field-label" style="width:45px; text-align: left;">Type:</div><select id="apm-c-type" class="field-input"><option value="">- Ignore -</option><option value="Breakdown">Breakdown</option><option value="Corrective">Corrective</option><option value="Project">Project</option></select></div>
+                    <div class="field-row" style="margin:0;"><div class="field-label" style="width:45px; text-align: left;">Status:</div><select id="apm-c-status" class="field-input"><option value="">- Ignore -</option><option value="Open">Open</option><option value="In Progress">In Progress</option></select></div>
+                    <div class="field-row" style="margin:0;"><div class="field-label" style="width:45px; text-align: left;">Exec:</div><select id="apm-c-exec" class="field-input"><option value="">- Ignore -</option><option value="EXDN">EXDN</option><option value="EXDB">EXDB</option><option value="EXMW">EXMW</option><option value="EXOPS">EXOPS</option><option value="EXSHUT">EXSHUT</option></select></div>
+                    <div class="field-row" style="margin:0;"><div class="field-label" style="width:45px; text-align: left;">Safety:</div><select id="apm-c-safety" class="field-input"><option value="">- Ignore -</option><option value="No">No</option><option value="Yes">Yes</option></select></div>
                 </div>
 
-                <div class="field-row" style="background: rgba(155, 89, 182, 0.15); border: 1px solid rgba(155, 89, 182, 0.4); padding: 6px 8px; border-radius: 6px; margin-bottom: 8px;">
-                    <div class="field-label" style="color:#c39bd3; font-weight:bold; width: 60px; text-align: left;">1-Tech:</div>
-                    <select id="apm-c-loto-mode" class="field-input" style="flex: 1; padding: 4px; font-size: 11px;">
-                        <option value="none">- Skip -</option>
-                        <option value="yes">Yes</option>
-                        <option value="no">No</option>
-                    </select>
-                    <div style="font-size: 11px; color: #b0bec5; margin: 0 6px 0 10px; font-weight: bold;">10-Tech:</div>
-                    <input type="number" id="apm-c-pm-checks" class="field-input" min="0" placeholder="Qty" style="width: 45px; padding: 4px; text-align: center; font-weight: bold;">
+                <div class="field-row" style="background: rgba(26, 188, 156, 0.1); border: 1px solid rgba(26, 188, 156, 0.3); padding: 8px; border-radius: 6px; margin-bottom: 10px; flex-wrap: wrap;">
+                    <div style="width: 100%; font-size: 11px; color: #1abc9c; margin-bottom: 6px; font-weight: bold;">Automated Checklists:</div>
+                    <div style="display: flex; gap: 8px; width: 100%; align-items: center;">
+                        <div class="field-label" style="width: 45px; text-align: left; color:#fff;">1-Tech:</div>
+                        <select id="apm-c-loto-mode" class="field-input" style="width: 135px; flex-grow: 0; padding: 4px; font-size: 11px;">
+                            <option value="none">- Ignore -</option>
+                            <option value="yes">(Check YES)</option>
+                            <option value="no">(Check NO)</option>
+                        </select>
+                        <div class="field-label" style="flex-grow: 1; text-align: right; color:#fff;">10-Tech:</div>
+                        <input type="number" id="apm-c-pm-checks" class="field-input" min="0" placeholder="Ignore" style="width: 100px; flex-grow: 0; padding: 4px; text-align: center;">
+                    </div>
                 </div>
 
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 8px;">
-                    <div class="field-row" style="margin:0;"><div class="field-label" style="width:40px; text-align: left;">Prob:</div><input type="text" id="apm-c-prob" class="field-input upper"></div>
-                    <div class="field-row" style="margin:0;"><div class="field-label" style="width:45px; text-align: left;">Fail:</div><input type="text" id="apm-c-fail" class="field-input upper"></div>
-                    <div class="field-row" style="margin:0;"><div class="field-label" style="width:40px; text-align: left;">Cause:</div><input type="text" id="apm-c-cause" class="field-input upper"></div>
+                    <div class="field-row" style="margin:0;"><div class="field-label" style="width:55px; text-align: left;">Problem:</div><input type="text" id="apm-c-prob" class="field-input upper"></div>
+                    <div class="field-row" style="margin:0;"><div class="field-label" style="width:45px; text-align: left;">Failure:</div><input type="text" id="apm-c-fail" class="field-input upper"></div>
+                    <div class="field-row" style="margin:0;"><div class="field-label" style="width:55px; text-align: left;">Cause:</div><input type="text" id="apm-c-cause" class="field-input upper"></div>
                     <div class="field-row" style="margin:0;"><div class="field-label" style="width:45px; text-align: left;">Assign:</div><input type="text" id="apm-c-assign" class="field-input upper"></div>
                 </div>
 
                 <div style="display: flex; gap: 8px; margin-bottom: 8px;">
                     <div class="field-row" style="flex: 1; margin: 0;"><div class="field-label" style="width: 40px; text-align: left;">Start:</div><input type="date" id="apm-c-start" class="field-input" style="padding:4px; font-size:11px;"></div>
-                    <div class="field-row" style="flex: 1; margin: 0;"><div class="field-label" style="width: 25px; text-align: left;">End:</div><input type="date" id="apm-c-end" class="field-input" style="padding:4px; font-size:11px;"></div>
+                    <div class="field-row" style="flex: 1; margin: 0;"><div class="field-label" style="width: 30px; text-align: left;">End:</div><input type="date" id="apm-c-end" class="field-input" style="padding:4px; font-size:11px;"></div>
                 </div>
 
-                <div class="field-row" style="margin:0;"><div class="field-label" style="width: 40px; text-align: left;">Notes:</div><input type="text" id="apm-c-close" class="field-input" placeholder="Closing comments..."></div>
+                <div class="field-row" style="margin:0;"><div class="field-label" style="width: 55px; text-align: left;">Closing:</div><input type="text" id="apm-c-close" class="field-input" placeholder="Closing comments..."></div>
             </div>
         </div>
 
@@ -322,11 +330,27 @@
         </div>
 
         <div id="apm-help-fields" style="display:none; padding: 15px; background: #22292f; border-radius: 6px; font-size: 13px; color: #b0bec5; line-height: 1.6; border: 1px solid #45535e;">
-            <h4 style="color:#3498db; margin: 0 0 12px 0; font-size: 15px;">APM Master Tips & Instructions</h4>
-            <ul style="padding-left: 20px; margin: 0;">
-                <li style="margin-bottom: 10px;"><b style="color:white;">Auto-Fill Keys:</b> Link templates to Work Orders by entering keywords separated by commas (e.g., <code>pre-sort, repair</code>).</li>
-                <li style="margin-bottom: 10px;"><b style="color:white;">Tab Order:</b> The script monitors grids and tabs. Drag to reorder and hit Save. The script injects tab order commands on page load for a quick and seamless change.</li>
-                <li style="margin-bottom: 0;"><b style="color:white;">Checklist Sync:</b> PM quantity auto-completes the specified number of lines on the 10-Tech tab.</li>
+            <h4 style="color:#3498db; margin: 0 0 15px 0; font-size: 15px; text-align: center; font-weight: bold;">
+                Guide & Instructions
+            </h4>
+            <ul style="padding-left: 18px; margin: 0; list-style-type: none;">
+                <li style="margin-bottom: 12px; position: relative;">
+                    <b style="color:#f39c12; display: block; margin-bottom: 2px;">⚡ Smart Matching</b>
+                    The <span style="color:white;">Match</span> field links templates to Work Orders. Enter unique keywords (e.g., <code>jam, conveyor</code>). If the WO title contains these words, the "Auto Fill" button will appear.
+                </li>
+                <li style="margin-bottom: 12px;">
+                    <b style="color:#1abc9c; display: block; margin-bottom: 2px;">🤖 Checklist Automation</b>
+                    <span style="color:white;">1-Tech:</span> Automatically checks YES or NO for every row in the LOTO grid.<br>
+                    <span style="color:white;">10-Tech:</span> Completes the specific number of lines you enter. Set to <span style="color:white;">Ignore</span> (blank) to skip this step.
+                </li>
+                <li style="margin-bottom: 12px;">
+                    <b style="color:#3498db; display: block; margin-bottom: 2px;">📂 Template Management</b>
+                    Selecting a name in <span style="color:white;">Active Template</span> instantly loads its data into the boxes. Click <span style="color:white;">Update</span> to overwrite, or <span style="color:white;">New</span> to clone.
+                </li>
+                <li style="margin-bottom: 0;">
+                    <b style="color:#e74c3c; display: block; margin-bottom: 2px;">🛠 UI Customization</b>
+                    Use the <span style="color:white;">UI Settings</span> tab to drag and drop your preferred grid column order. APM Master will "force" this layout every time you open a screen.
+                </li>
             </ul>
         </div>
 
@@ -337,247 +361,280 @@
         <div id="apm-update-container" style="display:none; margin-top: 15px; text-align: center;">
             <a href="https://raw.githubusercontent.com/jaker788-create/APM-Master/main/creator.user.js" target="_blank" style="display:inline-block; background:#f39c12; color:white; padding:8px 15px; border-radius:4px; font-weight:bold; text-decoration:none; font-size:13px; transition: background 0.2s; box-shadow: 0 2px 5px rgba(0,0,0,0.2);">✨ Update Available</a>
         </div>
-    `;
-    document.body.appendChild(panel);
+        `;
+        document.body.appendChild(panel);
 
-    document.getElementById('apm-c-btn-close').onclick = () => { panel.style.display = 'none'; };
+        document.getElementById('apm-c-btn-close').onclick = () => { panel.style.display = 'none'; };
 
-    const selectEl = document.getElementById('apm-c-preset-select');
-    const mainFields = document.getElementById('apm-main-fields');
-    const settingsFields = document.getElementById('apm-settings-fields');
-    const helpFields = document.getElementById('apm-help-fields');
+        const selectEl = document.getElementById('apm-c-preset-select');
+        const mainFields = document.getElementById('apm-main-fields');
+        const settingsFields = document.getElementById('apm-settings-fields');
+        const helpFields = document.getElementById('apm-help-fields');
 
-    const tabAutofill = document.getElementById('tab-autofill');
-    const tabSettings = document.getElementById('tab-settings');
+        const tabAutofill = document.getElementById('tab-autofill');
+        const tabSettings = document.getElementById('tab-settings');
 
-    const togCols = document.getElementById('apm-s-tog-cols');
-    const togTabs = document.getElementById('apm-s-tog-tabs');
-    const colListContainer = document.getElementById('apm-s-col-list');
+        const togCols = document.getElementById('apm-s-tog-cols');
+        const togTabs = document.getElementById('apm-s-tog-tabs');
+        const colListContainer = document.getElementById('apm-s-col-list');
 
-    document.getElementById('apm-c-btn-help').onclick = () => {
-        isHelpOpen = !isHelpOpen;
-        const helpBtn = document.getElementById('apm-c-btn-help');
-        const tabContainer = document.getElementById('apm-tab-container');
-
-        if (isHelpOpen) {
-            mainFields.style.display = 'none';
-            settingsFields.style.display = 'none';
-            tabContainer.style.display = 'none';
-            helpFields.style.display = 'block';
-            helpBtn.textContent = '← Back to Tools';
-            helpBtn.style.color = '#3498db';
-        } else {
-            resetTabs();
-            if (activeTab === 'autofill') tabAutofill.onclick();
-            else tabSettings.onclick();
-        }
-    };
-
-    const resetTabs = () => {
-        tabAutofill.style.background = 'transparent'; tabAutofill.className = 'apm-tab-btn apm-tab-inactive';
-        tabSettings.style.background = 'transparent'; tabSettings.className = 'apm-tab-btn apm-tab-inactive';
-        isHelpOpen = false;
-        helpFields.style.display = 'none';
-        document.getElementById('apm-tab-container').style.display = 'flex';
-        const helpBtn = document.getElementById('apm-c-btn-help');
-        helpBtn.textContent = 'Help & Tips';
-        helpBtn.style.color = '#3498db';
-    };
-
-    const renderPresetOptions = () => {
-        selectEl.innerHTML = '';
-        const targetList = presets.autofill;
-        for (const pName in targetList) {
-            const opt = document.createElement('option');
-            opt.value = pName; opt.textContent = pName;
-            selectEl.appendChild(opt);
-        }
-        if (Object.keys(targetList).length > 0) {
-            applyPresetData(targetList[Object.keys(targetList)[0]]);
-        } else {
-            applyPresetData({});
-        }
-    };
-
-    const probeExtGridColumns = () => {
-        let cols = [];
-        const allDocs = [window.top, window];
-        document.querySelectorAll('iframe').forEach(f => {
-            try { if (f.src && f.src.includes('amazon.dev')) return; if (f.contentWindow && f.contentWindow.Ext) allDocs.push(f.contentWindow); } catch(e){}
-        });
-
-        for (const win of allDocs) {
-            if (win.Ext && win.Ext.ComponentQuery) {
-                const grids = win.Ext.ComponentQuery.query('gridpanel');
-                const mainGrid = grids.find(g => g.columns && g.columns.length > 20 && g.rendered);
-                if (mainGrid && mainGrid.headerCt) {
-                    mainGrid.headerCt.items.items.forEach(col => {
-                        if (col.rendered && (!col.isHidden || !col.isHidden()) && col.dataIndex) {
-                            let cleanText = (col.text || col.dataIndex).replace(/<[^>]*>?/gm, '').trim();
-                            if (cleanText && cleanText !== '&#160;') {
-                                cols.push({ index: col.dataIndex, text: cleanText });
-                            }
-                        }
-                    });
-                    break;
-                }
+        // "0 = Ignore" logic for the 10-Tech input
+        const pmChecksEl = document.getElementById('apm-c-pm-checks');
+        pmChecksEl.addEventListener('input', (e) => {
+            if (e.target.value === '0') {
+                e.target.value = ''; // Clears to trigger the "Ignore" placeholder
             }
-        }
-        return cols;
-    };
-
-    const probeExtTabs = () => {
-        let tabs = [];
-        const allDocs = [window.top, window];
-        document.querySelectorAll('iframe').forEach(f => {
-            try { if (f.src && f.src.includes('amazon.dev')) return; if (f.contentWindow && f.contentWindow.Ext) allDocs.push(f.contentWindow); } catch(e){}
         });
 
-        for (const win of allDocs) {
-            if (win.Ext && win.Ext.ComponentQuery) {
-                const tabPanels = win.Ext.ComponentQuery.query('tabpanel');
-                const mainTabPanel = tabPanels.find(tp => tp.rendered && tp.items && tp.items.items.length > 3 &&
-                                                    tp.items.items.some(t => {
-                    let txt = t.title || t.text || '';
-                    return txt.includes('Activities') || txt.includes('Checklist') || txt.includes('Comments');
-                }));
+        document.getElementById('apm-c-btn-help').onclick = () => {
+            isHelpOpen = !isHelpOpen;
+            const helpBtn = document.getElementById('apm-c-btn-help');
+            const tabContainer = document.getElementById('apm-tab-container');
 
-                if (mainTabPanel) {
-                    mainTabPanel.items.items.forEach(t => {
-                        if (!t.tab || (typeof t.tab.isHidden === 'function' && t.tab.isHidden())) return;
-                        let cleanText = (t.title || t.text || '').replace(/<[^>]*>?/gm, '').trim();
-                        if (cleanText && cleanText !== '&#160;') {
-                            tabs.push({ index: cleanText, text: cleanText });
-                        }
-                    });
-                    break;
-                }
-            }
-        }
-        return tabs;
-    };
-
-    const renderDragList = (itemsArray, emptyMsg) => {
-        colListContainer.innerHTML = '';
-        if (itemsArray.length === 0) {
-            colListContainer.innerHTML = `<div style="color:#7f8c8d; text-align:center; padding:10px;">${emptyMsg}</div>`;
-            return;
-        }
-
-        itemsArray.forEach(c => {
-            const item = document.createElement('div');
-            item.draggable = true;
-            item.dataset.index = c.index;
-            item.className = 'apm-col-item';
-            item.innerHTML = `<span><b style="color:#3498db;">☰</b> &nbsp; ${c.text}</span> <span style="color:#7f8c8d; font-size:10px;">[${settingsMode === 'cols' ? c.index : 'Tab'}]</span>`;
-
-            item.ondragstart = (e) => {
-                e.dataTransfer.setData('text/plain', '');
-                item.classList.add('dragging');
-            };
-            item.ondragend = () => { item.classList.remove('dragging'); };
-            colListContainer.appendChild(item);
-        });
-    };
-
-    colListContainer.ondragover = (e) => {
-        e.preventDefault();
-        const dragging = document.querySelector('.dragging');
-        if (!dragging) return;
-
-        const siblings = [...colListContainer.querySelectorAll('.apm-col-item:not(.dragging)')];
-        const nextSibling = siblings.find(sibling => {
-            const box = sibling.getBoundingClientRect();
-            return e.clientY <= box.top + box.height / 2;
-        });
-
-        if (nextSibling) { colListContainer.insertBefore(dragging, nextSibling); }
-        else { colListContainer.appendChild(dragging); }
-    };
-
-    const performAutoFetch = () => {
-        if (settingsMode === 'cols') {
-            const cols = probeExtGridColumns();
-            renderDragList(cols, 'No grid found. Open the Work Orders screen.');
-        } else {
-            const tabs = probeExtTabs();
-            renderDragList(tabs, 'No record tabs found. Open a Work Order.');
-        }
-    };
-
-    const loadSettingsView = () => {
-        if (settingsMode === 'cols') {
-            togCols.style.background = '#3498db'; togCols.style.color = '#fff';
-            togTabs.style.background = 'transparent'; togTabs.style.color = '#7f8c8d';
-        } else {
-            togTabs.style.background = '#3498db'; togTabs.style.color = '#fff';
-            togCols.style.background = 'transparent'; togCols.style.color = '#7f8c8d';
-        }
-        performAutoFetch();
-    };
-
-    togCols.onclick = () => { settingsMode = 'cols'; loadSettingsView(); };
-    togTabs.onclick = () => { settingsMode = 'tabs'; loadSettingsView(); };
-
-    tabAutofill.onclick = () => {
-        activeTab = 'autofill';
-        resetTabs(); tabAutofill.className = 'apm-tab-btn apm-tab-active-autofill';
-        mainFields.style.display = 'block'; settingsFields.style.display = 'none';
-        renderPresetOptions();
-    };
-
-    tabSettings.onclick = () => {
-        activeTab = 'settings';
-        resetTabs(); tabSettings.className = 'apm-tab-btn apm-tab-active-autofill';
-        mainFields.style.display = 'none'; settingsFields.style.display = 'block';
-        loadSettingsView();
-    };
-
-    document.getElementById('apm-c-btn-save').onclick = () => {
-        if (selectEl.value) {
-            presets.autofill[selectEl.value] = getCurrentFormData();
-            savePresets();
-        }
-    };
-
-    document.getElementById('apm-c-btn-new').onclick = () => {
-        const name = prompt('New preset name:');
-        if (name && name.trim()) {
-            presets.autofill[name.trim()] = getCurrentFormData();
-            savePresets(); renderPresetOptions();
-            selectEl.value = name.trim();
-        }
-    };
-
-    document.getElementById('apm-c-btn-del').onclick = () => {
-        if (selectEl.value && confirm(`Delete preset "${selectEl.value}"?`)) {
-            delete presets.autofill[selectEl.value];
-            savePresets(); renderPresetOptions();
-        }
-    };
-
-    document.getElementById('apm-s-btn-save-settings').onclick = () => {
-        const items = [...colListContainer.querySelectorAll('.apm-col-item')];
-        if (items.length > 0) {
-            const orderStr = items.map(el => el.dataset.index).join(', ');
-            if (settingsMode === 'cols') {
-                presets.config.columnOrder = orderStr;
-                setStatus('Grid Column order saved!', '#2ecc71');
+            if (isHelpOpen) {
+                mainFields.style.display = 'none';
+                settingsFields.style.display = 'none';
+                tabContainer.style.display = 'none';
+                helpFields.style.display = 'block';
+                helpBtn.textContent = '← Back to Tools';
+                helpBtn.style.color = '#3498db';
             } else {
-                presets.config.tabOrder = orderStr;
-                setStatus('Record Tab order saved!', '#2ecc71');
+                resetTabs();
+                if (activeTab === 'autofill') tabAutofill.onclick();
+                else tabSettings.onclick();
             }
-            savePresets();
-        } else {
-            setStatus('No items to save.', '#e74c3c');
-        }
-    };
+        };
 
-    if (activeTab === 'autofill') tabAutofill.onclick();
-    else tabSettings.onclick();
+        const resetTabs = () => {
+            tabAutofill.style.background = 'transparent'; tabAutofill.className = 'apm-tab-btn apm-tab-inactive';
+            tabSettings.style.background = 'transparent'; tabSettings.className = 'apm-tab-btn apm-tab-inactive';
+            isHelpOpen = false;
+            helpFields.style.display = 'none';
+            document.getElementById('apm-tab-container').style.display = 'flex';
+            const helpBtn = document.getElementById('apm-c-btn-help');
+            helpBtn.textContent = 'Help & Tips';
+            helpBtn.style.color = '#3498db';
+        };
 
-    checkForUpdates();
-}
+        const renderPresetOptions = () => {
+            selectEl.innerHTML = '';
+            const targetList = presets.autofill;
+            for (const pName in targetList) {
+                const opt = document.createElement('option');
+                opt.value = pName; opt.textContent = pName;
+                selectEl.appendChild(opt);
+            }
+            if (Object.keys(targetList).length > 0) {
+                applyPresetData(targetList[Object.keys(targetList)[0]]);
+            } else {
+                applyPresetData({});
+            }
+            if (pmChecksEl.value === '0') pmChecksEl.value = '';
+        };
+
+        const probeExtGridColumns = () => {
+            let cols = [];
+            const allDocs = [window.top, window];
+            document.querySelectorAll('iframe').forEach(f => {
+                try { if (f.src && f.src.includes('amazon.dev')) return; if (f.contentWindow && f.contentWindow.Ext) allDocs.push(f.contentWindow); } catch(e){}
+            });
+
+            for (const win of allDocs) {
+                if (win.Ext && win.Ext.ComponentQuery) {
+                    const grids = win.Ext.ComponentQuery.query('gridpanel');
+                    const mainGrid = grids.find(g => g.columns && g.columns.length > 20 && g.rendered);
+                    if (mainGrid && mainGrid.headerCt) {
+                        mainGrid.headerCt.items.items.forEach(col => {
+                            if (col.rendered && (!col.isHidden || !col.isHidden()) && col.dataIndex) {
+                                let cleanText = (col.text || col.dataIndex).replace(/<[^>]*>?/gm, '').trim();
+                                if (cleanText && cleanText !== '&#160;') {
+                                    cols.push({ index: col.dataIndex, text: cleanText });
+                                }
+                            }
+                        });
+                        break;
+                    }
+                }
+            }
+            return cols;
+        };
+
+        const probeExtTabs = () => {
+            let tabs = [];
+            const allDocs = [window.top, window];
+            document.querySelectorAll('iframe').forEach(f => {
+                try { if (f.src && f.src.includes('amazon.dev')) return; if (f.contentWindow && f.contentWindow.Ext) allDocs.push(f.contentWindow); } catch(e){}
+            });
+
+            for (const win of allDocs) {
+                if (win.Ext && win.Ext.ComponentQuery) {
+                    const tabPanels = win.Ext.ComponentQuery.query('tabpanel');
+                    const mainTabPanel = tabPanels.find(tp => tp.rendered && tp.items && tp.items.items.length > 3 &&
+                                                        tp.items.items.some(t => {
+                        let txt = t.title || t.text || '';
+                        return txt.includes('Activities') || txt.includes('Checklist') || txt.includes('Comments');
+                    }));
+
+                    if (mainTabPanel) {
+                        mainTabPanel.items.items.forEach(t => {
+                            if (!t.tab || (typeof t.tab.isHidden === 'function' && t.tab.isHidden())) return;
+                            let cleanText = (t.title || t.text || '').replace(/<[^>]*>?/gm, '').trim();
+                            if (cleanText && cleanText !== '&#160;') {
+                                tabs.push({ index: cleanText, text: cleanText });
+                            }
+                        });
+                        break;
+                    }
+                }
+            }
+            return tabs;
+        };
+
+        const renderDragList = (itemsArray, emptyMsg) => {
+            colListContainer.innerHTML = '';
+            if (itemsArray.length === 0) {
+                colListContainer.innerHTML = `<div style="color:#7f8c8d; text-align:center; padding:10px;">${emptyMsg}</div>`;
+                return;
+            }
+
+            itemsArray.forEach(c => {
+                const item = document.createElement('div');
+                item.draggable = true;
+                item.dataset.index = c.index;
+                item.className = 'apm-col-item';
+
+                // FIXED: Removed backslashes to correctly parse JS string template
+                item.innerHTML = `<span><b style="color:#3498db;">☰</b> &nbsp; ${c.text}</span> <span style="color:#7f8c8d; font-size:10px;">[${settingsMode === 'cols' ? c.index : 'Tab'}]</span>`;
+
+                item.ondragstart = (e) => {
+                    e.dataTransfer.setData('text/plain', '');
+                    item.classList.add('dragging');
+                };
+                item.ondragend = () => { item.classList.remove('dragging'); };
+                colListContainer.appendChild(item);
+            });
+        };
+
+        colListContainer.ondragover = (e) => {
+            e.preventDefault();
+            const dragging = document.querySelector('.dragging');
+            if (!dragging) return;
+
+            const siblings = [...colListContainer.querySelectorAll('.apm-col-item:not(.dragging)')];
+            const nextSibling = siblings.find(sibling => {
+                const box = sibling.getBoundingClientRect();
+                return e.clientY <= box.top + box.height / 2;
+            });
+
+            if (nextSibling) { colListContainer.insertBefore(dragging, nextSibling); }
+            else { colListContainer.appendChild(dragging); }
+        };
+
+        const performAutoFetch = () => {
+            if (settingsMode === 'cols') {
+                const cols = probeExtGridColumns();
+                renderDragList(cols, 'No grid found. Open the Work Orders screen.');
+            } else {
+                const tabs = probeExtTabs();
+                renderDragList(tabs, 'No record tabs found. Open a Work Order.');
+            }
+        };
+
+        const loadSettingsView = () => {
+            if (settingsMode === 'cols') {
+                togCols.style.background = '#3498db'; togCols.style.color = '#fff';
+                togTabs.style.background = 'transparent'; togTabs.style.color = '#7f8c8d';
+            } else {
+                togTabs.style.background = '#3498db'; togTabs.style.color = '#fff';
+                togCols.style.background = 'transparent'; togCols.style.color = '#7f8c8d';
+            }
+            performAutoFetch();
+        };
+
+        togCols.onclick = () => { settingsMode = 'cols'; loadSettingsView(); };
+        togTabs.onclick = () => { settingsMode = 'tabs'; loadSettingsView(); };
+
+        tabAutofill.onclick = () => {
+            activeTab = 'autofill';
+            resetTabs(); tabAutofill.className = 'apm-tab-btn apm-tab-active-autofill';
+            mainFields.style.display = 'block'; settingsFields.style.display = 'none';
+            renderPresetOptions();
+        };
+
+        tabSettings.onclick = () => {
+            activeTab = 'settings';
+            resetTabs(); tabSettings.className = 'apm-tab-btn apm-tab-active-autofill';
+            mainFields.style.display = 'none'; settingsFields.style.display = 'block';
+            loadSettingsView();
+        };
+
+        // --- TEMPLATE MANAGER LOGIC ---
+        selectEl.addEventListener('change', () => {
+            const selected = selectEl.value;
+            if (selected && presets.autofill[selected]) {
+                applyPresetData(presets.autofill[selected]);
+                if (pmChecksEl.value === '0') pmChecksEl.value = '';
+            }
+        });
+
+        document.getElementById('apm-c-btn-save').onclick = () => {
+            if (selectEl.value) {
+                presets.autofill[selectEl.value] = getCurrentFormData();
+                savePresets();
+                // FIXED: Removed backslashes
+                setStatus(`Template "${selectEl.value}" Updated!`, '#2ecc71');
+            } else {
+                setStatus('No template selected to update.', '#e74c3c');
+            }
+        };
+
+        document.getElementById('apm-c-btn-new').onclick = () => {
+            const name = prompt('Enter a name for the new template:');
+            if (name && name.trim()) {
+                const safeName = name.trim();
+                presets.autofill[safeName] = getCurrentFormData();
+                savePresets();
+                renderPresetOptions();
+                selectEl.value = safeName;
+                if (pmChecksEl.value === '0') pmChecksEl.value = '';
+                // FIXED: Removed backslashes
+                setStatus(`Template "${safeName}" Created!`, '#3498db');
+            }
+        };
+
+        document.getElementById('apm-c-btn-del').onclick = () => {
+            // FIXED: Removed backslashes
+            if (selectEl.value && confirm(`Delete template "${selectEl.value}"?`)) {
+                const deletedName = selectEl.value;
+                delete presets.autofill[selectEl.value];
+                savePresets();
+                renderPresetOptions();
+                setStatus(`Template "${deletedName}" Deleted.`, '#e74c3c');
+            }
+        };
+
+        document.getElementById('apm-s-btn-save-settings').onclick = () => {
+            const items = [...colListContainer.querySelectorAll('.apm-col-item')];
+            if (items.length > 0) {
+                const orderStr = items.map(el => el.dataset.index).join(', ');
+                if (settingsMode === 'cols') {
+                    presets.config.columnOrder = orderStr;
+                    setStatus('Grid Column order saved!', '#2ecc71');
+                } else {
+                    presets.config.tabOrder = orderStr;
+                    setStatus('Record Tab order saved!', '#2ecc71');
+                }
+                savePresets();
+            } else {
+                setStatus('No items to save.', '#e74c3c');
+            }
+        };
+
+        if (activeTab === 'autofill') tabAutofill.onclick();
+        else tabSettings.onclick();
+
+        checkForUpdates();
+    }
 
     /** =========================
      * UI Customizations (Grid & Tabs)
@@ -1148,6 +1205,7 @@
         let activeExt = null;
         let checklistContainer = null;
         let mainTabPanel = null;
+        let activeWin = null;
 
         // 1. Locate Checklist Container
         for (let i = 0; i < 15; i++) {
@@ -1160,6 +1218,7 @@
                 if (win.Ext && win.Ext.ComponentQuery) {
                     const containers = win.Ext.ComponentQuery.query('uxtabcontainer[itemId=ACK]');
                     if (containers.length > 0) {
+                        activeWin = win;
                         activeExt = win.Ext;
                         checklistContainer = containers[0];
                         mainTabPanel = checklistContainer.up('tabpanel');
@@ -1168,7 +1227,7 @@
                 }
             }
             if (activeExt && mainTabPanel) break;
-            await delay(250);
+            await delay(100);
         }
 
         if (!activeExt || !mainTabPanel || !checklistContainer) {
@@ -1177,28 +1236,25 @@
         }
 
         mainTabPanel.setActiveTab(checklistContainer);
-        await delay(2000);
 
         const getGridStore = () => {
             const grids = activeExt.ComponentQuery.query('gridpanel', checklistContainer);
             return grids.length > 0 ? grids[0] : null;
         };
 
-        const waitForAjax = async () => {
+        // CAPPED AJAX WAIT: Stops hanging if EAM has background polling
+        const localWaitForAjax = async () => {
+            await delay(50);
             let waited = 0;
-            while (waited < 12000) {
+            while (waited < 6000) { // Capped at 6 seconds maximum
                 if (activeExt.Ajax && !activeExt.Ajax.isLoading()) break;
-                await delay(250);
-                waited += 250;
+                await delay(50);
+                waited += 50;
             }
-            await delay(500); // Safety buffer after network resolves
+            await delay(50);
         };
 
         const saveGridData = async () => {
-            const grid = getGridStore();
-            if (grid && grid.getView) grid.getView().refresh();
-
-            // Prioritize the "Submit" button if on Checklist tab, fallback to Save Record
             let targetBtn = null;
             const submitBtns = activeExt.ComponentQuery.query('button[tooltip=Submit], button[text=Submit]');
             const visibleSubmit = submitBtns.find(b => b.rendered && (!b.hidden && !(typeof b.isHidden === 'function' && b.isHidden())));
@@ -1214,117 +1270,136 @@
                 if (targetBtn.handler) targetBtn.handler.call(targetBtn.scope || targetBtn, targetBtn);
                 else targetBtn.fireEvent('click', targetBtn);
             }
-
-            await waitForAjax();
+            await localWaitForAjax();
         };
 
-        const handleUnsavedPopup = async () => {
-            const msgBoxes = activeExt.ComponentQuery.query('messagebox');
-            if (msgBoxes.length > 0) {
-                // Find visible message box natively
-                const mb = msgBoxes.find(m => !m.hidden || (typeof m.isVisible === 'function' && m.isVisible()));
-                if (mb) {
-                    console.log("[APM] Catching unsaved changes popup. Auto-clicking 'Yes'...");
+        // STRICT MATCHING SWITCHER
+        const switchActivity = async (targetValue) => {
+            const combos = activeExt.ComponentQuery.query('combobox[name=activity]', checklistContainer);
+            if (!combos || combos.length === 0) return false;
 
-                    // Natively trigger the callback function attached to the MessageBox instead of clicking the button
-                    if (mb.cfg && mb.cfg.fn) {
-                        mb.cfg.fn.call(mb.cfg.scope || mb, 'yes');
-                        mb.hide();
-                    } else {
-                        // Fallback to button click
-                        const yesBtn = mb.query('button[itemId=yes], button[text=Yes]')[0];
-                        if (yesBtn) {
-                            if (yesBtn.handler) yesBtn.handler.call(yesBtn.scope || yesBtn, yesBtn);
-                            else yesBtn.fireEvent('click', yesBtn);
-                        }
-                    }
-                    await waitForAjax(activeWin);
-                }
+            const actCombo = combos[0];
+            const actStore = actCombo.getStore();
+
+            // 1. Check exact underlying value to prevent "10" matching "1"
+            const currentVal = String(actCombo.getValue() || '');
+            const currentDisp = String(actCombo.getRawValue() || '').trim();
+
+            // Allow exact match OR "1 -" formatting
+            if (currentVal === targetValue || currentDisp === targetValue || currentDisp.startsWith(targetValue + ' -') || currentDisp.startsWith(targetValue + '-')) {
+                return true;
             }
+
+            let targetRec = null;
+            actStore.each(rec => {
+                const val = String(rec.get(actCombo.valueField) || '');
+                const disp = String(rec.get(actCombo.displayField) || '').trim();
+
+                if (val === targetValue || disp === targetValue || disp.startsWith(targetValue + ' -') || disp.startsWith(targetValue + '-')) {
+                    targetRec = rec;
+                }
+            });
+
+            if (targetRec) {
+                actCombo.setValue(targetRec.get(actCombo.valueField));
+                actCombo.fireEvent('select', actCombo, [targetRec]);
+                actCombo.fireEvent('change', actCombo, targetRec.get(actCombo.valueField));
+
+                await localWaitForAjax();
+
+                const grid = getGridStore();
+                if (grid) {
+                    let waitData = 0;
+                    while (grid.getStore().getCount() === 0 && waitData < 500) {
+                        await delay(50);
+                        waitData += 50;
+                    }
+                }
+                return true;
+            }
+            return false;
         };
+
+        await localWaitForAjax();
 
         // --- PHASE 1: LOTO (1-Tech) ---
         if (lotoMode && lotoMode !== 'none') {
-            let chkGrid = getGridStore();
-            if (chkGrid && chkGrid.getStore().getCount() > 0) {
-                let modifiedCount = 0;
-                chkGrid.getStore().each(record => {
-                    let yesField = 'yes', noField = 'no';
-                    if (!record.data.hasOwnProperty('yes')) {
-                        const boolKeys = Object.keys(record.data).filter(k => k.startsWith('udfchkbox') || k.includes('chkbox'));
-                        if (boolKeys.length >= 2) { yesField = boolKeys[0]; noField = boolKeys[1]; }
-                    }
+            const isReady = await switchActivity('1');
+            if (isReady) {
+                let chkGrid = getGridStore();
+                if (chkGrid && chkGrid.getStore().getCount() > 0) {
+                    let modifiedCount = 0;
+                    let needsSaving = false;
 
-                    if (lotoMode === 'yes') {
-                        record.set(yesField, '-1'); record.set(noField, '0'); modifiedCount++;
-                    } else if (lotoMode === 'no') {
-                        record.set(yesField, '0'); record.set(noField, '-1'); modifiedCount++;
-                    }
-                });
-                setStatus(`Synced ${modifiedCount} LOTO items. Saving...`, '#2ecc71', true);
-                await saveGridData();
-            }
-        }
-
-        // --- PHASE 2: PM CHECKS (10-Tech) ---
-        if (pmChecks > 0) {
-            setStatus('Switching to 10-Tech Activity...', '#3498db', true);
-
-            const combos = activeExt.ComponentQuery.query('combobox[name=activity]', checklistContainer);
-            if (combos && combos.length > 0) {
-                const actCombo = combos[0];
-                const actStore = actCombo.getStore();
-
-                let targetRec = null;
-                actStore.each(rec => {
-                    const val = String(rec.get(actCombo.valueField) || '');
-                    const disp = String(rec.get(actCombo.displayField) || '');
-                    if (val === '10' || disp.startsWith('10')) { targetRec = rec; }
-                });
-
-                if (targetRec) {
-                    actCombo.setValue(targetRec.get(actCombo.valueField));
-                    actCombo.fireEvent('select', actCombo, [targetRec]);
-                    actCombo.fireEvent('change', actCombo, targetRec.get(actCombo.valueField));
-
-                    await delay(600); // Wait for potential popup animation
-                    await handleUnsavedPopup(); // Kill the popup if it appeared
-                    await waitForAjax(); // Wait for 10-Tech grid to download
-                } else {
-                    console.warn("[APM] Activity '10' not found in dropdown.");
-                }
-            }
-
-            let pmGrid = getGridStore();
-            if (pmGrid && pmGrid.getStore().getCount() > 0) {
-                let pmModified = 0;
-
-                pmGrid.getStore().each((record, index) => {
-                    if (index < pmChecks) {
+                    chkGrid.getStore().each(record => {
                         let yesField = 'yes', noField = 'no';
                         if (!record.data.hasOwnProperty('yes')) {
                             const boolKeys = Object.keys(record.data).filter(k => k.startsWith('udfchkbox') || k.includes('chkbox'));
                             if (boolKeys.length >= 2) { yesField = boolKeys[0]; noField = boolKeys[1]; }
                         }
 
-                        // Feed True to both standard formats
-                        if (record.data.hasOwnProperty('completed')) record.set('completed', '-1');
-                        record.set(yesField, '-1');
-                        record.set(noField, '0');
+                        const currentYes = record.get(yesField);
+                        const currentNo = record.get(noField);
 
-                        pmModified++;
+                        if (lotoMode === 'yes' && currentYes !== '-1') {
+                            record.set(yesField, '-1'); record.set(noField, '0');
+                            needsSaving = true; modifiedCount++;
+                        } else if (lotoMode === 'no' && currentNo !== '-1') {
+                            record.set(yesField, '0'); record.set(noField, '-1');
+                            needsSaving = true; modifiedCount++;
+                        }
+                    });
+
+                    if (needsSaving) {
+                        setStatus(`Synced ${modifiedCount} LOTO items. Saving...`, '#2ecc71', true);
+                        await saveGridData();
                     }
-                });
-
-                setStatus(`Synced ${pmModified} PM Checks. Saving...`, '#2ecc71', true);
-                await saveGridData();
-            } else {
-                setStatus('No items found on 10-Tech.', '#e74c3c');
-                await delay(1500);
+                }
             }
         }
 
-        // Return to Record View (HDR)
+        // --- PHASE 2: PM CHECKS (10-Tech) ---
+        if (pmChecks > 0) {
+            setStatus('Loading 10-Tech Activity...', '#3498db', true);
+
+            const isReady = await switchActivity('10');
+
+            if (isReady) {
+                let pmGrid = getGridStore();
+                if (pmGrid && pmGrid.getStore().getCount() > 0) {
+                    let pmModified = 0;
+                    let needsSaving = false;
+
+                    pmGrid.getStore().each((record, index) => {
+                        if (index < pmChecks) {
+                            let yesField = 'yes', noField = 'no';
+                            if (!record.data.hasOwnProperty('yes')) {
+                                const boolKeys = Object.keys(record.data).filter(k => k.startsWith('udfchkbox') || k.includes('chkbox'));
+                                if (boolKeys.length >= 2) { yesField = boolKeys[0]; noField = boolKeys[1]; }
+                            }
+
+                            const isAlreadyCompleted = (record.data.hasOwnProperty('completed') && record.get('completed') === '-1') || record.get(yesField) === '-1';
+
+                            if (!isAlreadyCompleted) {
+                                if (record.data.hasOwnProperty('completed')) record.set('completed', '-1');
+                                record.set(yesField, '-1');
+                                record.set(noField, '0');
+                                needsSaving = true;
+                                pmModified++;
+                            }
+                        }
+                    });
+
+                    if (needsSaving) {
+                        setStatus(`Synced ${pmModified} PM Checks. Saving...`, '#2ecc71', true);
+                        await saveGridData();
+                    }
+                } else {
+                    setStatus('No items found on 10-Tech.', '#e74c3c');
+                }
+            }
+        }
+
         const hdrContainers = activeExt.ComponentQuery.query('uxtabcontainer[itemId=HDR]');
         if (hdrContainers.length > 0) mainTabPanel.setActiveTab(hdrContainers[0]);
     }
