@@ -1,7 +1,7 @@
 // ==UserScript==
-// @name         APM Master: Full Merge
+// @name         APM Master: Unified Tools
 // @namespace    https://w.amazon.com/bin/view/Users/rosendah/APM-Master/
-// @version      13.0.0
+// @version      14.0.4
 // @description  Quality of life and automation tools that use native EAM ExtJS Framewoek functions for high reliability and capability. This is actively supported tool so Slack me for any issues and I can push an update.
 // @author       Jacob Rosendahl
 // @icon         https://media.licdn.com/dms/image/v2/D5603AQGdCV0_LQKRfQ/profile-displayphoto-scale_100_100/B56ZyZLvQ5HgAg-/0/1772096519061?e=1773878400&v=beta&t=eWO1Jiy0-WbzG_yBv-SBrmmsVOPMexF57-q1Xh_VXCk
@@ -16,14 +16,24 @@
 // @grant        none
 // ==/UserScript==
 
+/* --------------------------------------------------------------------------
+   RECENT FEATURES & BUG FIXES:
+   - v14.0.4 Added locale-aware date format detection for EU/US configurations.
+   - v14.0.4 Flash prevention implemented with css styles backdrop during page load to prevent flashbanging users who use the dark mode.
+   - v14.0.2 Added a PTP status tracker so users can see if they have completed a PTP on a WO from grid view
+   - v14.0.1 Replaced all document.createElement('script') injections in favor of a unified core, consolidating redundant utilities from merged tools into shared modules to native framework event listeners for improved performance.
+   - v14.0.0 Architectural Refactor: Migrated codebase to modular ES structure with esbuild bundling, improves maintainability and eliminated global scope conflicts.
+   - v12.5.11 Bug Fix: Fixed failed navigation when using screen cache, which was broken from the prior no screen cache fix. Tested with and without SC and it works now.
+   -------------------------------------------------------------------------- */
+
 (() => {
   // src/core/constants.js
-  var KEY_THEME = "apmUiTheme";
+  var KEY_THEME2 = "apmUiTheme";
   var CC_STORAGE_RULES = "apm_colorcode_rules";
   var CC_STORAGE_SET = "apm_colorcode_settings";
   var PRESET_STORAGE_KEY = "apm_creator_presets_v1";
   var STORAGE_KEY = "eam_forecast_preferences_v12";
-  var CURRENT_VERSION = "13.0.0";
+  var CURRENT_VERSION = "14.0.4";
   var UPDATE_URL = "https://raw.githubusercontent.com/jaker788-create/APM-Master/main/forecast.user.js";
   var GITHUB_URL = "https://github.com/jaker788-create/APM-Master";
   var SESSION_TIMEOUT_URL = "https://us1.eam.hxgnsmartcloud.com/web/base/logindisp?tenant=AMAZONRMENA_PRD";
@@ -39,93 +49,252 @@
     const isEAM2 = targetWin.location.hostname.includes("hxgnsmartcloud.com");
     const isPTP2 = /amazon\.dev|insights/i.test(targetWin.location.hostname);
     if (!isEAM2 && !isPTP2) return;
-    let ccSettings = { theme: "default" };
-    try {
-      ccSettings = JSON.parse(targetWin.localStorage.getItem(CC_STORAGE_SET)) || ccSettings;
-    } catch (e) {
-    }
-    const activeTheme = ccSettings.theme && ccSettings.theme !== "default" ? ccSettings.theme : targetWin.localStorage.getItem(KEY_THEME) || "default";
-    if (activeTheme === "default") return;
-    console.log(`[APM Master] Theme Enforcer: Activating "${activeTheme}"`);
-    targetWin.EAM = targetWin.EAM || {};
-    try {
-      Object.defineProperty(targetWin.EAM, "CSS_PATH", {
-        configurable: true,
-        enumerable: true,
-        get: () => activeTheme,
-        set: () => {
+    targetWin.__apmThemeState = targetWin.__apmThemeState || {
+      activeTheme: null,
+      sentinelActive: false
+    };
+    const state = targetWin.__apmThemeState;
+    const applyEnforcer = (themeName) => {
+      if (!themeName || themeName === "default") return;
+      state.activeTheme = themeName;
+      const manifestPath = "eam/" + themeName + ".json";
+      const isDark = themeName.includes("dark") || themeName.includes("hex");
+      const internal = {
+        pollCount: 0,
+        origBeforeLoad: null,
+        wrapper: null
+      };
+      if (isDark) {
+        const flashStyle = targetDoc.getElementById("apm-flash-prevent") || targetDoc.createElement("style");
+        flashStyle.id = "apm-flash-prevent";
+        flashStyle.textContent = `
+                html, body, .x-body, .x-viewport, #processing-request-container { background-color: #222 !important; color: #eee !important; }
+                .loading-mask, .x-mask { background-color: rgba(0,0,0,0.5) !important; }
+            `;
+        (targetDoc.head || targetDoc.documentElement).appendChild(flashStyle);
+      }
+      const hookEam = (obj) => {
+        if (!obj) return;
+        try {
+          Object.defineProperty(obj, "CSS_PATH", {
+            get: () => state.activeTheme,
+            set: () => {
+            },
+            configurable: true,
+            enumerable: true
+          });
+        } catch (e) {
+          obj.CSS_PATH = state.activeTheme;
         }
-      });
-    } catch (e) {
-      targetWin.EAM.CSS_PATH = activeTheme;
-    }
-    let _ext = targetWin.Ext || {};
-    const applyThemeToExt = (extObj) => {
-      if (!extObj) return;
-      extObj.manifest = "eam/" + activeTheme + ".json";
-      const original = extObj.beforeLoad;
-      extObj.beforeLoad = function(tags) {
-        extObj.manifest = "eam/" + activeTheme + ".json";
-        if (typeof original === "function" && original !== extObj.beforeLoad) {
+      };
+      const hookExt = (obj) => {
+        if (!obj) return;
+        let _manifest = manifestPath;
+        try {
+          if (!obj.__apmManifestHooked) {
+            Object.defineProperty(obj, "manifest", {
+              get: () => _manifest,
+              set: (v) => {
+                if (typeof v === "string" && v.includes("theme-") && !v.includes(state.activeTheme)) {
+                  console.log(`[APM Master] Sticky Manifest: Redirecting "${v}" -> "${manifestPath}"`);
+                  _manifest = manifestPath;
+                } else {
+                  _manifest = v;
+                }
+              },
+              configurable: true,
+              enumerable: true
+            });
+            obj.__apmManifestHooked = true;
+          }
+        } catch (e) {
+          obj.manifest = manifestPath;
+        }
+        if (!internal.wrapper) {
+          internal.origBeforeLoad = obj.beforeLoad;
+          internal.wrapper = function(tags) {
+            targetWin.Ext.manifest = manifestPath;
+            if (typeof internal.origBeforeLoad === "function") {
+              try {
+                return internal.origBeforeLoad.apply(this, arguments);
+              } catch (err) {
+              }
+            }
+          };
           try {
-            original(tags);
+            Object.defineProperty(obj, "beforeLoad", {
+              get: () => internal.wrapper,
+              set: (v) => {
+                internal.origBeforeLoad = v;
+              },
+              configurable: true,
+              enumerable: true
+            });
+          } catch (e) {
+          }
+        }
+      };
+      if (targetWin.EAM) hookEam(targetWin.EAM);
+      if (targetWin.Ext) hookExt(targetWin.Ext);
+      try {
+        let _eam = targetWin.EAM;
+        Object.defineProperty(targetWin, "EAM", {
+          get: () => _eam,
+          set: (v) => {
+            _eam = v;
+            if (v) hookEam(v);
+          },
+          configurable: true,
+          enumerable: true
+        });
+        let _ext = targetWin.Ext;
+        Object.defineProperty(targetWin, "Ext", {
+          get: () => _ext,
+          set: (v) => {
+            _ext = v;
+            if (v) hookExt(v);
+          },
+          configurable: true,
+          enumerable: true
+        });
+      } catch (e) {
+      }
+      const flipLink = (node) => {
+        if (node.tagName === "LINK" && node.rel === "stylesheet" && node.href) {
+          const url = node.href.toLowerCase();
+          const isTheme = url.includes("/theme-") || url.includes("/ext-theme-") || url.includes("neptune") || url.includes("crisp") || url.includes("triton");
+          if (isTheme && !url.includes(state.activeTheme)) {
+            const newHref = node.href.replace(/(theme-)[^./?#]+/, `$1${state.activeTheme.replace("theme-", "")}`);
+            if (newHref !== node.href) {
+              console.log(`[APM Master] CSS Sentinel: Flipping ${node.href} -> ${newHref}`);
+              node.href = newHref;
+            }
+          }
+        }
+      };
+      if (!state.sentinelActive) {
+        targetDoc.querySelectorAll('link[rel="stylesheet"]').forEach(flipLink);
+        const sentinel = new MutationObserver((mutations) => {
+          for (const m of mutations) {
+            for (const node of m.addedNodes || []) {
+              if (node.nodeType === 1) flipLink(node);
+            }
+          }
+        });
+        sentinel.observe(targetDoc.documentElement, { childList: true, subtree: true });
+        state.sentinelActive = true;
+      }
+      const poll = () => {
+        internal.pollCount++;
+        if (targetWin.Ext) hookExt(targetWin.Ext);
+        if (targetWin.EAM) hookEam(targetWin.EAM);
+        if (internal.pollCount < 200) {
+          setTimeout(poll, 50);
+        } else {
+          setInterval(() => {
+            if (targetWin.Ext) hookExt(targetWin.Ext);
+            if (targetWin.EAM) hookEam(targetWin.EAM);
+          }, 5e3);
+        }
+      };
+      const broadcast = () => {
+        for (let i = 0; i < targetWin.frames.length; i++) {
+          try {
+            targetWin.frames[i].postMessage({ type: "APM_SET_THEME", value: themeName }, "*");
           } catch (err) {
           }
         }
       };
+      broadcast();
+      if (targetWin === targetWin.top) {
+        let count = 0;
+        const iv = setInterval(() => {
+          broadcast();
+          if (++count > 10) clearInterval(iv);
+        }, 1e3);
+      }
+      const style = targetDoc.getElementById("apm-theme-root-vars") || targetDoc.createElement("style");
+      if (!style.id) {
+        style.id = "apm-theme-root-vars";
+        (targetDoc.head || targetDoc.documentElement).appendChild(style);
+      }
+      style.textContent = `:root { --apm-active-theme: "${themeName}"; }`;
+      const cls = "x-theme-" + themeName.replace("theme-", "");
+      if (targetDoc.body) targetDoc.body.classList.add(cls);
+      targetDoc.documentElement.classList.add(cls);
+      console.log(`[APM Master] Theme Applied: ${themeName} (${targetWin === targetWin.top ? "TOP" : "FRAME"})`);
     };
-    if (targetWin.Ext) applyThemeToExt(targetWin.Ext);
-    try {
-      Object.defineProperty(targetWin, "Ext", {
-        configurable: true,
-        enumerable: true,
-        get: () => _ext,
-        set: (v) => {
-          _ext = v;
-          if (_ext) applyThemeToExt(_ext);
-        }
-      });
-    } catch (e) {
-      targetWin.Ext = _ext;
-      applyThemeToExt(targetWin.Ext);
-    }
-    const watchAndFixTheme = (doc) => {
-      if (!doc || doc.__apmThemeWatcher) return;
-      const replaceThemeInLink = (link) => {
-        const href = link.getAttribute("href") || "";
-        if (href.includes("theme-") && !href.includes(activeTheme)) {
-          const newHref = href.replace(/theme-[^/]+/, `theme-${activeTheme}`);
-          console.log(`[APM Master] Reactive Theme: Swapping ${href} -> ${newHref}`);
-          link.setAttribute("href", newHref);
-        }
-      };
-      const observer = new MutationObserver((mutations) => {
-        mutations.forEach((m) => {
-          if (m.type === "childList") {
-            m.addedNodes.forEach((node) => {
-              if (node.nodeType === 1 && node.tagName === "LINK") replaceThemeInLink(node);
-            });
-          } else if (m.type === "attributes" && m.target.tagName === "LINK") {
-            replaceThemeInLink(m.target);
+    if (!targetWin.__apmMsgBound) {
+      targetWin.addEventListener("message", (e) => {
+        const d = e.data;
+        if (d && (d.type === "APM_SET_THEME" || d.apmMaster === "theme")) {
+          const newTheme = (d.value || d.theme || "default").toLowerCase();
+          if (newTheme !== state.activeTheme) applyEnforcer(newTheme);
+        } else if (d && d.type === "APM_GET_THEME") {
+          const cur = state.activeTheme || "default";
+          if (cur !== "default") {
+            try {
+              e.source?.postMessage({ type: "APM_SET_THEME", value: cur }, "*");
+            } catch (err) {
+            }
           }
-        });
+        }
       });
-      observer.observe(doc.head || doc.documentElement, {
-        childList: true,
-        subtree: true,
-        attributes: true,
-        attributeFilter: ["href"]
-      });
-      doc.querySelectorAll('link[rel="stylesheet"]').forEach(replaceThemeInLink);
-      doc.__apmThemeWatcher = true;
-    };
-    watchAndFixTheme(targetDoc);
-    const style = targetDoc.getElementById("apm-theme-root-vars") || targetDoc.createElement("style");
-    if (!style.id) {
-      style.id = "apm-theme-root-vars";
-      (targetDoc.head || targetDoc.documentElement).appendChild(style);
+      targetWin.__apmMsgBound = true;
     }
-    style.textContent = `:root { --apm-active-theme: "${activeTheme}"; }`;
+    const getStoredTheme = () => {
+      try {
+        const genStr = targetWin.localStorage.getItem("ApmGeneralSettings");
+        const gen = genStr ? JSON.parse(genStr) : null;
+        if (gen && gen.theme && gen.theme !== "default") return gen.theme;
+        const ccStr = targetWin.localStorage.getItem(CC_STORAGE_SET);
+        const cc = ccStr ? JSON.parse(ccStr) : null;
+        if (cc && cc.theme && cc.theme !== "default") return cc.theme;
+        const direct = targetWin.localStorage.getItem(KEY_THEME2);
+        if (direct && direct !== "default") return direct;
+      } catch (e) {
+      }
+      return "default";
+    };
+    let startTheme = getStoredTheme();
+    if (startTheme !== "default") {
+      console.log(`[APM Master] Theme Enforcer: Detected "${startTheme}"`);
+      applyEnforcer(startTheme);
+    } else if (targetWin !== targetWin.top) {
+      let tries = 0;
+      const requestTheme = () => {
+        if (state.activeTheme) return;
+        try {
+          targetWin.top.postMessage({ type: "APM_GET_THEME" }, "*");
+        } catch (e) {
+        }
+        if (++tries < 15) setTimeout(requestTheme, 1e3);
+      };
+      requestTheme();
+    }
+    if (!targetWin.localStorage.__apmSetItemPatched) {
+      try {
+        const _set = targetWin.localStorage.setItem;
+        targetWin.localStorage.setItem = function(k, v) {
+          const r = _set.apply(this, arguments);
+          if (k === "ApmGeneralSettings" || k === CC_STORAGE_SET || k === KEY_THEME2) {
+            const next = getStoredTheme();
+            if (next !== "default") {
+              applyEnforcer(next);
+              for (let i = 0; i < targetWin.frames.length; i++) {
+                try {
+                  targetWin.frames[i].postMessage({ type: "APM_SET_THEME", value: next }, "*");
+                } catch (err) {
+                }
+              }
+            }
+          }
+          return r;
+        };
+        targetWin.localStorage.__apmSetItemPatched = true;
+      } catch (e) {
+      }
+    }
   }
 
   // src/core/state.js
@@ -172,7 +341,11 @@
     ptpTimerEnabled: true,
     ptpTrackingEnabled: true,
     openLinksInNewTab: true,
-    autoRedirect: false
+    autoRedirect: false,
+    dateFormat: "us",
+    // 'us' or 'eu'
+    dateSeparator: "/",
+    dateOverrideEnabled: true
   };
   var apmGeneralSettings = { ...DEFAULT_SETTINGS };
   var _settingsInitialized = false;
@@ -325,6 +498,17 @@
     }
     return null;
   }
+  function formatDate(d) {
+    if (!d || isNaN(d.getTime())) return "";
+    const day = String(d.getDate()).padStart(2, "0");
+    const month = String(d.getMonth() + 1).padStart(2, "0");
+    const year = d.getFullYear();
+    const sep = apmGeneralSettings?.dateSeparator || "/";
+    if (apmGeneralSettings?.dateFormat === "eu") {
+      return `${day}${sep}${month}${sep}${year}`;
+    }
+    return `${month}${sep}${day}${sep}${year}`;
+  }
   function waitForAjax(win) {
     return new Promise((resolve) => {
       const ext = win?.Ext;
@@ -415,11 +599,6 @@
   // src/modules/forecast/forecast-engine.js
   var isRunning = false;
   var isStopped = false;
-  function formatDate(d) {
-    const day = String(d.getDate()).padStart(2, "0");
-    const month = String(d.getMonth() + 1).padStart(2, "0");
-    return `${month}/${day}/${d.getFullYear()}`;
-  }
   function getDateRange(weekValue, minDay, maxDay, isCumulative) {
     if (minDay === null || maxDay === null) return null;
     const val = parseInt(weekValue, 10);
@@ -1336,8 +1515,10 @@
       }
       return false;
     };
+    if (window._apmHotkeysBound) return;
     window.checkApmHotkey = checkKey;
     window.addEventListener("keydown", checkKey, true);
+    window._apmHotkeysBound = true;
     const bindExtHotkeys = function() {
       if (window.Ext && window.Ext.onReady) {
         window.Ext.onReady(function() {
@@ -2388,9 +2569,7 @@
     if (dpr < 1) {
       panel.style.zoom = 1 / dpr;
     }
-    panel.style.display = "block";
-    panel.style.visibility = "hidden";
-    document.body.appendChild(panel);
+    panel.style.display = "none";
     const margin = 20;
     const vHeight = window.innerHeight;
     const vWidth = window.innerWidth;
@@ -2403,7 +2582,6 @@
     if (rightPos + panelWidth > vWidth) rightPos = Math.max(10, vWidth - panelWidth - margin);
     panel.style.top = topPos + "px";
     panel.style.right = rightPos + "px";
-    panel.style.visibility = "visible";
     panel.style.display = "none";
     const helpOverlay = el("div", { id: "apm-help-overlay", className: "apm-help-overlay", style: { display: "none" } }, [
       el("div", { className: "apm-help-modal" }, [
@@ -2483,11 +2661,11 @@
         ])
       ]),
       el("div", { className: "apm-fields-wrapper" }, [
-        el("div", { className: "field-row", style: { marginBottom: "10px" } }, [
+        el("div", { className: "field-row", style: { marginBottom: "6px" } }, [
           el("div", { className: "field-label", style: { color: "#f39c12", fontWeight: "bold", width: "65px", textAlign: "left", fontSize: "11px" } }, "Match:"),
           el("input", { type: "text", id: "apm-c-keyword", className: "field-input", placeholder: "e.g., pre-sort, repair, jam", style: { fontFamily: "monospace", border: "1px solid #f39c12", height: "24px", padding: "0 8px", fontSize: "11px", transition: "all 0.2s" } })
         ]),
-        el("div", { style: { display: "flex", gap: "8px", marginBottom: "6px" } }, [
+        el("div", { style: { display: "flex", gap: "6px", marginBottom: "4px" } }, [
           el("div", { className: "field-row", style: { width: "105px", flexShrink: "0", margin: "0" } }, [
             el("div", { className: "field-label", style: { width: "35px", textAlign: "left", fontSize: "11px" } }, "Org:"),
             el("input", { type: "text", id: "apm-c-org", className: "field-input upper", placeholder: "Ignore", style: { height: "24px", padding: "0 6px", fontSize: "11px", border: "1px solid transparent", transition: "all 0.2s" } })
@@ -2497,7 +2675,7 @@
             el("input", { type: "text", id: "apm-c-eq", className: "field-input upper", placeholder: "Leave blank to ignore", style: { height: "24px", padding: "0 6px", fontSize: "11px", border: "1px solid transparent", transition: "all 0.2s" } })
           ])
         ]),
-        el("div", { style: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: "6px 12px", marginBottom: "10px" } }, [
+        el("div", { style: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: "4px 10px", marginBottom: "6px" } }, [
           el("div", { className: "field-row", style: { margin: "0" } }, [
             el("div", { className: "field-label", style: { width: "40px", textAlign: "left", fontSize: "11px" } }, "Type:"),
             el("select", { id: "apm-c-type", className: "field-input", style: { height: "24px", padding: "0 4px", fontSize: "11px", border: "1px solid transparent", transition: "all 0.2s" } }, [
@@ -2534,7 +2712,7 @@
             ])
           ])
         ]),
-        el("div", { className: "apm-checklist-box" }, [
+        el("div", { className: "apm-checklist-box", style: { marginBottom: "6px" } }, [
           el("div", { className: "apm-checklist-title" }, "Automated Checklists:"),
           el("div", { className: "apm-checklist-row" }, [
             el("div", { className: "field-label", style: { width: "40px", textAlign: "left", color: "#fff", fontSize: "11px" } }, "1-Tech:"),
@@ -2549,7 +2727,7 @@
             }, style: { width: "70px", height: "22px", padding: "0 4px", textAlign: "center", fontSize: "10px" } })
           ])
         ]),
-        el("div", { style: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: "6px 12px", marginBottom: "10px" } }, [
+        el("div", { style: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: "4px 10px", marginBottom: "6px" } }, [
           el("div", { className: "field-row", style: { margin: "0" } }, [
             el("div", { className: "field-label", style: { width: "50px", textAlign: "left", fontSize: "11px" } }, "Problem:"),
             el("input", { type: "text", id: "apm-c-prob", className: "field-input upper" })
@@ -2567,7 +2745,7 @@
             el("input", { type: "text", id: "apm-c-assign", className: "field-input upper" })
           ])
         ]),
-        el("div", { style: { display: "flex", gap: "8px", marginBottom: "10px" } }, [
+        el("div", { style: { display: "flex", gap: "6px", marginBottom: "6px" } }, [
           el("div", { className: "field-row", style: { flex: "1", margin: "0" } }, [
             el("div", { className: "field-label", style: { width: "35px", textAlign: "left", fontSize: "11px" } }, "Start:"),
             el("input", { type: "date", id: "apm-c-start", className: "field-input", style: { height: "24px", padding: "0 4px", fontSize: "10px" } })
@@ -2692,13 +2870,43 @@
           el("span", { className: "cc-toggle-slider" })
         ])
       ]),
-      el("div", { className: "apm-general-item", style: { marginBottom: "5px" } }, [
+      el("div", { className: "apm-general-item" }, [
         el("div", {}, [
-          el("div", { className: "apm-general-title" }, "Auto-Redirect on Timeout"),
-          el("div", { className: "apm-general-desc" }, "Return to APM automatically when session expires")
+          el("div", { className: "apm-general-title" }, "Auto-Redirect"),
+          el("div", { className: "apm-general-desc" }, "Automatically return to APM Home if session expires")
         ]),
         el("label", { className: "cc-toggle-switch" }, [
           el("input", { type: "checkbox", id: "gen-setting-redirect", checked: !!apmGeneralSettings.autoRedirect }),
+          el("span", { className: "cc-toggle-slider" })
+        ])
+      ]),
+      el("div", { className: "apm-general-item", style: { borderTop: "1px solid #45535e", paddingTop: "10px", marginTop: "10px" } }, [
+        el("div", {}, [
+          el("div", { className: "apm-general-title", style: { color: "#1abc9c" } }, "Regional: Date Format"),
+          el("div", { className: "apm-general-desc" }, "Choose the format your EAM expects for inputs.")
+        ]),
+        el("select", { id: "gen-setting-date-fmt", className: "apm-cc-theme-select", style: { width: "120px" } }, [
+          el("option", { value: "us" }, "MM/DD/YYYY"),
+          el("option", { value: "eu" }, "DD/MM/YYYY")
+        ])
+      ]),
+      el("div", { className: "apm-general-item" }, [
+        el("div", {}, [
+          el("div", { className: "apm-general-title" }, "Regional: Separator"),
+          el("div", { className: "apm-general-desc" }, "The character between parts (e.g. / or -)")
+        ]),
+        el("select", { id: "gen-setting-date-sep", className: "apm-cc-theme-select", style: { width: "120px" } }, [
+          el("option", { value: "/" }, "/ (Slash)"),
+          el("option", { value: "-" }, "- (Dash)")
+        ])
+      ]),
+      el("div", { className: "apm-general-item" }, [
+        el("div", {}, [
+          el("div", { className: "apm-general-title" }, "Regional: Overrides"),
+          el("div", { className: "apm-general-desc" }, "Force standard date parsing in EAM (Disable if causing errors)")
+        ]),
+        el("label", { className: "cc-toggle-switch" }, [
+          el("input", { type: "checkbox", id: "gen-setting-date-over", checked: !!apmGeneralSettings.dateOverrideEnabled }),
           el("span", { className: "cc-toggle-slider" })
         ])
       ])
@@ -2726,6 +2934,7 @@
     panel.appendChild(colorCodeFields);
     panel.appendChild(generalFields);
     panel.appendChild(footer);
+    document.body.appendChild(panel);
     document.body.appendChild(helpOverlay);
     const selectEl = document.getElementById("apm-c-preset-select");
     const mainFields = autofillFields;
@@ -2737,17 +2946,27 @@
     const togCols = document.getElementById("apm-s-tog-cols");
     const togTabs = document.getElementById("apm-s-tog-tabs");
     const colListContainer = document.getElementById("apm-s-col-list");
-    setupColorCodeLogic(colorcodeFields);
-    const ccSettings = getSettings();
-    const elTheme = document.getElementById("cc-setting-theme");
-    if (elTheme && ccSettings.theme) {
-      elTheme.value = ccSettings.theme;
-    }
-    const elUniform = document.getElementById("cc-setting-uniform");
-    if (elUniform && ccSettings.uniformHighlight !== void 0) {
-      elUniform.checked = ccSettings.uniformHighlight;
-      const lbl = document.getElementById("cc-uniform-label");
-      if (lbl) lbl.textContent = ccSettings.uniformHighlight ? "Uniform Shading" : "Alternating Shading";
+    try {
+      const fmt = document.getElementById("gen-setting-date-fmt");
+      const sep = document.getElementById("gen-setting-date-sep");
+      const over = document.getElementById("gen-setting-date-over");
+      if (fmt) fmt.value = apmGeneralSettings.dateFormat || "us";
+      if (sep) sep.value = apmGeneralSettings.dateSeparator || "/";
+      if (over) over.checked = !!apmGeneralSettings.dateOverrideEnabled;
+      setupColorCodeLogic(colorcodeFields);
+      const ccSettings = getSettings();
+      const elTheme = document.getElementById("cc-setting-theme");
+      if (elTheme && ccSettings.theme) {
+        elTheme.value = ccSettings.theme;
+      }
+      const elUniform = document.getElementById("cc-setting-uniform");
+      if (elUniform && ccSettings.uniformHighlight !== void 0) {
+        elUniform.checked = ccSettings.uniformHighlight;
+        const lbl = document.getElementById("cc-uniform-label");
+        if (lbl) lbl.textContent = ccSettings.uniformHighlight ? "Uniform Shading" : "Alternating Shading";
+      }
+    } catch (e) {
+      console.error("[APM Master] Error initializing settings panel listeners:", e);
     }
     panel.addEventListener("keydown", (e) => {
       const tag = e.target.tagName;
@@ -2755,34 +2974,53 @@
         e.stopPropagation();
       }
     }, true);
-    document.getElementById("apm-c-btn-close").onclick = () => {
-      panel.style.display = "none";
-      panel.style.visibility = "hidden";
-    };
-    document.getElementById("gen-setting-ptp").onchange = (e) => {
-      setGeneralSetting("ptpTimerEnabled", e.target.checked);
-      const ptpContainer = document.getElementById("apm-ptp-timer");
-      if (ptpContainer && !apmGeneralSettings.ptpTimerEnabled) ptpContainer.style.display = "none";
-    };
-    document.getElementById("gen-setting-ptp-ui").onchange = (e) => {
-      setGeneralSetting("ptpTrackingEnabled", e.target.checked);
-      if (typeof invalidateColorCodeCache === "function") invalidateColorCodeCache();
-    };
-    document.getElementById("gen-setting-links").onchange = (e) => {
-      setGeneralSetting("openLinksInNewTab", e.target.checked);
-      const titleEl = document.getElementById("gen-setting-links-title");
-      if (titleEl) {
-        titleEl.textContent = e.target.checked ? "Open Work Orders in New Tab" : "Open Work Orders in Current Tab";
-      }
-      if (typeof debouncedProcessColorCodeGrid === "function") debouncedProcessColorCodeGrid();
-    };
-    document.getElementById("gen-setting-redirect").onchange = (e) => {
-      setGeneralSetting("autoRedirect", e.target.checked);
-    };
-    subscribeToUpdates(() => {
-      const updateContainer = document.getElementById("apm-settings-update-container");
-      if (updateContainer) updateContainer.style.display = "block";
-    });
+    try {
+      document.getElementById("apm-c-btn-close").onclick = () => {
+        panel.style.display = "none";
+      };
+      const ptpTog = document.getElementById("gen-setting-ptp");
+      if (ptpTog) ptpTog.onchange = (e) => {
+        setGeneralSetting("ptpTimerEnabled", e.target.checked);
+        const ptpContainer = document.getElementById("apm-ptp-timer");
+        if (ptpContainer && !apmGeneralSettings.ptpTimerEnabled) ptpContainer.style.display = "none";
+      };
+      const ptpUiTog = document.getElementById("gen-setting-ptp-ui");
+      if (ptpUiTog) ptpUiTog.onchange = (e) => {
+        setGeneralSetting("ptpTrackingEnabled", e.target.checked);
+        if (typeof invalidateColorCodeCache === "function") invalidateColorCodeCache();
+      };
+      const linksTog = document.getElementById("gen-setting-links");
+      if (linksTog) linksTog.onchange = (e) => {
+        setGeneralSetting("openLinksInNewTab", e.target.checked);
+        const titleEl = document.getElementById("gen-setting-links-title");
+        if (titleEl) {
+          titleEl.textContent = e.target.checked ? "Open Work Orders in New Tab" : "Open Work Orders in Current Tab";
+        }
+        if (typeof debouncedProcessColorCodeGrid === "function") debouncedProcessColorCodeGrid();
+      };
+      const redirTog = document.getElementById("gen-setting-redirect");
+      if (redirTog) redirTog.onchange = (e) => {
+        setGeneralSetting("autoRedirect", e.target.checked);
+      };
+      const fmtSet = document.getElementById("gen-setting-date-fmt");
+      if (fmtSet) fmtSet.onchange = (e) => {
+        setGeneralSetting("dateFormat", e.target.value);
+      };
+      const sepSet = document.getElementById("gen-setting-date-sep");
+      if (sepSet) sepSet.onchange = (e) => {
+        setGeneralSetting("dateSeparator", e.target.value);
+      };
+      const overSet = document.getElementById("gen-setting-date-over");
+      if (overSet) overSet.onchange = (e) => {
+        setGeneralSetting("dateOverrideEnabled", e.target.checked);
+      };
+      subscribeToUpdates(() => {
+        const updateContainer = document.getElementById("apm-settings-update-container");
+        if (updateContainer) updateContainer.style.display = "block";
+      });
+    } catch (e) {
+      console.error("[APM Master] Error binding general listeners:", e);
+    }
     const resetTabs = () => {
       tabAutofill.style.background = "transparent";
       tabAutofill.className = "apm-tab-btn apm-tab-inactive";
@@ -3159,24 +3397,110 @@
     if (!window._apmForecastToggleBound) {
       window._apmForecastToggleBound = true;
       window.addEventListener("APM_TOGGLE_FORECAST", (e) => {
+        console.log("[APM Master] Event: APM_TOGGLE_FORECAST fired.");
         const panel = document.getElementById("eam-forecast-panel");
-        if (!panel) return;
+        if (!panel) {
+          console.error("[APM Master] Forecast panel not found in DOM!");
+          return;
+        }
         if (panel.style.display === "none" || panel.style.display === "") {
-          const ccPanel = document.getElementById("apm-colorcode-panel");
-          if (ccPanel) ccPanel.style.display = "none";
-          const crPanel = document.getElementById("apm-settings-panel");
-          if (crPanel) crPanel.style.display = "none";
-          panel.style.top = e.detail.bottom + 6 + "px";
+          const cp = document.getElementById("apm-colorcode-panel");
+          const sp = document.getElementById("apm-settings-panel");
+          if (cp) cp.style.display = "none";
+          if (sp) sp.style.display = "none";
+          const top = e.detail.bottom + 6;
           const panelWidth = 460;
           let targetLeft = e.detail.left + e.detail.width / 2 - panelWidth / 2;
-          if (targetLeft + panelWidth > window.innerWidth - 20) targetLeft = window.innerWidth - panelWidth - 20;
-          if (targetLeft < 20) targetLeft = 20;
+          if (targetLeft + panelWidth > window.innerWidth - 10) targetLeft = window.innerWidth - panelWidth - 10;
+          if (targetLeft < 10) targetLeft = 10;
+          panel.style.top = top + "px";
           panel.style.left = targetLeft + "px";
           panel.style.display = "block";
+          const naturalHeight = panel.scrollHeight || panel.offsetHeight;
+          const availableHeight = window.innerHeight - top - 20;
+          if (naturalHeight > availableHeight) {
+            panel.style.zoom = (availableHeight / naturalHeight).toFixed(3);
+          } else {
+            panel.style.zoom = "1";
+          }
+          console.log("[APM Master] Forecast panel opened. Scaling:", panel.style.zoom);
         } else {
           panel.style.display = "none";
+          console.log("[APM Master] Forecast panel closed.");
         }
       });
+      window.addEventListener("APM_TOGGLE_SETTINGS", (e) => {
+        console.log("[APM Master] Event: APM_TOGGLE_SETTINGS fired.");
+        let p = document.getElementById("apm-settings-panel");
+        if (!p) {
+          console.warn("[APM Master] Settings panel missing. Rebuilding...");
+          if (typeof window.apmBuildSettingsPanel === "function") {
+            window.apmBuildSettingsPanel();
+            p = document.getElementById("apm-settings-panel");
+          }
+        }
+        if (!p) {
+          console.error("[APM Master] Settings panel could not be built!");
+          return;
+        }
+        if (p.style.display === "none" || p.style.display === "") {
+          const fp = document.getElementById("eam-forecast-panel");
+          const cp = document.getElementById("apm-colorcode-panel");
+          if (fp) fp.style.display = "none";
+          if (cp) cp.style.display = "none";
+          const top = e.detail.bottom + 6;
+          const panelWidth = 440;
+          let left = e.detail.left + e.detail.width / 2 - panelWidth / 2;
+          if (left + panelWidth > window.innerWidth - 10) left = window.innerWidth - panelWidth - 10;
+          if (left < 10) left = 10;
+          p.style.top = top + "px";
+          p.style.left = left + "px";
+          p.style.display = "block";
+          const naturalHeight = p.scrollHeight || p.offsetHeight;
+          const availableHeight = window.innerHeight - top - 20;
+          if (naturalHeight > availableHeight) {
+            p.style.zoom = (availableHeight / naturalHeight).toFixed(3);
+          } else {
+            p.style.zoom = "1";
+          }
+          console.log("[APM Master] Settings panel opened. Scaling:", p.style.zoom);
+        } else {
+          p.style.display = "none";
+          console.log("[APM Master] Settings panel closed.");
+        }
+      });
+      document.addEventListener("mousedown", (e) => {
+        const fcBtn = e.target.closest("#apm-forecast-ext-btn");
+        if (fcBtn) {
+          console.log("[APM Toolbar] Delegated MouseDown: Forecast Button");
+          e.preventDefault();
+          e.stopPropagation();
+          var rect = fcBtn.getBoundingClientRect();
+          window.dispatchEvent(new CustomEvent("APM_TOGGLE_FORECAST", {
+            detail: { left: rect.left, bottom: rect.bottom, width: rect.width }
+          }));
+          return;
+        }
+        const crBtn = e.target.closest("#apm-settings-ext-btn");
+        if (crBtn) {
+          console.log("[APM Toolbar] Delegated MouseDown: Settings Button");
+          e.preventDefault();
+          e.stopPropagation();
+          var rect = crBtn.getBoundingClientRect();
+          window.dispatchEvent(new CustomEvent("APM_TOGGLE_SETTINGS", {
+            detail: { left: rect.left, bottom: rect.bottom, width: rect.width }
+          }));
+          return;
+        }
+      }, true);
+      document.addEventListener("mouseover", (e) => {
+        const btn = e.target.closest("#apm-forecast-ext-btn, #apm-settings-ext-btn");
+        if (btn) btn.style.color = "#ffffff";
+      }, true);
+      document.addEventListener("mouseout", (e) => {
+        const btn = e.target.closest("#apm-forecast-ext-btn, #apm-settings-ext-btn");
+        if (btn) btn.style.color = "#d1d1d1";
+      }, true);
       const hidePanelsGlobal = (e) => {
         const panels = [
           document.getElementById("eam-forecast-panel"),
@@ -3210,12 +3534,22 @@
           }
         });
       });
+      let lastPulse = 0;
       const tryInjectButtons = () => {
         try {
+          const now = Date.now();
+          if (now - lastPulse > 1e4) {
+            console.log("[APM Toolbar] Pulse: Injection task active.");
+            lastPulse = now;
+          }
           if (!window.Ext || !window.Ext.ComponentQuery) return;
-          if (window.Ext.getCmp("apm-custom-btn-group")) {
-            APMScheduler.removeTask("ext-btn-injection");
+          var exitingCmp = window.Ext.getCmp("apm-custom-btn-group");
+          if (exitingCmp && exitingCmp.getEl() && exitingCmp.getEl().dom && document.body.contains(exitingCmp.getEl().dom)) {
             return;
+          }
+          if (exitingCmp) {
+            console.log("[APM Toolbar] Destroying stale button component.");
+            exitingCmp.destroy();
           }
           var rawBtns = document.querySelectorAll(".x-btn-mainmenuButton-toolbar-small");
           if (rawBtns.length === 0) return;
@@ -3230,71 +3564,18 @@
           var extCmp = window.Ext.getCmp(extEl.id);
           if (!extCmp) return;
           var parentContainer = extCmp.up("toolbar") || extCmp.up("container");
+          if (!parentContainer) {
+            parentContainer = extCmp.up("panel")?.getDockedItems('toolbar[dock="top"]')[0];
+          }
           if (!parentContainer) return;
+          console.log("[APM Toolbar] Injecting buttons into container:", parentContainer.id);
           var insertIndex = parentContainer.items.indexOf(extCmp) + 1;
           parentContainer.insert(insertIndex, {
             xtype: "component",
             id: "apm-custom-btn-group",
             margin: "0 0 0 12",
-            html: '<div id="apm-btn-group-inner" style="display:flex; align-items:center; gap:27px;"><div id="apm-forecast-ext-btn" style="display:flex; align-items:center; font-family:sans-serif; font-size:13px; font-weight:600; color:#d1d1d1; transition:color 0.15s; cursor:pointer;" class="rain-cloud-hover apm-btn-inner apm-fc-btn"><span style="margin-right:6px;">Forecast</span><svg viewBox="0 0 24 24" width="22" height="22" style="vertical-align: text-bottom; margin-bottom: 2px; overflow: visible;"><path class="lightning-bolt" d="M18,3 L5,16 L11,16 L7,26 L20,11 L13,11 Z" fill="#f1c40f"/><path d="M17.5,18 C20,18 22,16 22,13.5 C22,11.2 20.3,9.3 18,9 C17.5,6.2 15,4 12,4 C8.7,4 6,6.7 6,10 C6,10.1 6,10.1 6,10.1 C3.8,10.3 2,12.2 2,14.5 C2,17 4,19 6.5,19 L17.5,18 Z" fill="currentColor"/><path class="raindrop drop-1" d="M8,19 L7,23" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><path class="raindrop drop-2" d="M12,20 L11,24" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><path class="raindrop drop-3" d="M16,19 L15,23" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><path class="raindrop drop-4" d="M10,18 L9,22" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><path class="raindrop drop-5" d="M14,19 L13,23" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><path class="raindrop drop-6" d="M18,18 L17,22" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></div><div id="apm-settings-ext-btn" style="display:flex; align-items:center; font-family:sans-serif; font-size:13px; font-weight:600; color:#d1d1d1; transition:color 0.15s; cursor:pointer;"><span>APM Master</span><span style="margin-left: 5px; display: inline-flex; align-items: center;"><svg viewBox="0 0 10 10" width="8" height="8" style="fill: currentColor; opacity: 0.8;"><path d="M0 3 L10 3 L5 8 Z"/></svg></span></div></div>',
-            listeners: {
-              afterrender: function(cmp) {
-                var el2 = cmp.getEl().dom;
-                var fcBtn = el2.querySelector("#apm-forecast-ext-btn");
-                if (fcBtn) {
-                  fcBtn.addEventListener("mouseenter", function() {
-                    fcBtn.style.color = "#ffffff";
-                  });
-                  fcBtn.addEventListener("mouseleave", function() {
-                    fcBtn.style.color = "#d1d1d1";
-                  });
-                  fcBtn.addEventListener("click", function() {
-                    var rect = fcBtn.getBoundingClientRect();
-                    window.dispatchEvent(new CustomEvent("APM_TOGGLE_FORECAST", {
-                      detail: { left: rect.left + window.scrollX, bottom: rect.bottom + window.scrollY, width: rect.width }
-                    }));
-                  });
-                }
-                var crBtn = el2.querySelector("#apm-settings-ext-btn");
-                if (crBtn) {
-                  crBtn.addEventListener("mouseenter", function() {
-                    crBtn.style.color = "#ffffff";
-                  });
-                  crBtn.addEventListener("mouseleave", function() {
-                    crBtn.style.color = "#d1d1d1";
-                  });
-                  crBtn.addEventListener("click", function() {
-                    console.log("[APM Master] Settings button clicked.");
-                    var p = document.getElementById("apm-settings-panel");
-                    if (!p) {
-                      console.warn("[APM Master] Settings panel missing. Attempting rebuild...");
-                      if (typeof window.apmBuildSettingsPanel === "function") window.apmBuildSettingsPanel();
-                      p = document.getElementById("apm-settings-panel");
-                    }
-                    if (!p) return;
-                    var fp = document.getElementById("eam-forecast-panel");
-                    var cp = document.getElementById("apm-colorcode-panel");
-                    if (fp) fp.style.display = "none";
-                    if (cp) cp.style.display = "none";
-                    var isHidden = p.style.display === "none" || p.style.display === "";
-                    if (isHidden) {
-                      var rect = crBtn.getBoundingClientRect();
-                      var panelWidth = 440;
-                      var left = rect.left + window.scrollX - 200;
-                      if (left + panelWidth > window.innerWidth - 20) left = window.innerWidth - panelWidth - 20;
-                      if (left < 20) left = 20;
-                      p.style.top = rect.bottom + window.scrollY + 6 + "px";
-                      p.style.left = left + "px";
-                      p.style.display = "block";
-                    } else {
-                      p.style.display = "none";
-                    }
-                  });
-                }
-              }
-            }
+            html: '<div id="apm-btn-group-inner" style="display:flex; align-items:center; gap:27px;"><div id="apm-forecast-ext-btn" style="display:flex; align-items:center; font-family:sans-serif; font-size:13px; font-weight:600; color:#d1d1d1; transition:color 0.15s; cursor:pointer;" class="rain-cloud-hover apm-btn-inner apm-fc-btn"><span style="margin-right:6px;">Forecast</span><svg viewBox="0 0 24 24" width="22" height="22" style="vertical-align: text-bottom; margin-bottom: 2px; overflow: visible;"><path class="lightning-bolt" d="M18,3 L5,16 L11,16 L7,26 L20,11 L13,11 Z" fill="#f1c40f"/><path d="M17.5,18 C20,18 22,16 22,13.5 C22,11.2 20.3,9.3 18,9 C17.5,6.2 15,4 12,4 C8.7,4 6,6.7 6,10 C6,10.1 6,10.1 6,10.1 C3.8,10.3 2,12.2 2,14.5 C2,17 4,19 6.5,19 L17.5,18 Z" fill="currentColor"/><path class="raindrop drop-1" d="M8,19 L7,23" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><path class="raindrop drop-2" d="M12,20 L11,24" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><path class="raindrop drop-3" d="M16,19 L15,23" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><path class="raindrop drop-4" d="M10,18 L9,22" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><path class="raindrop drop-5" d="M14,19 L13,23" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><path class="raindrop drop-6" d="M18,18 L17,22" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></div><div id="apm-settings-ext-btn" style="display:flex; align-items:center; font-family:sans-serif; font-size:13px; font-weight:600; color:#d1d1d1; transition:color 0.15s; cursor:pointer;"><span>APM Master</span><span style="margin-left: 5px; display: inline-flex; align-items: center;"><svg viewBox="0 0 10 10" width="8" height="8" style="fill: currentColor; opacity: 0.8;"><path d="M0 3 L10 3 L5 8 Z"/></svg></span></div></div>'
           });
-          APMScheduler.removeTask("ext-btn-injection");
         } catch (e) {
           console.error("APM Native Button Injection Error:", e);
         }
@@ -3410,7 +3691,8 @@
     if (!dateStr) return "";
     const parts = dateStr.split("-");
     if (parts.length === 3) {
-      return `${parts[1]}/${parts[2]}/${parts[0]}`;
+      const d = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
+      return formatDate(d);
     }
     return dateStr;
   }
@@ -4417,7 +4699,7 @@
  * Form Inputs & Buttons (Forecast Panel)
  * ========================= */
 #eam-forecast-panel select, #eam-forecast-panel input { outline: none !important; }
-.eam-fc-container { position:fixed; z-index:99999; padding:15px; background:#35404a; color:white; border:1px solid #2c353c; border-radius:8px; box-shadow: 0px 8px 25px rgba(0,0,0,0.6); font-family:sans-serif; width: 500px; display:none; }
+.eam-fc-container { position:fixed; z-index:2147483647; padding:12px; background:#35404a; color:white; border:1px solid #2c353c; border-radius:8px; box-shadow: 0px 8px 25px rgba(0,0,0,0.6); font-family:sans-serif; width: 500px; display:none; }
 
 .eam-fc-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:15px; border-bottom: 1px solid #4a5a6a; padding-bottom: 10px; }
 .eam-fc-title-box { display:flex; align-items:center; gap:8px; }
@@ -4488,7 +4770,7 @@
 /* =========================
  * Settings Panel & AutoFill
  * ========================= */
-.apm-settings-container { position:fixed; z-index:99999; padding:15px; background:#35404a; color:white; border:1px solid #2c353c; border-radius:8px; box-shadow: 0px 8px 25px rgba(0,0,0,0.6); font-family:sans-serif; width: 440px; max-width: 95vw; display:none; }
+.apm-settings-container { position:fixed; z-index:2147483647; padding:12px; background:#35404a; color:white; border:1px solid #2c353c; border-radius:8px; box-shadow: 0px 8px 25px rgba(0,0,0,0.6); font-family:sans-serif; width: 440px; max-width: 95vw; display:none; }
 
 .apm-settings-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; }
 .apm-settings-title { margin:0; font-size:16px; color:#ffffff; font-weight:normal; }
@@ -4511,7 +4793,7 @@
 .apm-ui-settings-btn { flex:1; text-align:center; padding:8px; cursor:pointer; font-size:12px; font-weight:bold; }
 .apm-ui-settings-btn.active { background:#3498db; color:#fff; }
 .apm-ui-settings-btn.inactive { background:transparent; color:#7f8c8d; }
-.apm-ui-settings-list { background:#22292f; border:1px solid #45535e; border-radius:4px; padding:5px; min-height:60px; max-height: 50vh; overflow-y:auto; margin-bottom:10px; }
+.apm-ui-settings-list { background:#22292f; border:1px solid #45535e; border-radius:4px; padding:5px; min-height:60px; max-height: 45vh; overflow-y:auto; margin-bottom:10px; }
 
 .apm-ui-settings-save { width:100%; background:#2ecc71; color:white; border:none; padding:12px; border-radius:6px; cursor:pointer; font-weight:bold; font-size:14px; }
 .apm-ui-settings-reset { width:100%; background:#e74c3c; color:white; border:none; padding:8px; border-radius:6px; cursor:pointer; font-weight:bold; font-size:12px; margin-top:6px; display:none; }
@@ -4523,14 +4805,14 @@
 .apm-cc-theme-item { flex: 1; display:flex; align-items:center; justify-content:space-between; background: rgba(0,0,0,0.2); padding: 6px 10px; border-radius: 6px; border: 1px solid #45535e; }
 .apm-cc-theme-label { font-size: 11px; color: #b0bec5; font-weight: bold; }
 .apm-cc-theme-select { padding: 4px; border-radius: 4px; background: #ecf0f1; border: none; font-size: 11px; cursor: pointer; font-weight: bold; color: #2c3e50; }
-.apm-cc-rules-container { background:#22292f; border:1px solid #45535e; border-radius:4px; padding:5px; min-height:80px; max-height: 40vh; overflow-y:auto; margin-bottom:8px; }
+.apm-cc-rules-container { background:#22292f; border:1px solid #45535e; border-radius:4px; padding:5px; min-height:80px; max-height: 35vh; overflow-y:auto; margin-bottom:8px; }
 
 .apm-cc-guide { display:none; font-size: 12px; color: #b0bec5; line-height: 1.5; background: #22292f; border-radius: 6px; padding: 12px; border: 1px solid #45535e; }
 .apm-general-box { display:none; padding: 10px; background: #22292f; border-radius: 6px; border: 1px solid #45535e; }
 .apm-general-item { display:flex; justify-content:space-between; align-items:center; margin-bottom: 15px; padding: 0 5px; }
 .apm-general-title { font-weight: bold; font-size: 13px; color: #fff; }
 .apm-general-desc { font-size: 11px; color: #95a5a6; }
-.apm-help-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 100000; display: none; align-items: center; justify-content: center; backdrop-filter: blur(2px); }
+.apm-help-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 2147483647; display: none; align-items: center; justify-content: center; backdrop-filter: blur(2px); }
 .apm-help-modal { background: #1e272e; width: 600px; max-width: 90%; max-height: 85vh; border-radius: 12px; border: 1px solid #34495e; box-shadow: 0 15px 40px rgba(0,0,0,0.5); display: flex; flex-direction: column; position: relative; overflow: hidden; }
 .apm-help-header { padding: 15px 20px; background: #2c3e50; border-bottom: 1px solid #34495e; display: flex; justify-content: space-between; align-items: center; }
 .apm-help-title { color: #3498db; margin: 0; font-size: 18px; font-weight: bold; }
@@ -4648,9 +4930,11 @@
     if (window.self !== window.top) return;
     const applyOverride = () => {
       if (typeof Ext !== "undefined" && Ext.form && Ext.form.field && Ext.form.field.Date) {
+        if (!apmGeneralSettings.dateOverrideEnabled) return;
+        const fmt = apmGeneralSettings.dateFormat === "eu" ? "d/m/Y" : "m/d/Y";
         Ext.override(Ext.form.field.Date, {
-          format: "m/d/Y",
-          altFormats: "m/d/Y|n/j/Y|n/j/y|m/j/y|n/d/y|m/j/Y|n/d/Y|m-d-y|m-d-Y|m/d|m-d|md|mdy|mdY|d|Y-m-d|n-j|n/j"
+          format: fmt,
+          altFormats: "m/d/Y|n/j/Y|n/j/y|m/j/y|n/d/y|m/j/Y|n/d/Y|m-d-y|m-d-Y|m/d|m-d|md|mdy|mdY|d|Y-m-d|n-j|n/j|d/m/Y|j/n/Y|j/n/y"
         });
         console.log("APM-Master: Date format override applied.");
       } else {
@@ -4666,30 +4950,33 @@
     const STORAGE_KEY2 = "apm_conflict_notice_shown";
     const isShown = localStorage.getItem(STORAGE_KEY2);
     if (isShown === "true") return;
+    const isBetterApmDetected = !!document.getElementById("better-apm-styles") || !!document.querySelector(".better-apm-btn");
+    if (isShown === "true" && !isBetterApmDetected) return;
+    if (isBetterApmDetected && isShown === "true" && !localStorage.getItem("apm_better_apm_warned")) {
+      localStorage.removeItem(STORAGE_KEY2);
+    }
     setTimeout(() => {
+      const title = isBetterApmDetected ? "\u26A0\uFE0F Conflict Detected: Better APM" : "\u{1F4E6} APM Suite Integration";
+      const icon = isBetterApmDetected ? "\u{1F6AB}" : "\u26A1";
+      const mainMsg = isBetterApmDetected ? "We've detected that 'Better APM' is also running. This tool is known to conflict with APM Master, causing UI elements to disappear or hotkeys to fail." : "I've integrated everything into this single script. To prevent any possible conflicts, please ensure you have disabled the older, standalone versions of:";
+      const listContent = isBetterApmDetected ? [
+        el("p", { style: { color: "#e74c3c", fontWeight: "bold", margin: "5px 0" } }, "\u2022 Better APM (Userscript)"),
+        el("p", { style: { fontSize: "12px", marginTop: "10px" } }, "APM Master now includes its own self-healing mode to fight these conflicts, but disabling the other tool is recommended for full stability.")
+      ] : [
+        el("p", { style: { color: "#f1c40f", fontWeight: "bold", margin: "5px 0" } }, "\u2022 APM Master (Legacy Autofill)"),
+        el("p", { style: { color: "#f1c40f", fontWeight: "bold", margin: "5px 0" } }, "\u2022 ColorCode & Nametags")
+      ];
       const overlay = el("div", {
         id: "apm-conflict-overlay",
         className: "apm-help-overlay",
-        // Reuse existing overlay styles
-        style: {
-          display: "flex",
-          justifyContent: "center",
-          alignItems: "center",
-          zIndex: "2147483647"
-        }
+        style: { display: "flex", justifyContent: "center", alignItems: "center", zIndex: "2147483647" }
       }, [
         el("div", {
           className: "apm-help-modal",
-          style: {
-            maxWidth: "450px",
-            height: "auto",
-            maxHeight: "80vh",
-            padding: "25px",
-            textAlign: "center"
-          }
+          style: { maxWidth: "450px", height: "auto", maxHeight: "80vh", padding: "25px", textAlign: "center" }
         }, [
           el("div", { style: { marginBottom: "20px" } }, [
-            el("h3", { style: { color: "#3498db", margin: "0 0 10px 0", fontSize: "20px" } }, "\u{1F4E6} APM Suite Integration"),
+            el("h3", { style: { color: isBetterApmDetected ? "#e74c3c" : "#3498db", margin: "0 0 10px 0", fontSize: "20px" } }, title),
             el("div", {
               style: {
                 width: "60px",
@@ -4701,35 +4988,24 @@
                 justifyContent: "center",
                 margin: "15px auto"
               }
-            }, [
-              el("span", { style: { fontSize: "30px" } }, "\u26A1")
-            ])
+            }, [el("span", { style: { fontSize: "30px" } }, icon)])
           ]),
           el("div", { className: "apm-help-content", style: { padding: "0", fontSize: "14px", lineHeight: "1.6", color: "#ecf0f1" } }, [
-            el("p", {}, "I've integrated everything into this single script. To prevent any possible conflicts, please ensure you have disabled the older, standalone versions of:"),
-            el("div", { style: { margin: "15px 0", padding: "10px", background: "rgba(0,0,0,0.2)", borderRadius: "8px" } }, [
-              el("p", { style: { color: "#f1c40f", fontWeight: "bold", margin: "5px 0" } }, "\u2022 APM Master (Legacy Autofill)"),
-              el("p", { style: { color: "#f1c40f", fontWeight: "bold", margin: "5px 0" } }, "\u2022 ColorCode & Nametags")
-            ]),
-            el("p", {}, "running in your browser extension (e.g. Tampermonkey)."),
-            el("p", { style: { fontSize: "12px", opacity: "0.7", marginTop: "15px" } }, "Having multiple versions active at once can cause UI glitches or slower performance.")
+            el("p", {}, mainMsg),
+            el("div", { style: { margin: "15px 0", padding: "10px", background: "rgba(0,0,0,0.2)", borderRadius: "8px" } }, listContent),
+            !isBetterApmDetected ? el("p", {}, "running in your browser extension (e.g. Tampermonkey).") : null,
+            el("p", { style: { fontSize: "12px", opacity: "0.7", marginTop: "15px" } }, "Having multiple APM tools active at once can cause UI glitches or slower performance.")
           ]),
           el("div", { style: { marginTop: "30px" } }, [
             el("button", {
               className: "apm-tab-btn apm-tab-active-autofill",
-              style: {
-                width: "100%",
-                padding: "12px",
-                borderRadius: "8px",
-                cursor: "pointer",
-                fontWeight: "bold",
-                border: "none"
-              },
+              style: { width: "100%", padding: "12px", borderRadius: "8px", cursor: "pointer", fontWeight: "bold", border: "none" },
               onclick: () => {
                 localStorage.setItem(STORAGE_KEY2, "true");
+                if (isBetterApmDetected) localStorage.setItem("apm_better_apm_warned", "true");
                 overlay.remove();
               }
-            }, "Got it, I'm all set!")
+            }, "Got it, I'll check my settings!")
           ])
         ])
       ]);
@@ -4760,8 +5036,11 @@
         }
       }
     }
-    if (!timeoutDetected && window.location.href.includes("logindisp") && !window.location.href.includes("tenant=")) {
-      timeoutDetected = true;
+    if (!timeoutDetected) {
+      const url = window.location.href;
+      if (url.includes("logindisp") && !url.includes("tenant=") || url.includes("octave.com")) {
+        timeoutDetected = true;
+      }
     }
     if (timeoutDetected) {
       console.log("[APM Master] Session timeout detected. Auto-redirecting...");
@@ -4846,6 +5125,22 @@
         APMScheduler.registerTask("session-monitor", 5e3, () => {
           monitorSessionStatus();
         });
+        APMScheduler.registerTask("ui-persistence", 3e3, () => {
+          if (window.self !== window.top) return;
+          if (!document.getElementById("apm-settings-panel")) {
+            console.log("[APM Master] Settings panel missing, re-injecting...");
+            buildSettingsPanel();
+          }
+          if (!document.getElementById("eam-forecast-panel")) {
+            console.log("[APM Master] Forecast panel missing, re-injecting...");
+            buildForecastUI();
+          }
+          if (!document.getElementById("apm-quick-search-container")) {
+            console.log("[APM Master] Quick Search missing, re-injecting...");
+            buildSearchUI();
+          }
+          initForecastShortcuts();
+        });
       }
     }, 300);
   }
@@ -4855,79 +5150,412 @@
   var DARK_THEMES = /* @__PURE__ */ new Set(["theme-hex-dark", "theme-dark", "theme-darkblue", "theme-orange", "dark"]);
   var currentMemTheme = "default";
   var AWSUI_DARK_CSS = `
+    /* === Theme tokens === */
     #root {
-        --bg: #313236;       /* Exact Primary Background */
-        --bg-2: #212224;     /* Exact Header/Toolbar */
-        --bg-3: #3d3e42;     /* Lighter Text Fields */
-        --fg: #ffffff;
-        --fg-muted: #b0bec5;
-        --border: #44464a;
-        --primary: #1abc9c;
-        --link: #3498db;
-        --tickmark: #1abc9c;
+      --bg: #1e1e1e;
+      --bg-2: #2d2d2d;
+      --bg-3: #3d3d3d;
+      --fg: #ffffff;
+      --fg-muted: #cccccc;
+      --border: #555555;
+      --primary: #0073bb;
+      --link: #66b3ff;
+      --link-visited: #9999ff;
+      --link-hover: #99ccff;
+      --tickmark: #5cd5d7;
 
-        --color-background-container-header-clzg6q: var(--bg-2) !important;
-        --color-background-status-warning-03nxlw: var(--bg-2) !important;
-        --color-border-status-warning-3feumr: var(--border) !important;
+      /* Fix for Cloudscape container header forcing white */
+      --color-background-container-header-clzg6q: var(--bg-3) !important;
+      --color-background-status-warning-03nxlw: var(--bg-3) !important;
+      --color-border-status-warning-3feumr: var(--border) !important;
     }
 
-    body, #root, #root main { background-color: var(--bg) !important; color: var(--fg) !important; }
+    /* === App chrome === */
+    #root,
+    #root main {
+      background-color: var(--bg) !important;
+      color: var(--fg) !important;
+    }
 
-    /* Headers & Breadcrumb Sticky Bars */
-    #root [class^="awsui_header_"], #root [class^="awsui_root_"][class*="awsui_variant-"] { background-color: var(--bg-2) !important; color: var(--fg) !important; border-color: var(--border) !important; }
-    #root div[style*="position: sticky"][style*="background-color: white"], #root div[style*="position: sticky"]:has(> nav[class*="awsui_breadcrumb-group_"]) { background-color: var(--bg-2) !important; border-bottom-color: var(--border) !important; }
-    #root header, #root nav, #root nav[aria-hidden="false"] { background-color: var(--bg-2) !important; color: var(--fg) !important; }
+    /* Cloudscape header bars (safe, hash-proof selectors) */
+    #root [class^="awsui_header_"],
+    #root [class^="awsui_root_"][class*="awsui_variant-default_"],
+    #root [class^="awsui_root_"][class*="awsui_variant-stacked_"] {
+      background-color: var(--bg-3) !important;
+      color: var(--fg) !important;
+      border-color: var(--border) !important;
+    }
 
-    /* Containers & Tables */
-    #root [class*="awsui_container_"] { background-color: var(--bg-2) !important; border-color: var(--border) !important; color: var(--fg) !important; }
-    #root [role="table"] { background-color: var(--bg-2) !important; color: var(--fg) !important; border-color: var(--border) !important; }
-    #root [role="table"] thead th, #root th[class*="awsui_header-cell_"] { background-color: var(--bg-3) !important; color: var(--fg) !important; border-color: var(--border) !important; }
-    #root [role="table"] tbody td { color: var(--fg) !important; border-color: var(--border) !important; }
-
-    /* --- TOTAL WHITE FORCE --- */
-    /* Target absolute bottom-level text nodes and common UI elements */
-    #root *:not(a):not(button):not([class*="button"]):not([class*="link"]):not(input):not(select):not(textarea) {
-        color: #ffffff !important;
+    /* === Cloudscape table headers (normal + sticky clones) === */
+    #root [class*="awsui_header-secondary_"],
+    #root [class*="awsui_header-secondary_"]::before,
+    #root [class*="awsui_header-sticky-enabled_"] {
+      background-color: var(--bg-3) !important;
+      color: var(--fg) !important;
+      border-color: var(--border) !important;
+    }
+    #root th[class*="awsui_header-cell_"],
+    #root th[class*="awsui_header-cell_"] > *,
+    #root [class*="awsui_header-cell-content_"],
+    #root [class*="awsui_header-cell-text_"],
+    #root [class*="awsui_thead-active_"] {
+      background-color: var(--bg-3) !important;
+      color: var(--fg) !important;
+      border-color: var(--border) !important;
+    }
+    /* Sort icons / resize handles / column dividers */
+    #root [class*="awsui_sorting-icon_"],
+    #root [class*="awsui_sorting-icon_"] *,
+    #root [class*="awsui_resizable-box-handle_"],
+    #root [class*="awsui_resize-divider_"],
+    #root [class*="awsui_divider_"] {
+      color: var(--fg) !important;
+      fill: currentColor !important;
+      stroke: currentColor !important;
+      background-color: var(--border) !important; /* divider track */
+      border-color: var(--border) !important;
     }
     
-    /* Specific AWSUI overrides for text that stays dark */
-    #root [class*="awsui_text-body-"], #root [class*="awsui_root_"], #root [class*="awsui_label_"], #root [class*="awsui_value_"] {
-        color: #ffffff !important;
+    /* Info \u201Ci\u201D icons */
+    #root [data-link="true"] .awsui_icon_h11ix_1mfw9_189 svg circle,
+    #root [class*="awsui_trigger_"] .awsui_icon_h11ix_1mfw9_189 svg circle {
+      fill: #263333 !important;
+      stroke: var(--tickmark) !important;
     }
 
-    /* --- ALERT & BUBBLE FIXES --- */
-    /* Target AWSUI Alerts and Flashes to prevent white-on-white text */
-    #root [class*="awsui_alert_"], #root [class*="awsui_flash_"], #root [class*="awsui_flashbar_"] {
-        background-color: var(--bg-2) !important;
-        border-width: 2px !important;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.4) !important;
+    #root [data-link="true"] .awsui_icon_h11ix_1mfw9_189 svg path,
+    #root [class*="awsui_trigger_"] .awsui_icon_h11ix_1mfw9_189 svg path {
+      stroke: var(--tickmark) !important;
+    }    
+    
+    /* Sticky scrollbar under wide tables */
+    #root [class*="awsui_sticky-scrollbar_"],
+    #root [class*="awsui_sticky-scrollbar-content_"] {
+      background-color: var(--bg-3) !important;
     }
-    
-    /* Preserve border colors for different alert types but keep background dark */
-    #root [class*="awsui_type-info"] { border-color: #3498db !important; }
-    #root [class*="awsui_type-warning"], #root [class*="awsui_type-error"] { border-color: #e67e22 !important; }
-    #root [class*="awsui_type-success"] { border-color: #1abc9c !important; }
 
-    #root [id*="description" i], #root [aria-describedby], #root small, #root .helptext { color: var(--fg-muted) !important; }
-    #root [style*="color: rgb(102, 102, 102)"], #root [style*="color: #666"], #root [style*="color: black"], #root [style*="color: #000"] { color: #ffffff !important; }
-    
-    #root [id^="question-"][style*="background-color: rgb(240, 248, 255)"] { background-color: var(--bg-2) !important; border-color: var(--primary) !important; color: #ffffff !important; }
-    #root [class^="awsui_title_"], #root [class^="awsui_counter_"] { color: #ffffff !important; }
+    /* Some tables render an extra header container */
+    #root [class^="awsui_table-header_"],
+    #root [class*="awsui_sticky-header_"] {
+      background-color: var(--bg-3) !important;
+      color: var(--fg) !important;
+      border-color: var(--border) !important;
+    }
 
-    /* Inputs & Buttons */
-    #root input[type="text"], #root input[type="search"], #root textarea, #root select { background-color: var(--bg-3) !important; color: #ffffff !important; border: 1px solid var(--border) !important; }
-    #root button, #root [role="button"] { background-color: var(--bg-2) !important; color: #ffffff !important; border: 1px solid var(--border) !important; }
-    #root button[type="submit"], #root button[class*="awsui_button-variant-primary"] { background-color: var(--primary) !important; border-color: var(--primary) !important; color: #ffffff !important; }
+    #root [class^="awsui_header_"]:not(#\\9) {
+      background-color: var(--bg-3) !important;
+      color: var(--fg) !important;
+    }
+
+    /* Titles & item counters inside headers */
+    #root [class^="awsui_title_"],
+    #root [class^="awsui_counter_"] {
+      color: var(--fg) !important;
+    }
+
+    /* Make everything inside those headers inherit readable colors */
+    #root [class^="awsui_header_"] *,
+    #root [class^="awsui_root_"][class*="awsui_variant-"] * {
+      color: var(--fg) !important;
+      fill: currentColor !important;
+      stroke: currentColor !important;
+    }
+
+    /* If a sticky table header container is present, darken it too */
+    #root [data-awsui-table-sticky-header="true"],
+    #root [data-awsui-table-sticky-header="true"] * {
+      background-color: var(--bg-3) !important;
+      color: var(--fg) !important;
+    }
+
+    /* Some themes paint via ::before/::after \u2014 neutralize them */
+    #root [class^="awsui_header_"]::before,
+    #root [class^="awsui_header_"]::after {
+      background-color: var(--bg-3) !important;
+    }
+
+    #root .awsui-context-alert [class^="awsui_alert_"],
+    #root [class^="awsui_alert_"],
+    #root [class*="awsui_type-warning_"],
+    #root [class*="awsui_type-info_"],
+    #root [class*="awsui_type-success_"],
+    #root [class*="awsui_type-error_"] {
+      background-color: var(--bg-3) !important;
+      color: var(--fg) !important;
+      border: 1px solid var(--border) !important;
+    }
+
+    #root [class^="awsui_alert_"] a { color: var(--link) !important; }
+    #root [class^="awsui_alert_"] svg * {
+      stroke: currentColor !important;
+      fill: currentColor !important;
+    }
+
+    /* === Checkboxes (avoid black-on-black boxes) === */
+    /* Undo global fill for rect/circle so boxes aren't painted solid */
+    #root svg rect,
+    #root svg circle { fill: none !important; }
+
+    #root [class*="awsui_checkbox-control_"] svg rect {
+      fill: var(--bg-2) !important;   /* box background */
+      stroke: var(--fg) !important;   /* box outline */
+    }
+
+    /* Checked checkbox accent (tick) color */
+    #root [class*="awsui_checkbox-control_"]:has(input:checked) {
+      color: var(--tickmark) !important; /* drives the check mark */
+    }
+
+    /* make sure the SVG tick inherits it */
+    #root [class*="awsui_checkbox-control_"]:has(input:checked) svg * {
+      fill: currentColor !important;
+      stroke: currentColor !important;
+    }
+
+    /* === Inline "Question" headings === */
+    #root [style*="color: rgb(102, 102, 102)"][style*="font-weight: bold"] {
+      color: var(--fg) !important;
+    }
+
+    /* === Dynamically inserted question cards (aliceblue) === */
+    #root [id^="question-"][style*="background-color: rgb(240, 248, 255)"] {
+      background-color: var(--bg-2) !important;
+      border-color: var(--primary) !important;
+      color: var(--fg) !important;
+    }
+    #root [id^="question-"] [style*="font-weight: bold"][style*="color: rgb(0, 115, 187)"] {
+      color: var(--fg) !important;
+    }
+
+    /* === Radios: use same accent as checkboxes === */
+
+    /* Checked state \u2014 hash-proof + robust */
+    #root [role="radiogroup"] [class*="awsui_radio-control_"]:has(input:checked) {
+      color: var(--tickmark) !important; /* drives the filled dot via currentColor */
+    }
+    #root [role="radiogroup"] [class*="awsui_radio-control_"]:has(input:checked) svg * {
+      fill: currentColor !important;
+      stroke: currentColor !important;
+    }
+
+    /* Fallbacks (when :has isn\u2019t available) */
+    #root [role="radiogroup"] [class*="awsui_radio-control_"][aria-checked="true"] svg *,
+    #root [role="radiogroup"] [class*="styled-circle-checked_"] {
+      fill: var(--tickmark) !important;
+      stroke: var(--tickmark) !important;
+    }
+
+    /* Unchecked radios - visible ring on dark bg */
+    #root [role="radiogroup"] [class*="awsui_radio-control_"] svg [class*="styled-circle-border_"] {
+      stroke: var(--fg-muted) !important;
+    }
+    #root [role="radiogroup"] [class*="awsui_radio-control_"] svg [class*="styled-circle-fill_"]:not([class*="checked_"]) {
+      fill: transparent !important;
+      stroke: transparent !important;
+    }
+
+    /* === Sticky breadcrumb bar with inline white background === */
+
+    #root div[style*="position: sticky"][style*="background-color: white"] {
+      background-color: var(--bg-2) !important;
+      border-bottom-color: var(--border) !important;
+    }
+
+    #root div[style*="position: sticky"]:has(> nav[class*="awsui_breadcrumb-group_"]) {
+      background-color: var(--bg-2) !important;
+      border-bottom-color: var(--border) !important;
+    }
+
+    #root header,
+    #root nav {
+      background-color: var(--bg-2) !important;
+    }
+
+    /* Left navigation (open state) */
+    #root nav[aria-hidden="false"] {
+      background-color: var(--bg-2) !important;
+    }
+
+    /* Top-nav utilities */
+    #root [data-utility-special="search"] a[role="button"],
+    #root [data-utility-special="menu-trigger"] button {
+      color: var(--fg) !important;
+    }
+
+    /* Version links in the header */
+    #root header a[href="#version"],
+    #root nav a[href="#version"] {
+      color: var(--fg) !important;
+    }
+
+    /* === Links (content area) === */
     #root a { color: var(--link) !important; }
+    #root a:visited { color: var(--link-visited) !important; }
+    #root a:hover { color: var(--link-hover) !important; }
 
-    /* --- THE GHOST OVERLAY & CLIPPING FIX --- */
-    [class*="awsui_loading-overlay_"], [class*="awsui_spinner-container_"] {
-        background-color: transparent !important; background: transparent !important; backdrop-filter: none !important;
-        z-index: 1 !important; pointer-events: none !important;
+    /* === Section cards (e.g., "Table", "Legacy Assessments") === */
+    #root [data-selection-root="true"] > :first-child {
+      background-color: var(--bg-2) !important;
+      border-radius: 15px 15px 0 0 !important;
+      padding-bottom: 60px !important; /* matches your header padding tweak */
     }
-    [class*="awsui_content_"]:has(span[class*="awsui_root_"]) { background-color: transparent !important; background: transparent !important; box-shadow: none !important; border: none !important; }
-    span[class*="awsui_root_"][class*="awsui_variant-normal_"], span[class*="awsui_root_"][class*="awsui_size-large_"] { background-color: transparent !important; background: transparent !important; }
-    span[class*="awsui_circle_"] { border-color: #1abc9c transparent transparent !important; }
+    #root [data-selection-root="true"] > :last-child {
+      background-color: var(--bg-2) !important;
+      border-radius: 0 0 15px 15px !important;
+    }
+
+    /* Headings */
+    #root [data-selection-root="true"] h2 {
+      color: var(--fg) !important;
+    }
+
+    /* Header control clusters inside section headers */
+    #root [data-selection-root="true"] [aria-label="Preferences"],
+    #root [data-selection-root="true"] [aria-label="Preferences"] button,
+    #root [data-selection-root="true"] [data-awsui-section="controls"],
+    #root [data-selection-root="true"] [role="group"] {
+      border-radius: 15px !important;
+    }
+
+    /* === Tables === */
+    #root [role="table"] {
+      background-color: var(--bg-2) !important;
+      color: var(--fg) !important;
+      border-color: var(--border) !important;
+    }
+    #root [role="table"] thead th {
+      background-color: var(--bg-3) !important;
+      color: var(--fg) !important;
+      border-color: var(--border) !important;
+    }
+    #root [role="table"] tbody td {
+      color: var(--fg) !important;
+      border-color: var(--border) !important;
+    }
+
+    /* Empty state rows/containers inside tables (fallback) */
+    #root [role="table"] [aria-live],
+    #root [role="table"] [role="status"] {
+      background-color: var(--bg-2) !important;
+      color: var(--fg-muted) !important;
+    }
+
+    /* Sticky header bars in table/section UIs */
+    #root [aria-labelledby^="heading:"] {
+      background-color: var(--bg-2) !important;
+    }
+
+    /* === Filters & inputs === */
+    #root input[type="search"],
+    #root input[aria-label^="Filter" i],
+    #root [role="search"] input {
+      background-color: var(--bg-3) !important;
+      color: var(--fg) !important;
+      border-color: var(--border) !important;
+    }
+
+    /* === Buttons (default + primary) === */
+    #root button,
+    #root [role="button"] {
+      background-color: var(--bg-3) !important;
+      color: var(--fg) !important;
+      border: 1px solid var(--border) !important;
+    }
+    /* Primary action (Create Assessment) */
+    #root button[type="submit"] {
+      background-color: var(--primary) !important;
+    }
+
+    /* Pagination states */
+    #root button[aria-current="true"] {
+      background-color: var(--bg-3) !important;
+      color: var(--fg) !important;
+    }
+
+    /* === Icons (inherit text color) === */
+    #root svg path,
+    #root svg circle,
+    #root svg rect,
+    #root svg line,
+    #root svg polyline {
+      stroke: currentColor !important;
+      fill: currentColor !important;
+    }
+
+    /* Make nav/header items white even with global link colors */
+    #root header, #root nav { color: var(--fg) !important; }
+
+    /* === Flash/alerts === */
+    #root [role="alert"],
+    #root [aria-live="polite"],
+    #root [aria-live="assertive"] {
+      background-color: var(--bg-3) !important;
+      border: 1px solid var(--border) !important;
+      color: var(--fg) !important;
+    }
+    #root [role="alert"] .message,
+    #root [role="alert"] .header,
+    #root [role="alert"] .content {
+      color: var(--fg) !important;
+    }
+    #root [role="alert"] .content,
+    #root [role="status"] { color: var(--fg-muted) !important; }
+
+    /* === Dialogs/Modals === */
+    #root [role="dialog"] {
+      background-color: var(--bg-2) !important;
+      color: var(--fg) !important;
+    }
+    #root [role="dialog"] header,
+    #root [role="dialog"] [data-part="header"] {
+      background-color: var(--bg-3) !important;
+      color: var(--fg) !important;
+    }
+    #root [role="dialog"] footer,
+    #root [role="dialog"] [data-part="footer"] {
+      background-color: var(--bg-3) !important;
+    }
+
+    /* === Labels / descriptions === */
+    #root label,
+    #root [id*="label" i] { color: var(--fg) !important; }
+    #root [id*="description" i],
+    #root [aria-describedby],
+    #root small,
+    #root .helptext {
+      color: var(--fg-muted) !important;
+    }
+
+    /* Rich HTML blobs rendered with data-html */
+    #root [data-html="true"] span {
+      color: var(--fg) !important;
+    }
+
+    /* === Toggles / sliders / listbox-like options === */
+    #root [role="switch"] {
+      background-color: var(--border) !important;
+    }
+    #root [role="switch"][aria-checked="true"] {
+      background-color: var(--primary) !important;
+    }
+
+    #root [role="slider"] {
+      background-color: var(--bg-2) !important;
+    }
+    #root [role="listbox"] {
+      background-color: var(--bg-2) !important;
+    }
+    #root [role="option"] {
+      background-color: var(--bg-3) !important;
+      border: 1px solid var(--border) !important;
+      color: var(--fg) !important;
+    }
+
+    /* === Generic text elements === */
+    #root b, #root p { color: var(--fg) !important; }
+
+    /* Keep header/nav links white even with global link colors */
+    #root header a, #root nav a { color: var(--fg) !important; }
 `;
   function applyPtpCss(on) {
     let existing = document.getElementById(STYLE_ID);
@@ -5057,9 +5685,16 @@
     };
     window.addEventListener("message", (e) => {
       const d = e.data;
-      if (d && (d.type === "APM_SET_THEME" || d.apmMaster === "theme")) {
-        const newTheme = d.value || "default";
-        console.log(`%c[APM Master] PTP Sandbox: Handshake Success -> ${newTheme}`, "background: #212224; color: #1abc9c; padding: 2px;");
+      if (!d) return;
+      const isBetterApmMatch = d.__betterApm === "theme" || d.__betterApm === "setTheme";
+      const isNativeMatch = d.type === "APM_SET_THEME" || d.apmMaster === "theme";
+      if (isBetterApmMatch || isNativeMatch) {
+        const newTheme = (d.value || d.theme || "default").toLowerCase();
+        console.log(`%c[APM Master] PTP Sandbox: Theme Sync -> ${newTheme}`, "background: #212224; color: #1abc9c; padding: 2px;");
+        try {
+          localStorage.setItem(KEY_THEME, newTheme);
+        } catch (err) {
+        }
         currentMemTheme = newTheme;
         applyPtpCss(DARK_THEMES.has(currentMemTheme));
       }
@@ -5070,16 +5705,23 @@
       start();
     }
     const requestTheme = () => {
-      if (currentMemTheme !== "default") return;
+      try {
+        const local = localStorage.getItem(KEY_THEME);
+        if (local && local !== currentMemTheme) {
+          currentMemTheme = local;
+          applyPtpCss(DARK_THEMES.has(currentMemTheme));
+        }
+      } catch (e) {
+      }
       console.log("[APM Master] PTP Sandbox: Requesting Theme Handshake...");
       try {
-        window.top.postMessage({ type: "APM_GET_THEME", apmMaster: "getTheme" }, "*");
+        window.top.postMessage({ type: "APM_GET_THEME", apmMaster: "getTheme", __betterApm: "getTheme" }, "*");
       } catch (e) {
       }
     };
     requestTheme();
-    setTimeout(requestTheme, 2e3);
-    setTimeout(requestTheme, 5e3);
+    setTimeout(requestTheme, 1500);
+    setTimeout(requestTheme, 4e3);
   }
 
   // src/modules/colorcode/nametag-filter.js
@@ -5146,7 +5788,7 @@
       }
       if (d.type === "APM_GET_THEME" || d.apmMaster === "getTheme") {
         const settings = getSettings();
-        const activeTheme = settings.theme && settings.theme !== "default" ? settings.theme : localStorage.getItem(KEY_THEME) || "default";
+        const activeTheme = settings.theme && settings.theme !== "default" ? settings.theme : localStorage.getItem(KEY_THEME2) || "default";
         const target = e.origin && e.origin !== "null" ? e.origin : "*";
         try {
           e.source?.postMessage({
@@ -5318,10 +5960,8 @@
   }
 
   // src/index.js
-  initializeGeneralSettings();
-  window.fullStyleUpdate = fullStyleUpdate;
-  window.debouncedProcessColorCodeGrid = debouncedProcessColorCodeGrid;
   enforceTheme();
+  initializeGeneralSettings();
   var isEAM = window.location.hostname.includes("hxgnsmartcloud.com");
   var isPTP = /amazon\.dev|insights/i.test(window.location.hostname);
   if (isEAM || isPTP) {
@@ -5401,7 +6041,7 @@
   window.addEventListener("DOMContentLoaded", () => {
     if (!isEAM) return;
     document.addEventListener("mousedown", (e) => {
-      const isTrigger = e.target.closest("#apm-settings-ext-btn, #apm-forecast-ext-btn, #apm-labor-trigger, #apm-labor-mgr-toggle, .apm-toolbar-btn, .forecast-btn, .rain-cloud-hover");
+      const isTrigger = e.target.closest("#apm-settings-ext-btn, #apm-forecast-ext-btn, #apm-labor-trigger, #apm-labor-mgr-toggle, .apm-toolbar-btn, .rain-cloud-hover");
       const panels = ["apm-settings-panel", "eam-forecast-container", "eam-forecast-panel", "apm-labor-panel", "apm-labor-mgr-panel", "apm-colorcode-panel"];
       const isInside = panels.some((id) => document.getElementById(id)?.contains(e.target));
       if (!isTrigger && !isInside) window.apmCloseAllPanels();
