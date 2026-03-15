@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         APM Master: Unified Tools
 // @namespace    https://w.amazon.com/bin/view/Users/rosendah/APM-Master/
-// @version      14.3.3
+// @version      14.3.7
 // @description  Quality of life and automation tool that uses native EAM ExtJS Framework functions for high reliability and capability. This is actively supported tool so Slack me or submit bug report/feature request through the bug report button in the menu.
 // @author       Jacob Rosendahl
 // @icon         https://media.licdn.com/dms/image/v2/D5603AQGdCV0_LQKRfQ/profile-displayphoto-scale_100_100/B56ZyZLvQ5HgAg-/0/1772096519061?e=1773878400&v=beta&t=eWO1Jiy0-WbzG_yBv-SBrmmsVOPMexF57-q1Xh_VXCk
@@ -228,7 +228,13 @@
           this.safeMigrate("ApmColorCodeSettings", CC_STORAGE_SET);
         },
         migrateForecast() {
-          this.safeMigrate("eam_forecast_prefs", STORAGE_KEY);
+          this.safeMigrate("eam_forecast_prefs", STORAGE_KEY, (oldData) => {
+            if (oldData && typeof oldData === "object") {
+              if (oldData.profiles && !oldData.customProfiles) oldData.customProfiles = oldData.profiles;
+              if (oldData.dataspys && !oldData.customProfiles) oldData.customProfiles = oldData.dataspys;
+            }
+            return oldData;
+          });
         },
         migrateLabor() {
           this.safeMigrate("apmLaborSavedEmps", LABOR_EMPS_STORAGE);
@@ -2639,8 +2645,9 @@
         } else {
           selectedOrg = "";
         }
-        if (prefs.customProfiles && Array.isArray(prefs.customProfiles)) {
-          savedProfiles = prefs.customProfiles;
+        const profilesToLoad = prefs.customProfiles || prefs.profiles || prefs.dataspys;
+        if (profilesToLoad && Array.isArray(profilesToLoad)) {
+          savedProfiles = profilesToLoad;
         } else {
           savedProfiles = [];
         }
@@ -2751,6 +2758,7 @@
   init_ui_manager();
   var isRunning = false;
   var isStopped = false;
+  var currentMode = "normal";
   function initAjaxInterceptors() {
     for (const win of getExtWindows()) {
       if (win.Ext && !win._apmForecastAjaxHook) {
@@ -2765,19 +2773,27 @@
           const profId = profSelect?.value;
           const isWorkOrderSearch = url.includes("WSJOBS.xmlhttp") || params.GRID_NAME === "WSJOBS";
           const isCacheRequest = url.includes("GETCACHE") || typeof params === "string" && params.includes("COMPONENT_INFO_TYPE_MODE=CACHE") || params.COMPONENT_INFO_TYPE_MODE === "CACHE";
+          if (!isRunning) return;
           if (isWorkOrderSearch && !isCacheRequest) {
             let maddonParams = null;
+            const skipManual = ["today", "quick", "clear"].includes(currentMode);
             if (profId && profId !== "manual") {
               const activeProfile = savedProfiles.find((p) => p.id === profId);
               if (activeProfile) {
                 APMLogger.debug("Forecast", `Injecting MADDON filters for profile: ${activeProfile.name}`);
                 maddonParams = buildMaddonFilters(activeProfile);
               }
-            } else {
+            } else if (!skipManual) {
+              const descVal = topDoc.getElementById("eam-desc-text")?.value?.trim();
+              const descOp = topDoc.getElementById("eam-desc-op")?.value;
+              let manualDesc = descVal;
+              if (descVal && descOp === "Does Not Contain") {
+                manualDesc = descVal.split(",").map((s) => s.trim()).filter((s) => s).map((s) => s.startsWith("!") ? s : "!" + s).join(", ");
+              }
               const manualProf = {
-                desc: topDoc.getElementById("eam-desc-text")?.value?.trim()
+                desc: manualDesc
               };
-              if (Object.values(manualProf).some((v) => v)) {
+              if (manualProf.desc) {
                 APMLogger.debug("Forecast", "Injecting manual MADDON filters");
                 maddonParams = buildMaddonFilters(manualProf);
               }
@@ -2912,23 +2928,23 @@
     return { start: formatDate(startD), end: formatDate(endD) };
   }
   function isGridReady() {
-    const frames = [window, ...Array.from(document.querySelectorAll("iframe")).map((f) => {
+    const wins = getExtWindows();
+    for (const win of wins) {
       try {
-        return f.contentWindow;
-      } catch (e) {
-        return null;
-      }
-    }).filter(Boolean)];
-    for (const win of frames) {
-      try {
-        if (win.Ext && win.Ext.ComponentQuery) {
-          const grids = win.Ext.ComponentQuery.query("gridpanel:not([destroyed=true])");
-          for (const grid of grids) {
-            if (grid.rendered && grid.getStore) {
-              const store = grid.getStore();
-              if (store && store.storeId && store.storeId.toLowerCase().includes("wsjobs") && !store.isLoading()) {
-                return true;
-              }
+        if (!win.Ext?.ComponentQuery) continue;
+        const grids = win.Ext.ComponentQuery.query("gridpanel:not([destroyed=true])");
+        for (const grid of grids) {
+          if (grid.rendered && grid.getStore) {
+            const store = grid.getStore();
+            if (!store || store.isLoading()) continue;
+            const storeId = (store.storeId || "").toLowerCase();
+            const className = (store.$className || "").toLowerCase();
+            const proxyUrl = (store.getProxy?.()?.url || "").toLowerCase();
+            const winFunc = (win.EAM?.USER_FUNCTION_NAME || "").toUpperCase();
+            const isWSJOBS = storeId.includes("wsjobs") || className.includes("wsjobs") || proxyUrl.includes("wsjobs") || winFunc === "WSJOBS";
+            if (isWSJOBS) {
+              APMLogger.debug("Forecast", `isGridReady found WSJOBS grid: ${grid.id} (Store: ${storeId})`);
+              return true;
             }
           }
         }
@@ -3154,6 +3170,7 @@
   async function executeForecast(mode = "normal") {
     if (window.self !== window.top) return;
     if (isRunning) return;
+    currentMode = mode;
     try {
       if (window.Ext && window.Ext.Ajax && window.Ext.Ajax.isLoading()) {
         setStatus(mode, "EAM busy... please wait.", "#f1c40f");
@@ -3670,14 +3687,330 @@
     });
   }
 
-  // src/modules/forecast/forecast-ui.js
-  function checkForUpdates() {
-    subscribeToUpdates(() => {
-      const updateContainer = document.getElementById("eam-update-container");
-      if (updateContainer) updateContainer.style.display = "block";
+  // src/modules/forecast/components/forecast-search-form.js
+  function createSearchForm(callbacks = {}) {
+    const { onToggleGuide, onToggleMode } = callbacks;
+    const form = el("div", { id: "eam-main-view" }, [
+      el("div", { id: "eam-adv-site", className: "eam-fc-adv-box" }, [
+        el("div", { className: "eam-fc-row", style: { marginBottom: "8px" } }, [
+          el("label", { className: "eam-fc-label" }, "Active Profile:"),
+          el("select", { id: "eam-profile-select", className: "eam-fc-select", style: { color: "#3498db", fontWeight: "bold" } }, [
+            el("option", { value: "manual" }, "[ Manual Native Search ]")
+          ])
+        ]),
+        el("div", { id: "eam-profile-summary", style: { display: "none", background: "rgba(52, 152, 219, 0.1)", border: "1px dashed #3498db", borderRadius: "4px", padding: "8px", marginBottom: "10px", fontSize: "11px", color: "#bdc3c7" } }, [
+          el("div", { style: { fontWeight: "bold", color: "#3498db", marginBottom: "3px" } }, "\u2728 Profile Active: ExtJS Filter Engaged"),
+          el("div", { id: "eam-profile-summary-text" }, "Loading profile details...")
+        ]),
+        el("div", { id: "eam-manual-inputs" }, [
+          el("div", { className: "eam-fc-row" }, [
+            el("label", { className: "eam-fc-label" }, "Site Code (Org):"),
+            el("select", { id: "eam-org-select", className: "eam-fc-select", style: { textTransform: "uppercase" } }, [
+              el("option", { value: "" }, "-- All Sites --")
+            ]),
+            el("button", { id: "eam-add-org-btn", className: "org-btn org-btn-add", title: "Add New Site" }, "+"),
+            el("button", { id: "eam-rem-org-btn", className: "org-btn org-btn-rem", title: "Remove Selected Site" }, "-")
+          ])
+        ])
+      ]),
+      el("div", { className: "eam-fc-date-header" }, [
+        el("label", { className: "eam-fc-date-label" }, "Date Range:"),
+        el("button", { id: "eam-date-mode-toggle", className: "eam-fc-date-toggle" }, "Switch to Custom Dates \u{1F4C5}")
+      ]),
+      el("div", { id: "eam-relative-dates" }, [
+        el("div", { className: "eam-fc-week-row" }, [
+          el("label", { className: "eam-fc-label" }, "Target Week:"),
+          el("select", { id: "eam-week-select", dataset: { cumulative: "false" }, className: "eam-fc-select" }, [
+            el("option", { value: "0" }, "This Week"),
+            el("option", { value: "1" }, "Next Week"),
+            el("option", { value: "2" }, "2 Weeks From Now"),
+            el("option", { value: "3" }, "3 Weeks From Now")
+          ])
+        ]),
+        el("div", { id: "eam-day-checkboxes", className: "eam-fc-days-box" }, [
+          ...["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map(
+            (day, i) => el("label", { style: { cursor: "pointer", display: "flex", flexDirection: "column", alignItems: "center", gap: "4px" } }, [
+              el("input", { type: "checkbox", value: String(i) }),
+              ` ${day}`
+            ])
+          )
+        ])
+      ]),
+      el("div", { id: "eam-custom-dates", className: "eam-fc-custom-dates" }, [
+        el("div", { className: "eam-fc-custom-row" }, [
+          el("label", { style: { fontSize: "12px", color: "#b0bec5", width: "40px" } }, "From:"),
+          el("input", { type: "date", id: "eam-custom-start", className: "eam-fc-date-input" })
+        ]),
+        el("div", { className: "eam-fc-custom-row" }, [
+          el("label", { style: { fontSize: "12px", color: "#b0bec5", width: "40px" } }, "To:"),
+          el("input", { type: "date", id: "eam-custom-end", className: "eam-fc-date-input" })
+        ])
+      ]),
+      el("div", { id: "eam-adv-assigned", className: "eam-fc-assigned-box" }, [
+        el("label", { className: "eam-fc-label" }, "Assigned:"),
+        el("input", { type: "text", id: "eam-assigned-text", placeholder: "(Optional)", className: "eam-fc-input-text" }),
+        el("label", { className: "eam-fc-label", style: { marginLeft: "5px" } }, "Shift:"),
+        el("input", { type: "text", id: "eam-shift-text", placeholder: "(Opt)", className: "eam-fc-shift-text" })
+      ]),
+      el("div", { className: "eam-fc-desc-box" }, [
+        el("label", { className: "eam-fc-label" }, "Description:"),
+        el("select", { id: "eam-desc-op", className: "eam-fc-select" }, [
+          el("option", { value: "Contains" }, "Include"),
+          el("option", { value: "Does Not Contain" }, "Exclude")
+        ]),
+        el("input", { type: "text", id: "eam-desc-text", placeholder: "Keywords... (Optional)", className: "eam-fc-desc-input" })
+      ]),
+      el("div", { className: "eam-fc-run-box" }, [
+        el("button", { id: "eam-btn-run", className: "eam-fc-btn-run" }, "Run Search"),
+        el("div", { className: "eam-fc-today-box" }, [
+          el("label", { className: "eam-fc-today-lbl" }, [
+            el("div", { className: "eam-slider-switch" }, [
+              el("input", { type: "checkbox", id: "eam-today-only-toggle" }),
+              el("span", { className: "eam-slider-track" })
+            ]),
+            el("span", { id: "eam-today-toggle-text", className: "eam-fc-today-txt" }, "Includes Past Due")
+          ]),
+          el("button", { id: "eam-btn-today", className: "eam-fc-btn-today", title: "Search Today (Alt + T)" }, "Today")
+        ])
+      ]),
+      el("div", { className: "eam-fc-footer" }, [
+        el("button", { id: "eam-help-btn", className: "eam-fc-help-link" }, "\u2139\uFE0F Help & Tips"),
+        el("span", { innerHTML: 'Shortcuts: <b style="color:#bdc3c7;">Alt + T</b> (Today) | <b style="color:#bdc3c7;">Alt + C</b> (Clear Grid)' })
+      ])
+    ]);
+    setupListeners(form, callbacks);
+    return form;
+  }
+  function setupListeners(container, callbacks) {
+    const { onToggleGuide } = callbacks;
+    const btnRun = container.querySelector("#eam-btn-run");
+    const btnToday = container.querySelector("#eam-btn-today");
+    const btnHelp = container.querySelector("#eam-help-btn");
+    const todayToggle = container.querySelector("#eam-today-only-toggle");
+    const todayToggleText = container.querySelector("#eam-today-toggle-text");
+    btnRun.onmouseover = () => btnRun.style.backgroundColor = "#16a085";
+    btnRun.onmouseout = () => btnRun.style.backgroundColor = "#1abc9c";
+    btnToday.onmouseover = () => btnToday.style.backgroundColor = "#2980b9";
+    btnToday.onmouseout = () => btnToday.style.backgroundColor = "#3498db";
+    btnRun.onclick = () => {
+      if (!getIsRunning()) executeForecast("normal");
+    };
+    btnToday.onclick = () => {
+      if (!getIsRunning()) executeForecast("today");
+    };
+    btnHelp.onclick = () => onToggleGuide?.();
+    todayToggle.addEventListener("change", () => {
+      todayToggleText.textContent = todayToggle.checked ? "Today Only" : "Includes Past Due";
+      saveAllPreferences();
+    });
+    const descInput = container.querySelector("#eam-desc-text");
+    descInput.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") {
+        e.preventDefault();
+        if (!getIsRunning()) executeForecast("normal");
+      }
+    });
+    container.querySelector("#eam-add-org-btn").onclick = () => {
+      const newOrg = prompt("Enter new Site Code (Org):");
+      if (newOrg && newOrg.trim()) {
+        const cleanOrg = newOrg.trim().toUpperCase();
+        if (cleanOrg === "ALL SITES" || cleanOrg === "-- ALL SITES --") {
+          setSelectedOrg("");
+        } else {
+          if (!savedOrgs.includes(cleanOrg)) {
+            setSavedOrgs([...savedOrgs, cleanOrg]);
+          }
+          setSelectedOrg(cleanOrg);
+        }
+        renderOrgs(container);
+        saveAllPreferences();
+      }
+    };
+    container.querySelector("#eam-rem-org-btn").onclick = () => {
+      const select = container.querySelector("#eam-org-select");
+      const current = select.value;
+      if (!current) {
+        alert('Cannot remove the default "All Sites" option.');
+        return;
+      }
+      if (confirm(`Are you sure you want to remove ${current} from your list?`)) {
+        setSavedOrgs(savedOrgs.filter((o) => o !== current));
+        setSelectedOrg("");
+        renderOrgs(container);
+        saveAllPreferences();
+      }
+    };
+    const dateModeBtn = container.querySelector("#eam-date-mode-toggle");
+    const relDates = container.querySelector("#eam-relative-dates");
+    const custDates = container.querySelector("#eam-custom-dates");
+    const checkboxes = Array.from(container.querySelectorAll('#eam-day-checkboxes input[type="checkbox"]'));
+    dateModeBtn.onclick = () => {
+      const isCurrentlyCustom = custDates.style.display === "flex";
+      const nextCustom = !isCurrentlyCustom;
+      if (nextCustom) {
+        const weekSelect = container.querySelector("#eam-week-select");
+        const isCumulative = weekSelect.dataset.cumulative === "true";
+        const userChecked = checkboxes.filter((cb) => cb.dataset.explicit === "true").map((cb) => parseInt(cb.value, 10));
+        if (userChecked.length > 0) {
+          const dates = getDateRange(weekSelect.value, Math.min(...userChecked), Math.max(...userChecked), isCumulative);
+          if (dates) {
+            const toYMD = (dStr) => {
+              const p = dStr.split("/");
+              return `${p[2]}-${p[0].padStart(2, "0")}-${p[1].padStart(2, "0")}`;
+            };
+            container.querySelector("#eam-custom-start").value = toYMD(dates.start);
+            container.querySelector("#eam-custom-end").value = toYMD(dates.end);
+          }
+        }
+      }
+      relDates.style.display = nextCustom ? "none" : "block";
+      custDates.style.display = nextCustom ? "flex" : "none";
+      dateModeBtn.innerHTML = nextCustom ? "Switch to Relative \u26A1" : "Switch to Custom Dates \u{1F4C5}";
+      saveAllPreferences();
+    };
+    checkboxes.forEach((cb) => {
+      cb.addEventListener("change", (e) => {
+        e.target.dataset.explicit = e.target.checked ? "true" : "false";
+        updateCheckboxVisuals(container);
+      });
     });
   }
-  var togglePrefix = (id, prefix) => {
+  function renderOrgs(container) {
+    const select = container.querySelector("#eam-org-select");
+    if (!select) return;
+    select.innerHTML = '<option value="">-- All Sites --</option>';
+    savedOrgs.forEach((org) => {
+      const opt = document.createElement("option");
+      opt.value = org;
+      opt.textContent = org;
+      if (org === selectedOrg) opt.selected = true;
+      select.appendChild(opt);
+    });
+    select.value = selectedOrg || "";
+  }
+  function updateCheckboxVisuals(container) {
+    const checkboxes = Array.from(container.querySelectorAll('#eam-day-checkboxes input[type="checkbox"]'));
+    const userChecked = checkboxes.filter((cb) => cb.dataset.explicit === "true").map((cb) => parseInt(cb.value, 10));
+    const weekSelect = container.querySelector("#eam-week-select");
+    const prevVal = weekSelect.value;
+    if (userChecked.length === 0) {
+      checkboxes.forEach((cb) => {
+        cb.checked = false;
+        cb.disabled = false;
+        cb.parentElement.style = "color:white; opacity:1; cursor:pointer; display:flex; flex-direction:column; align-items:center; gap:4px;";
+      });
+      if (weekSelect.dataset.cumulative === "true") {
+        weekSelect.innerHTML = `<option value="0">This Week</option><option value="1">Next Week</option><option value="2">2 Weeks From Now</option><option value="3">3 Weeks From Now</option>`;
+        weekSelect.dataset.cumulative = "false";
+        weekSelect.value = prevVal;
+      }
+      return;
+    }
+    const min = Math.min(...userChecked), max = Math.max(...userChecked);
+    const isAllDays = min === 0 && max === 6;
+    if (isAllDays && weekSelect.dataset.cumulative !== "true") {
+      weekSelect.innerHTML = `<option value="0">This Week</option><option value="1">Next 2 Weeks</option><option value="2">Next 3 Weeks</option><option value="3">Next 4 Weeks</option>`;
+      weekSelect.dataset.cumulative = "true";
+      weekSelect.value = prevVal;
+    } else if (!isAllDays && weekSelect.dataset.cumulative === "true") {
+      weekSelect.innerHTML = `<option value="0">This Week</option><option value="1">Next Week</option><option value="2">2 Weeks From Now</option><option value="3">3 Weeks From Now</option>`;
+      weekSelect.dataset.cumulative = "false";
+      weekSelect.value = prevVal;
+    }
+    checkboxes.forEach((cb, i) => {
+      const baseStyle = "display:flex; flex-direction:column; align-items:center; gap:4px; ";
+      if (i === min || i === max) {
+        cb.checked = true;
+        cb.disabled = false;
+        cb.dataset.explicit = "true";
+        cb.parentElement.style = baseStyle + "color:#1abc9c; opacity:1; cursor:pointer; font-weight:bold; text-shadow: 0 0 5px rgba(26,188,156,0.5);";
+      } else if (i > min && i < max) {
+        cb.checked = true;
+        cb.disabled = true;
+        cb.dataset.explicit = "false";
+        cb.parentElement.style = baseStyle + "color:#7f8c8d; opacity:0.5; cursor:not-allowed; font-style:italic;";
+      } else {
+        cb.checked = false;
+        cb.disabled = false;
+        cb.dataset.explicit = "false";
+        cb.parentElement.style = baseStyle + "color:white; opacity:1; cursor:pointer; font-weight:normal;";
+      }
+    });
+  }
+
+  // src/modules/forecast/components/forecast-profile-manager.js
+  init_logger();
+  function createProfileManager(callbacks = {}) {
+    const modal = el("div", { id: "apm-spies-modal", className: "apm-modal-overlay", style: { display: "none" } }, [
+      el("div", { className: "apm-modal-content", style: { width: "420px" } }, [
+        el("div", { className: "apm-modal-header" }, [
+          el("h4", { style: { margin: 0, color: "#3498db" } }, [
+            "Custom Dataspy Builder ",
+            el("span", { style: { fontSize: "10px", verticalAlign: "middle", background: "#e67e22", color: "white", padding: "1px 5px", borderRadius: "3px", marginLeft: "5px", fontWeight: "bold" } }, "BETA")
+          ]),
+          el("button", { id: "apm-spies-close", className: "eam-fc-close-btn" }, "\u2716")
+        ]),
+        el("div", { className: "apm-modal-body", style: { padding: "15px" } }, [
+          el("div", { className: "eam-fc-row", style: { marginBottom: "15px" } }, [
+            el("label", { className: "eam-fc-label", style: { width: "90px" } }, "Profile Name:"),
+            el("input", { type: "text", id: "spy-name", className: "eam-fc-input-text", placeholder: "e.g., Weekly PMs", style: { flex: 1 } })
+          ]),
+          el("div", { style: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px" } }, [
+            el("div", { style: { gridColumn: "span 2" } }, [
+              el("label", { className: "eam-fc-label", style: { display: "block", marginBottom: "4px" } }, "Work Order Description:"),
+              el("div", { style: { display: "flex", gap: "5px" } }, [
+                el("input", { type: "text", id: "spy-desc", className: "eam-fc-input-text", placeholder: "Keywords...", style: { flex: 1 } }),
+                // These buttons need to be handled by the form/orchestrator or imported
+                el("button", { className: "eam-fc-btn-small", title: "Exclude (!)", onclick: () => togglePrefix("spy-desc", "!") }, "!"),
+                el("button", { className: "eam-fc-btn-small", title: "Exact (=)", onclick: () => togglePrefix("spy-desc", "=") }, "="),
+                el("button", { className: "eam-fc-btn-small", title: "Begins (^)", onclick: () => togglePrefix("spy-desc", "^") }, "^")
+              ])
+            ]),
+            el("div", {}, [
+              el("label", { className: "eam-fc-label", style: { display: "block", marginBottom: "4px" } }, "Equipment:"),
+              el("div", { style: { display: "flex", gap: "3px" } }, [
+                el("input", { type: "text", id: "spy-eq", className: "eam-fc-input-text", placeholder: "PUMP*", style: { flex: 1 } }),
+                el("button", { className: "eam-fc-btn-small", title: "Exclude", onclick: () => togglePrefix("spy-eq", "!") }, "!")
+              ])
+            ]),
+            el("div", {}, [
+              el("label", { className: "eam-fc-label", style: { display: "block", marginBottom: "4px" } }, "Eq. Description:"),
+              el("input", { type: "text", id: "spy-eqdesc", className: "eam-fc-input-text", style: { width: "100%" } })
+            ]),
+            el("div", {}, [
+              el("label", { className: "eam-fc-label", style: { display: "block", marginBottom: "4px" } }, "Assigned To:"),
+              el("input", { type: "text", id: "spy-assigned", className: "eam-fc-input-text", style: { width: "100%" } })
+            ]),
+            el("div", {}, [
+              el("label", { className: "eam-fc-label", style: { display: "block", marginBottom: "4px" } }, "WO Type:"),
+              el("input", { type: "text", id: "spy-type", className: "eam-fc-input-text", placeholder: "PM, REPAIR", style: { width: "100%" } })
+            ]),
+            el("div", { style: { gridColumn: "span 2" } }, [
+              el("label", { className: "eam-fc-label", style: { display: "block", marginBottom: "4px" } }, "Exclude Specific Dates:"),
+              el("input", { type: "text", id: "spy-ex-dates", className: "eam-fc-input-text", placeholder: "03/15/2026, 03/16/2026...", style: { width: "100%" } })
+            ]),
+            el("div", { style: { gridColumn: "span 2" } }, [
+              el("label", { className: "eam-fc-label", style: { display: "block", marginBottom: "4px" } }, "Org (Site):"),
+              el("input", { type: "text", id: "spy-org", className: "eam-fc-input-text", style: { width: "100%" } })
+            ])
+          ]),
+          el("div", { style: { marginTop: "15px", display: "flex", gap: "10px" } }, [
+            el("button", { id: "spy-btn-save", className: "eam-fc-btn-run", style: { flex: 1, height: "35px" } }, "Save Profile"),
+            el("button", { id: "spy-btn-delete", className: "eam-fc-btn-today", style: { background: "#e74c3c", borderColor: "#c0392b", flex: 0.4 } }, "Delete")
+          ])
+        ]),
+        el("div", { className: "apm-modal-footer", style: { padding: "10px 15px", borderTop: "1px solid #45535e" } }, [
+          el("div", { className: "eam-fc-label", style: { marginBottom: "5px" } }, "Manage Saved Spies:"),
+          el("select", { id: "spy-manager-select", className: "eam-fc-select", style: { width: "100%" } }, [
+            el("option", { value: "" }, "-- Create New Profile --")
+          ])
+        ])
+      ])
+    ]);
+    setupModalListeners(modal);
+    return modal;
+  }
+  function togglePrefix(id, prefix) {
     const el2 = document.getElementById(id);
     if (!el2) return;
     const start = el2.selectionStart;
@@ -3707,9 +4040,142 @@
       }
     }
     el2.focus();
-  };
-  function buildSearchUI() {
-    if (window.self !== window.top) return;
+  }
+  function setupModalListeners(modal) {
+    modal.querySelector("#apm-spies-close").onclick = () => {
+      modal.style.display = "none";
+    };
+    const spyMgrSelect = modal.querySelector("#spy-manager-select");
+    spyMgrSelect.onchange = () => {
+      const id = spyMgrSelect.value;
+      const prof = savedProfiles.find((p) => p.id === id);
+      modal.querySelector("#spy-name").value = prof ? prof.name : "";
+      modal.querySelector("#spy-eq").value = prof ? prof.equipment || "" : "";
+      modal.querySelector("#spy-eqdesc").value = prof ? prof.eqDesc || "" : "";
+      modal.querySelector("#spy-desc").value = prof ? prof.desc || "" : "";
+      modal.querySelector("#spy-assigned").value = prof ? prof.assigned || "" : "";
+      modal.querySelector("#spy-type").value = prof ? prof.type || "" : "";
+      modal.querySelector("#spy-org").value = prof ? prof.org || "" : "";
+      modal.querySelector("#spy-ex-dates").value = prof ? prof.exDates || "" : "";
+    };
+    modal.querySelector("#spy-btn-save").onclick = () => {
+      const name = modal.querySelector("#spy-name").value.trim();
+      if (!name) {
+        alert("Please enter a profile name.");
+        return;
+      }
+      const id = spyMgrSelect.value || "prof_" + Date.now();
+      const profData = {
+        id,
+        name,
+        equipment: modal.querySelector("#spy-eq").value.trim(),
+        eqDesc: modal.querySelector("#spy-eqdesc").value.trim(),
+        desc: modal.querySelector("#spy-desc").value.trim(),
+        assigned: modal.querySelector("#spy-assigned").value.trim(),
+        type: modal.querySelector("#spy-type").value.trim(),
+        org: modal.querySelector("#spy-org").value.trim(),
+        exDates: modal.querySelector("#spy-ex-dates").value.trim()
+      };
+      APMLogger.info("Forecast", `Saving Profile: ${name}`, profData);
+      const existingIdx = savedProfiles.findIndex((p) => p.id === id);
+      if (existingIdx >= 0) savedProfiles[existingIdx] = profData;
+      else savedProfiles.push(profData);
+      setSelectedProfileId(id);
+      renderProfiles_Global();
+      updateProfileUI_Global();
+      saveAllPreferences();
+      alert("Profile saved!");
+    };
+    modal.querySelector("#spy-btn-delete").onclick = () => {
+      const id = spyMgrSelect.value;
+      if (!id) return;
+      if (confirm("Delete this profile?")) {
+        setSavedProfiles(savedProfiles.filter((p) => p.id !== id));
+        if (selectedProfileId === id) setSelectedProfileId("manual");
+        renderProfiles_Global();
+        updateProfileUI_Global();
+        saveAllPreferences();
+        spyMgrSelect.value = "";
+        spyMgrSelect.onchange();
+      }
+    };
+  }
+  function renderProfiles_Global() {
+    const spyMgrSelect = document.getElementById("spy-manager-select");
+    const profSelect = document.getElementById("eam-profile-select");
+    if (!spyMgrSelect || !profSelect) return;
+    const opts = '<option value="">-- Create New Profile --</option>' + savedProfiles.map((p) => `<option value="${p.id}">${p.name}</option>`).join("");
+    spyMgrSelect.innerHTML = opts;
+    const profOpts = '<option value="manual">[ Manual Native Search ]</option>' + savedProfiles.map((p) => `<option value="${p.id}">Profile: ${p.name}</option>`).join("");
+    profSelect.innerHTML = profOpts;
+    profSelect.value = selectedProfileId || "manual";
+  }
+  function updateProfileUI_Global() {
+    const profSelect = document.getElementById("eam-profile-select");
+    const summary = document.getElementById("eam-profile-summary");
+    const summaryText = document.getElementById("eam-profile-summary-text");
+    const manualInputs = document.getElementById("eam-manual-inputs");
+    const descBox = document.querySelector(".eam-fc-desc-box");
+    if (!profSelect) return;
+    const selectedId = profSelect.value;
+    if (selectedId === "manual") {
+      if (summary) summary.style.display = "none";
+      if (manualInputs) manualInputs.style.display = "block";
+      if (descBox) descBox.style.display = "flex";
+    } else {
+      const prof = savedProfiles.find((p) => p.id === selectedId);
+      if (prof) {
+        if (summary) summary.style.display = "block";
+        if (manualInputs) manualInputs.style.display = "none";
+        if (descBox) descBox.style.display = "none";
+        const details = [];
+        if (prof.equipment) details.push(`Eq: ${prof.equipment}`);
+        if (prof.eqDesc) details.push(`EqDesc: ${prof.eqDesc}`);
+        if (prof.desc) details.push(`Desc: ${prof.desc}`);
+        if (prof.assigned) details.push(`Assigned: ${prof.assigned}`);
+        if (prof.type) details.push(`Type: ${prof.type}`);
+        if (prof.org) details.push(`Org: ${prof.org}`);
+        summaryText.textContent = details.length > 0 ? details.join(" | ") : "No specific filters set (All Records)";
+      }
+    }
+  }
+
+  // src/modules/forecast/components/forecast-guidance.js
+  function createGuidance(callbacks = {}) {
+    const { onBack } = callbacks;
+    const guide = el("div", { id: "eam-guide-container", className: "eam-fc-guide-box" }, [
+      el("p", { className: "eam-fc-guide-text" }, 'The Forecast Tool eliminates the manual "click-and-wait" fatigue of filtering Work Orders. It automates navigation, grid expansion, and multi-field filtering into a single, lightning-fast action.'),
+      el("h4", { className: "eam-fc-guide-hdr" }, "1. Setting Your Parameters"),
+      el("ul", { className: "eam-fc-guide-list" }, [
+        el("li", { innerHTML: "<strong>Site Code (Org):</strong> Available in Advanced Mode. Select your site or leave blank to search all." }),
+        el("li", { innerHTML: "<strong>Target Week & Days:</strong> Choose your week and click the days you want to filter, or swap to Custom Dates \u{1F4C5} for absolute calendar picking." }),
+        el("li", { innerHTML: `<strong>Today Modifier:</strong> Use the slider next to the 'Today' button to switch between "Today Only" (strict exact match) or "Includes Past Due" (pulls everything up to today).` })
+      ]),
+      el("h4", { className: "eam-fc-guide-hdr" }, "2. Advanced Filters"),
+      el("ul", { className: "eam-fc-guide-list" }, [
+        el("li", { innerHTML: "Use the <strong>Description</strong> field to narrow your results." }),
+        el("li", { innerHTML: '<em>Tip:</em> The Description dropdown lets you choose whether a keyword should be Included (e.g., only show "13 Week") or Excluded (e.g., hide all "Daily").' })
+      ]),
+      el("h4", { className: "eam-fc-guide-hdr" }, "3. Power User Shortcuts"),
+      el("ul", { className: "eam-fc-guide-list" }, [
+        el("li", { innerHTML: `<strong>Alt + T (Quick Today):</strong> The "Thunderbolt" shortcut. Press this anywhere in EAM to instantly run a search for Today's Work Orders.` }),
+        el("li", { innerHTML: "<strong>Alt + C (Quick Clear):</strong>This will instantly clear all search fields if you need to manually search something" })
+      ]),
+      el("h4", { className: "eam-fc-guide-hdr" }, "4. Fast Booked Labor Check"),
+      el("ul", { className: "eam-fc-guide-list" }, [
+        el("li", { innerHTML: 'Use the floating "LABOR TALLY \u23F1\uFE0F" tab on the edge of your screen to instantly check your hours from anywhere in EAM. You can drag and snap it to any edge of your browser.' })
+      ]),
+      el("div", { className: "eam-fc-guide-back" }, [
+        el("button", { id: "eam-guide-back-btn", className: "eam-fc-help-link" }, "\u{1F519} Back to Tool")
+      ])
+    ]);
+    guide.querySelector("#eam-guide-back-btn").onclick = () => onBack?.();
+    return guide;
+  }
+
+  // src/modules/forecast/components/forecast-quick-search.js
+  function createQuickSearch() {
+    if (window.self !== window.top) return null;
     let ui = document.getElementById("apm-quick-search-container");
     if (ui) return ui;
     ui = el("div", { id: "apm-quick-search-container", className: "apm-qs-container", style: { display: "flex" } }, [
@@ -3718,9 +4184,8 @@
       el("button", { id: "apm-qs-btn", className: "apm-qs-btn", innerHTML: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>' }),
       el("span", { id: "apm-qs-status", className: "apm-qs-status" })
     ]);
-    document.body.appendChild(ui);
-    const qsInput = document.getElementById("apm-qs-input");
-    const qsBtn = document.getElementById("apm-qs-btn");
+    const qsInput = ui.querySelector("#apm-qs-input");
+    const qsBtn = ui.querySelector("#apm-qs-btn");
     qsBtn.addEventListener("mouseover", () => qsBtn.style.background = "rgba(255,255,255,0.2)");
     qsBtn.addEventListener("mouseout", () => qsBtn.style.background = "rgba(255,255,255,0.1)");
     const doSearch = () => {
@@ -3737,65 +4202,27 @@
     }, true);
     return ui;
   }
+
+  // src/modules/forecast/forecast-ui.js
+  function checkForUpdates() {
+    subscribeToUpdates(() => {
+      const updateContainer = document.getElementById("eam-update-container");
+      if (updateContainer) updateContainer.style.display = "block";
+    });
+  }
+  function buildSearchUI() {
+    const ui = createQuickSearch();
+    if (ui && !ui.parentElement) document.body.appendChild(ui);
+    return ui;
+  }
   function buildForecastUI() {
     window._APM = window._APM || {};
     window._APM.buildForecastUI = buildForecastUI;
     if (window.self !== window.top) return;
     let panel = document.getElementById("eam-forecast-panel");
     if (!panel) {
-      let updateCheckboxVisuals = function() {
-        const userChecked = checkboxes.filter((cb) => cb.dataset.explicit === "true").map((cb) => parseInt(cb.value, 10));
-        const weekSelect = document.getElementById("eam-week-select");
-        const prevVal = weekSelect.value;
-        if (userChecked.length === 0) {
-          checkboxes.forEach((cb) => {
-            cb.checked = false;
-            cb.disabled = false;
-            cb.parentElement.style = "color:white; opacity:1; cursor:pointer; display:flex; flex-direction:column; align-items:center; gap:4px;";
-          });
-          if (weekSelect.dataset.cumulative === "true") {
-            weekSelect.innerHTML = `<option value="0">This Week</option><option value="1">Next Week</option><option value="2">2 Weeks From Now</option><option value="3">3 Weeks From Now</option>`;
-            weekSelect.dataset.cumulative = "false";
-            weekSelect.value = prevVal;
-          }
-          return;
-        }
-        const min = Math.min(...userChecked), max = Math.max(...userChecked);
-        const isAllDays = min === 0 && max === 6;
-        if (isAllDays && weekSelect.dataset.cumulative !== "true") {
-          weekSelect.innerHTML = `<option value="0">This Week</option><option value="1">Next 2 Weeks</option><option value="2">Next 3 Weeks</option><option value="3">Next 4 Weeks</option>`;
-          weekSelect.dataset.cumulative = "true";
-          weekSelect.value = prevVal;
-        } else if (!isAllDays && weekSelect.dataset.cumulative === "true") {
-          weekSelect.innerHTML = `<option value="0">This Week</option><option value="1">Next Week</option><option value="2">2 Weeks From Now</option><option value="3">3 Weeks From Now</option>`;
-          weekSelect.dataset.cumulative = "false";
-          weekSelect.value = prevVal;
-        }
-        checkboxes.forEach((cb, i) => {
-          const baseStyle = "display:flex; flex-direction:column; align-items:center; gap:4px; ";
-          if (i === min || i === max) {
-            cb.checked = true;
-            cb.disabled = false;
-            cb.dataset.explicit = "true";
-            cb.parentElement.style = baseStyle + "color:#1abc9c; opacity:1; cursor:pointer; font-weight:bold; text-shadow: 0 0 5px rgba(26,188,156,0.5);";
-          } else if (i > min && i < max) {
-            cb.checked = true;
-            cb.disabled = true;
-            cb.dataset.explicit = "false";
-            cb.parentElement.style = baseStyle + "color:#7f8c8d; opacity:0.5; cursor:not-allowed; font-style:italic;";
-          } else {
-            cb.checked = false;
-            cb.disabled = false;
-            cb.dataset.explicit = "false";
-            cb.parentElement.style = baseStyle + "color:white; opacity:1; cursor:pointer; font-weight:normal;";
-          }
-        });
-      };
       UIManager.registerPanel("eam-forecast-panel", ["#apm-forecast-ext-btn", ".apm-fc-btn"]);
-      panel = document.createElement("div");
-      panel.id = "eam-forecast-panel";
-      panel.style.display = "none";
-      panel.className = "eam-fc-container apm-ui-panel";
+      panel = el("div", { id: "eam-forecast-panel", style: { display: "none" }, className: "eam-fc-container apm-ui-panel" });
       const header = el("div", { className: "eam-fc-header" }, [
         el("div", { className: "eam-fc-title-box" }, [
           el("h4", { className: "eam-fc-title", innerHTML: 'WO Forecast <span style="color:#1abc9c; font-weight: bold;">Tool</span>' }),
@@ -3807,506 +4234,104 @@
           el("button", { id: "eam-btn-close", className: "eam-fc-close-btn" }, "\u2716")
         ])
       ]);
-      const mainView = el("div", { id: "eam-main-view" }, [
-        el("div", { id: "eam-adv-site", className: "eam-fc-adv-box" }, [
-          el("div", { className: "eam-fc-row", style: { marginBottom: "8px" } }, [
-            el("label", { className: "eam-fc-label" }, "Active Profile:"),
-            el("select", { id: "eam-profile-select", className: "eam-fc-select", style: { color: "#3498db", fontWeight: "bold" } }, [
-              el("option", { value: "manual" }, "[ Manual Native Search ]")
-            ])
-          ]),
-          el("div", { id: "eam-profile-summary", style: { display: "none", background: "rgba(52, 152, 219, 0.1)", border: "1px dashed #3498db", borderRadius: "4px", padding: "8px", marginBottom: "10px", fontSize: "11px", color: "#bdc3c7" } }, [
-            el("div", { style: { fontWeight: "bold", color: "#3498db", marginBottom: "3px" } }, "\u2728 Profile Active: ExtJS Filter Engaged"),
-            el("div", { id: "eam-profile-summary-text" }, "Loading profile details...")
-          ]),
-          el("div", { id: "eam-manual-inputs" }, [
-            el("div", { className: "eam-fc-row" }, [
-              el("label", { className: "eam-fc-label" }, "Site Code (Org):"),
-              el("select", { id: "eam-org-select", className: "eam-fc-select", style: { textTransform: "uppercase" } }, [
-                el("option", { value: "" }, "-- All Sites --")
-              ]),
-              el("button", { id: "eam-add-org-btn", className: "org-btn org-btn-add", title: "Add New Site" }, "+"),
-              el("button", { id: "eam-rem-org-btn", className: "org-btn org-btn-rem", title: "Remove Selected Site" }, "-")
-            ])
-          ])
-        ]),
-        el("div", { className: "eam-fc-date-header" }, [
-          el("label", { className: "eam-fc-date-label" }, "Date Range:"),
-          el("button", { id: "eam-date-mode-toggle", className: "eam-fc-date-toggle" }, "Switch to Custom Dates \u{1F4C5}")
-        ]),
-        el("div", { id: "eam-relative-dates" }, [
-          el("div", { className: "eam-fc-week-row" }, [
-            el("label", { className: "eam-fc-label" }, "Target Week:"),
-            el("select", { id: "eam-week-select", dataset: { cumulative: "false" }, className: "eam-fc-select" }, [
-              el("option", { value: "0" }, "This Week"),
-              el("option", { value: "1" }, "Next Week"),
-              el("option", { value: "2" }, "2 Weeks From Now"),
-              el("option", { value: "3" }, "3 Weeks From Now")
-            ])
-          ]),
-          el("div", { id: "eam-day-checkboxes", className: "eam-fc-days-box" }, [
-            ...["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map(
-              (day, i) => el("label", { style: { cursor: "pointer", display: "flex", flexDirection: "column", alignItems: "center", gap: "4px" } }, [
-                el("input", { type: "checkbox", value: String(i) }),
-                ` ${day}`
-              ])
-            )
-          ])
-        ]),
-        el("div", { id: "eam-custom-dates", className: "eam-fc-custom-dates" }, [
-          el("div", { className: "eam-fc-custom-row" }, [
-            el("label", { style: { fontSize: "12px", color: "#b0bec5", width: "40px" } }, "From:"),
-            el("input", { type: "date", id: "eam-custom-start", className: "eam-fc-date-input" })
-          ]),
-          el("div", { className: "eam-fc-custom-row" }, [
-            el("label", { style: { fontSize: "12px", color: "#b0bec5", width: "40px" } }, "To:"),
-            el("input", { type: "date", id: "eam-custom-end", className: "eam-fc-date-input" })
-          ])
-        ]),
-        el("div", { id: "eam-adv-assigned", className: "eam-fc-assigned-box" }, [
-          el("label", { className: "eam-fc-label" }, "Assigned:"),
-          el("input", { type: "text", id: "eam-assigned-text", placeholder: "(Optional)", className: "eam-fc-input-text" }),
-          el("label", { className: "eam-fc-label", style: { marginLeft: "5px" } }, "Shift:"),
-          el("input", { type: "text", id: "eam-shift-text", placeholder: "(Opt)", className: "eam-fc-shift-text" })
-        ]),
-        el("div", { className: "eam-fc-desc-box" }, [
-          el("label", { className: "eam-fc-label" }, "Description:"),
-          el("select", { id: "eam-desc-op", className: "eam-fc-select" }, [
-            el("option", { value: "Contains" }, "Include"),
-            el("option", { value: "Does Not Contain" }, "Exclude")
-          ]),
-          el("input", { type: "text", id: "eam-desc-text", placeholder: "Keywords... (Optional)", className: "eam-fc-desc-input" })
-        ]),
-        el("div", { className: "eam-fc-run-box" }, [
-          el("button", { id: "eam-btn-run", className: "eam-fc-btn-run" }, "Run Search"),
-          el("div", { className: "eam-fc-today-box" }, [
-            el("label", { className: "eam-fc-today-lbl" }, [
-              el("div", { className: "eam-slider-switch" }, [
-                el("input", { type: "checkbox", id: "eam-today-only-toggle" }),
-                el("span", { className: "eam-slider-track" })
-              ]),
-              el("span", { id: "eam-today-toggle-text", className: "eam-fc-today-txt" }, "Includes Past Due")
-            ]),
-            el("button", { id: "eam-btn-today", className: "eam-fc-btn-today", title: "Search Today (Alt + T)" }, "Today")
-          ])
-        ]),
-        el("div", { className: "eam-fc-footer" }, [
-          el("button", { id: "eam-help-btn", className: "eam-fc-help-link" }, "\u2139\uFE0F Help & Tips"),
-          el("span", { innerHTML: 'Shortcuts: <b style="color:#bdc3c7;">Alt + T</b> (Today) | <b style="color:#bdc3c7;">Alt + C</b> (Clear Grid)' })
-        ])
-      ]);
-      const guideContainer = el("div", { id: "eam-guide-container", className: "eam-fc-guide-box" }, [
-        el("p", { className: "eam-fc-guide-text" }, 'The Forecast Tool eliminates the manual "click-and-wait" fatigue of filtering Work Orders. It automates navigation, grid expansion, and multi-field filtering into a single, lightning-fast action.'),
-        el("h4", { className: "eam-fc-guide-hdr" }, "1. Setting Your Parameters"),
-        el("ul", { className: "eam-fc-guide-list" }, [
-          el("li", { innerHTML: "<strong>Site Code (Org):</strong> Available in Advanced Mode. Select your site or leave blank to search all." }),
-          el("li", { innerHTML: "<strong>Target Week & Days:</strong> Choose your week and click the days you want to filter, or swap to Custom Dates \u{1F4C5} for absolute calendar picking." }),
-          el("li", { innerHTML: `<strong>Today Modifier:</strong> Use the slider next to the 'Today' button to switch between "Today Only" (strict exact match) or "Includes Past Due" (pulls everything up to today).` })
-        ]),
-        el("h4", { className: "eam-fc-guide-hdr" }, "2. Advanced Filters"),
-        el("ul", { className: "eam-fc-guide-list" }, [
-          el("li", { innerHTML: "Use the <strong>Description</strong> field to narrow your results." }),
-          el("li", { innerHTML: '<em>Tip:</em> The Description dropdown lets you choose whether a keyword should be Included (e.g., only show "13 Week") or Excluded (e.g., hide all "Daily").' })
-        ]),
-        el("h4", { className: "eam-fc-guide-hdr" }, "3. Power User Shortcuts"),
-        el("ul", { className: "eam-fc-guide-list" }, [
-          el("li", { innerHTML: `<strong>Alt + T (Quick Today):</strong> The "Thunderbolt" shortcut. Press this anywhere in EAM to instantly run a search for Today's Work Orders.` }),
-          el("li", { innerHTML: "<strong>Alt + C (Quick Clear):</strong>This will instantly clear all search fields if you need to manually search something" })
-        ]),
-        el("h4", { className: "eam-fc-guide-hdr" }, "4. Fast Booked Labor Check"),
-        el("ul", { className: "eam-fc-guide-list" }, [
-          el("li", { innerHTML: 'Use the floating "LABOR TALLY \u23F1\uFE0F" tab on the edge of your screen to instantly check your hours from anywhere in EAM. You can drag and snap it to any edge of your browser.' })
-        ]),
-        el("div", { className: "eam-fc-guide-back" }, [
-          el("button", { id: "eam-guide-back-btn", className: "eam-fc-help-link" }, "\u{1F519} Back to Tool")
-        ])
-      ]);
+      const searchForm = createSearchForm({
+        onToggleGuide: () => {
+          searchForm.style.display = "none";
+          guidance.style.display = "block";
+        }
+      });
+      const profileManager = createProfileManager();
+      const guidance = createGuidance({
+        onBack: () => {
+          searchForm.style.display = "block";
+          guidance.style.display = "none";
+        }
+      });
+      guidance.style.display = "none";
       const statusLabel = el("div", { id: "eam-status", className: "eam-fc-status" });
-      const spiesModal = el("div", { id: "apm-spies-modal", className: "apm-modal-overlay", style: { display: "none" } }, [
-        el("div", { className: "apm-modal-content", style: { width: "420px" } }, [
-          el("div", { className: "apm-modal-header" }, [
-            el("h4", { style: { margin: 0, color: "#3498db" } }, [
-              "Custom Dataspy Builder ",
-              el("span", { style: { fontSize: "10px", verticalAlign: "middle", background: "#e67e22", color: "white", padding: "1px 5px", borderRadius: "3px", marginLeft: "5px", fontWeight: "bold" } }, "BETA")
-            ]),
-            el("button", { id: "apm-spies-close", className: "eam-fc-close-btn" }, "\u2716")
-          ]),
-          el("div", { className: "apm-modal-body", style: { padding: "15px" } }, [
-            el("div", { className: "eam-fc-row", style: { marginBottom: "15px" } }, [
-              el("label", { className: "eam-fc-label", style: { width: "90px" } }, "Profile Name:"),
-              el("input", { type: "text", id: "spy-name", className: "eam-fc-input-text", placeholder: "e.g., Weekly PMs", style: { flex: 1 } })
-            ]),
-            el("div", { style: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px" } }, [
-              el("div", { style: { gridColumn: "span 2" } }, [
-                el("label", { className: "eam-fc-label", style: { display: "block", marginBottom: "4px" } }, "Work Order Description:"),
-                el("div", { style: { display: "flex", gap: "5px" } }, [
-                  el("input", { type: "text", id: "spy-desc", className: "eam-fc-input-text", placeholder: "Keywords...", style: { flex: 1 } }),
-                  el("button", { className: "eam-fc-btn-small", title: "Exclude (!)", onclick: () => togglePrefix("spy-desc", "!") }, "!"),
-                  el("button", { className: "eam-fc-btn-small", title: "Exact (=)", onclick: () => togglePrefix("spy-desc", "=") }, "="),
-                  el("button", { className: "eam-fc-btn-small", title: "Begins (^)", onclick: () => togglePrefix("spy-desc", "^") }, "^")
-                ])
-              ]),
-              el("div", {}, [
-                el("label", { className: "eam-fc-label", style: { display: "block", marginBottom: "4px" } }, "Equipment:"),
-                el("div", { style: { display: "flex", gap: "3px" } }, [
-                  el("input", { type: "text", id: "spy-eq", className: "eam-fc-input-text", placeholder: "PUMP*", style: { flex: 1 } }),
-                  el("button", { className: "eam-fc-btn-small", title: "Exclude", onclick: () => togglePrefix("spy-eq", "!") }, "!")
-                ])
-              ]),
-              el("div", {}, [
-                el("label", { className: "eam-fc-label", style: { display: "block", marginBottom: "4px" } }, "Eq. Description:"),
-                el("input", { type: "text", id: "spy-eqdesc", className: "eam-fc-input-text", style: { width: "100%" } })
-              ]),
-              el("div", {}, [
-                el("label", { className: "eam-fc-label", style: { display: "block", marginBottom: "4px" } }, "Assigned To:"),
-                el("input", { type: "text", id: "spy-assigned", className: "eam-fc-input-text", style: { width: "100%" } })
-              ]),
-              el("div", {}, [
-                el("label", { className: "eam-fc-label", style: { display: "block", marginBottom: "4px" } }, "WO Type:"),
-                el("input", { type: "text", id: "spy-type", className: "eam-fc-input-text", placeholder: "PM, REPAIR", style: { width: "100%" } })
-              ]),
-              el("div", { style: { gridColumn: "span 2" } }, [
-                el("label", { className: "eam-fc-label", style: { display: "block", marginBottom: "4px" } }, "Exclude Specific Dates:"),
-                el("input", { type: "text", id: "spy-ex-dates", className: "eam-fc-input-text", placeholder: "03/15/2026, 03/16/2026...", style: { width: "100%" } })
-              ]),
-              el("div", { style: { gridColumn: "span 2" } }, [
-                el("label", { className: "eam-fc-label", style: { display: "block", marginBottom: "4px" } }, "Org (Site):"),
-                el("input", { type: "text", id: "spy-org", className: "eam-fc-input-text", style: { width: "100%" } })
-              ])
-            ]),
-            el("div", { style: { marginTop: "15px", display: "flex", gap: "10px" } }, [
-              el("button", { id: "spy-btn-save", className: "eam-fc-btn-run", style: { flex: 1, height: "35px" } }, "Save Profile"),
-              el("button", { id: "spy-btn-delete", className: "eam-fc-btn-today", style: { background: "#e74c3c", borderColor: "#c0392b", flex: 0.4 } }, "Delete")
-            ])
-          ]),
-          el("div", { className: "apm-modal-footer", style: { padding: "10px 15px", borderTop: "1px solid #45535e" } }, [
-            el("div", { className: "eam-fc-label", style: { marginBottom: "5px" } }, "Manage Saved Spies:"),
-            el("select", { id: "spy-manager-select", className: "eam-fc-select", style: { width: "100%" } }, [
-              el("option", { value: "" }, "-- Create New Profile --")
-            ])
-          ])
-        ])
-      ]);
       const updateContainer = el("div", { id: "eam-update-container", className: "eam-fc-update-box" }, [
         el("a", { href: "https://raw.githubusercontent.com/jaker788-create/APM-Master/main/forecast.user.js", target: "_blank", className: "apm-footer-update-btn" }, "\u2728 Update Available")
       ]);
       panel.appendChild(header);
-      panel.appendChild(mainView);
-      panel.appendChild(guideContainer);
-      panel.appendChild(spiesModal);
+      panel.appendChild(searchForm);
+      panel.appendChild(guidance);
+      panel.appendChild(profileManager);
       panel.appendChild(statusLabel);
       panel.appendChild(updateContainer);
       document.body.appendChild(panel);
-      document.getElementById("eam-btn-run").onmouseover = function() {
-        this.style.backgroundColor = "#16a085";
-      };
-      document.getElementById("eam-btn-run").onmouseout = function() {
-        this.style.backgroundColor = "#1abc9c";
-      };
-      document.getElementById("eam-btn-today").onmouseover = function() {
-        this.style.backgroundColor = "#2980b9";
-      };
-      document.getElementById("eam-btn-today").onmouseout = function() {
-        this.style.backgroundColor = "#3498db";
-      };
-      const renderOrgs = () => {
-        const select = document.getElementById("eam-org-select");
-        if (!select) return;
-        select.innerHTML = '<option value="">-- All Sites --</option>';
-        savedOrgs.forEach((org) => {
-          const opt = document.createElement("option");
-          opt.value = org;
-          opt.textContent = org;
-          if (org === selectedOrg) opt.selected = true;
-          select.appendChild(opt);
-        });
-        select.value = selectedOrg || "";
-      };
-      const renderProfiles = () => {
-        const spyMgrSelect2 = document.getElementById("spy-manager-select");
-        const profSelect2 = document.getElementById("eam-profile-select");
-        if (!spyMgrSelect2 || !profSelect2) return;
-        const opts = '<option value="">-- Create New Profile --</option>' + savedProfiles.map((p) => `<option value="${p.id}">${p.name}</option>`).join("");
-        spyMgrSelect2.innerHTML = opts;
-        const profOpts = '<option value="manual">[ Manual Native Search ]</option>' + savedProfiles.map((p) => `<option value="${p.id}">Profile: ${p.name}</option>`).join("");
-        profSelect2.innerHTML = profOpts;
-        profSelect2.value = selectedProfileId || "manual";
-      };
-      const updateProfileUI = () => {
-        const profSelect2 = document.getElementById("eam-profile-select");
-        const summary = document.getElementById("eam-profile-summary");
-        const summaryText = document.getElementById("eam-profile-summary-text");
-        const manualInputs = document.getElementById("eam-manual-inputs");
-        const descBox = document.querySelector(".eam-fc-desc-box");
-        const selectedId = profSelect2.value;
-        if (selectedId === "manual") {
-          if (summary) summary.style.display = "none";
-          if (manualInputs) manualInputs.style.display = "block";
-          if (descBox && descBox.parentNode) descBox.style.display = "flex";
-        } else {
-          const prof = savedProfiles.find((p) => p.id === selectedId);
-          if (prof) {
-            if (summary) summary.style.display = "block";
-            if (manualInputs) manualInputs.style.display = "none";
-            if (descBox) descBox.style.display = "none";
-            const details = [];
-            if (prof.equipment) details.push(`Eq: ${prof.equipment}`);
-            if (prof.eqDesc) details.push(`EqDesc: ${prof.eqDesc}`);
-            if (prof.desc) details.push(`Desc: ${prof.desc}`);
-            if (prof.assigned) details.push(`Assigned: ${prof.assigned}`);
-            if (prof.type) details.push(`Type: ${prof.type}`);
-            if (prof.org) details.push(`Org: ${prof.org}`);
-            summaryText.textContent = details.length > 0 ? details.join(" | ") : "No specific filters set (All Records)";
-          }
-        }
-      };
-      const checkboxes = Array.from(panel.querySelectorAll('#eam-day-checkboxes input[type="checkbox"]'));
-      const todayToggle = document.getElementById("eam-today-only-toggle");
-      const todayToggleText = document.getElementById("eam-today-toggle-text");
-      const updateTodayToggleUI = () => {
-        if (todayToggle.checked) {
-          todayToggleText.textContent = "Today Only";
-        } else {
-          todayToggleText.textContent = "Includes Past Due";
-        }
-      };
-      todayToggle.addEventListener("change", () => {
-        updateTodayToggleUI();
-        saveAllPreferences();
-      });
-      let weekToSet = "0";
-      let isSimpleMode = true;
-      let isCustomDateMode = false;
-      const prefs = loadPreferences();
-      if (prefs) {
-        if (prefs.descOp) document.getElementById("eam-desc-op").value = prefs.descOp;
-        if (prefs.descText !== void 0) document.getElementById("eam-desc-text").value = prefs.descText;
-        if (prefs.week) weekToSet = prefs.week;
-        if (prefs.isSimpleMode !== void 0) isSimpleMode = prefs.isSimpleMode;
-        if (prefs.todayOnly !== void 0) document.getElementById("eam-today-only-toggle").checked = prefs.todayOnly;
-        if (prefs.isCustomDateMode !== void 0) isCustomDateMode = prefs.isCustomDateMode;
-        if (prefs.customStart) document.getElementById("eam-custom-start").value = prefs.customStart;
-        if (prefs.customEnd) document.getElementById("eam-custom-end").value = prefs.customEnd;
-        if (prefs.days && Array.isArray(prefs.days)) {
-          checkboxes.forEach((cb, i) => {
-            cb.checked = prefs.days[i];
-            cb.dataset.explicit = prefs.days[i] ? "true" : "false";
-          });
-        }
-      }
-      renderOrgs();
-      renderProfiles();
-      updateCheckboxVisuals();
-      updateTodayToggleUI();
-      updateProfileUI();
-      document.getElementById("eam-week-select").value = weekToSet;
-      const dateModeBtn = document.getElementById("eam-date-mode-toggle");
-      const relDates = document.getElementById("eam-relative-dates");
-      const custDates = document.getElementById("eam-custom-dates");
-      const updateDateModeDisplay = () => {
-        if (isCustomDateMode) {
-          relDates.style.display = "none";
-          custDates.style.display = "flex";
-          dateModeBtn.innerHTML = "Switch to Relative \u26A1";
-        } else {
-          relDates.style.display = "block";
-          custDates.style.display = "none";
-          dateModeBtn.innerHTML = "Switch to Custom Dates \u{1F4C5}";
-        }
-      };
-      updateDateModeDisplay();
-      dateModeBtn.onclick = () => {
-        isCustomDateMode = !isCustomDateMode;
-        if (isCustomDateMode) {
-          const weekSelect = document.getElementById("eam-week-select");
-          const isCumulative = weekSelect.dataset.cumulative === "true";
-          const userChecked = checkboxes.filter((cb) => cb.dataset.explicit === "true").map((cb) => parseInt(cb.value, 10));
-          if (userChecked.length > 0) {
-            const dates = getDateRange(weekSelect.value, Math.min(...userChecked), Math.max(...userChecked), isCumulative);
-            if (dates) {
-              const toYMD = (dStr) => {
-                const p = dStr.split("/");
-                return `${p[2]}-${p[0].padStart(2, "0")}-${p[1].padStart(2, "0")}`;
-              };
-              document.getElementById("eam-custom-start").value = toYMD(dates.start);
-              document.getElementById("eam-custom-end").value = toYMD(dates.end);
-            }
-          }
-        }
-        updateDateModeDisplay();
-        saveAllPreferences();
-      };
-      const modeBtn = document.getElementById("eam-mode-toggle");
-      const advSite = document.getElementById("eam-adv-site");
-      const advAssigned = document.getElementById("eam-adv-assigned");
-      const updateModeDisplay = () => {
-        if (isSimpleMode) {
-          advSite.style.display = "none";
-          modeBtn.innerHTML = "Simple Mode \u{1F343}";
-          modeBtn.style.color = "#1abc9c";
-          modeBtn.style.borderColor = "#1abc9c";
-          modeBtn.style.background = "#2b343c";
-        } else {
-          advSite.style.display = "flex";
-          modeBtn.innerHTML = "Advanced \u2699\uFE0F";
-          modeBtn.style.color = "#e67e22";
-          modeBtn.style.borderColor = "#e67e22";
-          modeBtn.style.background = "rgba(230, 126, 34, 0.1)";
-        }
-      };
-      updateModeDisplay();
+      const modeBtn = panel.querySelector("#eam-mode-toggle");
+      const spiesBtn = panel.querySelector("#eam-btn-spies");
       modeBtn.onclick = () => {
-        isSimpleMode = !isSimpleMode;
-        updateModeDisplay();
+        const isSimple = modeBtn.textContent.includes("Simple");
+        setModeUI(panel, !isSimple);
         saveAllPreferences();
       };
-      document.getElementById("eam-add-org-btn").onclick = () => {
-        const newOrg = prompt("Enter new Site Code (Org):");
-        if (newOrg && newOrg.trim()) {
-          const cleanOrg = newOrg.trim().toUpperCase();
-          if (cleanOrg === "ALL SITES" || cleanOrg === "-- ALL SITES --") {
-            setSelectedOrg("");
-          } else {
-            if (!savedOrgs.includes(cleanOrg)) {
-              setSavedOrgs([...savedOrgs, cleanOrg]);
-            }
-            setSelectedOrg(cleanOrg);
-          }
-          renderOrgs();
-          saveAllPreferences();
-        }
-      };
-      document.getElementById("eam-rem-org-btn").onclick = () => {
-        const select = document.getElementById("eam-org-select");
-        const current = select.value;
-        if (!current) {
-          alert('Cannot remove the default "All Sites" option.');
-          return;
-        }
-        if (confirm(`Are you sure you want to remove ${current} from your list?`)) {
-          setSavedOrgs(savedOrgs.filter((o) => o !== current));
-          setSelectedOrg("");
-          renderOrgs();
-          saveAllPreferences();
-        }
-      };
-      checkboxes.forEach((cb) => {
-        cb.addEventListener("change", (e) => {
-          e.target.dataset.explicit = e.target.checked ? "true" : "false";
-          updateCheckboxVisuals();
-        });
-      });
-      const spiesBtn = document.getElementById("eam-btn-spies");
-      const spiesModalBox = document.getElementById("apm-spies-modal");
-      const spiesClose = document.getElementById("apm-spies-close");
-      const spyMgrSelect = document.getElementById("spy-manager-select");
-      const profSelect = document.getElementById("eam-profile-select");
       spiesBtn.onclick = () => {
-        if (!spyMgrSelect.value) {
-          const dTextEl = document.getElementById("eam-desc-text");
-          const oTextEl = document.getElementById("eam-org-select");
-          if (dTextEl) document.getElementById("spy-desc").value = dTextEl.value.trim();
-          if (oTextEl) document.getElementById("spy-org").value = oTextEl.value.trim();
+        const modal = panel.querySelector("#apm-spies-modal");
+        const dTextEl = panel.querySelector("#eam-desc-text");
+        const oTextEl = panel.querySelector("#eam-org-select");
+        if (modal.querySelector("#spy-manager-select").value === "") {
+          if (dTextEl) modal.querySelector("#spy-desc").value = dTextEl.value.trim();
+          if (oTextEl) modal.querySelector("#spy-org").value = oTextEl.value.trim();
         }
-        spiesModalBox.style.display = "flex";
+        modal.style.display = "flex";
       };
-      spiesClose.onclick = () => {
-        spiesModalBox.style.display = "none";
-      };
-      spyMgrSelect.onchange = () => {
-        const id = spyMgrSelect.value;
-        const prof = savedProfiles.find((p) => p.id === id);
-        document.getElementById("spy-name").value = prof ? prof.name : "";
-        document.getElementById("spy-eq").value = prof ? prof.equipment || "" : "";
-        document.getElementById("spy-eqdesc").value = prof ? prof.eqDesc || "" : "";
-        document.getElementById("spy-desc").value = prof ? prof.desc || "" : "";
-        document.getElementById("spy-assigned").value = prof ? prof.assigned || "" : "";
-        document.getElementById("spy-type").value = prof ? prof.type || "" : "";
-        document.getElementById("spy-org").value = prof ? prof.org || "" : "";
-        document.getElementById("spy-ex-dates").value = prof ? prof.exDates || "" : "";
-      };
-      document.getElementById("spy-btn-save").onclick = () => {
-        const name = document.getElementById("spy-name").value.trim();
-        if (!name) {
-          alert("Please enter a profile name.");
-          return;
-        }
-        const id = spyMgrSelect.value || "prof_" + Date.now();
-        const profData = {
-          id,
-          name,
-          equipment: document.getElementById("spy-eq").value.trim(),
-          eqDesc: document.getElementById("spy-eqdesc").value.trim(),
-          desc: document.getElementById("spy-desc").value.trim(),
-          assigned: document.getElementById("spy-assigned").value.trim(),
-          type: document.getElementById("spy-type").value.trim(),
-          org: document.getElementById("spy-org").value.trim(),
-          exDates: document.getElementById("spy-ex-dates").value.trim()
-        };
-        APMLogger.info("Forecast", `Saving Profile: ${name}`, profData);
-        const existingIdx = savedProfiles.findIndex((p) => p.id === id);
-        if (existingIdx >= 0) {
-          savedProfiles[existingIdx] = profData;
-        } else {
-          savedProfiles.push(profData);
-        }
-        setSelectedProfileId(id);
-        renderProfiles();
-        updateProfileUI();
-        saveAllPreferences();
-        alert("Profile saved!");
-      };
-      document.getElementById("spy-btn-delete").onclick = () => {
-        const id = spyMgrSelect.value;
-        if (!id) return;
-        if (confirm("Delete this profile?")) {
-          setSavedProfiles(savedProfiles.filter((p) => p.id !== id));
-          if (selectedProfileId === id) setSelectedProfileId("manual");
-          renderProfiles();
-          updateProfileUI();
-          saveAllPreferences();
-          spyMgrSelect.value = "";
-          spyMgrSelect.onchange();
-        }
-      };
-      profSelect.onchange = () => {
-        setSelectedProfileId(profSelect.value);
-        updateProfileUI();
-        saveAllPreferences();
-      };
-      document.getElementById("eam-btn-close").onclick = () => {
+      panel.querySelector("#eam-btn-close").onclick = () => {
         panel.style.display = "none";
-        document.getElementById("eam-main-view").style.display = "block";
-        document.getElementById("eam-guide-container").style.display = "none";
+        searchForm.style.display = "block";
+        guidance.style.display = "none";
       };
-      document.getElementById("eam-help-btn").onclick = () => {
-        document.getElementById("eam-main-view").style.display = "none";
-        document.getElementById("eam-guide-container").style.display = "block";
+      panel.querySelector("#eam-profile-select").onchange = (e) => {
+        setSelectedProfileId(e.target.value);
+        updateProfileUI_Global();
+        saveAllPreferences();
       };
-      document.getElementById("eam-guide-back-btn").onclick = () => {
-        document.getElementById("eam-main-view").style.display = "block";
-        document.getElementById("eam-guide-container").style.display = "none";
-      };
-      document.getElementById("eam-btn-run").onclick = () => {
-        if (!getIsRunning()) executeForecast("normal");
-      };
-      document.getElementById("eam-btn-today").onclick = () => {
-        if (!getIsRunning()) executeForecast("today");
-      };
-      const enterTriggerFields = ["eam-desc-text"];
-      enterTriggerFields.forEach((id) => {
-        const field = document.getElementById(id);
-        if (field) {
-          field.addEventListener("keydown", (e) => {
-            if (e.key === "Enter") {
-              e.preventDefault();
-              if (!getIsRunning()) executeForecast("normal");
-            }
-          });
-        }
-      });
+      syncPreferences(panel);
       checkForUpdates();
     }
+  }
+  function setModeUI(panel, isSimple) {
+    const modeBtn = panel.querySelector("#eam-mode-toggle");
+    const advSite = panel.querySelector("#eam-adv-site");
+    if (isSimple) {
+      advSite.style.display = "none";
+      modeBtn.innerHTML = "Simple Mode \u{1F343}";
+      modeBtn.style.color = "#1abc9c";
+      modeBtn.style.borderColor = "#1abc9c";
+      modeBtn.style.background = "#2b343c";
+    } else {
+      advSite.style.display = "flex";
+      modeBtn.innerHTML = "Advanced \u2699\uFE0F";
+      modeBtn.style.color = "#e67e22";
+      modeBtn.style.borderColor = "#e67e22";
+      modeBtn.style.background = "rgba(230, 126, 34, 0.1)";
+    }
+  }
+  function syncPreferences(panel) {
+    const prefs = loadPreferences();
+    if (!prefs) return;
+    if (prefs.descOp) panel.querySelector("#eam-desc-op").value = prefs.descOp;
+    if (prefs.descText !== void 0) panel.querySelector("#eam-desc-text").value = prefs.descText;
+    if (prefs.todayOnly !== void 0) panel.querySelector("#eam-today-only-toggle").checked = prefs.todayOnly;
+    setModeUI(panel, prefs.isSimpleMode !== false);
+    const isCustomDateMode = prefs.isCustomDateMode === true;
+    panel.querySelector("#eam-relative-dates").style.display = isCustomDateMode ? "none" : "block";
+    panel.querySelector("#eam-custom-dates").style.display = isCustomDateMode ? "flex" : "none";
+    panel.querySelector("#eam-date-mode-toggle").innerHTML = isCustomDateMode ? "Switch to Relative \u26A1" : "Switch to Custom Dates \u{1F4C5}";
+    if (prefs.customStart) panel.querySelector("#eam-custom-start").value = prefs.customStart;
+    if (prefs.customEnd) panel.querySelector("#eam-custom-end").value = prefs.customEnd;
+    const checkboxes = Array.from(panel.querySelectorAll('#eam-day-checkboxes input[type="checkbox"]'));
+    if (prefs.days && Array.isArray(prefs.days)) {
+      checkboxes.forEach((cb, i) => {
+        cb.checked = prefs.days[i];
+        cb.dataset.explicit = prefs.days[i] ? "true" : "false";
+      });
+    }
+    renderOrgs(panel);
+    renderProfiles_Global();
+    updateCheckboxVisuals(panel);
+    updateProfileUI_Global();
+    if (prefs.week) panel.querySelector("#eam-week-select").value = prefs.week;
   }
   var styles = `
 .eam-fc-btn-small {
@@ -4581,6 +4606,92 @@
     }).filter((r) => r);
     return _compiledRules;
   }
+  function applyRowColoring(row, fillRule, settings) {
+    if (fillRule) {
+      row.setAttribute("data-cc-rule", fillRule.id);
+      const rgb = hexToRgbVals(fillRule.color);
+      const baseOp = settings && settings.uniformHighlight ? "0.22" : "0.15";
+      row.style.setProperty("--cc-row-bg", `rgba(${rgb}, ${baseOp})`);
+      row.style.setProperty("--cc-row-bg-alt", `rgba(${rgb}, 0.22)`);
+      row.style.setProperty("--cc-row-bg-hover", `rgba(${rgb}, 0.30)`);
+      row.style.setProperty("--cc-row-bg-sel", `rgba(${rgb}, 0.45)`);
+    } else if (row.hasAttribute("data-cc-rule")) {
+      row.removeAttribute("data-cc-rule");
+      ["--cc-row-bg", "--cc-row-bg-alt", "--cc-row-bg-hover", "--cc-row-bg-sel"].forEach((p) => row.style.removeProperty(p));
+    }
+  }
+  function buildSafeWoUrl(woNum) {
+    const currentTenant = window.EAM && window.EAM.AppData && window.EAM.AppData.tenant ? window.EAM.AppData.tenant : LINK_CONFIG.tenant;
+    return `https://${window.location.hostname}/web/base/logindisp?tenant=${currentTenant}&FROMEMAIL=YES&SYSTEM_FUNCTION_NAME=${LINK_CONFIG.userFuncName}&USER_FUNCTION_NAME=${LINK_CONFIG.userFuncName}&workordernum=${woNum}`;
+  }
+  function applyCellProcessors(cell, rowMatches, ptpHistory) {
+    const cellText = cell.textContent;
+    const lowerCellText = cellText.toLowerCase();
+    if (!cell.querySelector(".apm-wo-link")) {
+      const match = cellText.match(PTP_LINK_CONFIG.woPattern);
+      if (match) {
+        const woNum = match[1];
+        const safeUrl = buildSafeWoUrl(woNum);
+        const isNewTab = apmGeneralSettings?.openLinksInNewTab;
+        const targetAttr = isNewTab ? 'target="_blank"' : "";
+        const onclickAttr = isNewTab ? "" : `onclick="event.preventDefault(); event.stopPropagation(); window.top.location.href='${safeUrl}'; return false;"`;
+        cell.innerHTML = `<span style="white-space:nowrap"><a class="apm-wo-link" href="${safeUrl}" ${targetAttr} ${onclickAttr}>${woNum}</a><span class="apm-copy-icon" title="Copy link to clipboard" data-wo-copy-url="${safeUrl}"></span></span>`;
+        cell.setAttribute("data-apm-linkified", "true");
+        cell.setAttribute("data-wo-num", woNum);
+      }
+    }
+    if (apmGeneralSettings.ptpTrackingEnabled && cell.hasAttribute("data-wo-num")) {
+      const woNum = cell.getAttribute("data-wo-num");
+      const ptpRecord = ptpHistory[woNum];
+      const existingPtpTag = cell.querySelector(".apm-ptp-status-tag");
+      if (ptpRecord) {
+        const s = ptpRecord.status;
+        let icon = "\u23F3", statusTxt = "Incomplete", color = "#f39c12";
+        if (s === "COMPLETE") {
+          icon = "\u2705";
+          statusTxt = "Completed";
+          color = "var(--text-color)";
+        } else if (s === "CANCELLED") {
+          icon = "\u{1F6AB}";
+          statusTxt = "Cancelled";
+          color = "#e74c3c";
+        }
+        const titleTxt = `${statusTxt} PTP on ${new Date(ptpRecord.time).toLocaleDateString()}`;
+        if (!existingPtpTag) {
+          cell.insertAdjacentHTML("beforeend", `<div class="apm-ptp-status-tag" title="${titleTxt}" style="font-size: 11px; margin-top: 4px; display: inline-flex; align-items: center; gap: 4px; color: ${color}; opacity: 0.9;"><span style="font-size:12px;">${icon}</span> PTP</div>`);
+        } else if (existingPtpTag.title !== titleTxt) {
+          existingPtpTag.title = titleTxt;
+          existingPtpTag.style.color = color;
+          existingPtpTag.querySelector("span").textContent = icon;
+        }
+      } else if (existingPtpTag) {
+        existingPtpTag.remove();
+      }
+    } else if (!apmGeneralSettings.ptpTrackingEnabled) {
+      cell.querySelector(".apm-ptp-status-tag")?.remove();
+    }
+    cell.querySelectorAll(".apm-nametag").forEach((tag) => {
+      const ruleId = parseFloat(tag.getAttribute("data-cc-id"));
+      if (!rowMatches.some((r) => r.id === ruleId && r.showTag)) tag.remove();
+    });
+    rowMatches.forEach((rule) => {
+      if (!rule.showTag || !rule.tag || !rule.regex.test(lowerCellText)) {
+        cell.querySelector(`.apm-nametag[data-cc-id="${rule.id}"]`)?.remove();
+        return;
+      }
+      const safeId = rule.id.toString().replace(".", "_");
+      const formattedTagText = rule.tag.replace(/\\n/g, "<br>");
+      const allTermsCsv = rule.search || "";
+      const existingTag = cell.querySelector(`.apm-nametag[data-cc-id="${rule.id}"]`);
+      if (!existingTag) {
+        cell.insertAdjacentHTML("beforeend", `<div class="apm-nametag" style="background-color: var(--cc-color-${safeId})" title="Click to filter" data-cc-id="${rule.id}" data-filter-kw="${allTermsCsv}">${formattedTagText}</div>`);
+      } else {
+        existingTag.style.backgroundColor = `var(--cc-color-${safeId})`;
+        existingTag.setAttribute("data-filter-kw", allTermsCsv);
+        if (existingTag.innerHTML !== formattedTagText) existingTag.innerHTML = formattedTagText;
+      }
+    });
+  }
   function processColorCodeGrid(targetDoc) {
     const doc = targetDoc && targetDoc.querySelectorAll ? targetDoc : document;
     const settings = getSettings();
@@ -4594,10 +4705,6 @@
       _rowCacheGeneration++;
       fullStyleUpdate(doc);
     }
-    const buildSafeWoUrl = (woNum) => {
-      const currentTenant = window.EAM && window.EAM.AppData && window.EAM.AppData.tenant ? window.EAM.AppData.tenant : LINK_CONFIG.tenant;
-      return `https://${window.location.hostname}/web/base/logindisp?tenant=${currentTenant}&FROMEMAIL=YES&SYSTEM_FUNCTION_NAME=${LINK_CONFIG.userFuncName}&USER_FUNCTION_NAME=${LINK_CONFIG.userFuncName}&workordernum=${woNum}`;
-    };
     let rowsToProcess = [];
     try {
       const win = doc.defaultView || window;
@@ -4606,17 +4713,13 @@
         grids.forEach((g) => {
           if (g.rendered && !g.isDestroyed && g.getEl()?.dom?.ownerDocument === doc) {
             const view = g.getView();
-            if (view && view.getNodes) {
-              rowsToProcess.push(...view.getNodes());
-            }
+            if (view && view.getNodes) rowsToProcess.push(...view.getNodes());
           }
         });
       }
     } catch (e) {
     }
-    if (rowsToProcess.length === 0) {
-      rowsToProcess = doc.querySelectorAll(".x-grid-item");
-    }
+    if (rowsToProcess.length === 0) rowsToProcess = doc.querySelectorAll(".x-grid-item");
     rowsToProcess.forEach((row) => {
       try {
         const textLen = row.textContent.length;
@@ -4625,109 +4728,14 @@
         const rowMatches = activeRules.filter((r) => r.regex.test(lowerText));
         const fillRule = rowMatches.find((r) => r.fill);
         const tagRulesCount = rowMatches.filter((r) => r.showTag).length;
-        if (cached && cached.len === textLen && cached.text === lowerText && cached.gen === _rowCacheGeneration) {
-          return;
-        }
-        const currentRuleId = row.getAttribute("data-cc-rule");
-        const hasNametags = row.querySelector(".apm-nametag");
-        const hasLinkified = row.getAttribute("data-apm-linkified") === "true";
-        const hasPtpTag = row.querySelector(".apm-ptp-status-tag");
-        const containsWoNum = /[123]\d{8,}/.test(lowerText);
-        const isVisuallyIncomplete = fillRule && !currentRuleId || tagRulesCount > 0 && !hasNametags || containsWoNum && !hasLinkified || containsWoNum && apmGeneralSettings?.ptpTrackingEnabled && !hasPtpTag;
+        const isVisuallyIncomplete = fillRule && !row.getAttribute("data-cc-rule") || tagRulesCount > 0 && !row.querySelector(".apm-nametag") || /[123]\d{8,}/.test(lowerText) && (row.getAttribute("data-apm-linkified") !== "true" || apmGeneralSettings?.ptpTrackingEnabled && !row.querySelector(".apm-ptp-status-tag"));
         if (cached && cached.len === textLen && cached.text === lowerText && cached.gen === _rowCacheGeneration && !isVisuallyIncomplete) {
           return;
         }
         _rowCache.set(row, { len: textLen, text: lowerText, gen: _rowCacheGeneration });
-        if (fillRule) {
-          row.setAttribute("data-cc-rule", fillRule.id);
-          const rgb = hexToRgbVals(fillRule.color);
-          const baseOp = settings && settings.uniformHighlight ? "0.22" : "0.15";
-          row.style.setProperty("--cc-row-bg", `rgba(${rgb}, ${baseOp})`);
-          row.style.setProperty("--cc-row-bg-alt", `rgba(${rgb}, 0.22)`);
-          row.style.setProperty("--cc-row-bg-hover", `rgba(${rgb}, 0.30)`);
-          row.style.setProperty("--cc-row-bg-sel", `rgba(${rgb}, 0.45)`);
-        } else if (row.hasAttribute("data-cc-rule")) {
-          row.removeAttribute("data-cc-rule");
-          row.style.removeProperty("--cc-row-bg");
-          row.style.removeProperty("--cc-row-bg-alt");
-          row.style.removeProperty("--cc-row-bg-hover");
-          row.style.removeProperty("--cc-row-bg-sel");
-        }
+        applyRowColoring(row, fillRule, settings);
         const cells = row.querySelectorAll(".x-grid-cell-inner");
-        cells.forEach((cell) => {
-          const cellText = cell.textContent;
-          const lowerCellText = cellText.toLowerCase();
-          if (!cell.querySelector(".apm-wo-link")) {
-            const match = cellText.match(PTP_LINK_CONFIG.woPattern);
-            if (match) {
-              const woNum = match[1];
-              const safeUrl = buildSafeWoUrl(woNum);
-              const isNewTab = apmGeneralSettings?.openLinksInNewTab;
-              const targetAttr = isNewTab ? 'target="_blank"' : "";
-              const onclickAttr = isNewTab ? "" : `onclick="event.preventDefault(); event.stopPropagation(); window.top.location.href='${safeUrl}'; return false;"`;
-              cell.innerHTML = `<span style="white-space:nowrap"><a class="apm-wo-link" href="${safeUrl}" ${targetAttr} ${onclickAttr}>${woNum}</a><span class="apm-copy-icon" title="Copy link to clipboard" data-wo-copy-url="${safeUrl}"></span></span>`;
-              cell.setAttribute("data-apm-linkified", "true");
-              cell.setAttribute("data-wo-num", woNum);
-            }
-          }
-          if (apmGeneralSettings.ptpTrackingEnabled && cell.hasAttribute("data-wo-num")) {
-            const woNum = cell.getAttribute("data-wo-num");
-            const ptpRecord = ptpHistory[woNum];
-            const existingPtpTag = cell.querySelector(".apm-ptp-status-tag");
-            if (ptpRecord) {
-              const s = ptpRecord.status;
-              let icon = "\u23F3", statusTxt = "Incomplete", color = "#f39c12";
-              if (s === "COMPLETE") {
-                icon = "\u2705";
-                statusTxt = "Completed";
-                color = "var(--text-color)";
-              } else if (s === "CANCELLED") {
-                icon = "\u{1F6AB}";
-                statusTxt = "Cancelled";
-                color = "#e74c3c";
-              }
-              const titleTxt = `${statusTxt} PTP on ${new Date(ptpRecord.time).toLocaleDateString()}`;
-              if (!existingPtpTag) {
-                cell.insertAdjacentHTML("beforeend", `<div class="apm-ptp-status-tag" title="${titleTxt}" style="font-size: 11px; margin-top: 4px; display: inline-flex; align-items: center; gap: 4px; color: ${color}; opacity: 0.9;"><span style="font-size:12px;">${icon}</span> PTP</div>`);
-              } else if (existingPtpTag.title !== titleTxt) {
-                existingPtpTag.title = titleTxt;
-                existingPtpTag.style.color = color;
-                existingPtpTag.querySelector("span").textContent = icon;
-              }
-            } else if (existingPtpTag) {
-              existingPtpTag.remove();
-            }
-          } else if (!apmGeneralSettings.ptpTrackingEnabled) {
-            const existingPtpTag = cell.querySelector(".apm-ptp-status-tag");
-            if (existingPtpTag) existingPtpTag.remove();
-          }
-          cell.querySelectorAll(".apm-nametag").forEach((tag) => {
-            const ruleId = parseFloat(tag.getAttribute("data-cc-id"));
-            if (!rowMatches.some((r) => r.id === ruleId && r.showTag)) {
-              tag.remove();
-            }
-          });
-          rowMatches.forEach((rule) => {
-            if (!rule.showTag || !rule.tag) return;
-            if (!rule.regex.test(lowerCellText)) {
-              const existing = cell.querySelector(`.apm-nametag[data-cc-id="${rule.id}"]`);
-              if (existing) existing.remove();
-              return;
-            }
-            const safeId = rule.id.toString().replace(".", "_");
-            const formattedTagText = rule.tag.replace(/\\n/g, "<br>");
-            const allTermsCsv = rule.search || "";
-            let existingTag = cell.querySelector(`.apm-nametag[data-cc-id="${rule.id}"]`);
-            if (!existingTag) {
-              cell.insertAdjacentHTML("beforeend", `<div class="apm-nametag" style="background-color: var(--cc-color-${safeId})" title="Click to filter" data-cc-id="${rule.id}" data-filter-kw="${allTermsCsv}">${formattedTagText}</div>`);
-            } else {
-              existingTag.style.backgroundColor = `var(--cc-color-${safeId})`;
-              existingTag.setAttribute("data-filter-kw", allTermsCsv);
-              if (existingTag.innerHTML !== formattedTagText) existingTag.innerHTML = formattedTagText;
-            }
-          });
-        });
-        _rowCache.set(row, { len: textLen, text: lowerText, gen: _rowCacheGeneration });
+        cells.forEach((cell) => applyCellProcessors(cell, rowMatches, ptpHistory));
       } catch (e) {
         APMLogger.error("ColorCode", "Row processing error:", e);
       }
