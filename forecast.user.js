@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         APM Master: Unified Tools
 // @namespace    https://w.amazon.com/bin/view/Users/rosendah/APM-Master/
-// @version      14.3.8
+// @version      14.5.1
 // @description  Quality of life and automation tool that uses native EAM ExtJS Framework functions for high reliability and capability. This is actively supported tool so Slack me or submit bug report/feature request through the bug report button in the menu.
 // @author       Jacob Rosendahl
 // @icon         https://media.licdn.com/dms/image/v2/D5603AQGdCV0_LQKRfQ/profile-displayphoto-scale_100_100/B56ZyZLvQ5HgAg-/0/1772096519061?e=1773878400&v=beta&t=eWO1Jiy0-WbzG_yBv-SBrmmsVOPMexF57-q1Xh_VXCk
@@ -13,8 +13,6 @@
 // @match        https://*.apm-es.gps.amazon.dev/*
 // @match        https://*.hexagon.com/*
 // @match        https://*.octave.com/*
-// @updateURL    https://drive.corp.amazon.com/view/rosendah@/greasemonkey_scripts/APM-Master/forecast.user.js
-// @downloadURL  https://drive.corp.amazon.com/view/rosendah@/greasemonkey_scripts/APM-Master/forecast.user.js
 // @run-at       document-start
 // @grant        GM_addStyle
 // @grant        GM_addElement
@@ -37,8 +35,56 @@
       __defProp(target, name, { get: all[name], enumerable: true });
   };
 
+  // src/core/context.js
+  var mainWin, hostname, url, AppContext, FLAGS;
+  var init_context = __esm({
+    "src/core/context.js"() {
+      mainWin = typeof unsafeWindow !== "undefined" ? unsafeWindow : window;
+      hostname = mainWin.location.hostname.toLowerCase();
+      url = mainWin.location.href.toLowerCase();
+      AppContext = Object.freeze({
+        hostname,
+        // Core Domains
+        isEAM: hostname.includes("hxgnsmartcloud.com"),
+        isPTP: /amazon\.dev|insights/i.test(hostname),
+        isLanding: hostname.includes("octave.com") || hostname.includes("hexagon.com"),
+        isShell: url.includes("/base/common"),
+        // Auth / Transition Domains
+        isIDP: hostname.includes("federate.amazon.com"),
+        isSSO: hostname.includes("sso."),
+        isSAML: url.includes("saml"),
+        isSubmit: document.title === "Submit Form",
+        // Frame Context
+        isTop: window === window.top,
+        // Logic Aggregates
+        get shouldInitUI() {
+          return this.isEAM || this.isPTP;
+        },
+        get isTransition() {
+          return this.isIDP || this.isSubmit || (this.isSSO || this.isSAML) && !this.isEAM && !this.isPTP;
+        },
+        get shouldSkipBoot() {
+          return this.isLanding || this.isIDP || this.isSSO;
+        }
+      });
+      FLAGS = Object.freeze({
+        CORE_INIT: "__apm_core_initialized",
+        BOOT_EXTJS: "__apm_boot_extjs_ready",
+        AJAX_HOOK: "__apm_ajax_hooked",
+        STORAGE_PATCH: "__apm_storage_patched",
+        THEME_UNLOAD: "__apm_theme_unload_bound",
+        THEME_MSG: "__apm_theme_msg_bound",
+        CONSISTENCY_BOUND: "__apm_consistency_bound",
+        GRID_HOOK: "__apm_grid_hooked",
+        TAB_CAPTURED: "__apm_tab_defaults_captured",
+        FORECAST_TOGGLE: "__apm_forecast_toggle_bound",
+        HOTKEYS_BOUND: "__apm_hotkeys_bound"
+      });
+    }
+  });
+
   // src/core/constants.js
-  var KEY_THEME, CC_STORAGE_RULES, CC_STORAGE_SET, PRESET_STORAGE_KEY, STORAGE_KEY, APM_GENERAL_STORAGE, CURRENT_VERSION, VERSION_CHECK_URL, UPDATE_URL, LABOR_EMPS_STORAGE, LABOR_ACTIVE_STORAGE, LABOR_DOCK_STORAGE, BETA_VERSION_CHECK_URL, BETA_UPDATE_URL, LOG_LEVELS, DEFAULT_TENANT, SESSION_TIMEOUT_URL, LINK_CONFIG;
+  var KEY_THEME, CC_STORAGE_RULES, CC_STORAGE_SET, PRESET_STORAGE_KEY, STORAGE_KEY, APM_GENERAL_STORAGE, CURRENT_VERSION, VERSION_CHECK_URL, UPDATE_URL, LABOR_EMPS_STORAGE, LABOR_ACTIVE_STORAGE, LABOR_DOCK_STORAGE, LABOR_PREFS_STORAGE, LABOR_NIGHT_SHIFT_KEY, LABOR_LAST_EMP_KEY, SESSION_STORAGE_KEY, PTP_HISTORY_KEY, UPDATE_CHECK_KEY, CONFLICT_WARNED_KEY, MIGRATIONS_DONE_KEY, BETA_VERSION_CHECK_URL, BETA_UPDATE_URL, LOG_LEVELS, DEFAULT_TENANT, SESSION_TIMEOUT_URL, LINK_CONFIG;
   var init_constants = __esm({
     "src/core/constants.js"() {
       KEY_THEME = "apm_v1_ui_theme";
@@ -47,12 +93,20 @@
       PRESET_STORAGE_KEY = "apm_v1_autofill_presets";
       STORAGE_KEY = "apm_v1_forecast_prefs";
       APM_GENERAL_STORAGE = "apm_v1_general_settings";
-      CURRENT_VERSION = "14.3.7";
+      CURRENT_VERSION = "14.5.1";
       VERSION_CHECK_URL = "https://raw.githubusercontent.com/jaker788-create/APM-Master/Automation/forecast.user.js";
       UPDATE_URL = "https://github.com/jaker788-create/APM-Master/releases/download/Automation/forecast.user.js";
       LABOR_EMPS_STORAGE = "apm_v1_labor_employees";
       LABOR_ACTIVE_STORAGE = "apm_v1_labor_active";
       LABOR_DOCK_STORAGE = "apm_v1_labor_dock";
+      LABOR_PREFS_STORAGE = "apm_v1_labor_prefs";
+      LABOR_NIGHT_SHIFT_KEY = "apmNightShiftOn";
+      LABOR_LAST_EMP_KEY = "apmLastKnownEmpId";
+      SESSION_STORAGE_KEY = "ApmSession";
+      PTP_HISTORY_KEY = "apm_ptp_history";
+      UPDATE_CHECK_KEY = "apm_last_update_check";
+      CONFLICT_WARNED_KEY = "apm_better_apm_warned";
+      MIGRATIONS_DONE_KEY = "apm_v1_migrations_done";
       BETA_VERSION_CHECK_URL = "https://raw.githubusercontent.com/jaker788-create/APM-Master/Beta/forecast.user.js";
       BETA_UPDATE_URL = "https://github.com/jaker788-create/APM-Master/releases/download/Beta/forecast.user.js";
       LOG_LEVELS = {
@@ -72,209 +126,9 @@
     }
   });
 
-  // src/core/logger.js
-  var currentNumericLevel, APMLogger;
-  var init_logger = __esm({
-    "src/core/logger.js"() {
-      init_constants();
-      currentNumericLevel = LOG_LEVELS.ERROR;
-      APMLogger = {
-        setLevel: (level) => {
-          if (typeof level === "number") {
-            currentNumericLevel = level;
-          } else {
-            const l = (level || "ERROR").toUpperCase();
-            currentNumericLevel = LOG_LEVELS[l] ?? LOG_LEVELS.ERROR;
-          }
-        },
-        error: (tag, ...args) => {
-          if (currentNumericLevel >= LOG_LEVELS.ERROR) {
-            console.error(`[${tag}]`, ...args);
-          }
-        },
-        warn: (tag, ...args) => {
-          if (currentNumericLevel >= LOG_LEVELS.WARN) {
-            console.warn(`[${tag}]`, ...args);
-          }
-        },
-        info: (tag, ...args) => {
-          if (currentNumericLevel >= LOG_LEVELS.INFO) {
-            console.info(`[${tag}]`, ...args);
-          }
-        },
-        debug: (tag, ...args) => {
-          if (currentNumericLevel >= LOG_LEVELS.DEBUG) {
-            console.log(`[${tag}]`, ...args);
-          }
-        },
-        verbose: (tag, ...args) => {
-          if (currentNumericLevel >= LOG_LEVELS.VERBOSE) {
-            console.log(`[${tag}]`, ...args);
-          }
-        },
-        isLevel: (level) => {
-          let numeric;
-          if (typeof level === "number") {
-            numeric = level;
-          } else {
-            const l = (level || "ERROR").toUpperCase();
-            numeric = LOG_LEVELS[l] ?? LOG_LEVELS.ERROR;
-          }
-          return currentNumericLevel >= numeric;
-        }
-      };
-    }
-  });
-
-  // src/core/toast.js
-  function showToast(msg, color, keepOpen = false) {
-    let t = document.getElementById("apm-global-toast");
-    if (!t) {
-      t = document.createElement("div");
-      t.id = "apm-global-toast";
-      t.style.cssText = "position:fixed; top:15px; left:50%; transform:translateX(-50%); z-index:9999999; padding:8px 20px; border-radius:30px; font-weight:bold; font-family:sans-serif; font-size:13px; color:white; opacity:0; pointer-events:none; transition:opacity 0.3s ease; box-shadow:0 4px 15px rgba(0,0,0,0.4);";
-      document.body.appendChild(t);
-    }
-    if (!msg) {
-      t.style.opacity = "0";
-      setTimeout(() => {
-        t.style.display = "none";
-      }, 300);
-      return;
-    }
-    t.textContent = msg;
-    t.style.background = color || "#3498db";
-    t.style.display = "block";
-    setTimeout(() => t.style.opacity = "1", 10);
-    if (window._apmToastTO) clearTimeout(window._apmToastTO);
-    if (!keepOpen) {
-      const duration = 5e3;
-      window._apmToastTO = setTimeout(() => {
-        t.style.opacity = "0";
-        setTimeout(() => t.style.display = "none", 300);
-      }, duration);
-    }
-  }
-  var init_toast = __esm({
-    "src/core/toast.js"() {
-    }
-  });
-
-  // src/core/migration-manager.js
-  var isFunctionallyEmpty, MigrationManager;
-  var init_migration_manager = __esm({
-    "src/core/migration-manager.js"() {
-      init_constants();
-      init_logger();
-      init_utils();
-      init_storage();
-      isFunctionallyEmpty = (raw) => {
-        if (!raw || raw === "null" || raw === "{}" || raw === "[]") return true;
-        try {
-          const parsed = typeof raw === "string" ? JSON.parse(raw) : raw;
-          if (Array.isArray(parsed)) return parsed.length === 0;
-          if (typeof parsed === "object") {
-            if (parsed.orgs && Array.isArray(parsed.orgs) && parsed.orgs.length === 0 && !parsed.selectedOrg) return true;
-            return Object.keys(parsed).length === 0;
-          }
-        } catch (e) {
-        }
-        return false;
-      };
-      MigrationManager = {
-        run() {
-          if (!isTopFrame()) return;
-          if (window.__apmMigrationRan) return;
-          window.__apmMigrationRan = true;
-          APMLogger.info("Migration", "Starting data migration...");
-          this.migrateGeneralSettings();
-          this.migrateAutofillPresets();
-          this.migrateColorCode();
-          this.migrateForecast();
-          this.migrateLabor();
-          this.promoteToGlobal();
-          APMLogger.info("Migration", "Migration complete.");
-        },
-        promoteToGlobal() {
-          const v1Keys = [
-            APM_GENERAL_STORAGE,
-            PRESET_STORAGE_KEY,
-            CC_STORAGE_RULES,
-            CC_STORAGE_SET,
-            STORAGE_KEY,
-            LABOR_EMPS_STORAGE,
-            LABOR_ACTIVE_STORAGE,
-            LABOR_DOCK_STORAGE,
-            KEY_THEME,
-            "apmNightShiftOn",
-            "apmLastKnownEmpId"
-          ];
-          v1Keys.forEach((key) => {
-            APMStorage.get(key);
-          });
-        },
-        migrateGeneralSettings() {
-          this.safeMigrate("ApmGeneralSettings", APM_GENERAL_STORAGE);
-          this.safeMigrate("apmUiTheme", KEY_THEME);
-        },
-        migrateAutofillPresets() {
-          this.safeMigrate("apm_creator_presets_v1", PRESET_STORAGE_KEY);
-          this.safeMigrate("apm_preset_store", PRESET_STORAGE_KEY);
-        },
-        migrateColorCode() {
-          this.safeMigrate("apm_colorcode_rules", CC_STORAGE_RULES);
-          this.safeMigrate("apm_colorcode_settings", CC_STORAGE_SET);
-          this.safeMigrate("ApmColorCodeRules", CC_STORAGE_RULES);
-          this.safeMigrate("ApmColorCodeSettings", CC_STORAGE_SET);
-        },
-        migrateForecast() {
-          this.safeMigrate("eam_forecast_prefs", STORAGE_KEY, (oldData) => {
-            if (oldData && typeof oldData === "object") {
-              if (oldData.profiles && !oldData.customProfiles) oldData.customProfiles = oldData.profiles;
-              if (oldData.dataspys && !oldData.customProfiles) oldData.customProfiles = oldData.dataspys;
-            }
-            return oldData;
-          });
-        },
-        migrateLabor() {
-          this.safeMigrate("apmLaborSavedEmps", LABOR_EMPS_STORAGE);
-          this.safeMigrate("apmLaborActiveEmp", LABOR_ACTIVE_STORAGE);
-          this.safeMigrate("apmLaborDockPos", LABOR_DOCK_STORAGE);
-        },
-        safeMigrate(legacyKey, v1Key, transform = (d) => d) {
-          try {
-            const v1InGM = typeof GM_getValue !== "undefined" ? GM_getValue(v1Key) : null;
-            if (v1InGM && !isFunctionallyEmpty(v1InGM)) return;
-            const v1Local = localStorage.getItem(v1Key);
-            const legacyRaw = localStorage.getItem(legacyKey);
-            if (!legacyRaw || legacyRaw === "null" || legacyRaw === "{}" || legacyRaw === "[]") return;
-            const v1Empty = isFunctionallyEmpty(v1Local);
-            if (v1Empty && legacyRaw && !isFunctionallyEmpty(legacyRaw)) {
-              APMLogger.info("Migration", `MIGRATING: ${legacyKey} -> ${v1Key} (Global)`);
-              let dataToSave = legacyRaw;
-              if (transform) {
-                try {
-                  const parsed = JSON.parse(legacyRaw);
-                  const transformed = transform(parsed);
-                  dataToSave = JSON.stringify(transformed);
-                } catch (e) {
-                  dataToSave = legacyRaw;
-                }
-              }
-              APMStorage.set(v1Key, dataToSave);
-            }
-          } catch (e) {
-            APMLogger.error("Migration", `Error migrating ${legacyKey}:`, e);
-          }
-        }
-      };
-    }
-  });
-
   // src/core/state.js
   function initializeGeneralSettings() {
     if (_settingsInitialized) return apmGeneralSettings;
-    MigrationManager.run();
     let stored = APMStorage.get(APM_GENERAL_STORAGE);
     let parsed = null;
     if (stored) {
@@ -308,6 +162,7 @@
     return apmGeneralSettings;
   }
   function saveGeneralSettings() {
+    apmGeneralSettings._v = 1;
     APMStorage.set(APM_GENERAL_STORAGE, apmGeneralSettings);
     try {
       const domain = ".hxgnsmartcloud.com";
@@ -315,7 +170,8 @@
       const syncData = {
         autoRedirect: apmGeneralSettings.autoRedirect,
         dateFormat: apmGeneralSettings.dateFormat,
-        dateSeparator: apmGeneralSettings.dateSeparator
+        dateSeparator: apmGeneralSettings.dateSeparator,
+        updateTrack: apmGeneralSettings.updateTrack
       };
       document.cookie = `apm_gen_settings=${encodeURIComponent(JSON.stringify(syncData))}; domain=${domain}; path=/; expires=${expiry}; SameSite=Lax`;
     } catch (e) {
@@ -332,7 +188,6 @@
       init_utils();
       init_logger();
       init_storage();
-      init_migration_manager();
       AppState = {
         // Forecast
         forecast: {
@@ -349,8 +204,10 @@
           presets: {
             autofill: {},
             config: {
-              columnOrder: "",
-              tabOrder: "",
+              columnOrders: {},
+              // Keyed by SYSTEM_FUNCTION_NAME
+              tabOrders: {},
+              // Keyed by SYSTEM_FUNCTION_NAME
               hiddenTabs: []
             }
           }
@@ -393,8 +250,10 @@
         dateOverrideEnabled: true,
         logLevel: "error",
         // error, warn, info, debug, verbose
-        updateTrack: "stable"
+        updateTrack: "stable",
         // stable, beta
+        flags: {}
+        // Phase 9: Feature Flags
       };
       apmGeneralSettings = { ...DEFAULT_SETTINGS };
       _settingsInitialized = false;
@@ -408,7 +267,7 @@
   function isWindowAccessible(win) {
     if (!win) return false;
     try {
-      return !!(win.location && win.document && typeof win.location.href === "string");
+      return !!(win.location && typeof win.location.href === "string");
     } catch (e) {
       return false;
     }
@@ -429,6 +288,7 @@
     const root = apmGetGlobalWindow();
     const wins = /* @__PURE__ */ new Set();
     const gather = (win) => {
+      if (!isWindowAccessible(win)) return;
       try {
         if (win.Ext) wins.add(win);
         for (let i = 0; i < win.frames.length; i++) {
@@ -437,7 +297,8 @@
       } catch (e) {
       }
     };
-    gather(root.top);
+    const rootTop = root.top;
+    if (isWindowAccessible(rootTop)) gather(rootTop);
     gather(root);
     return [...wins];
   }
@@ -446,14 +307,10 @@
     const docs = /* @__PURE__ */ new Set();
     const wins = /* @__PURE__ */ new Set();
     const gather = (win) => {
-      if (!win || wins.has(win)) return;
+      if (!win || wins.has(win) || !isWindowAccessible(win)) return;
       try {
         wins.add(win);
-        let doc = null;
-        try {
-          doc = win.document;
-        } catch (e) {
-        }
+        let doc = win.document;
         if (doc) {
           docs.add(doc);
           doc.querySelectorAll("iframe").forEach((f) => {
@@ -467,11 +324,16 @@
       } catch (e) {
       }
     };
-    gather(root.top);
+    const rootTop = root.top;
+    if (isWindowAccessible(rootTop)) gather(rootTop);
     gather(root);
     return [...docs];
   }
-  function findMainGrid() {
+  function findMainGrid(invalidate = false) {
+    if (invalidate) {
+      _mainGridCache = null;
+      _lastGridCheck = 0;
+    }
     const now = performance.now();
     if (_mainGridCache && now - _lastGridCheck < GRID_CACHE_TTL) {
       if (!_mainGridCache.grid.isDestroyed && _mainGridCache.grid.rendered) {
@@ -499,6 +361,26 @@
     _mainGridCache = null;
     APMLogger.info("Utils", `findMainGrid found NOTHING in ${wins.length} windows`);
     return null;
+  }
+  function apmGetActiveFunctionName() {
+    const wins = getExtWindows();
+    for (const win of wins) {
+      try {
+        const params = new URLSearchParams(win.location.search);
+        const func = params.get("SYSTEM_FUNCTION_NAME");
+        if (func && func !== "WSTABS" && func !== "WSFLTR") return func;
+      } catch (e) {
+      }
+    }
+    for (const win of wins) {
+      try {
+        const params = new URLSearchParams(win.location.search);
+        const func = params.get("SYSTEM_FUNCTION_NAME");
+        if (func) return func;
+      } catch (e) {
+      }
+    }
+    return "GLOBAL";
   }
   function formatDate(d) {
     if (!d || isNaN(d.getTime())) return "";
@@ -806,6 +688,450 @@
     }
   });
 
+  // src/core/recovery.js
+  var Recovery;
+  var init_recovery = __esm({
+    "src/core/recovery.js"() {
+      init_storage();
+      init_constants();
+      Recovery = {
+        /**
+         * Remove stuck preview rules from ColorCode storage.
+         * Safe operation that only removes rules marked as __preview__ / _isPreview.
+         * @returns {Object} { success: boolean, message: string, removed: number, remaining: number }
+         */
+        removePreviewRules() {
+          try {
+            const stored = APMStorage.get(CC_STORAGE_RULES);
+            if (!stored) {
+              return {
+                success: false,
+                message: "No ColorCode rules found in storage",
+                removed: 0,
+                remaining: 0
+              };
+            }
+            let rules = Array.isArray(stored) ? stored : stored.rules || [];
+            if (!Array.isArray(rules)) {
+              return {
+                success: false,
+                message: "Rules data has unexpected format",
+                removed: 0,
+                remaining: 0
+              };
+            }
+            const previewRules = rules.filter((r) => r._isPreview || r.id === "__preview__");
+            if (previewRules.length === 0) {
+              return {
+                success: true,
+                message: `\u2705 Your data is clean! Found ${rules.length} saved rules with no preview rules.`,
+                removed: 0,
+                remaining: rules.length
+              };
+            }
+            const cleanedRules = rules.filter((r) => !r._isPreview && r.id !== "__preview__");
+            const dataToSave = stored._v ? { _v: 1, rules: cleanedRules } : cleanedRules;
+            APMStorage.set(CC_STORAGE_RULES, dataToSave);
+            return {
+              success: true,
+              message: `\u2705 SUCCESS! Removed ${previewRules.length} preview rule(s). Your ${cleanedRules.length} saved rules are intact. Refresh to see changes.`,
+              removed: previewRules.length,
+              remaining: cleanedRules.length
+            };
+          } catch (error) {
+            return {
+              success: false,
+              message: `\u274C Error: ${error.message}`,
+              removed: 0,
+              remaining: 0
+            };
+          }
+        }
+      };
+    }
+  });
+
+  // src/core/api.js
+  var APMApi;
+  var init_api = __esm({
+    "src/core/api.js"() {
+      init_context();
+      init_recovery();
+      APMApi = {
+        /** 
+         * The raw global _APM object.
+         * @private
+         * @type {PublicAPI} 
+         */
+        _api: null,
+        /**
+         * Initialize the API on the specified window.
+         * @param {Window} win 
+         */
+        init(win = mainWin) {
+          if (!win._APM) {
+            win._APM = {};
+          }
+          this._api = win._APM;
+        },
+        /**
+         * Register a service or value.
+         * @param {keyof PublicAPI} key 
+         * @param {any} value 
+         */
+        register(key, value) {
+          if (!this._api) this.init();
+          this._api[key] = value;
+        },
+        /**
+         * Retrieve a service or value.
+         * @param {keyof PublicAPI} key 
+         * @returns {any}
+         */
+        get(key) {
+          if (!this._api) this.init();
+          return this._api[key];
+        },
+        // Typed Accessors for critical paths
+        get invalidateColorCodeCache() {
+          return this.get("invalidateColorCodeCache");
+        },
+        get bindConsistencyListeners() {
+          return this.get("bindConsistencyListeners");
+        },
+        get handleGlobalClick() {
+          return this.get("handleGlobalClick");
+        },
+        get triggerDiscoveryBurst() {
+          return this.get("triggerDiscoveryBurst");
+        },
+        get triggerResponsiveInjections() {
+          return this.get("triggerResponsiveInjections");
+        },
+        get checkSession() {
+          return this.get("checkSession");
+        },
+        get forceRedirect() {
+          return this.get("forceRedirect");
+        },
+        get applyNametagFilter() {
+          return this.get("applyNametagFilter");
+        },
+        get buildForecastUI() {
+          return this.get("buildForecastUI");
+        },
+        get buildSettingsPanel() {
+          return this.get("buildSettingsPanel");
+        },
+        /**
+         * Recovery utilities for fixing data corruption and stuck state.
+         */
+        get recovery() {
+          return Recovery;
+        }
+      };
+      if (typeof mainWin !== "undefined") {
+        mainWin.APMApi = APMApi;
+        if (!mainWin._APM) mainWin._APM = {};
+        mainWin._APM.recovery = Recovery;
+      }
+      if (typeof window !== "undefined") {
+        window.APMApi = APMApi;
+        if (!window._APM) window._APM = {};
+        window._APM.recovery = Recovery;
+      }
+      if (typeof unsafeWindow !== "undefined") {
+        unsafeWindow.APMApi = APMApi;
+        if (!unsafeWindow._APM) unsafeWindow._APM = {};
+        unsafeWindow._APM.recovery = Recovery;
+      }
+    }
+  });
+
+  // src/core/diagnostics.js
+  var MAX_ERRORS, Diagnostics;
+  var init_diagnostics = __esm({
+    "src/core/diagnostics.js"() {
+      init_api();
+      init_context();
+      MAX_ERRORS = 50;
+      Diagnostics = {
+        bootTimings: {},
+        // { [phase]: durationMs }
+        perfMetrics: {
+          // Aggregated telemetry
+          colorCode: [],
+          // Last 20 durations
+          eamQuery: [],
+          // Last 20 latencies
+          scheduler: {}
+          // { [taskName]: avgDuration }
+        },
+        errors: [],
+        // last 50 errors with timestamps
+        startTime: Date.now(),
+        /**
+         * Record a timing landmark.
+         * @param {string} phase 
+         * @param {number} durationMs 
+         */
+        recordTiming(phase, durationMs) {
+          this.bootTimings[phase] = durationMs;
+        },
+        /**
+         * Record a performance metric with rolling average.
+         * @param {string} key 
+         * @param {number} value 
+         */
+        recordPerformance(key, value) {
+          if (!this.perfMetrics[key]) this.perfMetrics[key] = [];
+          this.perfMetrics[key].unshift(value);
+          if (this.perfMetrics[key].length > 20) this.perfMetrics[key].pop();
+        },
+        /**
+         * Records scheduler task execution duration.
+         */
+        recordSchedulerTask(name, duration) {
+          if (!this.perfMetrics.scheduler[name]) {
+            this.perfMetrics.scheduler[name] = { count: 0, total: 0, max: 0 };
+          }
+          const m = this.perfMetrics.scheduler[name];
+          m.count++;
+          m.total += duration;
+          m.max = Math.max(m.max, duration);
+        },
+        /**
+         * Add an error to the circular buffer.
+         * @param {Object} errObj 
+         */
+        addError(errObj) {
+          this.errors.unshift({
+            timestamp: (/* @__PURE__ */ new Date()).toISOString(),
+            ...errObj
+          });
+          if (this.errors.length > MAX_ERRORS) {
+            this.errors.pop();
+          }
+        },
+        /**
+         * Captures a snapshot of the current scheduler state.
+         * @returns {Object}
+         */
+        schedulerSnapshot() {
+          try {
+            const scheduler = APMApi.get("scheduler");
+            if (!scheduler) return { status: "missing" };
+            return { status: "active", tasks: scheduler.getTasks ? scheduler.getTasks() : "unknown" };
+          } catch (e) {
+            return { status: "error", message: e.message };
+          }
+        },
+        /**
+         * Captures status of iframe observers and style injections.
+         * @returns {Object}
+         */
+        frameSnapshot() {
+          const results = {
+            top: {
+              hotkeys: !!window[FLAGS.HOTKEYS_BOUND],
+              styles: !!document.getElementById("apm-static-styles")
+            },
+            frames: []
+          };
+          try {
+            document.querySelectorAll("iframe").forEach((f) => {
+              const info = { id: f.id, accessible: false };
+              try {
+                const win = f.contentWindow;
+                const doc = f.contentDocument;
+                if (win && doc) {
+                  info.accessible = true;
+                  info.url = win.location.href;
+                  info.gridFound = !!doc.querySelector(".x-grid-item");
+                  info.ccFound = !!doc.querySelector("[data-cc-rule]");
+                  info.tagsFound = !!doc.querySelector(".apm-nametag");
+                  info.styles = !!doc.getElementById("apm-static-styles") || doc.adoptedStyleSheets && doc.adoptedStyleSheets.length > 0;
+                }
+              } catch (e) {
+                info.error = "Cross-origin or blocked";
+              }
+              results.frames.push(info);
+            });
+          } catch (e) {
+            results.error = e.message;
+          }
+          return results;
+        },
+        /**
+         * Monitor a specific element for mutations (Sentinel logic).
+         * @param {string} selector 
+         */
+        watchElement(selector) {
+          const target = document.querySelector(selector);
+          if (!target) return false;
+          const observer = new MutationObserver((mutations) => {
+            this.addError({
+              tag: "Sentinel",
+              message: `Mutation detected on ${selector}: ${mutations.length} changes.`
+            });
+            console.warn("[Diagnostics] Sentinel alert:", mutations);
+          });
+          observer.observe(target, { childList: true, subtree: true, attributes: true });
+          return true;
+        },
+        /**
+         * Calculates summary statistics for the UI.
+         * @returns {Object}
+         */
+        getPerformanceSummary() {
+          const stats = {
+            boot: this.bootTimings,
+            colorCode: this.calculateStats(this.perfMetrics.colorCode),
+            eamQuery: this.calculateStats(this.perfMetrics.eamQuery),
+            scheduler: Object.entries(this.perfMetrics.scheduler).map(([name, data]) => ({
+              name,
+              avg: (data.total / data.count).toFixed(2),
+              max: data.max.toFixed(2),
+              count: data.count
+            })).sort((a, b) => b.avg - a.avg)
+          };
+          return stats;
+        },
+        /**
+         * Internal helper for array stats.
+         */
+        calculateStats(arr) {
+          if (!arr || arr.length === 0) return { avg: 0, p95: 0, count: 0 };
+          const sorted = [...arr].sort((a, b) => a - b);
+          const sum = sorted.reduce((a, b) => a + b, 0);
+          const avg = sum / sorted.length;
+          const p95Idx = Math.floor(sorted.length * 0.95);
+          const p95 = sorted[p95Idx];
+          return {
+            avg: parseFloat(avg.toFixed(2)),
+            p95: parseFloat(p95.toFixed(2)),
+            max: parseFloat(sorted[sorted.length - 1].toFixed(2)),
+            count: arr.length
+          };
+        },
+        /**
+         * Aggregates all diagnostic data into a single object.
+         * @returns {Object}
+         */
+        toJSON() {
+          return {
+            version: "16.0.0",
+            timestamp: (/* @__PURE__ */ new Date()).toISOString(),
+            uptime: Math.floor((Date.now() - this.startTime) / 1e3),
+            bootTimings: this.bootTimings,
+            performance: this.perfMetrics,
+            errors: this.errors,
+            frames: this.frameSnapshot(),
+            userAgent: navigator.userAgent,
+            url: window.location.href
+          };
+        }
+      };
+      APMApi.register("diagnostics", Diagnostics);
+    }
+  });
+
+  // src/core/logger.js
+  var currentNumericLevel, APMLogger;
+  var init_logger = __esm({
+    "src/core/logger.js"() {
+      init_constants();
+      init_diagnostics();
+      currentNumericLevel = LOG_LEVELS.ERROR;
+      APMLogger = {
+        setLevel: (level) => {
+          if (typeof level === "number") {
+            currentNumericLevel = level;
+          } else {
+            const l = (level || "ERROR").toUpperCase();
+            currentNumericLevel = LOG_LEVELS[l] ?? LOG_LEVELS.ERROR;
+          }
+        },
+        error: (tag, ...args) => {
+          if (currentNumericLevel >= LOG_LEVELS.ERROR) {
+            console.error(`[${tag}]`, ...args);
+            try {
+              Diagnostics.addError({
+                tag,
+                message: args.map((a) => typeof a === "object" ? JSON.stringify(a) : String(a)).join(" ")
+              });
+            } catch (e) {
+            }
+          }
+        },
+        warn: (tag, ...args) => {
+          if (currentNumericLevel >= LOG_LEVELS.WARN) {
+            console.warn(`[${tag}]`, ...args);
+          }
+        },
+        info: (tag, ...args) => {
+          if (currentNumericLevel >= LOG_LEVELS.INFO) {
+            console.info(`[${tag}]`, ...args);
+          }
+        },
+        debug: (tag, ...args) => {
+          if (currentNumericLevel >= LOG_LEVELS.DEBUG) {
+            console.log(`[${tag}]`, ...args);
+          }
+        },
+        verbose: (tag, ...args) => {
+          if (currentNumericLevel >= LOG_LEVELS.VERBOSE) {
+            console.log(`[${tag}]`, ...args);
+          }
+        },
+        isLevel: (level) => {
+          let numeric;
+          if (typeof level === "number") {
+            numeric = level;
+          } else {
+            const l = (level || "ERROR").toUpperCase();
+            numeric = LOG_LEVELS[l] ?? LOG_LEVELS.ERROR;
+          }
+          return currentNumericLevel >= numeric;
+        }
+      };
+    }
+  });
+
+  // src/core/toast.js
+  function showToast(msg, color, keepOpen = false) {
+    let t = document.getElementById("apm-global-toast");
+    if (!t) {
+      t = document.createElement("div");
+      t.id = "apm-global-toast";
+      t.style.cssText = "position:fixed; top:15px; left:50%; transform:translateX(-50%); z-index:9999999; padding:8px 20px; border-radius:30px; font-weight:bold; font-family:sans-serif; font-size:13px; color:white; opacity:0; pointer-events:none; transition:opacity 0.3s ease; box-shadow:0 4px 15px rgba(0,0,0,0.4);";
+      document.body.appendChild(t);
+    }
+    if (!msg) {
+      t.style.opacity = "0";
+      setTimeout(() => {
+        t.style.display = "none";
+      }, 300);
+      return;
+    }
+    t.textContent = msg;
+    t.style.background = color || "#3498db";
+    t.style.display = "block";
+    setTimeout(() => t.style.opacity = "1", 10);
+    if (window._apmToastTO) clearTimeout(window._apmToastTO);
+    if (!keepOpen) {
+      const duration = 5e3;
+      window._apmToastTO = setTimeout(() => {
+        t.style.opacity = "0";
+        setTimeout(() => t.style.display = "none", 300);
+      }, duration);
+    }
+  }
+  var init_toast = __esm({
+    "src/core/toast.js"() {
+    }
+  });
+
   // src/core/theme-resolver.js
   var theme_resolver_exports = {};
   __export(theme_resolver_exports, {
@@ -870,6 +1196,118 @@
             APMStorage.set(APM_GENERAL_STORAGE, gen);
           }
         }
+      };
+    }
+  });
+
+  // src/modules/forecast/forecast-prefs.js
+  var forecast_prefs_exports = {};
+  __export(forecast_prefs_exports, {
+    forecastState: () => forecastState,
+    loadPreferences: () => loadPreferences,
+    saveAllPreferences: () => saveAllPreferences,
+    savedOrgs: () => savedOrgs,
+    savedProfiles: () => savedProfiles,
+    selectedOrg: () => selectedOrg,
+    selectedProfileId: () => selectedProfileId,
+    setSavedOrgs: () => setSavedOrgs,
+    setSavedProfiles: () => setSavedProfiles,
+    setSelectedOrg: () => setSelectedOrg,
+    setSelectedProfileId: () => setSelectedProfileId,
+    updateForecastState: () => updateForecastState
+  });
+  function updateForecastState(updates) {
+    forecastState = { ...forecastState, ...updates };
+  }
+  function setSavedOrgs(orgs) {
+    savedOrgs = orgs;
+  }
+  function setSelectedOrg(org) {
+    selectedOrg = org;
+  }
+  function setSavedProfiles(profiles) {
+    savedProfiles = profiles;
+  }
+  function setSelectedProfileId(id) {
+    selectedProfileId = id;
+  }
+  function loadPreferences() {
+    try {
+      const prefs = APMStorage.get(STORAGE_KEY);
+      if (prefs) {
+        if (prefs._v === void 0) {
+          prefs._v = 0;
+          APMLogger.debug("Forecast", "Preferences loaded as legacy v0");
+        }
+        if (prefs.orgs && Array.isArray(prefs.orgs)) {
+          savedOrgs = prefs.orgs.filter((o) => o !== "All Sites" && o !== "-- All Sites --" && o !== "");
+        }
+        selectedOrg = prefs.selectedOrg !== void 0 && (prefs.selectedOrg === "" || savedOrgs.includes(prefs.selectedOrg)) ? prefs.selectedOrg : "";
+        const profilesToLoad = prefs.customProfiles || prefs.profiles || prefs.dataspys;
+        savedProfiles = Array.isArray(profilesToLoad) ? profilesToLoad : [];
+        selectedProfileId = prefs.selectedProfileId || "";
+        forecastState = {
+          week: prefs.week || "0",
+          days: Array.isArray(prefs.days) ? prefs.days : [false, true, true, true, true, true, false],
+          eqText: prefs.eqText || "",
+          eqdescText: prefs.eqdescText || "",
+          typeText: prefs.typeText || "",
+          descOp: prefs.descOp || "Contains",
+          descText: prefs.descText || "",
+          todayOnly: !!prefs.todayOnly,
+          isSimpleMode: prefs.isSimpleMode !== void 0 ? prefs.isSimpleMode : true,
+          isCustomDateMode: !!prefs.isCustomDateMode,
+          customStart: prefs.customStart || "",
+          customEnd: prefs.customEnd || ""
+        };
+        return prefs;
+      }
+    } catch (e) {
+      APMLogger.warn("Forecast", "Failed to load preferences:", e);
+    }
+    savedOrgs = [];
+    selectedOrg = "";
+    return null;
+  }
+  function saveAllPreferences() {
+    const prefsToSave = {
+      _v: 1,
+      ...forecastState,
+      orgs: savedOrgs,
+      selectedOrg,
+      customProfiles: savedProfiles,
+      selectedProfileId
+    };
+    try {
+      APMStorage.set(STORAGE_KEY, prefsToSave);
+    } catch (e) {
+      APMLogger.error("Forecast", "Failed to save preferences:", e);
+    }
+  }
+  var savedOrgs, selectedOrg, savedProfiles, selectedProfileId, forecastState;
+  var init_forecast_prefs = __esm({
+    "src/modules/forecast/forecast-prefs.js"() {
+      init_constants();
+      init_logger();
+      init_storage();
+      savedOrgs = [];
+      selectedOrg = "";
+      savedProfiles = [];
+      selectedProfileId = "";
+      forecastState = {
+        week: "0",
+        days: [false, true, true, true, true, true, false],
+        // Mon-Fri default
+        eqText: "",
+        eqdescText: "",
+        typeText: "",
+        descOp: "Contains",
+        descText: "",
+        todayOnly: false,
+        isSimpleMode: true,
+        isCustomDateMode: false,
+        customStart: "",
+        customEnd: ""
       };
     }
   });
@@ -1079,15 +1517,161 @@
     }
   });
 
+  // src/core/ajax-hooks.js
+  var handlers, AjaxHooks;
+  var init_ajax_hooks = __esm({
+    "src/core/ajax-hooks.js"() {
+      init_logger();
+      init_context();
+      init_utils();
+      handlers = {
+        beforerequest: /* @__PURE__ */ new Map(),
+        requestcomplete: /* @__PURE__ */ new Map(),
+        requestexception: /* @__PURE__ */ new Map()
+      };
+      AjaxHooks = {
+        /**
+         * Register a callback for 'beforerequest'
+         * @param {string} id Unique identifier for the hook
+         * @param {function} fn (conn, options)
+         */
+        onBeforeRequest(id, fn) {
+          handlers.beforerequest.set(id, fn);
+        },
+        /**
+         * Register a callback for 'requestcomplete'
+         * @param {string} id Unique identifier for the hook
+         * @param {function} fn (conn, response, options)
+         */
+        onRequestComplete(id, fn) {
+          handlers.requestcomplete.set(id, fn);
+        },
+        /**
+         * Register a callback for 'requestexception'
+         * @param {string} id Unique identifier for the hook
+         * @param {function} fn (conn, response, options)
+         */
+        onRequestException(id, fn) {
+          handlers.requestexception.set(id, fn);
+        },
+        /**
+         * Install global listeners on a window's Ext.Ajax singleton
+         * @param {Window} win 
+         */
+        install(win) {
+          if (!isWindowAccessible(win) || !win.Ext || !win.Ext.Ajax || win[FLAGS.AJAX_HOOK]) return;
+          APMLogger.debug("AjaxHooks", "Installing global interceptors on window:", win.location.pathname);
+          win.Ext.Ajax.on({
+            beforerequest: (conn, options) => {
+              handlers.beforerequest.forEach((fn, id) => {
+                try {
+                  fn(win, conn, options);
+                } catch (e) {
+                  APMLogger.error("AjaxHooks", `Error in beforerequest hook [${id}]:`, e);
+                }
+              });
+            },
+            requestcomplete: (conn, response, options) => {
+              handlers.requestcomplete.forEach((fn, id) => {
+                try {
+                  fn(win, conn, response, options);
+                } catch (e) {
+                  APMLogger.error("AjaxHooks", `Error in requestcomplete hook [${id}]:`, e);
+                }
+              });
+            },
+            requestexception: (conn, response, options) => {
+              handlers.requestexception.forEach((fn, id) => {
+                try {
+                  fn(win, conn, response, options);
+                } catch (e) {
+                  APMLogger.error("AjaxHooks", `Error in requestexception hook [${id}]:`, e);
+                }
+              });
+            }
+          });
+          win[FLAGS.AJAX_HOOK] = true;
+        }
+      };
+    }
+  });
+
+  // src/core/feature-flags.js
+  var FeatureFlags;
+  var init_feature_flags = __esm({
+    "src/core/feature-flags.js"() {
+      init_state();
+      init_logger();
+      FeatureFlags = {
+        _registry: /* @__PURE__ */ new Map(),
+        /**
+         * Checks if a feature flag is enabled.
+         * @param {string} flag 
+         * @returns {boolean}
+         */
+        isEnabled(flag) {
+          const config = this._registry.get(flag);
+          const defaultValue = config ? config.default : true;
+          if (!apmGeneralSettings.flags) {
+            return defaultValue;
+          }
+          const value = apmGeneralSettings.flags[flag];
+          return value !== void 0 ? value : defaultValue;
+        },
+        /**
+         * Registers a feature flag with a default value and descriptive metadata.
+         * @param {string} flag 
+         * @param {Object} config - { default: boolean, label: string, description: string }
+         */
+        register(flag, config) {
+          this._registry.set(flag, {
+            default: true,
+            label: flag,
+            description: "",
+            ...config
+          });
+          if (!apmGeneralSettings.flags) apmGeneralSettings.flags = {};
+          if (apmGeneralSettings.flags[flag] === void 0) {
+            apmGeneralSettings.flags[flag] = this._registry.get(flag).default;
+          }
+        },
+        /**
+         * Returns all registered flags and their current values.
+         * @returns {Array<{id: string, value: boolean, label: string, description: string}>}
+         */
+        getAll() {
+          return Array.from(this._registry.entries()).map(([id, config]) => ({
+            id,
+            value: this.isEnabled(id),
+            label: config.label,
+            description: config.description
+          }));
+        },
+        /**
+         * Toggles a feature flag and persists the change.
+         * @param {string} flag 
+         * @param {boolean} value 
+         */
+        set(flag, value) {
+          if (!apmGeneralSettings.flags) apmGeneralSettings.flags = {};
+          apmGeneralSettings.flags[flag] = value;
+          setGeneralSetting("flags", apmGeneralSettings.flags);
+          APMLogger.info("FeatureFlags", `Flag '${flag}' set to ${value}`);
+        }
+      };
+    }
+  });
+
   // src/core/scheduler.js
   var scheduler_exports = {};
   __export(scheduler_exports, {
-    APMScheduler: () => APMScheduler
+    APMScheduler: () => APMScheduler2
   });
-  var TaskScheduler, APMScheduler;
+  var TaskScheduler, APMScheduler2;
   var init_scheduler = __esm({
     "src/core/scheduler.js"() {
       init_logger();
+      init_diagnostics();
       TaskScheduler = class {
         constructor() {
           this.tasks = [];
@@ -1146,11 +1730,14 @@
           this.tasks.forEach((task) => {
             if (now - task.lastRun >= task.intervalMs) {
               const runTask = () => {
+                const start = performance.now();
                 try {
                   task.callback();
                 } catch (e) {
                   APMLogger.error("Scheduler", `Error in task '${task.id}':`, e);
                 }
+                const duration = performance.now() - start;
+                Diagnostics.recordSchedulerTask(task.id, duration);
                 task.lastRun = performance.now();
               };
               if (task.isIdle && typeof window.requestIdleCallback === "function") {
@@ -1176,28 +1763,42 @@
         runTaskNow(id) {
           const task = this.tasks.find((t) => t.id === id);
           if (task) {
+            const start = performance.now();
             try {
               task.callback();
             } catch (e) {
               APMLogger.error("Scheduler", `Error in immediate task '${task.id}':`, e);
             }
+            const duration = performance.now() - start;
+            Diagnostics.recordSchedulerTask(task.id, duration);
             task.lastRun = performance.now();
           }
         }
+        /**
+         * Return all registered tasks for diagnostics
+         */
+        getTasks() {
+          return this.tasks.map((t) => ({
+            id: t.id,
+            intervalMs: t.intervalMs,
+            isIdle: t.isIdle,
+            lastRunMs: t.lastRun
+          }));
+        }
       };
-      APMScheduler = new TaskScheduler();
+      APMScheduler2 = new TaskScheduler();
     }
   });
 
   // src/core/network.js
-  async function apmFetch(url, options = {}) {
-    const isCrossOrigin = !url.startsWith("/") && !url.includes(window.location.hostname);
+  async function apmFetch(url2, options = {}) {
+    const isCrossOrigin = !url2.startsWith("/") && !url2.includes(window.location.hostname);
     if (isCrossOrigin && typeof GM_xmlhttpRequest !== "undefined") {
-      APMLogger.debug("Network", `Using GM_xmlhttpRequest for cross-origin request: ${url}`);
+      APMLogger.debug("Network", `Using GM_xmlhttpRequest for cross-origin request: ${url2}`);
       return new Promise((resolve, reject) => {
         GM_xmlhttpRequest({
           method: options.method || "GET",
-          url,
+          url: url2,
           headers: options.headers || {},
           data: options.body,
           cookie: options.credentials === "include" || options.credentials === "same-origin",
@@ -1215,18 +1816,18 @@
             resolve(response);
           },
           onerror: (err) => {
-            APMLogger.error("Network", `GM_xmlhttpRequest error for ${url}:`, err);
+            APMLogger.error("Network", `GM_xmlhttpRequest error for ${url2}:`, err);
             reject(new Error(`GM_xmlhttpRequest failed: ${err.statusText || "Unknown error"}`));
           },
           ontimeout: () => {
-            APMLogger.error("Network", `GM_xmlhttpRequest timeout for ${url}`);
+            APMLogger.error("Network", `GM_xmlhttpRequest timeout for ${url2}`);
             reject(new Error("GM_xmlhttpRequest timeout"));
           }
         });
       });
     }
-    APMLogger.debug("Network", `Using native fetch for request: ${url}`);
-    return fetch(url, options);
+    APMLogger.debug("Network", `Using native fetch for request: ${url2}`);
+    return fetch(url2, options);
   }
   function parseHeaders(headerStr) {
     const headers = new Headers();
@@ -1248,15 +1849,190 @@
     }
   });
 
+  // src/core/eam-query.js
+  function extractJson(text) {
+    if (!text) throw new Error("Empty response");
+    if (text.trim().toLowerCase().startsWith("<!doctype") || text.includes("<html")) {
+      APMLogger.error("EAMQuery", `HTML detected instead of JSON. Head: ${text.substring(0, 100).replace(/\n/g, " ")}`);
+      throw new Error("SESSION_EXPIRED");
+    }
+    const start = text.indexOf("{");
+    const end = text.lastIndexOf("}");
+    if (start === -1 || end === -1 || end < start) {
+      APMLogger.error("EAMQuery", `No JSON boundaries found. Text length: ${text.length}`);
+      throw new Error("MALFORMED_RESPONSE");
+    }
+    const jsonStr = text.substring(start, end + 1);
+    try {
+      return JSON.parse(jsonStr);
+    } catch (e) {
+      APMLogger.error("EAMQuery", `JSON Parse failed: ${e.message}. Snippet: ${jsonStr.substring(0, 100)}`);
+      throw e;
+    }
+  }
+  function buildMaddonFilters2(filters) {
+    if (!filters) return {};
+    const maddonParams = {};
+    let seq = 1;
+    for (const [alias, val] of Object.entries(filters)) {
+      if (val === void 0 || val === null || val === "") continue;
+      const keywords = String(val).split(",").map((s) => s.trim()).filter((s) => s);
+      if (keywords.length === 0) continue;
+      const allRules = keywords.map((kw) => {
+        let operator = "CONTAINS";
+        let value = kw;
+        let type = "include";
+        if (value.startsWith("!")) {
+          operator = "NOTCONTAINS";
+          value = value.substring(1);
+          type = "exclude";
+        }
+        if (value.startsWith("=")) {
+          operator = operator === "NOTCONTAINS" ? "!=" : "=";
+          value = value.substring(1);
+        } else if (value.startsWith("^")) {
+          operator = "BEGINS";
+          value = value.substring(1);
+        } else if (value.endsWith("$")) {
+          operator = "ENDS";
+          value = value.substring(0, value.length - 1);
+        }
+        return { operator, value, type };
+      });
+      const includes = allRules.filter((r) => r.type === "include");
+      const excludes = allRules.filter((r) => r.type === "exclude");
+      const fieldRules = [...includes, ...excludes];
+      fieldRules.forEach((rule, idx) => {
+        maddonParams[`MADDON_FILTER_ALIAS_NAME_${seq}`] = alias;
+        maddonParams[`MADDON_FILTER_OPERATOR_${seq}`] = rule.operator;
+        maddonParams[`MADDON_FILTER_VALUE_${seq}`] = rule.value;
+        maddonParams[`MADDON_FILTER_SEQNUM_${seq}`] = seq.toString();
+        if (rule.type === "include") {
+          maddonParams[`MADDON_FILTER_JOINER_${seq}`] = idx === includes.length - 1 ? "AND" : "OR";
+        } else {
+          maddonParams[`MADDON_FILTER_JOINER_${seq}`] = "AND";
+        }
+        if (includes.length > 1) {
+          maddonParams[`MADDON_LPAREN_${seq}`] = idx === 0 ? "true" : "false";
+          maddonParams[`MADDON_RPAREN_${seq}`] = idx === includes.length - 1 ? "true" : "false";
+        } else {
+          maddonParams[`MADDON_LPAREN_${seq}`] = "false";
+          maddonParams[`MADDON_RPAREN_${seq}`] = "false";
+        }
+        seq++;
+      });
+    }
+    return maddonParams;
+  }
+  async function eamQuery({
+    baseUrl = "https://us1.eam.hxgnsmartcloud.com/web/base/",
+    endpoint = "",
+    // e.g. 'WSBOOK.HDR.xmlhttp'
+    gridId,
+    gridName,
+    dataspyId,
+    userFunction,
+    systemFunction,
+    currentTab = "HDR",
+    filters = {},
+    // { alias: value }
+    extraParams = {},
+    // { rawParam: value }
+    maxRows = 5e3,
+    pageSize = 100
+  }) {
+    const queryStart = performance.now();
+    const session = AppState.session;
+    if (!session.eamid) throw new Error("Missing EAM Session ID");
+    const currentTenant = session.tenant || DEFAULT_TENANT;
+    const url2 = baseUrl + (endpoint || gridName + ".xmlhttp");
+    const payloadObj = {
+      GRID_ID: gridId,
+      GRID_NAME: gridName,
+      DATASPY_ID: dataspyId,
+      USER_FUNCTION_NAME: userFunction,
+      SYSTEM_FUNCTION_NAME: systemFunction,
+      CURRENT_TAB_NAME: currentTab,
+      COMPONENT_INFO_TYPE: "DATA_ONLY",
+      eamid: session.eamid,
+      tenant: currentTenant,
+      MAX_ROWS: maxRows.toString(),
+      NUMBER_OF_ROWS_FIRST_RETURNED: pageSize.toString(),
+      LIST_ALL_ROWS: "YES",
+      FORCE_REQUERY: "YES",
+      ...extraParams,
+      ...buildMaddonFilters2(filters)
+    };
+    const payload = new URLSearchParams(payloadObj);
+    try {
+      const firstResp = await apmFetch(url2, {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8", "X-Requested-With": "XMLHttpRequest" },
+        body: payload.toString(),
+        credentials: "include"
+      });
+      const firstText = await firstResp.text();
+      const dataObj = extractJson(firstText);
+      let allRecords = dataObj?.pageData?.grid?.GRIDRESULT?.GRID?.DATA || [];
+      let metadata = dataObj?.pageData?.grid?.GRIDRESULT?.GRID?.METADATA || {};
+      let nextCursor = parseInt(metadata.CURRENTCURSORPOSITION || allRecords.length) + 1;
+      while (metadata.MORERECORDPRESENT === "+" && allRecords.length < maxRows) {
+        const cacheUrl = baseUrl + "GETCACHE";
+        const cachePayload = new URLSearchParams({
+          COMPONENT_INFO_TYPE: "DATA_ONLY",
+          COMPONENT_INFO_TYPE_MODE: "CACHE",
+          GRID_ID: gridId,
+          GRID_NAME: gridName,
+          DATASPY_ID: dataspyId,
+          NUMBER_OF_ROWS_FIRST_RETURNED: pageSize.toString(),
+          CURSOR_POSITION: nextCursor.toString(),
+          SYSTEM_FUNCTION_NAME: systemFunction,
+          USER_FUNCTION_NAME: userFunction,
+          eamid: session.eamid,
+          tenant: currentTenant,
+          ...extraParams
+        });
+        const cacheResp = await apmFetch(cacheUrl, {
+          method: "POST",
+          headers: { "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8", "X-Requested-With": "XMLHttpRequest" },
+          body: cachePayload.toString(),
+          credentials: "include"
+        });
+        const cacheText = await cacheResp.text();
+        const cacheDataObj = extractJson(cacheText);
+        const newRecords = cacheDataObj?.pageData?.grid?.GRIDRESULT?.GRID?.DATA || [];
+        if (newRecords.length === 0) break;
+        allRecords = allRecords.concat(newRecords);
+        metadata = cacheDataObj?.pageData?.grid?.GRIDRESULT?.GRID?.METADATA || {};
+        nextCursor = parseInt(metadata.CURRENTCURSORPOSITION || allRecords.length) + 1;
+        await new Promise((r) => setTimeout(r, 0));
+      }
+      const totalDuration = performance.now() - queryStart;
+      Diagnostics.recordPerformance("eamQuery", parseFloat(totalDuration.toFixed(2)));
+      return { records: allRecords, metadata };
+    } catch (err) {
+      APMLogger.error("EAMQuery", "Query Execution failure:", err);
+      throw err;
+    }
+  }
+  var init_eam_query = __esm({
+    "src/core/eam-query.js"() {
+      init_state();
+      init_network();
+      init_logger();
+      init_constants();
+      init_diagnostics();
+    }
+  });
+
   // src/modules/labor/labor-service.js
   var LaborService;
   var init_labor_service = __esm({
     "src/modules/labor/labor-service.js"() {
       init_state();
       init_utils();
-      init_constants();
       init_logger();
-      init_network();
+      init_eam_query();
       LaborService = /* @__PURE__ */ (function() {
         let laborCache = {
           data: [],
@@ -1265,108 +2041,30 @@
         };
         async function fetchData(targetEmployee, force = false) {
           const now = Date.now();
-          const session = AppState.session;
           if (!force && laborCache.employee === targetEmployee && now - laborCache.lastFetch < 15e3 && laborCache.data.length > 0) {
             return laborCache.data;
           }
-          if (!session.eamid || !targetEmployee) {
-            APMLogger.warn("LaborService", "Missing session or employee for fetch");
+          if (!targetEmployee) {
+            APMLogger.warn("LaborService", "Missing employee for fetch");
             return [];
           }
-          const url = "https://us1.eam.hxgnsmartcloud.com/web/base/WSBOOK.HDR.xmlhttp";
-          const currentTenant = session.tenant || DEFAULT_TENANT;
-          const payload = new URLSearchParams({
-            GRID_ID: "1742",
-            GRID_NAME: "WSBOOK_HDR",
-            DATASPY_ID: "100696",
-            USER_FUNCTION_NAME: "WSBOOK",
-            SYSTEM_FUNCTION_NAME: "WSBOOK",
-            CURRENT_TAB_NAME: "HDR",
-            COMPONENT_INFO_TYPE: "DATA_ONLY",
-            employee: targetEmployee,
-            tenant: currentTenant,
-            eamid: session.eamid,
-            NUMBER_OF_ROWS_FIRST_RETURNED: "5000",
-            MAX_ROWS: "5000",
-            LIST_ALL_ROWS: "YES",
-            FORCE_REQUERY: "YES"
-          });
           try {
-            const firstResp = await apmFetch(url, {
-              method: "POST",
-              headers: { "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8", "X-Requested-With": "XMLHttpRequest" },
-              body: payload.toString(),
-              credentials: "include"
+            const { records } = await eamQuery({
+              endpoint: "WSBOOK.HDR.xmlhttp",
+              gridId: "1742",
+              gridName: "WSBOOK_HDR",
+              dataspyId: "100696",
+              userFunction: "WSBOOK",
+              systemFunction: "WSBOOK",
+              extraParams: { employee: targetEmployee }
             });
-            const firstText = await firstResp.text();
-            const dataObj = extractJson(firstText);
-            let allRecords = dataObj?.pageData?.grid?.GRIDRESULT?.GRID?.DATA || [];
-            let metadata = dataObj?.pageData?.grid?.GRIDRESULT?.GRID?.METADATA || {};
-            let nextCursor = parseInt(metadata.CURRENTCURSORPOSITION || allRecords.length) + 1;
-            while (metadata.MORERECORDPRESENT === "+" && allRecords.length < 5e3) {
-              const cacheUrl = "https://us1.eam.hxgnsmartcloud.com/web/base/GETCACHE";
-              const cachePayload = new URLSearchParams({
-                COMPONENT_INFO_TYPE: "DATA_ONLY",
-                COMPONENT_INFO_TYPE_MODE: "CACHE",
-                GRID_ID: "1742",
-                GRID_NAME: "WSBOOK_HDR",
-                DATASPY_ID: "100696",
-                NUMBER_OF_ROWS_FIRST_RETURNED: "100",
-                CURSOR_POSITION: nextCursor.toString(),
-                SYSTEM_FUNCTION_NAME: "WSBOOK",
-                USER_FUNCTION_NAME: "WSBOOK",
-                eamid: session.eamid,
-                tenant: currentTenant,
-                employee: targetEmployee
-              });
-              const cacheResp = await apmFetch(cacheUrl, {
-                method: "POST",
-                headers: { "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8", "X-Requested-With": "XMLHttpRequest" },
-                body: cachePayload.toString(),
-                credentials: "include"
-              });
-              const cacheText = await cacheResp.text();
-              const cacheDataObj = extractJson(cacheText);
-              const newRecords = cacheDataObj?.pageData?.grid?.GRIDRESULT?.GRID?.DATA || [];
-              if (newRecords.length === 0) break;
-              allRecords = allRecords.concat(newRecords);
-              metadata = cacheDataObj?.pageData?.grid?.GRIDRESULT?.GRID?.METADATA || {};
-              nextCursor = parseInt(metadata.CURRENTCURSORPOSITION || allRecords.length) + 1;
-              await new Promise((r) => setTimeout(r, 0));
-            }
-            laborCache.data = allRecords;
+            laborCache.data = records;
             laborCache.employee = targetEmployee;
             laborCache.lastFetch = Date.now();
-            return allRecords;
+            return records;
           } catch (err) {
             APMLogger.error("LaborService", "Fetch error:", err);
-            if (err instanceof SyntaxError) {
-              APMLogger.error("LaborService", "Session potentially expired or malformed response");
-            }
             throw err;
-          }
-        }
-        function extractJson(text) {
-          if (!text) throw new Error("Empty response");
-          if (text.trim().toLowerCase().startsWith("<!doctype") || text.includes("<html")) {
-            APMLogger.error("LaborService", `HTML detected instead of JSON. Head: ${text.substring(0, 100).replace(/\n/g, " ")}`);
-            throw new Error("SESSION_EXPIRED");
-          }
-          const start = text.indexOf("{");
-          const end = text.lastIndexOf("}");
-          if (start === -1 || end === -1 || end < start) {
-            APMLogger.error("LaborService", `No JSON boundaries found. Text length: ${text.length}`);
-            throw new Error("MALFORMED_RESPONSE");
-          }
-          const jsonStr = text.substring(start, end + 1);
-          if (!jsonStr.includes('"pageData"') && !jsonStr.includes('"grid"')) {
-            APMLogger.warn("LaborService", "JSON found but missing expected EAM markers");
-          }
-          try {
-            return JSON.parse(jsonStr);
-          } catch (e) {
-            APMLogger.error("LaborService", `JSON Parse failed: ${e.message}. Snippet: ${jsonStr.substring(0, 100)}`);
-            throw e;
           }
         }
         function calculateTally(records, daysParam) {
@@ -1421,51 +2119,50 @@
       init_labor_service();
       init_ui_manager();
       init_storage();
-      init_utils();
+      init_ajax_hooks();
+      init_feature_flags();
       LaborBooker = (function() {
         const laborWin = apmGetGlobalWindow();
         let isRunning2 = false;
         let isPreparing = false;
         let laborObservers = /* @__PURE__ */ new Map();
         let hoursPresets = ["0.1", "0.25", "0.5", "0.75", "1", "1.5", "2", "2.5", "3"];
-        function checkTabAndInject(win) {
-          if (!isWindowAccessible(win) || !win.Ext || !win.Ext.ComponentQuery) return;
-          if (!win._apmAjaxHooked) {
-            win._apmAjaxHooked = true;
-            win.Ext.Ajax.on("beforerequest", (conn, options) => {
-              if (!isWindowAccessible(win)) return;
-              const popup = win.document.getElementById("apm-labor-popup");
-              if (popup?.style.display === "none" && !isRunning2) return;
-              const url = options.url || "";
-              const params = options.params || {};
-              const isSave = url.includes("pageaction=SAVE") && (url.includes("WSJOBS.BOO") || params.GRID_NAME === "WSJOBS_BOO");
-              if (isSave) {
-                APMLogger.debug("LaborBooker", "Hijacking Save Request to ensure Rate parameters.");
-                const ensureParam = (key, val) => {
-                  if (!params[key] || params[key] === "") params[key] = val;
-                  if (typeof options.params === "string") {
-                    const regex = new RegExp(`([&?]|^)${key}=([^&]*)`);
-                    const match = options.params.match(regex);
-                    if (match) {
-                      if (match[2] === "") {
-                        options.params = options.params.replace(regex, `$1${key}=${encodeURIComponent(val)}`);
-                      }
-                    } else {
-                      const sep = options.params.includes("?") ? "&" : options.params.length > 0 ? "&" : "";
-                      options.params += `${sep}${key}=${encodeURIComponent(val)}`;
-                    }
+        AjaxHooks.onBeforeRequest("labor-save", (win, conn, options) => {
+          if (!FeatureFlags.isEnabled("laborBooker")) return;
+          const popup = win.document.getElementById("apm-labor-popup");
+          if (popup?.style.display === "none" && !isRunning2) return;
+          const url2 = options.url || "";
+          const params = options.params || {};
+          const isSave = url2.includes("pageaction=SAVE") && (url2.includes("WSJOBS.BOO") || params.GRID_NAME === "WSJOBS_BOO");
+          if (isSave) {
+            APMLogger.debug("LaborBooker", "Hijacking Save Request to ensure Rate parameters.");
+            const ensureParam = (key, val) => {
+              if (!params[key] || params[key] === "") params[key] = val;
+              if (typeof options.params === "string") {
+                const regex = new RegExp(`([&?]|^)${key}=([^&]*)`);
+                const match = options.params.match(regex);
+                if (match) {
+                  if (match[2] === "") {
+                    options.params = options.params.replace(regex, `$1${key}=${encodeURIComponent(val)}`);
                   }
-                };
-                const emp = params.employee || extractEmployee();
-                ensureParam("employee", emp);
-                ensureParam("octype", "N");
-                ensureParam("ocrtype", "N");
-                ensureParam("traderate", "0.00");
-                ensureParam("ratedate", "0.|01/01/2020|01/01/2035");
-                ensureParam("isdetailfieldchanged", "true");
+                } else {
+                  const sep = options.params.includes("?") ? "&" : options.params.length > 0 ? "&" : "";
+                  options.params += `${sep}${key}=${encodeURIComponent(val)}`;
+                }
               }
-            });
+            };
+            const emp = params.employee || extractEmployee();
+            ensureParam("employee", emp);
+            ensureParam("octype", "N");
+            ensureParam("ocrtype", "N");
+            ensureParam("traderate", "0.00");
+            ensureParam("ratedate", "0.|01/01/2020|01/01/2035");
+            ensureParam("isdetailfieldchanged", "true");
           }
+        });
+        function checkTabAndInject(win) {
+          if (!FeatureFlags.isEnabled("laborBooker")) return;
+          if (!isWindowAccessible(win) || !win.Ext || !win.Ext.ComponentQuery) return;
           try {
             const tabs = win.Ext.ComponentQuery.query("uxtabcontainer[itemId=BOO]:not([destroyed=true])");
             const booTab = tabs.find((t) => t.rendered && !t.isDestroyed && t.isVisible(true));
@@ -1673,15 +2370,13 @@
                 <input id="apm-lb-correction" type="checkbox" style="cursor: pointer; width: 14px; height: 14px; margin: 0;">
                 <span style="font-size:11px; color:#e74c3c; font-weight: bold; white-space: nowrap;">Subtract (-)</span>
             `;
-            const corrCheck = corrLabel.querySelector("input");
-            corrCheck.onchange = (e) => {
+            const corrCheck2 = corrLabel.querySelector("input");
+            corrCheck2.onchange = (e) => {
               const hVal = hoursInput2.value;
               if (e.target.checked) {
-                corrLabel.style.background = "rgba(231, 76, 60, 0.25)";
                 if (hVal && !hVal.startsWith("-")) hoursInput2.value = "-" + hVal;
                 else if (!hVal) hoursInput2.value = "-";
               } else {
-                corrLabel.style.background = "rgba(231, 76, 60, 0.1)";
                 if (hVal.startsWith("-")) hoursInput2.value = hVal.replace("-", "");
               }
             };
@@ -1719,13 +2414,15 @@
             win.document.body.appendChild(popup);
             const nightToggle = win.document.getElementById("apm-lb-night-toggle");
             nightToggle.onchange = (e) => {
-              APMStorage.set("apmNightShiftOn", e.target.checked);
+              APMStorage.set(LABOR_NIGHT_SHIFT_KEY, e.target.checked);
               fetchLaborSummary(win);
             };
           }
           const dateInput = win.document.getElementById("apm-lb-date");
           const hoursInput = win.document.getElementById("apm-lb-hours");
+          const corrCheck = win.document.getElementById("apm-lb-correction");
           if (hoursInput) hoursInput.value = "";
+          if (corrCheck) corrCheck.checked = false;
           const compDate = extractCompletionDate(win);
           if (compDate) {
             const now = /* @__PURE__ */ new Date();
@@ -1925,7 +2622,7 @@
             if (!injectionSuccess) throw new Error("Fields failed to stick (EAM Cascade/Clear)");
             let saveBtn = targetExt.ComponentQuery.query("button[action=saveRec]:not([destroyed=true]), button.uft-id-saverec:not([destroyed=true])", booTab)[0];
             if (!saveBtn) {
-              saveBtn = targetExt.ComponentQuery.query("button[action=saveRec]:not([destroyed=true]), button.uft-id-saverec:not([destroyed=true])").find((b) => b.rendered && !b.isHidden());
+              saveBtn = targetExt.ComponentQuery.query("button[action=saveRec]:not([destroyed=true]), button.uft-id-saverec:not([destroyed=true])").find((b) => b.rendered && !(typeof b.isHidden === "function" && b.isHidden()));
             }
             if (saveBtn) {
               const formPanel = targetExt.ComponentQuery.query("form:not([destroyed=true])", booTab)[0];
@@ -1974,7 +2671,7 @@
           if (emp) {
             const clean = (emp.includes("@") ? emp.split("@")[0] : emp).toUpperCase();
             session.user = clean;
-            APMStorage.set("apmLastKnownEmpId", clean);
+            APMStorage.set(LABOR_LAST_EMP_KEY, clean);
             return clean;
           }
           return "";
@@ -2027,6 +2724,7 @@
         }
         return {
           init: function(win) {
+            if (!FeatureFlags.isEnabled("laborBooker")) return;
             const targetWin = win || laborWin;
             initLaborObserver(targetWin);
             UIManager.registerPanel("apm-labor-popup", ["#apm-quick-book-btn", ".apm-autofill-btn"]);
@@ -2071,23 +2769,24 @@
   });
 
   // src/index.js
+  init_context();
   init_logger();
+  init_api();
   init_toast();
 
   // src/core/theme-enforcer.js
-  init_constants();
   init_logger();
   init_theme_resolver();
-  function enforceTheme(targetWin = window, targetDoc = document) {
-    const isDarkHint = targetDoc.cookie.includes("apm_theme_hint=dark");
-    const isEAM2 = targetWin.location.hostname.includes("hxgnsmartcloud.com");
-    const isPTP2 = /amazon\.dev|insights/i.test(targetWin.location.hostname);
-    const isIDP = targetWin.location.hostname.includes("federate.amazon.com");
-    const isSubmit = targetDoc.title === "Submit Form";
-    const hasSSO = targetWin.location.hostname.includes("sso.");
-    const hasSAML = targetWin.location.href.includes("saml");
-    const isTransition = isIDP || isSubmit || (hasSSO || hasSAML) && !isEAM2 && !isPTP2;
-    if (isDarkHint && (isTransition || hasSSO || hasSAML || targetDoc.cookie.includes("apm_transition_active=1"))) {
+  init_context();
+  init_utils();
+
+  // src/core/theme-shield.js
+  init_constants();
+  init_context();
+  init_logger();
+  function applyTransitionShield(targetWin, targetDoc, isDarkHint, context) {
+    const { isTransition, isSSO, isSAML, isIDP } = context;
+    if (isDarkHint && (isTransition || isSSO || isSAML || targetDoc.cookie.includes("apm_transition_active=1"))) {
       try {
         if (typeof GM_addStyle !== "undefined") {
           GM_addStyle(`
@@ -2147,11 +2846,15 @@
         }
       }, 5e3);
     }
-    if (targetWin === targetWin.top && !targetWin.__apmUnloadBound) {
+  }
+  function applyUnloadBlackout(targetWin, targetDoc, isDarkHint) {
+    if (targetWin === targetWin.top && !targetWin[FLAGS.THEME_UNLOAD]) {
       targetWin.addEventListener("beforeunload", () => {
         if (isDarkHint) {
-          const baseDomain = targetWin.location.hostname.split(".").slice(-2).join(".");
-          targetDoc.cookie = `apm_transition_active=1; path=/; domain=.${baseDomain}; max-age=5; SameSite=Lax`;
+          if (targetWin === targetWin.top) {
+            const baseDomain = targetWin.location.hostname.split(".").slice(-2).join(".");
+            targetDoc.cookie = `apm_transition_active=1; path=/; domain=.${baseDomain}; max-age=5; SameSite=Lax`;
+          }
           try {
             if (typeof GM_addElement !== "undefined") {
               GM_addElement(targetDoc.documentElement, "div", { id: "apm-unload-blackout" });
@@ -2160,210 +2863,234 @@
           }
         }
       });
-      targetWin.__apmUnloadBound = true;
+      targetWin[FLAGS.THEME_UNLOAD] = true;
     }
-    if (isIDP || isSubmit && !isEAM2) {
-      APMLogger.debug("APM Master", `Transition Shield Active (CSP-Safe Terminator) on ${targetWin.location.hostname}`);
-      return;
-    }
-    if (!isEAM2 && !isPTP2) return;
-    targetWin.__apmThemeState = targetWin.__apmThemeState || {
-      activeTheme: null,
-      sentinelActive: false,
-      flashGuardApplied: true
-    };
-    const state = targetWin.__apmThemeState;
-    const clearGuards = () => {
-      const guards = ["apm-global-flash-guard", "apm-total-blackout-shield", "apm-nuclear-shield", "apm-unload-blackout", "apm-flash-prevent"];
-      for (const id of guards) {
-        const el2 = targetDoc.getElementById(id);
-        if (el2) {
-          if (id.includes("shield") || id.includes("blackout")) {
-            el2.style.opacity = "0";
-            setTimeout(() => el2.remove(), 250);
-          } else {
-            el2.remove();
-          }
+  }
+  function clearGuards(targetDoc) {
+    const guards = ["apm-global-flash-guard", "apm-total-blackout-shield", "apm-nuclear-shield", "apm-unload-blackout", "apm-flash-prevent"];
+    for (const id of guards) {
+      const el2 = targetDoc.getElementById(id);
+      if (el2) {
+        if (id.includes("shield") || id.includes("blackout")) {
+          el2.style.opacity = "0";
+          setTimeout(() => el2.remove(), 250);
+        } else {
+          el2.remove();
         }
       }
+    }
+    if (document.cookie.includes("apm_transition_active")) {
       targetDoc.cookie = "apm_transition_active=0; path=/; domain=.hxgnsmartcloud.com; max-age=0; SameSite=Lax";
+    }
+  }
+
+  // src/core/theme-hooks.js
+  init_logger();
+  init_utils();
+  function applyThemeHooks(targetWin, targetDoc, themeName, state) {
+    if (!isWindowAccessible(targetWin)) return;
+    if (!themeName || themeName === "default") return;
+    state.activeTheme = themeName;
+    const manifestPath = "eam/" + themeName + ".json";
+    const isDark = themeName.includes("dark") || themeName.includes("hex");
+    const internal = {
+      pollCount: 0,
+      origBeforeLoad: null,
+      wrapper: null
     };
-    const applyEnforcer = (themeName) => {
-      if (!themeName || themeName === "default") return;
-      state.activeTheme = themeName;
-      const manifestPath = "eam/" + themeName + ".json";
-      const isDark = themeName.includes("dark") || themeName.includes("hex");
-      const internal = {
-        pollCount: 0,
-        origBeforeLoad: null,
-        wrapper: null
-      };
-      if (isDark) {
-        const flashStyle = targetDoc.getElementById("apm-flash-prevent") || targetDoc.createElement("style");
-        flashStyle.id = "apm-flash-prevent";
-        flashStyle.textContent = `
-                html, body, .x-body, .x-viewport, #processing-request-container { background-color: #222 !important; color: #eee !important; }
-                .loading-mask, .x-mask { background-color: rgba(0,0,0,0.5) !important; }
-            `;
-        (targetDoc.head || targetDoc.documentElement).appendChild(flashStyle);
-      }
-      const hookEam = (obj) => {
-        if (!obj) return;
-        try {
-          Object.defineProperty(obj, "CSS_PATH", {
-            get: () => state.activeTheme,
-            set: () => {
-            },
-            configurable: true,
-            enumerable: true
-          });
-        } catch (e) {
-          obj.CSS_PATH = state.activeTheme;
-        }
-      };
-      const hookExt = (obj) => {
-        if (!obj) return;
-        let _manifest = manifestPath;
-        try {
-          if (!obj.__apmManifestHooked) {
-            Object.defineProperty(obj, "manifest", {
-              get: () => _manifest,
-              set: (v) => {
-                if (typeof v === "string" && v.includes("theme-") && !v.includes(state.activeTheme)) {
-                  APMLogger.debug("APM Master", `Sticky Manifest: Redirecting "${v}" -> "${manifestPath}"`);
-                  _manifest = manifestPath;
-                } else {
-                  _manifest = v;
-                }
-              },
-              configurable: true,
-              enumerable: true
-            });
-            obj.__apmManifestHooked = true;
-          }
-        } catch (e) {
-          obj.manifest = manifestPath;
-        }
-        if (!internal.wrapper) {
-          internal.origBeforeLoad = obj.beforeLoad;
-          internal.wrapper = function(tags) {
-            targetWin.Ext.manifest = manifestPath;
-            if (typeof internal.origBeforeLoad === "function") {
-              try {
-                return internal.origBeforeLoad.apply(this, arguments);
-              } catch (err) {
-              }
-            }
-          };
-          try {
-            Object.defineProperty(obj, "beforeLoad", {
-              get: () => internal.wrapper,
-              set: (v) => {
-                internal.origBeforeLoad = v;
-              },
-              configurable: true,
-              enumerable: true
-            });
-          } catch (e) {
-          }
-        }
-      };
-      if (targetWin.EAM) hookEam(targetWin.EAM);
-      if (targetWin.Ext) hookExt(targetWin.Ext);
+    if (isDark) {
+      const flashStyle = targetDoc.getElementById("apm-flash-prevent") || targetDoc.createElement("style");
+      flashStyle.id = "apm-flash-prevent";
+      flashStyle.textContent = `
+            html, body, .x-body, .x-viewport, #processing-request-container { background-color: #222 !important; color: #eee !important; }
+            .loading-mask, .x-mask { background-color: rgba(0,0,0,0.5) !important; }
+        `;
+      (targetDoc.head || targetDoc.documentElement).appendChild(flashStyle);
+    }
+    const hookEam = (obj) => {
+      if (!obj) return;
       try {
-        let _eam = targetWin.EAM;
-        Object.defineProperty(targetWin, "EAM", {
-          get: () => _eam,
-          set: (v) => {
-            _eam = v;
-            if (v) hookEam(v);
-          },
-          configurable: true,
-          enumerable: true
-        });
-        let _ext = targetWin.Ext;
-        Object.defineProperty(targetWin, "Ext", {
-          get: () => _ext,
-          set: (v) => {
-            _ext = v;
-            if (v) hookExt(v);
+        Object.defineProperty(obj, "CSS_PATH", {
+          get: () => state.activeTheme,
+          set: () => {
           },
           configurable: true,
           enumerable: true
         });
       } catch (e) {
+        obj.CSS_PATH = state.activeTheme;
       }
-      const flipLink = (node) => {
-        if (node.tagName === "LINK" && node.rel === "stylesheet" && node.href) {
-          const url = node.href.toLowerCase();
-          const isTheme = url.includes("/theme-") || url.includes("/ext-theme-") || url.includes("neptune") || url.includes("crisp") || url.includes("triton");
-          if (isTheme && !url.includes(state.activeTheme)) {
-            const newHref = node.href.replace(/(theme-)[^./?#]+/, `$1${state.activeTheme.replace("theme-", "")}`);
-            if (newHref !== node.href) {
-              APMLogger.debug("APM Master", `CSS Sentinel: Flipping ${node.href} -> ${newHref}`);
-              node.href = newHref;
+    };
+    const hookExt = (obj) => {
+      if (!obj) return;
+      let _manifest = manifestPath;
+      try {
+        if (!obj.__apmManifestHooked) {
+          Object.defineProperty(obj, "manifest", {
+            get: () => _manifest,
+            set: (v) => {
+              if (typeof v === "string" && v.includes("theme-") && !v.includes(state.activeTheme)) {
+                APMLogger.debug("APM Master", `Sticky Manifest: Redirecting "${v}" -> "${manifestPath}"`);
+                _manifest = manifestPath;
+              } else {
+                _manifest = v;
+              }
+            },
+            configurable: true,
+            enumerable: true
+          });
+          obj.__apmManifestHooked = true;
+        }
+      } catch (e) {
+        obj.manifest = manifestPath;
+      }
+      if (!internal.wrapper) {
+        internal.origBeforeLoad = obj.beforeLoad;
+        internal.wrapper = function(tags) {
+          targetWin.Ext.manifest = manifestPath;
+          if (typeof internal.origBeforeLoad === "function") {
+            try {
+              return internal.origBeforeLoad.apply(this, arguments);
+            } catch (err) {
             }
+          }
+        };
+        try {
+          Object.defineProperty(obj, "beforeLoad", {
+            get: () => internal.wrapper,
+            set: (v) => {
+              internal.origBeforeLoad = v;
+            },
+            configurable: true,
+            enumerable: true
+          });
+        } catch (e) {
+        }
+      }
+    };
+    if (targetWin.EAM) hookEam(targetWin.EAM);
+    if (targetWin.Ext) hookExt(targetWin.Ext);
+    try {
+      let _eam = targetWin.EAM;
+      Object.defineProperty(targetWin, "EAM", {
+        get: () => _eam,
+        set: (v) => {
+          _eam = v;
+          if (v) hookEam(v);
+        },
+        configurable: true,
+        enumerable: true
+      });
+      let _ext = targetWin.Ext;
+      Object.defineProperty(targetWin, "Ext", {
+        get: () => _ext,
+        set: (v) => {
+          _ext = v;
+          if (v) hookExt(v);
+        },
+        configurable: true,
+        enumerable: true
+      });
+    } catch (e) {
+    }
+    const flipLink = (node) => {
+      if (node.tagName === "LINK" && node.rel === "stylesheet" && node.href) {
+        const url2 = node.href.toLowerCase();
+        const isTheme = url2.includes("/theme-") || url2.includes("/ext-theme-") || url2.includes("neptune") || url2.includes("crisp") || url2.includes("triton");
+        if (isTheme && !url2.includes(state.activeTheme)) {
+          const newHref = node.href.replace(/(theme-)[^./?#]+/, `$1${state.activeTheme.replace("theme-", "")}`);
+          if (newHref !== node.href) {
+            APMLogger.debug("APM Master", `CSS Sentinel: Flipping ${node.href} -> ${newHref}`);
+            node.href = newHref;
           }
         }
-      };
-      if (!state.sentinelActive) {
-        targetDoc.querySelectorAll('link[rel="stylesheet"]').forEach(flipLink);
-        const sentinel = new MutationObserver((mutations) => {
-          for (const m of mutations) {
-            for (const node of m.addedNodes || []) {
-              if (node.nodeType === 1) flipLink(node);
-            }
-          }
-        });
-        sentinel.observe(targetDoc.documentElement, { childList: true, subtree: true });
-        state.sentinelActive = true;
       }
-      const poll = () => {
-        internal.pollCount++;
+    };
+    if (!state.sentinelActive) {
+      const docLinks = targetDoc.querySelectorAll('link[rel="stylesheet"]');
+      docLinks.forEach(flipLink);
+      const sentinel = new MutationObserver((mutations) => {
+        if (!isWindowAccessible(targetWin)) return;
+        for (const m of mutations) {
+          for (const node of m.addedNodes || []) {
+            if (node.nodeType === 1) flipLink(node);
+          }
+        }
+      });
+      sentinel.observe(targetDoc.documentElement, { childList: true, subtree: true });
+      state.sentinelActive = true;
+    }
+    const poll = () => {
+      if (!isWindowAccessible(targetWin)) return;
+      internal.pollCount++;
+      try {
         if (targetWin.Ext) hookExt(targetWin.Ext);
         if (targetWin.EAM) hookEam(targetWin.EAM);
-        if (internal.pollCount < 200) {
-          setTimeout(poll, 50);
-        } else {
-          setInterval(() => {
+      } catch (e) {
+      }
+      if (internal.pollCount < 200) {
+        setTimeout(poll, 50);
+      } else {
+        const iv = setInterval(() => {
+          if (!isWindowAccessible(targetWin)) {
+            clearInterval(iv);
+            return;
+          }
+          try {
             if (targetWin.Ext) hookExt(targetWin.Ext);
             if (targetWin.EAM) hookEam(targetWin.EAM);
-          }, 5e3);
-        }
-      };
-      const broadcast = () => {
-        for (let i = 0; i < targetWin.frames.length; i++) {
-          try {
-            targetWin.frames[i].postMessage({ type: "APM_SET_THEME", value: themeName }, "*");
-          } catch (err) {
+          } catch (e) {
           }
-        }
-      };
-      broadcast();
-      if (targetWin === targetWin.top) {
-        let count = 0;
-        const iv = setInterval(() => {
-          broadcast();
-          if (++count > 10) clearInterval(iv);
-        }, 1e3);
+        }, 5e3);
       }
-      const style = targetDoc.getElementById("apm-theme-root-vars") || targetDoc.createElement("style");
-      if (!style.id) {
-        style.id = "apm-theme-root-vars";
-        (targetDoc.head || targetDoc.documentElement).appendChild(style);
-      }
-      style.textContent = `:root { --apm-active-theme: "${themeName}"; }`;
-      if (isDark) {
-        targetDoc.cookie = "apm_theme_hint=dark; path=/; domain=.hxgnsmartcloud.com; max-age=31536000; SameSite=Lax";
-      } else {
-        targetDoc.cookie = "apm_theme_hint=default; path=/; domain=.hxgnsmartcloud.com; max-age=31536000; SameSite=Lax";
-      }
-      if (targetWin === targetWin.top) {
-        APMLogger.info("APM Master", `Theme Applied: ${themeName}`);
-      }
-      clearGuards();
     };
-    if (!targetWin.__apmMsgBound) {
+    poll();
+    const broadcast = () => {
+      for (let i = 0; i < targetWin.frames.length; i++) {
+        try {
+          targetWin.frames[i].postMessage({ type: "APM_SET_THEME", value: themeName }, "*");
+        } catch (err) {
+        }
+      }
+    };
+    broadcast();
+    if (targetWin === targetWin.top) {
+      let count = 0;
+      const iv = setInterval(() => {
+        broadcast();
+        if (++count > 10) clearInterval(iv);
+      }, 1e3);
+    }
+    const style = targetDoc.getElementById("apm-theme-root-vars") || targetDoc.createElement("style");
+    if (!style.id) {
+      style.id = "apm-theme-root-vars";
+      (targetDoc.head || targetDoc.documentElement).appendChild(style);
+    }
+    style.textContent = `:root { --apm-active-theme: "${themeName}"; }`;
+    if (targetWin === targetWin.top) {
+      try {
+        const baseDomain = targetWin.location.hostname.split(".").slice(-2).join(".");
+        const cookieDomain = baseDomain.includes("hxgnsmartcloud") || baseDomain.includes("hexagon") || baseDomain.includes("amazon") ? `domain=.${baseDomain};` : "";
+        if (isDark) {
+          targetDoc.cookie = `apm_theme_hint=dark; path=/; ${cookieDomain} max-age=31536000; SameSite=Lax`;
+        } else {
+          targetDoc.cookie = `apm_theme_hint=default; path=/; ${cookieDomain} max-age=31536000; SameSite=Lax`;
+        }
+      } catch (e) {
+      }
+    }
+    if (targetWin === targetWin.top) {
+      APMLogger.info("APM Master", `Theme Applied: ${themeName}`);
+    }
+  }
+
+  // src/core/theme-broadcast.js
+  init_constants();
+  init_context();
+  init_theme_resolver();
+  init_utils();
+  function initThemeListeners(targetWin, targetDoc, state, applyEnforcer, clearGuards2) {
+    if (!targetWin[FLAGS.THEME_MSG]) {
       targetWin.addEventListener("message", (e) => {
         const d = e.data;
         if (d && (d.type === "APM_SET_THEME" || d.apmMaster === "theme")) {
@@ -2379,16 +3106,66 @@
           }
         }
       });
-      targetWin.__apmMsgBound = true;
+      targetWin[FLAGS.THEME_MSG] = true;
     }
-    let startTheme = ThemeResolver.getPreferredTheme();
-    if (startTheme !== "default") {
-      if (targetWin === targetWin.top) {
-        APMLogger.info("APM Master", `Theme Enforcer: Detected "${startTheme}"`);
+    if (isWindowAccessible(targetWin)) {
+      try {
+        if (!targetWin.localStorage[FLAGS.STORAGE_PATCH]) {
+          const _set = targetWin.localStorage.setItem;
+          targetWin.localStorage.setItem = function(k, v) {
+            const r = _set.apply(this, arguments);
+            if (k === "ApmGeneralSettings" || k === APM_GENERAL_STORAGE || k === CC_STORAGE_SET || k === KEY_THEME) {
+              const next = ThemeResolver.getPreferredTheme();
+              if (next !== "default") {
+                applyEnforcer(next);
+                if (isWindowAccessible(targetWin)) {
+                  for (let i = 0; i < targetWin.frames.length; i++) {
+                    try {
+                      targetWin.frames[i].postMessage({ type: "APM_SET_THEME", value: next }, "*");
+                    } catch (err) {
+                    }
+                  }
+                }
+              } else {
+                clearGuards2(targetDoc);
+              }
+            }
+            return r;
+          };
+          targetWin.localStorage[FLAGS.STORAGE_PATCH] = true;
+        }
+      } catch (e) {
       }
+    }
+  }
+
+  // src/core/theme-enforcer.js
+  function enforceTheme(targetWin = window, targetDoc = document) {
+    if (!isWindowAccessible(targetWin)) return;
+    const isDarkHint = targetDoc.cookie.includes("apm_theme_hint=dark");
+    const { isEAM: isEAM2, isPTP: isPTP2, isIDP, isSubmit, isTop } = AppContext;
+    applyTransitionShield(targetWin, targetDoc, isDarkHint, AppContext);
+    applyUnloadBlackout(targetWin, targetDoc, isDarkHint);
+    if (isIDP || isSubmit && !isEAM2) {
+      return;
+    }
+    if (!isEAM2 && !isPTP2) return;
+    targetWin.__apmThemeState = targetWin.__apmThemeState || {
+      activeTheme: null,
+      sentinelActive: false,
+      flashGuardApplied: true
+    };
+    const state = targetWin.__apmThemeState;
+    const applyEnforcer = (themeName) => {
+      applyThemeHooks(targetWin, targetDoc, themeName, state);
+      clearGuards(targetDoc);
+    };
+    initThemeListeners(targetWin, targetDoc, state, applyEnforcer, (doc) => clearGuards(doc));
+    const startTheme = ThemeResolver.getPreferredTheme();
+    if (startTheme !== "default") {
       applyEnforcer(startTheme);
     } else {
-      clearGuards();
+      clearGuards(targetDoc);
       if (targetWin !== targetWin.top) {
         let tries = 0;
         const requestTheme = () => {
@@ -2402,38 +3179,202 @@
         requestTheme();
       }
     }
-    if (!targetWin.localStorage.__apmSetItemPatched) {
-      try {
-        const _set = targetWin.localStorage.setItem;
-        targetWin.localStorage.setItem = function(k, v) {
-          const r = _set.apply(this, arguments);
-          if (k === "ApmGeneralSettings" || k === APM_GENERAL_STORAGE || k === CC_STORAGE_SET || k === KEY_THEME) {
-            const next = ThemeResolver.getPreferredTheme();
-            if (next !== "default") {
-              applyEnforcer(next);
-              for (let i = 0; i < targetWin.frames.length; i++) {
-                try {
-                  targetWin.frames[i].postMessage({ type: "APM_SET_THEME", value: next }, "*");
-                } catch (err) {
-                }
-              }
-            } else {
-              clearGuards();
-            }
+  }
+
+  // src/core/migration-manager.js
+  init_constants();
+  init_logger();
+  init_utils();
+  init_storage();
+  var isFunctionallyEmpty = (raw) => {
+    if (!raw || raw === "null" || raw === "{}" || raw === "[]") return true;
+    try {
+      const parsed = typeof raw === "string" ? JSON.parse(raw) : raw;
+      if (Array.isArray(parsed)) return parsed.length === 0;
+      if (typeof parsed === "object") {
+        if (parsed.orgs && Array.isArray(parsed.orgs) && parsed.orgs.length === 0 && !parsed.selectedOrg) return true;
+        return Object.keys(parsed).length === 0;
+      }
+    } catch (e) {
+    }
+    return false;
+  };
+  var MigrationManager = {
+    run() {
+      if (!isTopFrame()) return;
+      if (window.__apmMigrationRan) return;
+      window.__apmMigrationRan = true;
+      let completedIds = APMStorage.get(MIGRATIONS_DONE_KEY, []);
+      if (!Array.isArray(completedIds)) completedIds = [];
+      if (completedIds.length >= 6) {
+        APMLogger.info("Migration", "All migrations previously completed. Skipping.");
+        return;
+      }
+      console.log("[Migration] Starting data migration check...");
+      const migrations2 = [
+        { id: "general_v1", fn: () => this.migrateGeneralSettings() },
+        { id: "autofill_v1", fn: () => this.migrateAutofillPresets() },
+        { id: "colorcode_v1", fn: () => this.migrateColorCode() },
+        { id: "forecast_v1", fn: () => this.migrateForecast() },
+        { id: "labor_v1", fn: () => this.migrateLabor() },
+        { id: "promote_v1", fn: () => this.promoteToGlobal() }
+      ];
+      migrations2.forEach(({ id, fn }) => {
+        if (!completedIds.includes(id)) {
+          try {
+            fn();
+            completedIds.push(id);
+            APMLogger.info("Migration", `Completed: ${id}`);
+          } catch (e) {
+            APMLogger.error("Migration", `Error in ${id}:`, e);
           }
-          return r;
-        };
-        targetWin.localStorage.__apmSetItemPatched = true;
+        }
+      });
+      APMStorage.set(MIGRATIONS_DONE_KEY, completedIds);
+      console.log("[Migration] Migration process finished.");
+    },
+    promoteToGlobal() {
+      const v1Keys = [
+        APM_GENERAL_STORAGE,
+        PRESET_STORAGE_KEY,
+        CC_STORAGE_RULES,
+        CC_STORAGE_SET,
+        STORAGE_KEY,
+        LABOR_EMPS_STORAGE,
+        LABOR_ACTIVE_STORAGE,
+        LABOR_DOCK_STORAGE,
+        KEY_THEME,
+        "apmNightShiftOn",
+        "apmLastKnownEmpId"
+      ];
+      v1Keys.forEach((key) => {
+        APMStorage.get(key);
+      });
+    },
+    migrateGeneralSettings() {
+      this.safeMigrate("ApmGeneralSettings", APM_GENERAL_STORAGE);
+      this.safeMigrate("apm_general_settings", APM_GENERAL_STORAGE);
+      this.safeMigrate("apm_gen_settings", APM_GENERAL_STORAGE);
+      this.safeMigrate("apmUiTheme", KEY_THEME);
+    },
+    migrateAutofillPresets() {
+      const transform = (oldData) => {
+        if (oldData && typeof oldData === "object" && !oldData.autofill && !oldData.config) {
+          oldData = {
+            autofill: oldData,
+            config: { columnOrders: {}, tabOrders: {}, hiddenTabs: [] }
+          };
+        }
+        if (oldData && oldData.config) {
+          if (oldData.config.columnOrder !== void 0) {
+            oldData.config.columnOrders = { GLOBAL: oldData.config.columnOrder };
+            delete oldData.config.columnOrder;
+          }
+          if (oldData.config.tabOrder !== void 0) {
+            oldData.config.tabOrders = { GLOBAL: oldData.config.tabOrder };
+            delete oldData.config.tabOrder;
+          }
+          if (!oldData.config.columnOrders) oldData.config.columnOrders = {};
+          if (!oldData.config.tabOrders) oldData.config.tabOrders = {};
+        }
+        return oldData;
+      };
+      const opts = { force: true, merge: true };
+      const legacyKeys = [
+        "apm_creator_presets_v1",
+        "apm_creator_presets",
+        "apm_preset_store",
+        "APM_Creator_Presets",
+        "ApmCreatorPresets",
+        "apm_presets"
+      ];
+      legacyKeys.forEach((key) => this.safeMigrate(key, PRESET_STORAGE_KEY, transform, opts));
+    },
+    migrateColorCode() {
+      this.safeMigrate("apm_colorcode_rules", CC_STORAGE_RULES);
+      this.safeMigrate("apm_colorcode_settings", CC_STORAGE_SET);
+      this.safeMigrate("ApmColorCodeRules", CC_STORAGE_RULES);
+      this.safeMigrate("ApmColorCodeSettings", CC_STORAGE_SET);
+    },
+    migrateForecast() {
+      const forecastKeys = [
+        "eam_forecast_preferences_v12",
+        "apm_forecast_prefs",
+        "eamForecastPrefs",
+        "eam_forecast_prefs"
+      ];
+      forecastKeys.forEach((key) => {
+        this.safeMigrate(key, STORAGE_KEY, (oldData) => {
+          if (oldData && typeof oldData === "object") {
+            if (oldData.profiles && !oldData.customProfiles) oldData.customProfiles = oldData.profiles;
+            if (oldData.dataspys && !oldData.customProfiles) oldData.customProfiles = oldData.dataspys;
+          }
+          return oldData;
+        });
+      });
+    },
+    migrateLabor() {
+      this.safeMigrate("apmLaborSavedEmps", LABOR_EMPS_STORAGE);
+      this.safeMigrate("apmLaborActiveEmp", LABOR_ACTIVE_STORAGE);
+      this.safeMigrate("apmLaborDockPos", LABOR_DOCK_STORAGE);
+    },
+    safeMigrate(legacyKey, v1Key, transform = (d) => d, options = {}) {
+      try {
+        const { force = false, merge = false } = options;
+        const v1Raw = typeof GM_getValue !== "undefined" ? GM_getValue(v1Key) : null;
+        let v1Parsed = null;
+        try {
+          v1Parsed = typeof v1Raw === "string" ? JSON.parse(v1Raw) : v1Raw;
+        } catch (e) {
+        }
+        const v1Exists = v1Parsed && !isFunctionallyEmpty(v1Parsed);
+        if (!force && v1Exists) return;
+        const legacyLocal = localStorage.getItem(legacyKey);
+        let legacyGM = null;
+        if (typeof GM_getValue !== "undefined") {
+          try {
+            const rawGM = GM_getValue(legacyKey);
+            if (rawGM) legacyGM = typeof rawGM === "string" ? rawGM : JSON.stringify(rawGM);
+          } catch (e) {
+          }
+        }
+        const legacyRaw = legacyLocal || legacyGM;
+        if (!legacyRaw || legacyRaw === "null" || legacyRaw === "{}" || legacyRaw === "[]") return;
+        console.log(`[Migration] MIGRATING: ${legacyKey} -> ${v1Key} (Force: ${force}, Merge: ${merge})`);
+        let legacyParsed = null;
+        try {
+          legacyParsed = JSON.parse(legacyRaw);
+        } catch (e) {
+          return;
+        }
+        let dataToSave = transform(legacyParsed);
+        if (merge && v1Exists) {
+          if (typeof dataToSave === "object" && typeof v1Parsed === "object") {
+            const merged = { ...v1Parsed };
+            if (dataToSave.autofill) {
+              merged.autofill = { ...dataToSave.autofill, ...v1Parsed.autofill || {} };
+            }
+            if (dataToSave.config) {
+              merged.config = { ...dataToSave.config, ...v1Parsed.config || {} };
+            }
+            dataToSave = merged;
+          }
+        }
+        APMStorage.set(v1Key, dataToSave);
       } catch (e) {
+        APMLogger.error("Migration", `Error migrating ${legacyKey}:`, e);
       }
     }
-  }
+  };
 
   // src/index.js
   init_state();
 
   // src/core/boot-manager.js
   init_logger();
+  init_context();
+  init_utils();
+  init_diagnostics();
   var BootManagerClass = class {
     constructor() {
       this.states = {
@@ -2451,7 +3392,13 @@
     markReady(key) {
       if (this.states[key] === true) return;
       this.states[key] = true;
-      APMLogger.debug("BootManager", `State marked ready: ${key}`);
+      const duration = (performance.now() - this.startTime).toFixed(2);
+      APMLogger.debug("BootManager", `State marked ready: ${key} (${duration}ms)`);
+      try {
+        performance.mark(`apm-boot-${key}`);
+        Diagnostics.recordTiming(key, parseFloat(duration));
+      } catch (e) {
+      }
       this.checkReady();
     }
     /**
@@ -2469,6 +3416,11 @@
         this.states.ready = true;
         const duration = (performance.now() - this.startTime).toFixed(2);
         APMLogger.info("BootManager", `All dependencies met. Booting now... (${duration}ms)`);
+        try {
+          performance.measure("apm-boot-total", "apm-boot-dom");
+          Diagnostics.recordTiming("total", parseFloat(duration));
+        } catch (e) {
+        }
         this.callbacks.forEach((cb) => {
           try {
             cb();
@@ -2483,8 +3435,7 @@
      * Helper to wait for ExtJS if it's expected but not yet loaded
      */
     waitForExt(win = window, maxWait = 5e3) {
-      const isLanding = win.location.hostname.includes("octave.com") || win.location.hostname.includes("hexagon.com");
-      if (isLanding) {
+      if (AppContext.isLanding) {
         APMLogger.debug("BootManager", "Landing page detected, skipping ExtJS wait.");
         this.markReady("extjs");
         return;
@@ -2493,7 +3444,8 @@
       const check = () => {
         let ext = null;
         try {
-          ext = win.Ext || window.top && window.top.Ext;
+          const topWin = window.top;
+          ext = win.Ext || (isWindowAccessible(topWin) ? topWin.Ext : null);
         } catch (e) {
           ext = win.Ext;
         }
@@ -2529,14 +3481,35 @@
     try {
       const parsed = APMStorage.get(PRESET_STORAGE_KEY);
       if (parsed) {
-        if (parsed.autofill) AppState.autofill.presets.autofill = parsed.autofill;
-        if (parsed.config) AppState.autofill.presets.config = parsed.config;
+        if (parsed._v === void 0) {
+          parsed._v = 0;
+          APMLogger.debug("Autofill", "Presets loaded as legacy v0");
+        }
+        if (parsed.autofill || parsed.config) {
+          if (parsed.autofill) AppState.autofill.presets.autofill = parsed.autofill;
+          if (parsed.config) AppState.autofill.presets.config = parsed.config;
+          if (AppState.autofill.presets.autofill && Object.keys(AppState.autofill.presets.autofill).length === 0) {
+            const MigrationManager2 = window._APM?.MigrationManager;
+            if (MigrationManager2 && !window.__apmMigrationRetry) {
+              window.__apmMigrationRetry = true;
+              APMLogger.warn("Autofill", "Profiles empty but config exists. Triggering deep healing migration...");
+              MigrationManager2.migrateAutofillPresets();
+              const fresh = APMStorage.get(PRESET_STORAGE_KEY);
+              if (fresh && fresh.autofill) AppState.autofill.presets.autofill = fresh.autofill;
+            }
+          }
+        } else if (typeof parsed === "object" && Object.keys(parsed).length > 0) {
+          AppState.autofill.presets.autofill = parsed;
+          APMLogger.info("Autofill", "Recovered unwrapped legacy presets.");
+          savePresets();
+        }
       }
     } catch (e) {
       APMLogger.warn("Autofill", "Failed to load presets", e);
     }
   }
   function savePresets() {
+    AppState.autofill.presets._v = 1;
     APMStorage.set(PRESET_STORAGE_KEY, AppState.autofill.presets);
   }
   function getPresets() {
@@ -2572,10 +3545,18 @@
     try {
       const storedRules = APMStorage.get(CC_STORAGE_RULES);
       if (storedRules) {
-        AppState.colorCode.rules = storedRules;
+        if (storedRules._v !== void 0) {
+          AppState.colorCode.rules = storedRules.rules || [];
+        } else {
+          AppState.colorCode.rules = storedRules;
+        }
       }
       const storedSet = APMStorage.get(CC_STORAGE_SET);
       if (storedSet) {
+        if (storedSet._v === void 0) {
+          storedSet._v = 0;
+          APMLogger.debug("ColorCode", "Settings loaded as legacy v0");
+        }
         AppState.colorCode.settings = { ...AppState.colorCode.settings, ...storedSet };
       }
       Promise.resolve().then(() => (init_theme_resolver(), theme_resolver_exports)).then(({ ThemeResolver: ThemeResolver2 }) => {
@@ -2586,13 +3567,23 @@
     }
   }
   function saveColorCodeRules() {
-    APMStorage.set(CC_STORAGE_RULES, AppState.colorCode.rules);
+    const wrapped = { _v: 1, rules: AppState.colorCode.rules };
+    APMStorage.set(CC_STORAGE_RULES, wrapped);
   }
   function saveColorCodeSettings() {
+    AppState.colorCode.settings._v = 1;
     APMStorage.set(CC_STORAGE_SET, AppState.colorCode.settings);
   }
   function getRules() {
-    return JSON.parse(JSON.stringify(AppState.colorCode.rules));
+    const stored = AppState.colorCode.rules;
+    if (stored && typeof stored === "object" && !Array.isArray(stored) && stored._v !== void 0) {
+      const rules2 = stored.rules ? JSON.parse(JSON.stringify(stored.rules)) : [];
+      console.log(`[getRules] Unwrapped format, returning ${rules2.length} rules:`, rules2);
+      return rules2;
+    }
+    const rules = JSON.parse(JSON.stringify(AppState.colorCode.rules));
+    console.log(`[getRules] Direct format, returning ${rules.length} rules:`, rules);
+    return rules;
   }
   function setRules(newRules) {
     AppState.colorCode.rules = newRules;
@@ -2600,6 +3591,10 @@
     window.dispatchEvent(new CustomEvent("APM_CC_SYNC_REQUIRED"));
   }
   function getSettings() {
+    if (AppState.colorCode.settings._v === void 0) {
+      AppState.colorCode.settings._v = 0;
+      APMLogger.debug("ColorCode", "Settings accessed as legacy v0");
+    }
     return { ...AppState.colorCode.settings };
   }
   function setSettings(updates) {
@@ -2610,101 +3605,7 @@
 
   // src/modules/forecast/forecast-engine.js
   init_utils();
-
-  // src/modules/forecast/forecast-prefs.js
-  init_constants();
-  init_logger();
-  init_storage();
-  var savedOrgs = [];
-  var selectedOrg = "";
-  var savedProfiles = [];
-  var selectedProfileId = "";
-  function setSavedOrgs(orgs) {
-    savedOrgs = orgs;
-  }
-  function setSelectedOrg(org) {
-    selectedOrg = org;
-  }
-  function setSavedProfiles(profiles) {
-    savedProfiles = profiles;
-  }
-  function setSelectedProfileId(id) {
-    selectedProfileId = id;
-  }
-  function loadPreferences() {
-    try {
-      const prefs = APMStorage.get(STORAGE_KEY);
-      if (prefs) {
-        if (prefs.orgs && Array.isArray(prefs.orgs)) {
-          savedOrgs = prefs.orgs.filter((o) => o !== "All Sites" && o !== "-- All Sites --" && o !== "");
-        } else {
-          savedOrgs = [];
-        }
-        if (prefs.selectedOrg !== void 0 && (prefs.selectedOrg === "" || savedOrgs.includes(prefs.selectedOrg))) {
-          selectedOrg = prefs.selectedOrg;
-        } else {
-          selectedOrg = "";
-        }
-        const profilesToLoad = prefs.customProfiles || prefs.profiles || prefs.dataspys;
-        if (profilesToLoad && Array.isArray(profilesToLoad)) {
-          savedProfiles = profilesToLoad;
-        } else {
-          savedProfiles = [];
-        }
-        selectedProfileId = prefs.selectedProfileId || "";
-        return prefs;
-      }
-    } catch (e) {
-      APMLogger.warn("Forecast", "Failed to load preferences:", e);
-    }
-    savedOrgs = [];
-    selectedOrg = "";
-    return null;
-  }
-  function saveAllPreferences() {
-    const orgSelect = document.getElementById("eam-org-select");
-    selectedOrg = orgSelect ? orgSelect.value : "";
-    let prefsToSave = {
-      orgs: savedOrgs,
-      selectedOrg,
-      customProfiles: savedProfiles,
-      selectedProfileId
-    };
-    const weekSelect = document.getElementById("eam-week-select");
-    if (weekSelect) prefsToSave.week = weekSelect.value;
-    prefsToSave.days = Array.from(document.querySelectorAll('#eam-day-checkboxes input[type="checkbox"]')).map((cb) => cb.dataset.explicit === "true");
-    const assignedText = document.getElementById("eam-assigned-text");
-    if (assignedText) prefsToSave.assignedText = assignedText.value.trim();
-    const eqText = document.getElementById("eam-eq-text");
-    if (eqText) prefsToSave.eqText = eqText.value.trim();
-    const eqdescText = document.getElementById("eam-eqdesc-text");
-    if (eqdescText) prefsToSave.eqdescText = eqdescText.value.trim();
-    const typeText = document.getElementById("eam-type-text");
-    if (typeText) prefsToSave.typeText = typeText.value.trim();
-    const shiftText = document.getElementById("eam-shift-text");
-    if (shiftText) prefsToSave.shiftText = shiftText.value.trim();
-    const descOp = document.getElementById("eam-desc-op");
-    if (descOp) prefsToSave.descOp = descOp.value;
-    const descText = document.getElementById("eam-desc-text");
-    if (descText) prefsToSave.descText = descText.value.trim();
-    const todayToggle = document.getElementById("eam-today-only-toggle");
-    if (todayToggle) prefsToSave.todayOnly = todayToggle.checked;
-    const advSite = document.getElementById("eam-adv-site");
-    const customDates = document.getElementById("eam-custom-dates");
-    if (advSite) prefsToSave.isSimpleMode = advSite.style.display === "none";
-    if (customDates) prefsToSave.isCustomDateMode = customDates.style.display !== "none";
-    const custStart = document.getElementById("eam-custom-start");
-    const custEnd = document.getElementById("eam-custom-end");
-    if (custStart) prefsToSave.customStart = custStart.value;
-    if (custEnd) prefsToSave.customEnd = custEnd.value;
-    try {
-      APMStorage.set(STORAGE_KEY, prefsToSave);
-    } catch (e) {
-      APMLogger.error("Forecast", "Failed to save preferences:", e);
-    }
-  }
-
-  // src/modules/forecast/forecast-engine.js
+  init_forecast_prefs();
   init_logger();
 
   // src/core/status.js
@@ -2756,94 +3657,92 @@
 
   // src/modules/forecast/forecast-engine.js
   init_ui_manager();
+  init_ajax_hooks();
+  init_feature_flags();
   var isRunning = false;
   var isStopped = false;
   var currentMode = "normal";
-  function initAjaxInterceptors() {
-    for (const win of getExtWindows()) {
-      if (win.Ext && !win._apmForecastAjaxHook) {
-        win._apmForecastAjaxHook = true;
-        win.Ext.Ajax.on("beforerequest", (conn, options) => {
-          const url = options.url || "";
-          const params = options.params || {};
-          const isGridData = url.includes("GRIDDATA") || url.includes(".xmlhttp") || params.GRID_NAME;
-          if (!isGridData) return;
-          const topDoc = window.top.document;
-          const profSelect = topDoc.getElementById("eam-profile-select");
-          const profId = profSelect?.value;
-          const isWorkOrderSearch = url.includes("WSJOBS.xmlhttp") || params.GRID_NAME === "WSJOBS";
-          const isCacheRequest = url.includes("GETCACHE") || typeof params === "string" && params.includes("COMPONENT_INFO_TYPE_MODE=CACHE") || params.COMPONENT_INFO_TYPE_MODE === "CACHE";
-          if (!isRunning) return;
-          if (isWorkOrderSearch && !isCacheRequest) {
-            let maddonParams = null;
-            const skipManual = ["today", "quick", "clear"].includes(currentMode);
-            if (profId && profId !== "manual") {
-              const activeProfile = savedProfiles.find((p) => p.id === profId);
-              if (activeProfile) {
-                APMLogger.debug("Forecast", `Injecting MADDON filters for profile: ${activeProfile.name}`);
-                maddonParams = buildMaddonFilters(activeProfile);
-              }
-            } else if (!skipManual) {
-              const descVal = topDoc.getElementById("eam-desc-text")?.value?.trim();
-              const descOp = topDoc.getElementById("eam-desc-op")?.value;
-              let manualDesc = descVal;
-              if (descVal && descOp === "Does Not Contain") {
-                manualDesc = descVal.split(",").map((s) => s.trim()).filter((s) => s).map((s) => s.startsWith("!") ? s : "!" + s).join(", ");
-              }
-              const manualProf = {
-                desc: manualDesc
-              };
-              if (manualProf.desc) {
-                APMLogger.debug("Forecast", "Injecting manual MADDON filters");
-                maddonParams = buildMaddonFilters(manualProf);
-              }
-            }
-            if (maddonParams) {
-              const currentParams = typeof options.params === "object" ? options.params : typeof options.params === "string" ? Object.fromEntries(new URLSearchParams(options.params)) : {};
-              let maxSeq = 0;
-              Object.keys(currentParams).forEach((k) => {
-                const match = k.match(/MADDON_FILTER_SEQNUM_(\d+)/);
-                if (match) maxSeq = Math.max(maxSeq, parseInt(match[1], 10));
-              });
-              const shiftedMaddon = {};
-              let ourSeqOffset = maxSeq;
-              const filters = [];
-              let i = 1;
-              while (maddonParams[`MADDON_FILTER_ALIAS_NAME_${i}`]) {
-                filters.push({
-                  ALIAS: maddonParams[`MADDON_FILTER_ALIAS_NAME_${i}`],
-                  OPERATOR: maddonParams[`MADDON_FILTER_OPERATOR_${i}`],
-                  VALUE: maddonParams[`MADDON_FILTER_VALUE_${i}`],
-                  JOINER: maddonParams[`MADDON_FILTER_JOINER_${i}`],
-                  LPAREN: maddonParams[`MADDON_LPAREN_${i}`],
-                  RPAREN: maddonParams[`MADDON_RPAREN_${i}`]
-                });
-                i++;
-              }
-              filters.forEach((f, idx) => {
-                const s = ourSeqOffset + idx + 1;
-                shiftedMaddon[`MADDON_FILTER_ALIAS_NAME_${s}`] = f.ALIAS;
-                shiftedMaddon[`MADDON_FILTER_OPERATOR_${s}`] = f.OPERATOR;
-                shiftedMaddon[`MADDON_FILTER_VALUE_${s}`] = f.VALUE;
-                shiftedMaddon[`MADDON_FILTER_JOINER_${s}`] = f.JOINER;
-                shiftedMaddon[`MADDON_FILTER_SEQNUM_${s}`] = s.toString();
-                shiftedMaddon[`MADDON_LPAREN_${s}`] = f.LPAREN;
-                shiftedMaddon[`MADDON_RPAREN_${s}`] = f.RPAREN;
-              });
-              if (typeof options.params === "object") {
-                Object.assign(options.params, shiftedMaddon);
-              } else if (typeof options.params === "string") {
-                const searchParams = new URLSearchParams(options.params);
-                for (const [k, v] of Object.entries(shiftedMaddon)) {
-                  searchParams.set(k, v);
-                }
-                options.params = searchParams.toString();
-              }
-            }
-          }
+  AjaxHooks.onBeforeRequest("forecast-maddon", (win, conn, options) => {
+    if (!FeatureFlags.isEnabled("forecast")) return;
+    if (!isRunning) return;
+    const url2 = options.url || "";
+    const params = options.params || {};
+    const isGridData = url2.includes("GRIDDATA") || url2.includes(".xmlhttp") || params.GRID_NAME;
+    if (!isGridData) return;
+    const topDoc = window.top.document;
+    const profSelect = topDoc.getElementById("eam-profile-select");
+    const profId = profSelect?.value;
+    const isWorkOrderSearch = url2.includes("WSJOBS.xmlhttp") || params.GRID_NAME === "WSJOBS";
+    const isCacheRequest = url2.includes("GETCACHE") || typeof params === "string" && params.includes("COMPONENT_INFO_TYPE_MODE=CACHE") || params.COMPONENT_INFO_TYPE_MODE === "CACHE";
+    if (isWorkOrderSearch && !isCacheRequest) {
+      let maddonParams = null;
+      const skipManual = ["today", "quick", "clear"].includes(currentMode);
+      if (profId && profId !== "manual") {
+        const activeProfile = savedProfiles.find((p) => p.id === profId);
+        if (activeProfile) {
+          APMLogger.debug("Forecast", `Injecting MADDON filters for profile: ${activeProfile.name}`);
+          maddonParams = buildMaddonFilters(activeProfile);
+        }
+      } else if (!skipManual) {
+        const descVal = topDoc.getElementById("eam-desc-text")?.value?.trim();
+        const descOp = topDoc.getElementById("eam-desc-op")?.value;
+        let manualDesc = descVal;
+        if (descVal && descOp === "Does Not Contain") {
+          manualDesc = descVal.split(",").map((s) => s.trim()).filter((s) => s).map((s) => s.startsWith("!") ? s : "!" + s).join(", ");
+        }
+        const manualProf = {
+          desc: manualDesc
+        };
+        if (manualProf.desc) {
+          APMLogger.debug("Forecast", "Injecting manual MADDON filters");
+          maddonParams = buildMaddonFilters(manualProf);
+        }
+      }
+      if (maddonParams) {
+        const currentParams = typeof options.params === "object" ? options.params : typeof options.params === "string" ? Object.fromEntries(new URLSearchParams(options.params)) : {};
+        let maxSeq = 0;
+        Object.keys(currentParams).forEach((k) => {
+          const match = k.match(/MADDON_FILTER_SEQNUM_(\d+)/);
+          if (match) maxSeq = Math.max(maxSeq, parseInt(match[1], 10));
         });
+        const shiftedMaddon = {};
+        let ourSeqOffset = maxSeq;
+        const filters = [];
+        let i = 1;
+        while (maddonParams[`MADDON_FILTER_ALIAS_NAME_${i}`]) {
+          filters.push({
+            ALIAS: maddonParams[`MADDON_FILTER_ALIAS_NAME_${i}`],
+            OPERATOR: maddonParams[`MADDON_FILTER_OPERATOR_${i}`],
+            VALUE: maddonParams[`MADDON_FILTER_VALUE_${i}`],
+            JOINER: maddonParams[`MADDON_FILTER_JOINER_${i}`],
+            LPAREN: maddonParams[`MADDON_LPAREN_${i}`],
+            RPAREN: maddonParams[`MADDON_RPAREN_${i}`]
+          });
+          i++;
+        }
+        filters.forEach((f, idx) => {
+          const s = ourSeqOffset + idx + 1;
+          shiftedMaddon[`MADDON_FILTER_ALIAS_NAME_${s}`] = f.ALIAS;
+          shiftedMaddon[`MADDON_FILTER_OPERATOR_${s}`] = f.OPERATOR;
+          shiftedMaddon[`MADDON_FILTER_VALUE_${s}`] = f.VALUE;
+          shiftedMaddon[`MADDON_FILTER_JOINER_${s}`] = f.JOINER;
+          shiftedMaddon[`MADDON_FILTER_SEQNUM_${s}`] = s.toString();
+          shiftedMaddon[`MADDON_LPAREN_${s}`] = f.LPAREN;
+          shiftedMaddon[`MADDON_RPAREN_${s}`] = f.RPAREN;
+        });
+        if (typeof options.params === "object") {
+          Object.assign(options.params, shiftedMaddon);
+        } else if (typeof options.params === "string") {
+          const searchParams = new URLSearchParams(options.params);
+          for (const [k, v] of Object.entries(shiftedMaddon)) {
+            searchParams.set(k, v);
+          }
+          options.params = searchParams.toString();
+        }
       }
     }
+  });
+  function initAjaxInterceptors() {
   }
   function buildMaddonFilters(prof) {
     const mapping = {
@@ -3168,6 +4067,7 @@
     }
   }
   async function executeForecast(mode = "normal") {
+    if (!FeatureFlags.isEnabled("forecast")) return;
     if (window.self !== window.top) return;
     if (isRunning) return;
     currentMode = mode;
@@ -3293,6 +4193,9 @@
     return isRunning;
   }
 
+  // src/modules/forecast/forecast-ui.js
+  init_forecast_prefs();
+
   // src/ui/dom-helpers.js
   function el(tag, props = {}, children = []) {
     const element = document.createElement(tag);
@@ -3313,7 +4216,8 @@
         element.setAttribute(key, value);
       }
     }
-    for (const child of children) {
+    const childrenArray = Array.isArray(children) ? children : children !== null && children !== void 0 ? [children] : [];
+    for (const child of childrenArray) {
       if (typeof child === "string" || typeof child === "number") {
         element.appendChild(document.createTextNode(child));
       } else if (child && (child.nodeType && (child.nodeType === 1 || child.nodeType === 3 || child.nodeType === 11) || child instanceof SVGElement || child.constructor && child.constructor.name && child.constructor.name.includes("Element"))) {
@@ -3446,13 +4350,19 @@
 /* =========================
  * Settings Panel & AutoFill
  * ========================= */
-.apm-settings-container { position:fixed; z-index:2147483647; padding:12px; background:#35404a; color:white; border:1px solid #2c353c; border-radius:8px; box-shadow: 0px 8px 25px rgba(0,0,0,0.6); font-family:sans-serif; width: 440px; max-width: 95vw; display:none; }
+.apm-settings-container { position:fixed; z-index:2147483647; padding:12px; background:#35404a; color:white; border:1px solid #2c353c; border-radius:8px; box-shadow: 0px 8px 25px rgba(0,0,0,0.6); font-family:sans-serif; width: 440px; max-width: 95vw; max-height: calc(100vh - 100px); display:flex; flex-direction: column; overflow: hidden; display:none; }
 
 .apm-settings-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; }
 .apm-settings-title { margin:0; font-size:16px; color:#ffffff; font-weight:normal; }
 .apm-settings-close-btn { background:#505f6e; color:#ffffff; border:none; padding:4px 10px; border-radius:4px; cursor:pointer; font-size:12px; font-weight:bold; }
-.apm-tab-container { display:flex; margin-bottom:10px; background:#2b343c; border-radius:6px; overflow:hidden; }
-.apm-panel-section { display:block; }
+.apm-tab-container { display:flex; margin-bottom:10px; background:#2b343c; border-radius:6px; overflow:hidden; flex-shrink: 0; }
+.apm-panel-section { display:none; flex-direction: column; flex: 1; min-height: 0; align-items: stretch; overflow: visible; }
+.apm-tab-content-scroll { overflow-y: auto; padding-right: 15px; flex: 1; min-height: 0; margin-bottom: 5px; scrollbar-gutter: stable; }
+/* Scrollbar Styling */
+.apm-tab-content-scroll::-webkit-scrollbar { width: 6px; }
+.apm-tab-content-scroll::-webkit-scrollbar-track { background: transparent; }
+.apm-tab-content-scroll::-webkit-scrollbar-thumb { background: #4a5a6a; border-radius: 3px; }
+.apm-tab-content-scroll::-webkit-scrollbar-thumb:hover { background: #5c6d7e; }
 .apm-template-box { background: rgba(0,0,0,0.25); padding: 8px 10px; border-radius: 6px; margin-bottom: 12px; border: 1px solid #45535e; }
 .apm-template-label { font-size: 10px; color: #b0bec5; margin-bottom: 4px; font-weight: bold; text-transform: uppercase; letter-spacing: 0.5px; }
 .apm-template-row { display: flex; gap: 5px; align-items: center; }
@@ -3473,6 +4383,7 @@
 
 .apm-ui-settings-save { width:100%; background:#2ecc71; color:white; border:none; padding:12px; border-radius:6px; cursor:pointer; font-weight:bold; font-size:14px; }
 .apm-ui-settings-reset { width:100%; background:#e74c3c; color:white; border:none; padding:8px; border-radius:6px; cursor:pointer; font-weight:bold; font-size:12px; margin-top:6px; display:none; }
+.apm-tab-action-footer { flex-shrink: 0; padding: 12px 15px 5px 0; border-top: 1px solid rgba(255,255,255,0.1); margin-top: 5px; }
 .apm-cc-search-box { background: rgba(0,0,0,0.25); border: 1px solid #45535e; padding: 8px 10px; border-radius: 6px; margin-bottom: 8px; }
 .apm-cc-search-row { display: flex; gap: 8px; margin-bottom: 8px; }
 .apm-cc-options-row { display: flex; gap: 10px; align-items: center; margin-bottom: 8px; padding-left: 2px; }
@@ -3485,9 +4396,10 @@
 
 .apm-cc-guide { display:none; font-size: 12px; color: #b0bec5; line-height: 1.5; background: #22292f; border-radius: 6px; padding: 12px; border: 1px solid #45535e; }
 .apm-general-box { display:none; padding: 10px; background: #22292f; border-radius: 6px; border: 1px solid #45535e; }
-.apm-general-item { display:flex; justify-content:space-between; align-items:center; margin-bottom: 15px; padding: 0 5px; }
-.apm-general-title { font-weight: bold; font-size: 13px; color: #fff; }
-.apm-general-desc { font-size: 11px; color: #95a5a6; }
+.apm-general-item { display:flex; justify-content:space-between; align-items:flex-start; margin-bottom: 12px; padding: 4px 5px; border-radius: 4px; transition: background 0.2s; }
+.apm-general-item:hover { background: rgba(255,255,255,0.03); }
+.apm-general-title { font-weight: bold; font-size: 13px; color: #fff; line-height: 1.3; margin-bottom: 2px; }
+.apm-general-desc { font-size: 11px; color: #95a5a6; line-height: 1.3; margin-right: 10px; }
 .apm-help-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 2147483647; display: none; align-items: center; justify-content: center; backdrop-filter: blur(2px); }
 .apm-help-modal { background: #1e272e; width: 600px; max-width: 90%; max-height: 85vh; border-radius: 12px; border: 1px solid #34495e; box-shadow: 0 15px 40px rgba(0,0,0,0.5); display: flex; flex-direction: column; position: relative; overflow: hidden; }
 .apm-help-header { padding: 15px 20px; background: #2c3e50; border-bottom: 1px solid #34495e; display: flex; justify-content: space-between; align-items: center; }
@@ -3501,7 +4413,7 @@
 .apm-help-content ul { padding-left: 20px; margin: 10px 0; }
 .apm-help-content li { margin-bottom: 8px; }
 .apm-help-content kbd { background: #34495e; padding: 2px 6px; border-radius: 4px; font-family: monospace; font-size: 12px; color: #3498db; border: 1px solid #4a627a; }
-.apm-footer { margin-top: 10px; text-align: center; display: flex; flex-direction: column; gap: 8px; }
+.apm-footer { margin-top: 10px; text-align: center; display: flex; flex-direction: column; gap: 8px; flex-shrink: 0; border-top: 1px solid #45535e; padding-top: 10px; }
 .apm-footer-help-btn { cursor: pointer; color: #3498db; font-size: 11px; text-decoration: underline; font-weight: bold; }
 .apm-footer-help-btn-box { background: #4a5a6a; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 11px; font-weight: bold; transition: background 0.2s; box-shadow: 0 1px 3px rgba(0,0,0,0.2); }
 .apm-footer-help-btn-box:hover { background: #5c6d7e; }
@@ -3576,7 +4488,7 @@
 .field-input { flex-grow: 1; padding: 6px; border-radius: 4px; border: 1px solid transparent; background: #ecf0f1; color: #2c3e50; min-width: 0; width: 100%; box-sizing: border-box; transition: all 0.2s ease-in-out; }
 .field-input.upper { text-transform: uppercase; }
 #apm-creator-panel .field-input:focus { border-color: #3498db !important; background: #ffffff !important; box-shadow: 0 0 5px rgba(52, 152, 219, 0.4) !important; }
-.apm-tab-btn { flex: 1; padding: 10px; text-align: center; cursor: pointer; font-weight: bold; transition: all 0.2s; border-bottom: 3px solid transparent; }
+.apm-tab-btn { flex: 1; min-width: 0; height: 44px; padding: 4px; text-align: center; cursor: pointer; font-weight: bold; transition: all 0.2s; border-bottom: 3px solid transparent; font-size: 11px; display: flex; flex-direction: column; align-items: center; justify-content: center; line-height: 1.2; box-sizing: border-box; flex-shrink: 0; }
 .apm-tab-active-autofill { color: #3498db; border-bottom: 3px solid #3498db; background: rgba(52, 152, 219, 0.05); }
 .apm-tab-inactive { color: #7f8c8d; }
 .apm-tab-inactive:hover { color: #bdc3c7; background: rgba(255,255,255,0.02); }
@@ -3637,6 +4549,8 @@
   init_toast();
   init_logger();
   init_ui_manager();
+  init_api();
+  init_context();
 
   // src/core/updater.js
   init_constants();
@@ -3655,20 +4569,24 @@
       download: isBeta ? BETA_UPDATE_URL : UPDATE_URL
     };
   }
-  function checkForGlobalUpdates(force = false) {
-    if (window._apmUpdateChecked && !force) return;
+  function checkForGlobalUpdates(force = false, onComplete = null) {
+    if (window._apmUpdateChecked && !force) {
+      if (typeof onComplete === "function") onComplete(window._apmUpdateAvailable);
+      return;
+    }
     const today = (/* @__PURE__ */ new Date()).toISOString().split("T")[0];
     const lastCheck = APMStorage.get("apm_last_update_check");
     if (lastCheck === today && !force) {
       APMLogger.info("APM Master", "Update already checked today. Skipping auto-check.");
       window._apmUpdateChecked = true;
+      if (typeof onComplete === "function") onComplete(window._apmUpdateAvailable);
       return;
     }
     const { check, download } = getUpdateUrls();
     window._apmUpdateChecked = true;
     APMLogger.info("APM Master", `Checking for updates (${apmGeneralSettings.updateTrack})...`, CURRENT_VERSION);
     fetch(check).then((response) => response.text()).then((text) => {
-      APMStorage.set("apm_last_update_check", today);
+      APMStorage.set(UPDATE_CHECK_KEY, today);
       const match = text.match(/\/\/\s*@version\s+([0-9\.]+)/);
       if (match && match[1]) {
         const remoteVersion = match[1];
@@ -3677,17 +4595,23 @@
           window._apmRemoteVersion = remoteVersion;
           window._apmUpdateUrl = download;
           APMLogger.info("APM Master", `\u2728 Update available! Current: ${CURRENT_VERSION}, Remote: ${remoteVersion} (${apmGeneralSettings.updateTrack})`);
-          updateListeners.forEach((cb) => cb());
         } else {
           window._apmUpdateAvailable = false;
+          APMLogger.info("APM Master", "Software is up to date.");
         }
+        updateListeners.forEach((cb) => cb());
+        if (typeof onComplete === "function") onComplete(window._apmUpdateAvailable);
+      } else {
+        if (typeof onComplete === "function") onComplete(false);
       }
     }).catch((e) => {
       APMLogger.warn("APM Master", "Update check failed silently.", e);
+      if (typeof onComplete === "function") onComplete(false);
     });
   }
 
   // src/modules/forecast/components/forecast-search-form.js
+  init_forecast_prefs();
   function createSearchForm(callbacks = {}) {
     const { onToggleGuide, onToggleMode } = callbacks;
     const form = el("div", { id: "eam-main-view" }, [
@@ -3717,7 +4641,7 @@
         el("label", { className: "eam-fc-date-label" }, "Date Range:"),
         el("button", { id: "eam-date-mode-toggle", className: "eam-fc-date-toggle" }, "Switch to Custom Dates \u{1F4C5}")
       ]),
-      el("div", { id: "eam-relative-dates" }, [
+      el("div", { id: "eam-relative-dates", style: { display: forecastState.isCustomDateMode ? "none" : "block" } }, [
         el("div", { className: "eam-fc-week-row" }, [
           el("label", { className: "eam-fc-label" }, "Target Week:"),
           el("select", { id: "eam-week-select", dataset: { cumulative: "false" }, className: "eam-fc-select" }, [
@@ -3730,45 +4654,44 @@
         el("div", { id: "eam-day-checkboxes", className: "eam-fc-days-box" }, [
           ...["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map(
             (day, i) => el("label", { style: { cursor: "pointer", display: "flex", flexDirection: "column", alignItems: "center", gap: "4px" } }, [
-              el("input", { type: "checkbox", value: String(i) }),
+              el("input", {
+                type: "checkbox",
+                value: String(i),
+                checked: forecastState.days[i],
+                dataset: { explicit: forecastState.days[i] ? "true" : "false" }
+              }),
               ` ${day}`
             ])
           )
         ])
       ]),
-      el("div", { id: "eam-custom-dates", className: "eam-fc-custom-dates" }, [
+      el("div", { id: "eam-custom-dates", className: "eam-fc-custom-dates", style: { display: forecastState.isCustomDateMode ? "flex" : "none" } }, [
         el("div", { className: "eam-fc-custom-row" }, [
           el("label", { style: { fontSize: "12px", color: "#b0bec5", width: "40px" } }, "From:"),
-          el("input", { type: "date", id: "eam-custom-start", className: "eam-fc-date-input" })
+          el("input", { type: "date", id: "eam-custom-start", value: forecastState.customStart, className: "eam-fc-date-input" })
         ]),
         el("div", { className: "eam-fc-custom-row" }, [
           el("label", { style: { fontSize: "12px", color: "#b0bec5", width: "40px" } }, "To:"),
-          el("input", { type: "date", id: "eam-custom-end", className: "eam-fc-date-input" })
+          el("input", { type: "date", id: "eam-custom-end", value: forecastState.customEnd, className: "eam-fc-date-input" })
         ])
-      ]),
-      el("div", { id: "eam-adv-assigned", className: "eam-fc-assigned-box" }, [
-        el("label", { className: "eam-fc-label" }, "Assigned:"),
-        el("input", { type: "text", id: "eam-assigned-text", placeholder: "(Optional)", className: "eam-fc-input-text" }),
-        el("label", { className: "eam-fc-label", style: { marginLeft: "5px" } }, "Shift:"),
-        el("input", { type: "text", id: "eam-shift-text", placeholder: "(Opt)", className: "eam-fc-shift-text" })
       ]),
       el("div", { className: "eam-fc-desc-box" }, [
         el("label", { className: "eam-fc-label" }, "Description:"),
         el("select", { id: "eam-desc-op", className: "eam-fc-select" }, [
-          el("option", { value: "Contains" }, "Include"),
-          el("option", { value: "Does Not Contain" }, "Exclude")
+          el("option", { value: "Contains", selected: forecastState.descOp === "Contains" }, "Include"),
+          el("option", { value: "Does Not Contain", selected: forecastState.descOp === "Does Not Contain" }, "Exclude")
         ]),
-        el("input", { type: "text", id: "eam-desc-text", placeholder: "Keywords... (Optional)", className: "eam-fc-desc-input" })
+        el("input", { type: "text", id: "eam-desc-text", value: forecastState.descText, placeholder: "Keywords... (Optional)", className: "eam-fc-desc-input" })
       ]),
       el("div", { className: "eam-fc-run-box" }, [
         el("button", { id: "eam-btn-run", className: "eam-fc-btn-run" }, "Run Search"),
         el("div", { className: "eam-fc-today-box" }, [
           el("label", { className: "eam-fc-today-lbl" }, [
             el("div", { className: "eam-slider-switch" }, [
-              el("input", { type: "checkbox", id: "eam-today-only-toggle" }),
+              el("input", { type: "checkbox", id: "eam-today-only-toggle", checked: forecastState.todayOnly }),
               el("span", { className: "eam-slider-track" })
             ]),
-            el("span", { id: "eam-today-toggle-text", className: "eam-fc-today-txt" }, "Includes Past Due")
+            el("span", { id: "eam-today-toggle-text", className: "eam-fc-today-txt" }, forecastState.todayOnly ? "Today Only" : "Includes Past Due")
           ]),
           el("button", { id: "eam-btn-today", className: "eam-fc-btn-today", title: "Search Today (Alt + T)" }, "Today")
         ])
@@ -3800,15 +4723,36 @@
     };
     btnHelp.onclick = () => onToggleGuide?.();
     todayToggle.addEventListener("change", () => {
-      todayToggleText.textContent = todayToggle.checked ? "Today Only" : "Includes Past Due";
+      const checked = todayToggle.checked;
+      todayToggleText.textContent = checked ? "Today Only" : "Includes Past Due";
+      updateForecastState({ todayOnly: checked });
       saveAllPreferences();
     });
     const descInput = container.querySelector("#eam-desc-text");
+    descInput.addEventListener("input", () => {
+      updateForecastState({ descText: descInput.value.trim() });
+    });
     descInput.addEventListener("keydown", (e) => {
       if (e.key === "Enter") {
         e.preventDefault();
         if (!getIsRunning()) executeForecast("normal");
       }
+    });
+    container.querySelector("#eam-week-select").addEventListener("change", (e) => {
+      updateForecastState({ week: e.target.value });
+      saveAllPreferences();
+    });
+    container.querySelector("#eam-desc-op").addEventListener("change", (e) => {
+      updateForecastState({ descOp: e.target.value });
+      saveAllPreferences();
+    });
+    container.querySelector("#eam-custom-start").addEventListener("change", (e) => {
+      updateForecastState({ customStart: e.target.value });
+      saveAllPreferences();
+    });
+    container.querySelector("#eam-custom-end").addEventListener("change", (e) => {
+      updateForecastState({ customEnd: e.target.value });
+      saveAllPreferences();
     });
     container.querySelector("#eam-add-org-btn").onclick = () => {
       const newOrg = prompt("Enter new Site Code (Org):");
@@ -3858,20 +4802,27 @@
               const p = dStr.split("/");
               return `${p[2]}-${p[0].padStart(2, "0")}-${p[1].padStart(2, "0")}`;
             };
-            container.querySelector("#eam-custom-start").value = toYMD(dates.start);
-            container.querySelector("#eam-custom-end").value = toYMD(dates.end);
+            const start = toYMD(dates.start);
+            const end = toYMD(dates.end);
+            container.querySelector("#eam-custom-start").value = start;
+            container.querySelector("#eam-custom-end").value = end;
+            updateForecastState({ customStart: start, customEnd: end });
           }
         }
       }
       relDates.style.display = nextCustom ? "none" : "block";
       custDates.style.display = nextCustom ? "flex" : "none";
       dateModeBtn.innerHTML = nextCustom ? "Switch to Relative \u26A1" : "Switch to Custom Dates \u{1F4C5}";
+      updateForecastState({ isCustomDateMode: nextCustom });
       saveAllPreferences();
     };
     checkboxes.forEach((cb) => {
       cb.addEventListener("change", (e) => {
         e.target.dataset.explicit = e.target.checked ? "true" : "false";
+        const newDays = checkboxes.map((c) => c.dataset.explicit === "true");
+        updateForecastState({ days: newDays });
         updateCheckboxVisuals(container);
+        saveAllPreferences();
       });
     });
   }
@@ -3939,6 +4890,7 @@
   }
 
   // src/modules/forecast/components/forecast-profile-manager.js
+  init_forecast_prefs();
   init_logger();
   function createProfileManager(callbacks = {}) {
     const modal = el("div", { id: "apm-spies-modal", className: "apm-modal-overlay", style: { display: "none" } }, [
@@ -3980,6 +4932,10 @@
             el("div", {}, [
               el("label", { className: "eam-fc-label", style: { display: "block", marginBottom: "4px" } }, "Assigned To:"),
               el("input", { type: "text", id: "spy-assigned", className: "eam-fc-input-text", style: { width: "100%" } })
+            ]),
+            el("div", {}, [
+              el("label", { className: "eam-fc-label", style: { display: "block", marginBottom: "4px" } }, "Shift:"),
+              el("input", { type: "text", id: "spy-shift", className: "eam-fc-input-text", placeholder: "A, B...", style: { width: "100%" } })
             ]),
             el("div", {}, [
               el("label", { className: "eam-fc-label", style: { display: "block", marginBottom: "4px" } }, "WO Type:"),
@@ -4054,6 +5010,7 @@
       modal.querySelector("#spy-eqdesc").value = prof ? prof.eqDesc || "" : "";
       modal.querySelector("#spy-desc").value = prof ? prof.desc || "" : "";
       modal.querySelector("#spy-assigned").value = prof ? prof.assigned || "" : "";
+      modal.querySelector("#spy-shift").value = prof ? prof.shift || "" : "";
       modal.querySelector("#spy-type").value = prof ? prof.type || "" : "";
       modal.querySelector("#spy-org").value = prof ? prof.org || "" : "";
       modal.querySelector("#spy-ex-dates").value = prof ? prof.exDates || "" : "";
@@ -4072,6 +5029,7 @@
         eqDesc: modal.querySelector("#spy-eqdesc").value.trim(),
         desc: modal.querySelector("#spy-desc").value.trim(),
         assigned: modal.querySelector("#spy-assigned").value.trim(),
+        shift: modal.querySelector("#spy-shift").value.trim(),
         type: modal.querySelector("#spy-type").value.trim(),
         org: modal.querySelector("#spy-org").value.trim(),
         exDates: modal.querySelector("#spy-ex-dates").value.trim()
@@ -4133,6 +5091,7 @@
         if (prof.eqDesc) details.push(`EqDesc: ${prof.eqDesc}`);
         if (prof.desc) details.push(`Desc: ${prof.desc}`);
         if (prof.assigned) details.push(`Assigned: ${prof.assigned}`);
+        if (prof.shift) details.push(`Shift: ${prof.shift}`);
         if (prof.type) details.push(`Type: ${prof.type}`);
         if (prof.org) details.push(`Org: ${prof.org}`);
         summaryText.textContent = details.length > 0 ? details.join(" | ") : "No specific filters set (All Records)";
@@ -4216,8 +5175,7 @@
     return ui;
   }
   function buildForecastUI() {
-    window._APM = window._APM || {};
-    window._APM.buildForecastUI = buildForecastUI;
+    APMApi.register("buildForecastUI", buildForecastUI);
     if (window.self !== window.top) return;
     let panel = document.getElementById("eam-forecast-panel");
     if (!panel) {
@@ -4234,6 +5192,7 @@
           el("button", { id: "eam-btn-close", className: "eam-fc-close-btn" }, "\u2716")
         ])
       ]);
+      loadPreferences();
       const searchForm = createSearchForm({
         onToggleGuide: () => {
           searchForm.style.display = "none";
@@ -4263,8 +5222,12 @@
       const spiesBtn = panel.querySelector("#eam-btn-spies");
       modeBtn.onclick = () => {
         const isSimple = modeBtn.textContent.includes("Simple");
-        setModeUI(panel, !isSimple);
-        saveAllPreferences();
+        const nextSimple = !isSimple;
+        setModeUI(panel, nextSimple);
+        Promise.resolve().then(() => (init_forecast_prefs(), forecast_prefs_exports)).then((m) => {
+          m.updateForecastState({ isSimpleMode: nextSimple });
+          m.saveAllPreferences();
+        });
       };
       spiesBtn.onclick = () => {
         const modal = panel.querySelector("#apm-spies-modal");
@@ -4386,26 +5349,26 @@
       }
       return false;
     };
-    if (window._apmHotkeysBound) return;
-    window._APM = window._APM || {};
-    window._APM.checkHotkey = checkKey;
+    if (window[FLAGS.HOTKEYS_BOUND]) return;
+    APMApi.register("checkHotkey", checkKey);
+    APMApi.register("executeForecast", executeForecast);
     window.addEventListener("keydown", checkKey, true);
-    window._apmHotkeysBound = true;
+    window[FLAGS.HOTKEYS_BOUND] = true;
     const bindExtHotkeys = () => {
       if (!window.Ext || !window.Ext.onReady) return;
       window.Ext.onReady(() => {
         const doc = window.Ext.getDoc();
-        if (doc && !doc.hasApmHotkeys) {
+        if (doc && !doc[FLAGS.HOTKEYS_BOUND]) {
           APMLogger.debug("APM Master", "Binding ExtJS hotkey listener");
           doc.on("keydown", (e) => {
             if (checkKey(e.browserEvent || e)) e.stopEvent();
           });
-          doc.hasApmHotkeys = true;
+          doc[FLAGS.HOTKEYS_BOUND] = true;
         }
       });
     };
-    Promise.resolve().then(() => (init_scheduler(), scheduler_exports)).then(({ APMScheduler: APMScheduler2 }) => {
-      APMScheduler2.registerTask("ext-hotkeys-bind", 2e3, bindExtHotkeys);
+    Promise.resolve().then(() => (init_scheduler(), scheduler_exports)).then(({ APMScheduler: APMScheduler3 }) => {
+      APMScheduler3.registerTask("ext-hotkeys-bind", 2e3, bindExtHotkeys);
     });
   }
 
@@ -4443,6 +5406,8 @@
       store.suspendEvents();
       if (store._nativeGetTotalCount) {
         store.getTotalCount = store._nativeGetTotalCount;
+      } else {
+        store._nativeGetTotalCount = store.getTotalCount;
       }
       store.clearFilter();
       if (filterState === 0) {
@@ -4458,7 +5423,6 @@
         return filterState === 1 ? !isBlank : isBlank;
       });
       const count = store.getCount();
-      if (!store._nativeGetTotalCount) store._nativeGetTotalCount = store.getTotalCount;
       store.getTotalCount = function() {
         return count;
       };
@@ -4504,7 +5468,7 @@
     }
     return {
       init: function() {
-        APMScheduler.registerTask("forecast-filter", 1500, () => {
+        APMScheduler2.registerTask("forecast-filter", 1500, () => {
           const existingBtn = document.getElementById("apm-list-pm-btn");
           if (existingBtn && filterState === 0) return;
           injectForecastFilter();
@@ -4522,9 +5486,13 @@
   init_logger();
   init_constants();
   init_utils();
+  init_api();
+  init_diagnostics();
+  init_feature_flags();
+  init_storage();
   var PTP_LINK_CONFIG = {
-    woPattern: /\b(1\d{9,}|2\d{9,}|3\d{9,})\b/,
-    recordCodePattern: /\b(1\d{9,}|2\d{9,}|3\d{9,})\b/
+    woPattern: /(?:^|\D)([123]\d{9,})(?=\D|$)/,
+    recordCodePattern: /(?:^|\D)([123]\d{9,})(?=\D|$)/
   };
   var _rowCache = /* @__PURE__ */ new WeakMap();
   var _rowCacheGeneration = 0;
@@ -4552,7 +5520,7 @@
       }
       if (changed) {
         try {
-          localStorage.setItem("apm_ptp_history", JSON.stringify(history));
+          APMStorage.set(PTP_HISTORY_KEY, history);
         } catch (e) {
         }
       }
@@ -4564,8 +5532,10 @@
     return `${r}, ${g}, ${b}`;
   }
   function fullStyleUpdate(targetDoc) {
+    if (!FeatureFlags.isEnabled("colorCode")) return;
     const rules = getRules();
     const settings = getSettings();
+    const previewRule = getPreviewRuleOverride();
     const docs = targetDoc ? [targetDoc] : [document];
     if (!targetDoc) {
       document.querySelectorAll("iframe").forEach((f) => {
@@ -4584,26 +5554,67 @@
         const safeId = rule.id.toString().replace(".", "_");
         root.style.setProperty(`--cc-color-${safeId}`, rule.color);
       });
+      if (previewRule && previewRule.id && previewRule.color) {
+        const safeId = previewRule.id.toString().replace(".", "_");
+        root.style.setProperty(`--cc-color-${safeId}`, previewRule.color);
+      }
       const legacy = doc.getElementById("apm-cc-dynamic-styles");
       if (legacy) legacy.remove();
     });
   }
   var _compiledRules = null;
   var _compiledRulesFingerprint = "";
+  var _APM_PREVIEW_KEY = "__ccPreviewRule";
+  function _getTopAPM() {
+    try {
+      const uw = typeof unsafeWindow !== "undefined" ? unsafeWindow : window;
+      const top = uw.top;
+      if (!top._APM) top._APM = {};
+      return top._APM;
+    } catch (e) {
+      if (!window._APM) window._APM = {};
+      return window._APM;
+    }
+  }
+  function setPreviewRuleOverride(rule) {
+    _getTopAPM()[_APM_PREVIEW_KEY] = rule || null;
+    if (rule) {
+      console.log(`[Engine] Preview override SET (cross-frame):`, rule);
+    } else {
+      console.log(`[Engine] Preview override CLEARED (cross-frame)`);
+    }
+  }
+  function getPreviewRuleOverride() {
+    return _getTopAPM()[_APM_PREVIEW_KEY] || null;
+  }
   function getCompiledRules(rules) {
-    const fingerprint = rules.map((r) => `${r.id}:${r.search}:${r.fill}:${r.showTag}:${r.color}`).join("|");
-    if (_compiledRules && fingerprint === _compiledRulesFingerprint) return _compiledRules;
+    console.log(`[getCompiledRules] Input rules:`, rules);
+    const fingerprint = rules.map((r) => `${r.id}:${r.search}:${r.fill}:${r.showTag}:${r.color}:${r.tag || ""}`).join("|");
+    if (_compiledRules && fingerprint === _compiledRulesFingerprint) {
+      console.log(`[getCompiledRules] Using cached rules (fingerprint match)`);
+      return _compiledRules;
+    }
+    console.log(`[getCompiledRules] Compiling fresh rules...`);
     _compiledRulesFingerprint = fingerprint;
     _compiledRules = rules.map((r) => {
-      if (!r.search) return null;
+      if (!r.search) {
+        console.log(`[getCompiledRules] Skipping rule with no search:`, r);
+        return null;
+      }
       const terms = r.search.split(",").map((s) => s.trim().toLowerCase()).filter((s) => s);
-      if (terms.length === 0) return null;
+      if (terms.length === 0) {
+        console.log(`[getCompiledRules] Skipping rule with empty terms:`, r);
+        return null;
+      }
       const pattern = terms.map((t) => t.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")).join("|");
-      return {
+      const compiled = {
         ...r,
         regex: new RegExp(pattern, "i")
       };
+      console.log(`[getCompiledRules] Compiled rule ${r.id}:`, { search: r.search, pattern });
+      return compiled;
     }).filter((r) => r);
+    console.log(`[getCompiledRules] Final compiled rules:`, _compiledRules.map((r) => r.id));
     return _compiledRules;
   }
   function applyRowColoring(row, fillRule, settings) {
@@ -4622,22 +5633,43 @@
   }
   function buildSafeWoUrl(woNum) {
     const currentTenant = window.EAM && window.EAM.AppData && window.EAM.AppData.tenant ? window.EAM.AppData.tenant : LINK_CONFIG.tenant;
-    return `https://${window.location.hostname}/web/base/logindisp?tenant=${currentTenant}&FROMEMAIL=YES&SYSTEM_FUNCTION_NAME=${LINK_CONFIG.userFuncName}&USER_FUNCTION_NAME=${LINK_CONFIG.userFuncName}&workordernum=${woNum}`;
+    const params = new URLSearchParams({
+      tenant: currentTenant,
+      FROMEMAIL: "YES",
+      SYSTEM_FUNCTION_NAME: LINK_CONFIG.userFuncName,
+      USER_FUNCTION_NAME: LINK_CONFIG.userFuncName,
+      workordernum: woNum
+    });
+    return `https://${window.location.hostname}/web/base/logindisp?${params.toString()}`;
   }
   function applyCellProcessors(cell, rowMatches, ptpHistory) {
     const cellText = cell.textContent;
     const lowerCellText = cellText.toLowerCase();
-    if (!cell.querySelector(".apm-wo-link")) {
-      const match = cellText.match(PTP_LINK_CONFIG.woPattern);
+    const hasLinkAttr = cell.hasAttribute("data-apm-linkified");
+    const physicalLinkMissing = hasLinkAttr && !cell.querySelector(".apm-wo-link");
+    const existingLink = hasLinkAttr ? cell.querySelector(".apm-wo-link") : null;
+    const linkSettingChanged = existingLink && existingLink.getAttribute("target") === "_blank" !== !!apmGeneralSettings?.openLinksInNewTab;
+    if (!hasLinkAttr || physicalLinkMissing || linkSettingChanged) {
+      const match = cellText.match(/(?:^|\D)([123]\d{9,})(?=\D|$)/);
       if (match) {
         const woNum = match[1];
         const safeUrl = buildSafeWoUrl(woNum);
         const isNewTab = apmGeneralSettings?.openLinksInNewTab;
         const targetAttr = isNewTab ? 'target="_blank"' : "";
-        const onclickAttr = isNewTab ? "" : `onclick="event.preventDefault(); event.stopPropagation(); window.top.location.href='${safeUrl}'; return false;"`;
-        cell.innerHTML = `<span style="white-space:nowrap"><a class="apm-wo-link" href="${safeUrl}" ${targetAttr} ${onclickAttr}>${woNum}</a><span class="apm-copy-icon" title="Copy link to clipboard" data-wo-copy-url="${safeUrl}"></span></span>`;
+        cell.innerHTML = `<span style="white-space:nowrap"><a class="apm-wo-link" href="${safeUrl}" ${targetAttr}>${woNum}</a><span class="apm-copy-icon" title="Copy link to clipboard" data-wo-copy-url="${safeUrl}"></span></span>`;
+        if (!isNewTab) {
+          const link = cell.querySelector(".apm-wo-link");
+          if (link) link.addEventListener("click", (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            window.top.location.href = safeUrl;
+          });
+        }
         cell.setAttribute("data-apm-linkified", "true");
         cell.setAttribute("data-wo-num", woNum);
+      } else if (hasLinkAttr) {
+        cell.removeAttribute("data-apm-linkified");
+        cell.removeAttribute("data-wo-num");
       }
     }
     if (apmGeneralSettings.ptpTrackingEnabled && cell.hasAttribute("data-wo-num")) {
@@ -4695,8 +5727,29 @@
   function processColorCodeGrid(targetDoc) {
     const doc = targetDoc && targetDoc.querySelectorAll ? targetDoc : document;
     const settings = getSettings();
-    const rawRules = getRules();
-    if (!settings || !rawRules || !Array.isArray(rawRules)) return;
+    const previewOverride = getPreviewRuleOverride();
+    let rawRules = getRules();
+    if (previewOverride) {
+      console.log(`[processColorCodeGrid] Using preview override:`, previewOverride.search);
+      rawRules = rawRules.filter((r) => r.id !== "__preview__");
+      rawRules = [...rawRules, previewOverride];
+    } else {
+      const stale = rawRules.find((r) => r.id === "__preview__");
+      if (stale) {
+        console.warn(`[processColorCodeGrid] STALE preview in AppState (override=null), stripping it. search="${stale.search}"`);
+        console.trace("[processColorCodeGrid] Caller trace");
+        rawRules = rawRules.filter((r) => r.id !== "__preview__");
+      }
+    }
+    console.log(`[processColorCodeGrid] Called with ${rawRules?.length || 0} rules`);
+    if (!FeatureFlags.isEnabled("colorCode")) {
+      console.log(`[processColorCodeGrid] ColorCode feature disabled`);
+      return;
+    }
+    if (!settings || !rawRules || !Array.isArray(rawRules)) {
+      console.log(`[processColorCodeGrid] Invalid input: settings=${!!settings}, rawRules=${!!rawRules}, isArray=${Array.isArray(rawRules)}`);
+      return;
+    }
     const activeRules = getCompiledRules(rawRules);
     const ptpHistory = getPtpHistory();
     const ruleFingerprint = `${settings.uniformHighlight}|${_compiledRulesFingerprint}`;
@@ -4708,34 +5761,57 @@
     let rowsToProcess = [];
     try {
       const win = doc.defaultView || window;
-      if (win.Ext) {
+      if (win.Ext && win.Ext.ComponentQuery) {
         const grids = win.Ext.ComponentQuery.query("gridpanel:not([destroyed=true])");
         grids.forEach((g) => {
           if (g.rendered && !g.isDestroyed && g.getEl()?.dom?.ownerDocument === doc) {
             const view = g.getView();
-            if (view && view.getNodes) rowsToProcess.push(...view.getNodes());
+            if (view && view.getNodes) {
+              const nodes = view.getNodes();
+              if (nodes && nodes.length > 0) rowsToProcess.push(...nodes);
+            }
           }
         });
       }
     } catch (e) {
+      APMLogger.error("ColorCode", "Error querying grids:", e);
     }
     if (rowsToProcess.length === 0) rowsToProcess = doc.querySelectorAll(".x-grid-item");
     rowsToProcess.forEach((row) => {
       try {
-        const textLen = row.textContent.length;
-        const lowerText = row.textContent.toLowerCase();
+        const win = doc.defaultView || window;
+        const view = row.id && win.Ext ? win.Ext.getCmp(row.id)?.ownerCt : null;
+        const record = view?.getRecord?.(row);
+        const rawText = row.textContent;
+        const textLen = rawText.length;
         const cached = _rowCache.get(row);
+        const isRecycled = record && cached?.recId !== record.internalId || cached?.textRaw !== rawText;
+        if (!isRecycled && cached && cached.gen === _rowCacheGeneration) {
+          const needsRepaint = cached.hasTag && !row.querySelector(".apm-nametag") || cached.hasWo && !row.querySelector(".apm-wo-link") || cached.hasFill && !row.hasAttribute("data-cc-rule");
+          if (!needsRepaint) {
+            row.setAttribute("data-cc-gen", _rowCacheGeneration);
+            return;
+          }
+          APMLogger.debug("ColorCode", `Row ${row.id} needs repaint (decorations missing)`);
+        }
+        const lowerText = rawText.toLowerCase();
         const rowMatches = activeRules.filter((r) => r.regex.test(lowerText));
         const fillRule = rowMatches.find((r) => r.fill);
         const tagRulesCount = rowMatches.filter((r) => r.showTag).length;
-        const isVisuallyIncomplete = fillRule && !row.getAttribute("data-cc-rule") || tagRulesCount > 0 && !row.querySelector(".apm-nametag") || /[123]\d{8,}/.test(lowerText) && (row.getAttribute("data-apm-linkified") !== "true" || apmGeneralSettings?.ptpTrackingEnabled && !row.querySelector(".apm-ptp-status-tag"));
-        if (cached && cached.len === textLen && cached.text === lowerText && cached.gen === _rowCacheGeneration && !isVisuallyIncomplete) {
-          return;
-        }
-        _rowCache.set(row, { len: textLen, text: lowerText, gen: _rowCacheGeneration });
+        const hasWo = PTP_LINK_CONFIG.woPattern.test(rawText);
+        _rowCache.set(row, {
+          len: textLen,
+          textRaw: rawText,
+          recId: record?.internalId,
+          gen: _rowCacheGeneration,
+          hasFill: !!fillRule,
+          hasTag: tagRulesCount > 0,
+          hasWo
+        });
         applyRowColoring(row, fillRule, settings);
         const cells = row.querySelectorAll(".x-grid-cell-inner");
         cells.forEach((cell) => applyCellProcessors(cell, rowMatches, ptpHistory));
+        row.setAttribute("data-cc-gen", _rowCacheGeneration);
       } catch (e) {
         APMLogger.error("ColorCode", "Row processing error:", e);
       }
@@ -4745,7 +5821,7 @@
         const textContent = el2.textContent;
         const match = textContent.match(PTP_LINK_CONFIG.recordCodePattern) || textContent.match(PTP_LINK_CONFIG.woPattern);
         if (match) {
-          const woNum = match[0];
+          const woNum = match[1];
           if (!el2.hasAttribute("data-wo-num")) {
             el2.setAttribute("data-wo-num", woNum);
             el2.insertAdjacentHTML("beforeend", `<span class="apm-copy-icon" title="Copy link to clipboard" data-wo-copy-url="${buildSafeWoUrl(woNum)}"></span>`);
@@ -4798,50 +5874,65 @@
     }
   }
   function setupExtGridListeners(win) {
-    if (!win.Ext || !win.Ext.override || win.__apmHooksInjected) return;
+    if (!FeatureFlags.isEnabled("colorCode")) return;
+    if (!win.Ext || !win.Ext.ComponentQuery) return;
     try {
-      win.addEventListener("APM_PTP_UPDATED_EVENT", () => {
-        _rowCacheGeneration++;
-        debouncedProcessColorCodeGrid(win.document, true);
-      });
-      win.Ext.override(win.Ext.view.Table, {
-        refresh: function() {
-          this.callParent(arguments);
-          debouncedProcessColorCodeGrid(this.el?.dom?.ownerDocument);
-        },
-        onAdd: function() {
-          this.callParent(arguments);
-          debouncedProcessColorCodeGrid(this.el?.dom?.ownerDocument);
-        },
-        onUpdate: function() {
-          this.callParent(arguments);
-          debouncedProcessColorCodeGrid(this.el?.dom?.ownerDocument);
-        }
-      });
-      win.Ext.ComponentQuery.query("gridpanel, treepanel").forEach((grid) => {
+      if (!win.__apmWinHooksInjected) {
+        APMLogger.debug("ColorCode", `Initializing window hooks for ${win.location.pathname}`);
+        win.addEventListener("APM_PTP_UPDATED_EVENT", () => {
+          _rowCacheGeneration++;
+          debouncedProcessColorCodeGrid(win.document, true);
+        });
+        win.__apmWinHooksInjected = true;
+      }
+      const grids = win.Ext.ComponentQuery.query("gridpanel, treepanel");
+      if (grids.length > 0) APMLogger.debug("ColorCode", `Found ${grids.length} grids for listener binding in ${win.location.pathname}`);
+      grids.forEach((grid) => {
         const view = grid.getView();
         if (view && !view._apmHooksInjected) {
+          APMLogger.debug("ColorCode", `Binding listeners to view of grid: ${grid.id}`);
           const trigger = () => debouncedProcessColorCodeGrid(view.el?.dom?.ownerDocument);
-          view.on("refresh", trigger);
+          const doubleTrigger = () => {
+            trigger();
+            setTimeout(trigger, 250);
+          };
+          view.on("refresh", doubleTrigger);
           view.on("itemadd", trigger);
           view.on("itemupdate", trigger);
           view.on("bufferedrefresh", trigger);
           view.on("viewready", trigger);
-          if (view.rendered && view.el && view.el.dom) {
-            view.el.dom.addEventListener("scroll", trigger, { passive: true });
+          view.on("groupcollapse", trigger);
+          view.on("groupexpand", trigger);
+          const attachScroll = (el2) => {
+            if (!el2 || !el2.dom) return;
+            el2.dom.removeEventListener("scroll", trigger);
+            el2.dom.addEventListener("scroll", trigger, { passive: true });
+          };
+          if (view.rendered) {
+            attachScroll(view.el);
+            if (view.getScroller) {
+              const scroller = view.getScroller();
+              if (scroller && scroller.getElement) attachScroll(scroller.getElement());
+            }
           } else {
-            view.on("render", () => view.el?.dom?.addEventListener("scroll", trigger, { passive: true }));
+            view.on("render", () => attachScroll(view.el));
           }
           view._apmHooksInjected = true;
         }
       });
-      if (!win._APM_CC_LOCAL_PULSE) {
-        win._APM_CC_LOCAL_PULSE = setInterval(() => {
-          debouncedProcessColorCodeGrid(win.document);
-        }, 1500);
-      }
+      const tabPanels = win.Ext.ComponentQuery.query("tabpanel[id=main-tab-panel], tabpanel[itemId=main-tab-panel]");
+      tabPanels.forEach((tp) => {
+        if (!tp._apmCCInjected) {
+          tp.on("tabchange", () => {
+            APMLogger.debug("ColorCode", "Main tab change detected - invalidating cache");
+            invalidateColorCodeCache(win.document);
+          });
+          tp._apmCCInjected = true;
+        }
+      });
       win.__apmHooksInjected = true;
     } catch (e) {
+      APMLogger.warn("ColorCode", "setupExtGridListeners failed:", e);
     }
   }
   var _ccProcessTO = null;
@@ -4888,7 +5979,9 @@
           });
         }
         const end = performance.now();
-        APMLogger.debug("ColorCode", `Grid processing took ${(end - start).toFixed(2)}ms for ${count} frames (Immediate: ${forceImmediate})`);
+        const duration = parseFloat((end - start).toFixed(2));
+        Diagnostics.recordPerformance("colorCode", duration);
+        APMLogger.debug("ColorCode", `Grid processing took ${duration}ms for ${count} frames (Immediate: ${forceImmediate})`);
       });
     };
     if (forceImmediate) {
@@ -4917,19 +6010,213 @@
   }
   var globalWin = apmGetGlobalWindow();
   if (globalWin) {
-    globalWin._APM = globalWin._APM || {};
-    globalWin._APM.invalidateColorCodeCache = invalidateColorCodeCache;
-    globalWin._APM.debouncedProcessColorCodeGrid = debouncedProcessColorCodeGrid;
-    globalWin._APM.fullStyleUpdate = fullStyleUpdate;
+    APMApi.register("invalidateColorCodeCache", invalidateColorCodeCache);
+    APMApi.register("debouncedProcessColorCodeGrid", debouncedProcessColorCodeGrid);
+    APMApi.register("fullStyleUpdate", fullStyleUpdate);
     globalWin.addEventListener("APM_CC_SYNC_REQUIRED", () => {
       fullStyleUpdate();
       invalidateColorCodeCache();
     });
+    window.addEventListener("resize", () => {
+      debouncedProcessColorCodeGrid(document);
+    }, { passive: true });
   }
 
   // src/modules/colorcode/colorcode-ui.js
   init_constants();
+  init_storage();
+  init_state();
+
+  // src/core/settings-io.js
+  init_constants();
+  init_storage();
+  init_constants();
+  init_logger();
+  var EXPORT_SCHEMA_VERSION = 1;
+  function encodeSettingsAsBase64(jsonString) {
+    try {
+      const encoded = btoa(unescape(encodeURIComponent(jsonString)));
+      return `APM:${encoded}`;
+    } catch (e) {
+      APMLogger.error("SettingsIO", "Error encoding to Base64:", e);
+      throw e;
+    }
+  }
+  function decodeSettingsFromBase64(base64String) {
+    try {
+      if (typeof base64String !== "string" || !base64String.startsWith("APM:")) {
+        return null;
+      }
+      const encoded = base64String.substring(4);
+      const decoded = decodeURIComponent(escape(atob(encoded)));
+      return decoded;
+    } catch (e) {
+      APMLogger.error("SettingsIO", "Error decoding from Base64:", e);
+      return null;
+    }
+  }
+  var EXPORT_KEYS = [
+    APM_GENERAL_STORAGE,
+    CC_STORAGE_RULES,
+    CC_STORAGE_SET,
+    PRESET_STORAGE_KEY,
+    STORAGE_KEY,
+    LABOR_PREFS_STORAGE,
+    LABOR_DOCK_STORAGE,
+    LABOR_EMPS_STORAGE,
+    LABOR_NIGHT_SHIFT_KEY
+  ];
+  var SKIP_KEYS = [
+    SESSION_STORAGE_KEY,
+    LABOR_LAST_EMP_KEY,
+    PTP_HISTORY_KEY,
+    UPDATE_CHECK_KEY,
+    CONFLICT_WARNED_KEY
+  ];
+  var migrations = [
+    // { fromVersion: 1, toVersion: 2, transform(settings) { ... } },
+  ];
+  function exportSettings() {
+    try {
+      const settings = {};
+      for (const key of EXPORT_KEYS) {
+        const value = APMStorage.get(key);
+        if (value !== null && value !== void 0) {
+          settings[key] = value;
+        }
+      }
+      const exportData = {
+        schemaVersion: EXPORT_SCHEMA_VERSION,
+        exportedAt: (/* @__PURE__ */ new Date()).toISOString(),
+        scriptVersion: CURRENT_VERSION,
+        settings
+      };
+      return JSON.stringify(exportData, null, 2);
+    } catch (e) {
+      APMLogger.error("SettingsIO", "Error exporting settings:", e);
+      throw e;
+    }
+  }
+  function importSettings(input) {
+    const result = { ok: false, errors: [], migratedFrom: null, format: null };
+    try {
+      let jsonString = input;
+      let format = "json";
+      if (typeof input === "string" && input.trim().startsWith("APM:")) {
+        const decoded = decodeSettingsFromBase64(input);
+        if (decoded) {
+          jsonString = decoded;
+          format = "base64";
+          APMLogger.info("SettingsIO", "Detected Base64-encoded import format");
+        } else {
+          result.errors.push("Invalid Base64 format. Data appears corrupted.");
+          return result;
+        }
+      }
+      result.format = format;
+      let data;
+      try {
+        data = JSON.parse(jsonString);
+      } catch (e) {
+        result.errors.push(`Invalid JSON: ${e.message}`);
+        return result;
+      }
+      if (!data || typeof data !== "object") {
+        result.errors.push("Export file is not a valid object");
+        return result;
+      }
+      if (!data.hasOwnProperty("schemaVersion")) {
+        result.errors.push("Missing schemaVersion in export file");
+        return result;
+      }
+      const exportSchemaVersion = data.schemaVersion;
+      result.migratedFrom = exportSchemaVersion;
+      if (!data.settings || typeof data.settings !== "object") {
+        result.errors.push("Missing or invalid settings object");
+        return result;
+      }
+      let settings = { ...data.settings };
+      for (const migration of migrations) {
+        if (migration.fromVersion >= exportSchemaVersion && migration.fromVersion < EXPORT_SCHEMA_VERSION) {
+          try {
+            settings = migration.transform(settings) || settings;
+            APMLogger.info("SettingsIO", `Applied migration ${migration.fromVersion} \u2192 ${migration.toVersion}`);
+          } catch (e) {
+            result.errors.push(`Migration ${migration.fromVersion} failed: ${e.message}`);
+            APMLogger.error("SettingsIO", `Migration error:`, e);
+          }
+        }
+      }
+      let written = 0;
+      for (const [key, value] of Object.entries(settings)) {
+        if (SKIP_KEYS.includes(key)) {
+          APMLogger.debug("SettingsIO", `Skipping excluded key: ${key}`);
+          continue;
+        }
+        if (value === null || value === void 0) {
+          APMLogger.debug("SettingsIO", `Skipping null/undefined key: ${key}`);
+          continue;
+        }
+        try {
+          if (key === APM_GENERAL_STORAGE && typeof value !== "object") {
+            result.errors.push(`${key}: expected object, got ${typeof value}`);
+            continue;
+          }
+          if ((key === CC_STORAGE_RULES || key === LABOR_EMPS_STORAGE) && !Array.isArray(value)) {
+            result.errors.push(`${key}: expected array, got ${typeof value}`);
+            continue;
+          }
+          APMStorage.set(key, value);
+          written++;
+        } catch (e) {
+          result.errors.push(`Failed to write ${key}: ${e.message}`);
+          APMLogger.error("SettingsIO", `Write error for ${key}:`, e);
+        }
+      }
+      if (written > 0) {
+        result.ok = true;
+        APMLogger.info("SettingsIO", `Successfully imported ${written} settings from schema v${exportSchemaVersion}`);
+      } else if (result.errors.length === 0) {
+        result.errors.push("No valid settings to import");
+      }
+      return result;
+    } catch (e) {
+      result.errors.push(`Unexpected error: ${e.message}`);
+      APMLogger.error("SettingsIO", "Unexpected error during import:", e);
+      return result;
+    }
+  }
+
+  // src/modules/colorcode/colorcode-ui.js
+  init_toast();
+  init_utils();
+  var _setupInitialized = false;
+  var _previewDebounceTimer = null;
+  function buildTempRuleFromFormState() {
+    const search = document.getElementById("cc-search")?.value || "";
+    const color = document.getElementById("cc-color")?.value || "#e74c3c";
+    const tag = document.getElementById("cc-tag")?.value || "";
+    const fill = document.getElementById("cc-btn-fill")?.classList.contains("active") ?? true;
+    const showTag = document.getElementById("cc-btn-tag")?.classList.contains("active") ?? true;
+    const rule = {
+      id: "__preview__",
+      search,
+      color,
+      tag,
+      fill,
+      showTag,
+      _isPreview: true
+    };
+    console.log(`[PREVIEW] buildTempRuleFromFormState:`, rule);
+    return rule;
+  }
   function setupColorCodeLogic() {
+    if (_setupInitialized) {
+      console.log(`[ColorCode UI] setupColorCodeLogic already initialized, skipping re-init`);
+      return;
+    }
+    _setupInitialized = true;
+    console.log(`[ColorCode UI] setupColorCodeLogic initializing...`);
     let banner = document.getElementById("apm-filter-banner");
     if (!banner) {
       banner = document.createElement("div");
@@ -4971,6 +6258,7 @@
     const renderRules = () => {
       let rules = getRules();
       rContainer.innerHTML = "";
+      rules = rules.filter((r) => !r._isPreview && r.id !== "__preview__");
       if (!rules.length) {
         rContainer.appendChild(el("div", { style: { textAlign: "center", fontSize: "12px", color: "#7f8c8d", margin: "10px" } }, ["No rules found."]));
         return;
@@ -5071,12 +6359,12 @@
         tagBtn.classList.add("active");
         tagBtn.style.background = "#34495e";
       }
+      clearPreview();
       updatePreview();
       const btnText = document.getElementById("cc-add-btn-text");
       if (btnText) btnText.textContent = "Save Rule";
       else document.getElementById("cc-add-btn").textContent = "Save Rule";
       document.getElementById("cc-add-btn").style.background = "#3498db";
-      document.getElementById("cc-cancel-btn").style.display = "none";
     };
     const saveSync = () => {
       renderRules();
@@ -5101,16 +6389,20 @@
     const elCancelBtn = document.getElementById("cc-cancel-btn");
     if (elCancelBtn) elCancelBtn.onclick = resetForm;
     const elFillBtn = document.getElementById("cc-btn-fill");
-    if (elFillBtn) elFillBtn.onclick = () => {
+    if (elFillBtn) elFillBtn.onclick = (e) => {
+      e.stopPropagation();
       elFillBtn.classList.toggle("active");
       elFillBtn.style.background = elFillBtn.classList.contains("active") ? "#34495e" : "rgba(74, 90, 106, 0.4)";
       updatePreview();
+      updateGridPreview();
     };
     const elTagBtn = document.getElementById("cc-btn-tag");
-    if (elTagBtn) elTagBtn.onclick = () => {
+    if (elTagBtn) elTagBtn.onclick = (e) => {
+      e.stopPropagation();
       elTagBtn.classList.toggle("active");
       elTagBtn.style.background = elTagBtn.classList.contains("active") ? "#34495e" : "rgba(74, 90, 106, 0.4)";
       updatePreview();
+      updateGridPreview();
     };
     document.getElementById("cc-color")?.addEventListener("input", updatePreview);
     document.getElementById("cc-tag")?.addEventListener("input", updatePreview);
@@ -5141,6 +6433,7 @@
       }
       setRules(rs);
       saveSync();
+      clearPreview();
       resetForm();
       if (searchInput) searchInput.focus();
     };
@@ -5172,45 +6465,243 @@
       ccTag._apmListenersAttached = true;
     }
     const elExportBtn = document.getElementById("cc-export-btn");
-    if (elExportBtn) elExportBtn.onclick = () => {
-      try {
-        navigator.clipboard.writeText(JSON.stringify(getRules(), null, 2)).then(() => alert("Configuration code copied!"));
-      } catch (e) {
-        alert("Export error.");
-      }
-    };
-    const elImportBtn = document.getElementById("cc-import-btn");
-    if (elImportBtn) elImportBtn.onclick = () => {
-      const input = prompt("Paste configuration code:");
-      if (input && input.trim()) {
+    if (elExportBtn) {
+      elExportBtn.onclick = (e) => {
         try {
-          let importedRules;
-          const trimmed = input.trim();
-          if (trimmed.startsWith("[") || trimmed.startsWith("{")) {
-            importedRules = JSON.parse(trimmed);
+          if (!e.shiftKey) {
+            const rulesJson = JSON.stringify(getRules());
+            const encoded = encodeSettingsAsBase64(rulesJson);
+            navigator.clipboard.writeText(encoded).then(() => showToast("Rules copied as Base64", "#27ae60")).catch(() => showToast("Failed to copy to clipboard", "#e74c3c"));
           } else {
-            importedRules = JSON.parse(decodeURIComponent(escape(atob(trimmed))));
+            const rules = getRules();
+            const jsonStr = JSON.stringify(rules, null, 2);
+            const blob = new Blob([jsonStr], { type: "application/json" });
+            const url2 = URL.createObjectURL(blob);
+            const link = document.createElement("a");
+            const now = /* @__PURE__ */ new Date();
+            const dateStr = now.toISOString().split("T")[0];
+            link.href = url2;
+            link.download = `apm-colorcode-rules-${dateStr}.json`;
+            link.click();
+            URL.revokeObjectURL(url2);
+            showToast(`Downloaded ${rules.length} rules`, "#27ae60");
           }
-          if (!Array.isArray(importedRules) || importedRules.length === 0) return alert("No valid rules found.");
-          let rs = getRules();
-          if (confirm("Replace existing rules?")) {
-            setRules(importedRules);
-          } else {
-            importedRules.forEach((r) => {
-              r.id = Date.now() + Math.random();
-              rs.push(r);
-            });
-            setRules(rs);
-          }
-          saveSync();
-          alert(`Successfully imported ${importedRules.length} rules!`);
-        } catch (e) {
-          alert("Invalid code.");
+        } catch (e2) {
+          showToast("Export error: " + e2.message, "#e74c3c");
         }
+      };
+    }
+    ;
+    const elImportBtn = document.getElementById("cc-import-btn");
+    if (elImportBtn) {
+      elImportBtn.onclick = () => {
+        const panel = document.getElementById("cc-import-panel");
+        if (panel) {
+          panel.style.display = panel.style.display === "none" ? "block" : "none";
+          if (panel.style.display === "block") {
+            const textarea = document.getElementById("cc-import-textarea");
+            if (textarea) textarea.focus();
+          }
+        }
+      };
+    }
+    const ccImportPanel = document.getElementById("cc-import-panel");
+    const ccImportTextarea = document.getElementById("cc-import-textarea");
+    const ccImportFileBtn = document.getElementById("cc-import-file-btn");
+    const ccImportFileInput = document.getElementById("cc-import-file-input");
+    const performImport = (input) => {
+      if (!input || !input.trim()) {
+        showToast("No rules provided", "#f39c12");
+        return;
+      }
+      try {
+        let importedRules;
+        const trimmed = input.trim();
+        if (trimmed.startsWith("APM:")) {
+          const decoded = decodeSettingsFromBase64(trimmed);
+          if (!decoded) {
+            showToast("Invalid Base64 format", "#e74c3c");
+            return;
+          }
+          importedRules = JSON.parse(decoded);
+        } else if (trimmed.startsWith("[") || trimmed.startsWith("{")) {
+          importedRules = JSON.parse(trimmed);
+        } else {
+          showToast("Expected Base64 (APM:...) or JSON array", "#e74c3c");
+          return;
+        }
+        if (!Array.isArray(importedRules) || importedRules.length === 0) {
+          showToast("No valid rules found", "#f39c12");
+          return;
+        }
+        let rs = getRules();
+        if (confirm("Replace existing rules or merge?")) {
+          setRules(importedRules);
+        } else {
+          importedRules.forEach((r) => {
+            r.id = Date.now() + Math.random();
+            rs.push(r);
+          });
+          setRules(rs);
+        }
+        saveSync();
+        showToast(`Imported ${importedRules.length} rules`, "#27ae60");
+        if (ccImportPanel) ccImportPanel.style.display = "none";
+        if (ccImportTextarea) ccImportTextarea.value = "";
+      } catch (e) {
+        showToast("Invalid format: " + e.message, "#e74c3c");
       }
     };
+    if (ccImportTextarea) {
+      ccImportTextarea.addEventListener("keydown", (e) => {
+        if ((e.ctrlKey || e.metaKey) && e.key === "Enter") {
+          e.preventDefault();
+          performImport(ccImportTextarea.value);
+        }
+      });
+    }
+    if (ccImportFileInput) {
+      ccImportFileInput.addEventListener("change", (e) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = (evt) => {
+          const content = evt.target?.result;
+          if (typeof content === "string") {
+            performImport(content);
+          }
+        };
+        reader.onerror = () => showToast("Failed to read file", "#e74c3c");
+        reader.readAsText(file);
+      });
+    }
+    if (ccImportFileBtn) {
+      ccImportFileBtn.onclick = () => {
+        ccImportFileInput?.click();
+      };
+    }
+    const PREVIEW_DEBOUNCE_MS = 50;
+    let originalRulesSnapshot = null;
+    let isPreviewActive = false;
+    let currentPreviewRule = null;
+    function updateGridPreview() {
+      clearTimeout(_previewDebounceTimer);
+      _previewDebounceTimer = setTimeout(() => {
+        const settingsPanel = document.getElementById("apm-settings-panel");
+        if (!settingsPanel || settingsPanel.style.display === "none") {
+          setPreviewRuleOverride(null);
+          invalidateColorCodeCache();
+          const gc = findMainGrid();
+          if (gc) debouncedProcessColorCodeGrid(gc.doc);
+          return;
+        }
+        const gridContext = findMainGrid();
+        if (!gridContext) return;
+        const tempRule = buildTempRuleFromFormState();
+        currentPreviewRule = tempRule;
+        isPreviewActive = true;
+        setPreviewRuleOverride(tempRule);
+        invalidateColorCodeCache();
+        debouncedProcessColorCodeGrid(gridContext.doc);
+      }, PREVIEW_DEBOUNCE_MS);
+    }
+    function clearPreview() {
+      console.log(`[PREVIEW] clearPreview called`);
+      clearTimeout(_previewDebounceTimer);
+      _previewDebounceTimer = null;
+      isPreviewActive = false;
+      currentPreviewRule = null;
+      originalRulesSnapshot = null;
+      console.log(`[PREVIEW] Clearing preview override...`);
+      setPreviewRuleOverride(null);
+      const appRules = AppState.colorCode.rules;
+      if (Array.isArray(appRules) && appRules.some((r) => r.id === "__preview__")) {
+        AppState.colorCode.rules = appRules.filter((r) => r.id !== "__preview__");
+        console.log(`[PREVIEW] Stripped stale __preview__ from AppState`);
+      }
+      console.log(`[PREVIEW] Invalidating caches...`);
+      invalidateColorCodeCache();
+      const gridContext = findMainGrid();
+      if (gridContext) {
+        console.log(`[PREVIEW] Processing grid to remove preview...`);
+        debouncedProcessColorCodeGrid(gridContext.doc);
+      }
+    }
+    const formInputIds = ["cc-search", "cc-color", "cc-tag"];
+    formInputIds.forEach((id) => {
+      const el_elem = document.getElementById(id);
+      if (el_elem) {
+        el_elem.addEventListener("input", (e) => {
+          console.log(`[PREVIEW] Input event on #${id}:`, e.target.value);
+          updateGridPreview();
+        });
+        el_elem.addEventListener("change", (e) => {
+          console.log(`[PREVIEW] Change event on #${id}:`, e.target.value);
+          updateGridPreview();
+        });
+      }
+    });
     renderRules();
     updatePreview();
+  }
+  function cleanupColorCodeOnPanelClose() {
+    clearTimeout(_previewDebounceTimer);
+    _previewDebounceTimer = null;
+    const ccSearch = document.getElementById("cc-search");
+    const ccTag = document.getElementById("cc-tag");
+    const ccColor = document.getElementById("cc-color");
+    const ccBtnFill = document.getElementById("cc-btn-fill");
+    const ccBtnTag = document.getElementById("cc-btn-tag");
+    if (ccSearch) ccSearch.value = "";
+    if (ccTag) ccTag.value = "";
+    if (ccColor) ccColor.value = "#e74c3c";
+    if (ccBtnFill) {
+      ccBtnFill.classList.add("active");
+      ccBtnFill.style.background = "#34495e";
+    }
+    if (ccBtnTag) {
+      ccBtnTag.classList.add("active");
+      ccBtnTag.style.background = "#34495e";
+    }
+    const previewRow = document.getElementById("cc-preview-row");
+    const previewTag = document.getElementById("cc-preview-tag");
+    if (previewRow) {
+      previewRow.style.background = "transparent";
+      previewRow.style.borderLeft = "1px solid #45535e";
+    }
+    if (previewTag) previewTag.style.display = "none";
+    const ccAddBtn = document.getElementById("cc-add-btn");
+    const ccAddBtnText = document.getElementById("cc-add-btn-text");
+    if (ccAddBtnText) ccAddBtnText.textContent = "Save Rule";
+    else if (ccAddBtn) ccAddBtn.textContent = "Save Rule";
+    if (ccAddBtn) ccAddBtn.style.background = "#3498db";
+    setPreviewRuleOverride(null);
+    const appRules = AppState.colorCode.rules;
+    if (Array.isArray(appRules) && appRules.some((r) => r.id === "__preview__")) {
+      AppState.colorCode.rules = appRules.filter((r) => r.id !== "__preview__");
+    }
+    invalidateColorCodeCache();
+    const gridContext = findMainGrid();
+    if (gridContext) debouncedProcessColorCodeGrid(gridContext.doc);
+  }
+  function watchSettingsPanelClose() {
+    const panel = document.getElementById("apm-settings-panel");
+    if (!panel || panel._ccCloseWatcherAttached) return;
+    panel._ccCloseWatcherAttached = true;
+    const observer = new MutationObserver(() => {
+      if (panel.style.display === "none") {
+        cleanupColorCodeOnPanelClose();
+      }
+    });
+    observer.observe(panel, { attributes: true, attributeFilter: ["style"] });
+  }
+  function cleanupStalePreviewRules() {
+    const rules = AppState.colorCode.rules;
+    if (Array.isArray(rules) && rules.some((r) => r.id === "__preview__")) {
+      const cleaned = rules.filter((r) => r.id !== "__preview__");
+      AppState.colorCode.rules = cleaned;
+      console.log(`[ColorCode] Cleaned ${rules.length - cleaned.length} stale preview rule(s) from AppState`);
+    }
   }
 
   // src/modules/tab-grid-order/tab-grid-order.js
@@ -5218,8 +6709,15 @@
   init_logger();
   init_utils();
   init_state();
+  init_api();
+  init_feature_flags();
+  init_diagnostics();
   var _cachedColumns = null;
   var _cachedColumnsTime = 0;
+  function normalizeTabName(rawName) {
+    if (!rawName) return "";
+    return rawName.replace(/<[^>]*>?/gm, "").replace(/&nbsp;/g, " ").replace(/\u00A0/g, " ").trim();
+  }
   function probeExtGridColumns() {
     if (Date.now() - _cachedColumnsTime < 2e3 && _cachedColumns) {
       return _cachedColumns;
@@ -5253,184 +6751,418 @@
     if (Date.now() - _cachedTabsTime < 2e3 && _cachedTabs) {
       return _cachedTabs;
     }
-    let tabs = [];
+    let tabsMap = /* @__PURE__ */ new Map();
     const allDocs = getExtWindows();
     for (const win of allDocs) {
       if (win.Ext && win.Ext.ComponentQuery) {
         const tabPanels = win.Ext.ComponentQuery.query("tabpanel, uxtabpanel");
-        const mainTabPanel = tabPanels.find((tp) => tp.rendered && !tp.isDestroyed && tp.items && tp.items.items.length > 0 && tp.items.items.some((t) => {
-          let txt = t.title || t.text || "";
-          return txt.includes("Activities") || txt.includes("Checklist") || txt.includes("Comments");
-        }));
-        if (mainTabPanel) {
-          let tabBarWidth = 0;
-          let tabBarEl = null;
-          try {
-            const tabBar = mainTabPanel.getTabBar ? mainTabPanel.getTabBar() : mainTabPanel.tabBar;
-            if (tabBar && tabBar.el && tabBar.el.dom) {
-              tabBarEl = tabBar.el.dom;
-              tabBarWidth = tabBarEl.clientWidth;
-            }
-          } catch (e) {
-          }
-          mainTabPanel.items.items.forEach((t) => {
+        tabPanels.forEach((tp) => {
+          if (!tp.rendered || tp.isDestroyed || !tp.items || tp.items.items.length === 0) return;
+          const hasKeyTabs = tp.items.items.some((t) => {
+            let txt = t.title || t.text || "";
+            return /Activities|Checklist|Comments|Parts|Labor/i.test(txt);
+          });
+          if (!hasKeyTabs) return;
+          const tabBar = tp.getTabBar ? tp.getTabBar() : tp.tabBar;
+          const tabMenuPlugin = tp.plugins?.find?.((p) => p.ptype === "uxtabmenu");
+          tp.items.items.forEach((t) => {
             if (t.isDestroyed) return;
-            let cleanText = (t.title || t.text || "").replace(/<[^>]*>?/gm, "").trim();
+            let cleanText = normalizeTabName(t.title || t.text || t.tab?.getText?.());
             if (cleanText && cleanText !== "&#160;") {
+              const systemHidden = !!(t.hidden || t.tab && t.tab.hidden);
               let isOverflow = false;
-              if (tabBarWidth > 0 && t.tab && t.tab.el && t.tab.el.dom) {
-                const tabLeft = t.tab.el.dom.offsetLeft;
-                const tabRight = tabLeft + t.tab.el.dom.offsetWidth;
-                isOverflow = tabRight > tabBarWidth || tabLeft < 0;
+              if (tabBar && tabBar.rendered && t.tab && t.tab.rendered) {
+                const barEl = tabBar.el.dom;
+                const tabEl = t.tab.el.dom;
+                const barRect = barEl.getBoundingClientRect();
+                const tabRect = tabEl.getBoundingClientRect();
+                isOverflow = tabRect.right > barRect.right + 2 || tabRect.left < barRect.left - 2;
               }
-              tabs.push({ index: cleanText, text: cleanText, isOverflow });
+              if (!tabsMap.has(cleanText) || tabsMap.get(cleanText).systemHidden && !systemHidden) {
+                tabsMap.set(cleanText, {
+                  index: cleanText,
+                  text: cleanText,
+                  isOverflow,
+                  systemHidden
+                });
+              }
             }
           });
-          break;
-        }
+          if (tabMenuPlugin && tabMenuPlugin.tabsMenu && tabMenuPlugin.tabsMenu.items) {
+            tabMenuPlugin.tabsMenu.items.items.forEach((mi) => {
+              if (mi.isDestroyed || !mi.text) return;
+              let cleanText = mi.text.replace(/<[^>]*>?/gm, "").trim();
+              if (cleanText && !tabsMap.has(cleanText)) {
+                tabsMap.set(cleanText, {
+                  index: cleanText,
+                  text: cleanText,
+                  isOverflow: true,
+                  isPluginMenu: true,
+                  systemHidden: true
+                });
+              }
+            });
+          }
+        });
       }
     }
+    const tabs = Array.from(tabsMap.values());
     _cachedTabs = tabs;
     _cachedTabsTime = Date.now();
     return tabs;
   }
   async function applyGridConsistency() {
-    const presets = getPresets();
-    if (!presets.config.columnOrder) return;
-    const preferredOrder = presets.config.columnOrder.split(",").map((s) => s.trim()).filter((s) => s.length > 0);
-    const allDocs = getExtWindows();
-    for (const win of allDocs) {
-      if (win.Ext && win.Ext.ComponentQuery) {
-        const grids = win.Ext.ComponentQuery.query("gridpanel");
-        const mainGrid = grids.find((g) => g.columns && g.columns.length > 20 && g.rendered && !g.isDestroyed && !g.destroying);
-        if (mainGrid && mainGrid.headerCt && !mainGrid.headerCt.isDestroyed) {
-          const headerCt = mainGrid.headerCt;
-          let needsSorting = false;
-          const visibleCols = headerCt.getVisibleGridColumns().filter((c) => !c.isCheckerHd && !c.locked && c.xtype !== "rownumberer");
-          const activePreferred = preferredOrder.map((dataIndex) => visibleCols.find((c) => c.dataIndex === dataIndex)).filter(Boolean);
-          for (let i = 0; i < activePreferred.length; i++) {
-            if (visibleCols[i] !== activePreferred[i]) {
-              needsSorting = true;
-              break;
+    if (!FeatureFlags.isEnabled("tabGridOrder")) return;
+    const start = performance.now();
+    try {
+      const presets = getPresets();
+      const allDocs = getExtWindows();
+      for (const win of allDocs) {
+        if (win.Ext && win.Ext.ComponentQuery) {
+          const grids = win.Ext.ComponentQuery.query("gridpanel");
+          const mainGrid = grids.find((g) => g.columns && g.columns.length > 20 && g.rendered && !g.isDestroyed && !g.destroying);
+          if (mainGrid && mainGrid.headerCt && !mainGrid.headerCt.isDestroyed) {
+            const params = new URLSearchParams(win.location.search);
+            let funcName = params.get("SYSTEM_FUNCTION_NAME") || "GLOBAL";
+            if (funcName === "GLOBAL" || funcName === "WSTABS" || funcName === "WSFLTR") {
+              funcName = apmGetActiveFunctionName();
             }
-          }
-          if (needsSorting && !headerCt.isDestroyed) {
-            let layoutsSuspended = false;
-            try {
-              win.Ext.suspendLayouts();
-              layoutsSuspended = true;
-              let currentAbsTarget = 0;
-              activePreferred.forEach((targetCol) => {
-                while (currentAbsTarget < headerCt.items.length) {
-                  let colAtTarget = headerCt.items.getAt(currentAbsTarget);
-                  if (colAtTarget.isCheckerHd || colAtTarget.locked || colAtTarget.xtype === "rownumberer" || typeof colAtTarget.isHidden === "function" && colAtTarget.isHidden()) {
-                    currentAbsTarget++;
-                  } else {
-                    break;
-                  }
-                }
-                const currentAbsIdx = headerCt.items.indexOf(targetCol);
-                if (currentAbsIdx !== -1 && currentAbsIdx !== currentAbsTarget) {
-                  headerCt.move(targetCol, currentAbsTarget);
-                }
-                currentAbsTarget++;
-              });
-            } catch (e) {
-              APMLogger.warn("TabGridOrder", "Grid column reorder failed:", e);
-            } finally {
-              if (layoutsSuspended) win.Ext.resumeLayouts(true);
-              if (!mainGrid.isDestroyed && mainGrid.getView && !mainGrid.getView().isDestroyed) {
-                mainGrid.getView().refresh();
+            const siloOrder = presets.config.columnOrders?.[funcName] || presets.config.columnOrders?.["GLOBAL"];
+            if (!siloOrder) continue;
+            const preferredOrder = siloOrder.split(",").map((s) => s.trim()).filter((s) => s.length > 0);
+            if (preferredOrder.length === 0) continue;
+            if (!mainGrid.headerCt || !mainGrid.headerCt.rendered) {
+              APMLogger.debug("TabGridOrder", `Grid ${mainGrid.id} header is not ready. Deferring...`);
+              setTimeout(applyGridConsistency, 500);
+              return;
+            }
+            const headerCt = mainGrid.headerCt;
+            let needsSorting = false;
+            const visibleCols = headerCt.getVisibleGridColumns().filter((c) => !c.isCheckerHd && !c.locked && c.xtype !== "rownumberer");
+            const activePreferred = preferredOrder.map((dataIndex) => visibleCols.find((c) => c.dataIndex === dataIndex)).filter(Boolean);
+            for (let i = 0; i < activePreferred.length; i++) {
+              if (visibleCols[i] !== activePreferred[i]) {
+                needsSorting = true;
+                break;
               }
             }
+            if (needsSorting && !headerCt.isDestroyed) {
+              let layoutsSuspended = false;
+              try {
+                win.Ext.suspendLayouts();
+                layoutsSuspended = true;
+                let currentAbsTarget = 0;
+                activePreferred.forEach((targetCol) => {
+                  while (currentAbsTarget < headerCt.items.length) {
+                    let colAtTarget = headerCt.items.getAt(currentAbsTarget);
+                    if (colAtTarget.isCheckerHd || colAtTarget.locked || colAtTarget.xtype === "rownumberer" || typeof colAtTarget.isHidden === "function" && colAtTarget.isHidden()) {
+                      currentAbsTarget++;
+                    } else {
+                      break;
+                    }
+                  }
+                  const currentAbsIdx = headerCt.items.indexOf(targetCol);
+                  if (currentAbsIdx !== -1 && currentAbsIdx !== currentAbsTarget) {
+                    headerCt.move(targetCol, currentAbsTarget);
+                  }
+                  currentAbsTarget++;
+                });
+              } catch (e) {
+                APMLogger.warn("TabGridOrder", "Grid column reorder failed:", e);
+              } finally {
+                if (layoutsSuspended) win.Ext.resumeLayouts(true);
+                if (!mainGrid.isDestroyed && mainGrid.getView && !mainGrid.getView().isDestroyed) {
+                  mainGrid.getView().refresh();
+                }
+              }
+            }
+            break;
+          }
+        }
+      }
+    } finally {
+      Diagnostics.recordPerformance("tabGridOrder", performance.now() - start);
+    }
+  }
+  var _isApplyingTabConsistency = false;
+  var _ignoreNativeEvents = false;
+  var _allowActiveTabChange = true;
+  var _cleanupScheduled = false;
+  function scheduleCleanupPass(delay2 = 100) {
+    if (_cleanupScheduled) return;
+    _cleanupScheduled = true;
+    setTimeout(() => {
+      _cleanupScheduled = false;
+      applyTabConsistency(11);
+    }, delay2);
+  }
+  function isSuppressingNativeEvents() {
+    return _ignoreNativeEvents;
+  }
+  async function applyTabConsistency(retryCount = 0) {
+    if (!FeatureFlags.isEnabled("tabGridOrder")) return;
+    if (_isApplyingTabConsistency) return;
+    const start = performance.now();
+    console.log(`[TabGridOrder] applyTabConsistency called (Retry: ${retryCount})`);
+    try {
+      const presets = getPresets();
+      const hiddenTabs = presets.config.hiddenTabs || [];
+      const hasHidden = hiddenTabs.length > 0;
+      _isApplyingTabConsistency = true;
+      _ignoreNativeEvents = true;
+      const allDocs = getExtWindows();
+      for (const win of allDocs) {
+        if (win.Ext && win.Ext.ComponentQuery) {
+          const tabPanels = win.Ext.ComponentQuery.query("tabpanel, uxtabpanel");
+          const mainTabPanel = tabPanels.find((tp) => tp.rendered && !tp.isDestroyed && !tp.destroying && tp.items && tp.items.items.length > 0 && tp.items.items.some((t) => {
+            let txt = t.title || t.text || "";
+            return /Activities|Checklist|Comments/i.test(txt);
+          }));
+          if (!mainTabPanel) continue;
+          const params = new URLSearchParams(win.location.search);
+          let funcName = params.get("SYSTEM_FUNCTION_NAME") || "GLOBAL";
+          if (funcName === "GLOBAL" || funcName === "WSTABS" || funcName === "WSFLTR") {
+            funcName = apmGetActiveFunctionName();
+          }
+          const siloOrder = presets.config.tabOrders?.[funcName] || presets.config.tabOrders?.["GLOBAL"] || "";
+          const hasOrder = siloOrder.trim().length > 0;
+          if (!hasOrder && !hasHidden) continue;
+          const extReady = !!win.Ext.isReady;
+          const isVisible = mainTabPanel.isVisible && mainTabPanel.isVisible(true);
+          const isStable = extReady && isVisible || retryCount >= 10 && isVisible;
+          if (!isStable && retryCount < 10) {
+            if (isVisible && (retryCount === 0 || retryCount === 5 || retryCount === 9)) {
+              APMLogger.debug("TabGridOrder", `TabPanel ${mainTabPanel.id} is visible but not stable (Retry ${retryCount}). Reasons: Ext:${extReady}. Deferring...`);
+            }
+            if (!isVisible) return;
+            setTimeout(() => applyTabConsistency(retryCount + 1), 500);
+            return;
+          } else if (!isStable) {
+            APMLogger.warn("TabGridOrder", `TabPanel ${mainTabPanel.id} still not stable after 5s. Proceeding with best-effort consistency.`);
+          } else if (retryCount > 0) {
+            APMLogger.debug("TabGridOrder", `TabPanel ${mainTabPanel.id} became stable at retry ${retryCount}.`);
+          }
+          const preferredOrder = hasOrder ? siloOrder.split(",").map((s) => s.trim()).filter((s) => s.length > 0) : [];
+          if (hasOrder && retryCount < 1) {
+            APMLogger.info("TabGridOrder", `[Silo: ${funcName}] Initial Preferred Order:`, preferredOrder);
+          }
+          const panelItemCount = mainTabPanel.items.items.length;
+          const hiddenInThisPanel = hiddenTabs.filter(
+            (name) => mainTabPanel.items.findIndexBy((item) => normalizeTabName(item.title || item.text || item.tab && item.tab.getText?.()) === name) !== -1
+          );
+          const coveredCount = preferredOrder.length + hiddenInThisPanel.length;
+          if (preferredOrder.length > 0 && coveredCount < Math.ceil(panelItemCount * 0.15) && panelItemCount > 3) {
+            APMLogger.warn("TabGridOrder", `Ignoring suspicious partial tabOrder for ${funcName} (${preferredOrder.length} visible + ${hiddenInThisPanel.length} hidden vs ${panelItemCount} total).`);
+            showToast(`Tab order for "${funcName}" looks incomplete and was skipped. Re-save your tab layout to fix this.`, "warn");
+            continue;
+          }
+          const activeTab = mainTabPanel.getActiveTab ? mainTabPanel.getActiveTab() : null;
+          const activeTabName = activeTab ? normalizeTabName(activeTab.title || activeTab.text || activeTab.tab && activeTab.tab.getText?.()) : null;
+          if (hasHidden || hasOrder) {
+            let activeTabWasRemoved = false;
+            mainTabPanel.items.items.forEach((item) => {
+              if (item.isDestroyed || !item.tab) return;
+              const tabName = normalizeTabName(item.title || item.text || item.tab.getText?.());
+              const isHiddenInPresets = hiddenTabs.includes(tabName);
+              const isVisibleBySystem = !item.tab.hidden;
+              if (isHiddenInPresets) {
+                if (item.tab.isVisible()) {
+                  try {
+                    APMLogger.debug("TabGridOrder", `CSS hiding tab: ${tabName}`);
+                    item.tab.hide();
+                    item.hide();
+                  } catch (e) {
+                    APMLogger.warn("TabGridOrder", `Failed to hide tab "${tabName}"`);
+                  }
+                }
+                if (activeTab === item) {
+                  activeTabWasRemoved = true;
+                }
+              } else {
+                if (!item.tab.isVisible()) {
+                  const isUserOrdered = preferredOrder.includes(tabName);
+                  if (isUserOrdered || isVisibleBySystem) {
+                    try {
+                      item.tab.show();
+                    } catch (e) {
+                      APMLogger.warn("TabGridOrder", `Failed to show tab "${tabName}"`, e);
+                    }
+                  }
+                }
+              }
+            });
+            if (activeTabWasRemoved) {
+              try {
+                const firstVisible = mainTabPanel.items.items.find((t) => t.tab && t.tab.isVisible());
+                if (firstVisible) mainTabPanel.setActiveTab(firstVisible);
+              } catch (e) {
+                APMLogger.warn("TabGridOrder", "Could not safely switch away from hidden active tab", e);
+              }
+            }
+            const tabMenuPlugin = mainTabPanel.plugins?.find?.((p) => p.ptype === "uxtabmenu");
+            if (tabMenuPlugin && tabMenuPlugin.tabsMenu && tabMenuPlugin.tabsMenu.items) {
+              const menuItems = tabMenuPlugin.tabsMenu.items.items;
+              let restorationHappened = false;
+              for (const mi of menuItems) {
+                if (mi.isDestroyed || !mi.text) continue;
+                const tabName = mi.text.replace(/<[^>]*>?/gm, "").trim();
+                const isHiddenInPresets = hiddenTabs.includes(tabName);
+                const isUserOrdered = preferredOrder.includes(tabName);
+                if (!isHiddenInPresets && isUserOrdered) {
+                  const alreadyOpen = mainTabPanel.items.items.some((t) => {
+                    if (!t || t.isDestroyed) return false;
+                    const tName = normalizeTabName(t.title || t.text || t.tab && t.tab.getText?.());
+                    return tName === tabName;
+                  });
+                  if (!alreadyOpen && mi.handler && typeof mi.handler === "function") {
+                    try {
+                      APMLogger.info("TabGridOrder", `Triggering restoration handler for: ${tabName}`);
+                      _allowActiveTabChange = false;
+                      mi.handler.call(mi.scope || mi, mi);
+                      restorationHappened = true;
+                      await new Promise((r) => setTimeout(r, 150));
+                    } catch (e) {
+                      APMLogger.warn("TabGridOrder", `Handler restoration failed for "${tabName}"`, e);
+                    } finally {
+                      _allowActiveTabChange = true;
+                    }
+                  }
+                }
+              }
+              if (restorationHappened) {
+                await new Promise((r) => setTimeout(r, 300));
+              }
+            }
+          }
+          if (hasOrder && !mainTabPanel.isDestroyed) {
+            let needsSorting = false;
+            const currentItems = mainTabPanel.items;
+            const filteredPreferred = preferredOrder.filter(
+              (name) => currentItems.findIndexBy((item) => normalizeTabName(item.title || item.text || item.tab && item.tab.getText?.()) === name) !== -1
+            );
+            for (let i = 0; i < filteredPreferred.length; i++) {
+              const tabName = filteredPreferred[i];
+              const item = currentItems.getAt(i);
+              const itemName = item ? normalizeTabName(item.title || item.text || item.tab && item.tab.getText?.()) : null;
+              if (itemName !== tabName) {
+                needsSorting = true;
+                break;
+              }
+            }
+            if (needsSorting && !mainTabPanel.isDestroyed) {
+              let layoutsSuspended = false;
+              try {
+                win.Ext.suspendLayouts();
+                layoutsSuspended = true;
+                if (typeof mainTabPanel.suspendEvents === "function") mainTabPanel.suspendEvents(true);
+                filteredPreferred.forEach((tabName, targetIdx) => {
+                  if (mainTabPanel.isDestroyed) return;
+                  const currentIdx = currentItems.findIndexBy((item) => {
+                    if (!item || item.isDestroyed) return false;
+                    let name = normalizeTabName(item.title || item.text || item.tab && item.tab.getText?.());
+                    return name === tabName;
+                  });
+                  if (currentIdx !== -1 && currentIdx !== targetIdx) {
+                    const itemToMove = currentItems.getAt(currentIdx);
+                    if (itemToMove && !itemToMove.isDestroyed) {
+                      APMLogger.debug("TabGridOrder", `Moving tab "${tabName}" from ${currentIdx} to ${targetIdx}`);
+                      mainTabPanel.move(itemToMove, targetIdx);
+                    }
+                  }
+                });
+              } catch (e) {
+                APMLogger.warn("TabGridOrder", "Tab reorder failed silently:", e);
+              } finally {
+                if (typeof mainTabPanel.resumeEvents === "function") mainTabPanel.resumeEvents();
+                if (layoutsSuspended) win.Ext.resumeLayouts(true);
+              }
+              if (retryCount === 0) {
+                setTimeout(() => {
+                  if (mainTabPanel && !mainTabPanel.isDestroyed) {
+                    APMLogger.debug("TabGridOrder", "Executing second-pass cleanup to ensure EAM didn't re-shuffle.");
+                    applyTabConsistency(11);
+                  }
+                }, 2e3);
+              }
+            }
+          }
+          if (activeTabName && !mainTabPanel.isDestroyed) {
+            const currentActive = mainTabPanel.getActiveTab();
+            const currentActiveName = currentActive ? normalizeTabName(currentActive.title || currentActive.text || currentActive.tab && currentActive.tab.getText?.() || "") : null;
+            if (currentActiveName !== activeTabName) {
+              const targetItem = mainTabPanel.items.items.find((t) => normalizeTabName(t.title || t.text || t.tab && t.tab.getText?.()) === activeTabName);
+              if (targetItem && !targetItem.isDestroyed && targetItem.tab && targetItem.tab.isVisible()) {
+                APMLogger.debug("TabGridOrder", `Restoring active tab to: ${activeTabName}`);
+                mainTabPanel.setActiveTab(targetItem);
+              }
+            }
+          }
+          if (!mainTabPanel.isDestroyed && typeof mainTabPanel.updateLayout === "function") {
+            mainTabPanel.updateLayout();
+          }
+          if (isStable && !mainTabPanel.isDestroyed && !mainTabPanel.__apmConsistencyHook) {
+            const originalMove = mainTabPanel.move;
+            const originalAdd = mainTabPanel.add;
+            const originalInsert = mainTabPanel.insert;
+            const originalSetActive = mainTabPanel.setActiveTab;
+            if (mainTabPanel.items && !mainTabPanel.items.__apmHooked) {
+              const originalCollInsert = mainTabPanel.items.insert;
+              mainTabPanel.items.insert = function(idx, item) {
+                if (!_isApplyingTabConsistency && (idx === 0 || idx === void 0)) {
+                  const itemName = item ? normalizeTabName(item.title || item.text || item.tab && item.tab.getText?.()) : "unknown";
+                  APMLogger.warn("TabGridOrder", `Intercepted collection insert for "${itemName}" at index ${idx}. Lock applied. Stack:`, new Error().stack);
+                  scheduleCleanupPass(100);
+                  if (idx === 0) return item;
+                }
+                return originalCollInsert.apply(this, arguments);
+              };
+              mainTabPanel.items.__apmHooked = true;
+            }
+            mainTabPanel.move = function(item, toIdx) {
+              if (_isApplyingTabConsistency || !_allowActiveTabChange) return originalMove.apply(this, arguments);
+              const itemName = item ? normalizeTabName(item.title || item.text || item.tab && item.tab.getText?.()) : "unknown";
+              if (toIdx === 0 || itemName === "Activities") {
+                APMLogger.warn("TabGridOrder", `Intercepted framework move for "${itemName}" to index ${toIdx}. Order frozen. Source:`, new Error().stack);
+              } else {
+                APMLogger.warn("TabGridOrder", `Intercepted framework move for "${itemName}" to index ${toIdx}. Order frozen.`);
+              }
+              scheduleCleanupPass(50);
+              return this;
+            };
+            mainTabPanel.add = function() {
+              const res = originalAdd.apply(this, arguments);
+              if (!_isApplyingTabConsistency) {
+                APMLogger.debug("TabGridOrder", "Intercepted framework add. Stack:", new Error().stack);
+                scheduleCleanupPass(100);
+              }
+              return res;
+            };
+            mainTabPanel.insert = function(idx, item) {
+              if (!_isApplyingTabConsistency && (idx === 0 || idx === void 0)) {
+                const itemName = item ? normalizeTabName(item.title || item.text || item.tab && item.tab.getText?.()) : "unknown";
+                APMLogger.warn("TabGridOrder", `Intercepted framework insert for "${itemName}" at index ${idx}. Stack:`, new Error().stack);
+                scheduleCleanupPass(100);
+                if (idx === 0) return item;
+              }
+              return originalInsert.apply(this, arguments);
+            };
+            mainTabPanel.setActiveTab = function(item) {
+              if (_allowActiveTabChange) return originalSetActive.apply(this, arguments);
+              const itemName = item ? normalizeTabName(item.title || item.text || item.tab && item.tab.getText?.()) : "unknown";
+              APMLogger.warn("TabGridOrder", `Blocked focus jump for "${itemName}". Focus protected.`);
+              return this;
+            };
+            mainTabPanel.__apmConsistencyHook = true;
           }
           break;
         }
       }
-    }
-  }
-  async function applyTabConsistency() {
-    const presets = getPresets();
-    const hasOrder = presets.config.tabOrder && presets.config.tabOrder.trim().length > 0;
-    const hiddenTabs = presets.config.hiddenTabs || [];
-    const hasHidden = hiddenTabs.length > 0;
-    if (!hasOrder && !hasHidden) return;
-    const preferredOrder = hasOrder ? presets.config.tabOrder.split(",").map((s) => s.trim()).filter((s) => s.length > 0) : [];
-    const allDocs = getExtWindows();
-    for (const win of allDocs) {
-      if (win.Ext && win.Ext.ComponentQuery) {
-        const tabPanels = win.Ext.ComponentQuery.query("tabpanel, uxtabpanel");
-        const mainTabPanel = tabPanels.find((tp) => tp.rendered && !tp.isDestroyed && !tp.destroying && tp.items && tp.items.items.length > 0 && tp.items.items.some((t) => {
-          let txt = t.title || t.text || "";
-          return txt.includes("Activities") || txt.includes("Checklist") || txt.includes("Comments");
-        }));
-        if (!mainTabPanel) continue;
-        if (hasHidden) {
-          let activeTabHidden = false;
-          mainTabPanel.items.items.forEach((item) => {
-            if (item.isDestroyed || !item.tab || !item.tab.el || !item.tab.el.dom) return;
-            const tabName = (item.title || item.text || "").replace(/<[^>]*>?/gm, "").trim();
-            if (hiddenTabs.includes(tabName)) {
-              item.tab.el.dom.classList.add("apm-tab-hidden");
-              if (mainTabPanel.getActiveTab && mainTabPanel.getActiveTab() === item) {
-                activeTabHidden = true;
-              }
-            } else {
-              item.tab.el.dom.classList.remove("apm-tab-hidden");
-            }
-          });
-          if (activeTabHidden) {
-            const firstVisible = mainTabPanel.items.items.find((item) => {
-              if (item.isDestroyed || !item.tab || !item.tab.el || !item.tab.el.dom) return false;
-              const tabName = (item.title || item.text || "").replace(/<[^>]*>?/gm, "").trim();
-              return !hiddenTabs.includes(tabName);
-            });
-            if (firstVisible && !firstVisible.isDestroyed) {
-              mainTabPanel.setActiveTab(firstVisible);
-            }
-          }
-        }
-        if (hasOrder && !mainTabPanel.isDestroyed) {
-          let needsSorting = false;
-          preferredOrder.forEach((tabName, targetIdx) => {
-            if (mainTabPanel.isDestroyed) return;
-            const currentIdx = mainTabPanel.items.findIndexBy((item) => {
-              if (item.isDestroyed) return false;
-              let name = (item.title || item.text || "").replace(/<[^>]*>?/gm, "").trim();
-              return name === tabName;
-            });
-            if (currentIdx !== -1 && currentIdx !== targetIdx) {
-              needsSorting = true;
-            }
-          });
-          if (needsSorting && !mainTabPanel.isDestroyed) {
-            let layoutsSuspended = false;
-            try {
-              win.Ext.suspendLayouts();
-              layoutsSuspended = true;
-              preferredOrder.forEach((tabName, targetIdx) => {
-                const currentIdx = mainTabPanel.items.findIndexBy((item) => {
-                  if (item.isDestroyed) return false;
-                  let name = (item.title || item.text || "").replace(/<[^>]*>?/gm, "").trim();
-                  return name === tabName;
-                });
-                const itemToMove = mainTabPanel.items.getAt(currentIdx);
-                if (currentIdx !== -1 && currentIdx !== targetIdx && itemToMove) {
-                  mainTabPanel.move(itemToMove, targetIdx);
-                }
-              });
-            } catch (e) {
-              APMLogger.warn("TabGridOrder", "Tab reorder failed silently to prevent crash:", e);
-            } finally {
-              if (layoutsSuspended) win.Ext.resumeLayouts(true);
-              if (!mainTabPanel.isDestroyed && typeof mainTabPanel.updateLayout === "function") {
-                mainTabPanel.updateLayout();
-              }
-            }
-          }
-        }
-        break;
-      }
+    } finally {
+      _isApplyingTabConsistency = false;
+      setTimeout(() => {
+        _ignoreNativeEvents = false;
+      }, 400);
+      Diagnostics.recordPerformance("tabGridOrder", performance.now() - start);
     }
   }
   function invalidateTabCache() {
@@ -5440,9 +7172,8 @@
     _cachedTabsTime = 0;
   }
   if (typeof window !== "undefined") {
-    window._APM = window._APM || {};
-    window._APM.applyGridConsistency = applyGridConsistency;
-    window._APM.applyTabConsistency = applyTabConsistency;
+    APMApi.register("applyGridConsistency", applyGridConsistency);
+    APMApi.register("applyTabConsistency", applyTabConsistency);
     window.addEventListener("APM_PRESETS_SYNC_REQUIRED", () => {
       applyTabConsistency();
       applyGridConsistency();
@@ -5453,6 +7184,10 @@
   init_utils();
   init_state();
   init_constants();
+  init_api();
+  init_diagnostics();
+  init_scheduler();
+  init_feature_flags();
   function createMainPanel() {
     const panel = document.createElement("div");
     panel.id = "apm-settings-panel";
@@ -5465,10 +7200,9 @@
     const vHeight = window.innerHeight;
     const vWidth = window.innerWidth;
     const panelWidth = 440;
-    const panelHeight = 580;
     let topPos = 60;
     let rightPos = margin;
-    if (topPos + panelHeight > vHeight) topPos = Math.max(10, vHeight - panelHeight - margin);
+    if (topPos > vHeight - 100) topPos = 10;
     if (rightPos + panelWidth > vWidth) rightPos = Math.max(10, vWidth - panelWidth - margin);
     panel.style.top = topPos + "px";
     panel.style.right = rightPos + "px";
@@ -5485,7 +7219,8 @@
       el("div", { id: "tab-autofill", className: "apm-tab-btn apm-tab-active-autofill" }, "Auto Fill Profiles"),
       el("div", { id: "tab-settings", className: "apm-tab-btn apm-tab-inactive" }, "Tab Order"),
       el("div", { id: "tab-colorcode", className: "apm-tab-btn apm-tab-inactive" }, "ColorCode & Theme"),
-      el("div", { id: "tab-general", className: "apm-tab-btn apm-tab-inactive" }, "General")
+      el("div", { id: "tab-general", className: "apm-tab-btn apm-tab-inactive" }, "General"),
+      el("div", { id: "tab-diagnostics", className: "apm-tab-btn apm-tab-inactive" }, "Diagnostics")
     ]);
   }
   function createHelpOverlay() {
@@ -5556,26 +7291,21 @@
         ]),
         el("div", { className: "apm-help-content", style: { fontSize: "12px", lineHeight: "1.6" } }, [
           el("div", { style: { marginBottom: "15px", borderBottom: "1px solid #45535e", paddingBottom: "10px" } }, [
-            el("b", { style: { color: "#1abc9c", display: "block", marginBottom: "5px" } }, "Current Improvements (v14.3.x)"),
+            el("b", { style: { color: "#1abc9c", display: "block", marginBottom: "5px" } }, "Current Improvements (v14.5.x)"),
             el("ul", { style: { paddingLeft: "20px", margin: "0" } }, [
-              el("li", {}, "Implemented Unified Cross-Domain Storage for consistent settings across subdomains (Benefits PTP, Timeout Redirect, Etc)"),
-              el("li", {}, "Improved global messaging system for better multi-frame synchronization (Improves reliability of tab order config, etc)"),
-              el("li", {}, "Centralized scheduler and synchronization for better performance"),
-              el("li", {}, "Implemented early dataspy feature, supports multi keyword OR match AND exclusion Eg: Contains A OR B AND not C"),
-              el("li", {}, "Enhanced session token and login detection for labor tracking"),
-              el("li", {}, "Interface layout and styling refinements"),
-              el("li", {}, "Added support for European date format selection"),
-              el("li", {}, "Implemented Quick Book Labor feature"),
-              el("li", {}, "Further refactoring of code for easier future additions"),
-              el("li", {}, "Mitigated page load flash when using dark mode"),
-              el("li", {}, "Significantly improved efficiency & speed of ColorCode engine, by co-opting ExtJS stores to locate rule matches and apply styles, skipping expensive DOM traversal")
+              el("li", {}, "Implemented performance & error diagnostics tab"),
+              el("li", {}, "Implemented early dataspy feature, supports multi keyword OR match AND exclusion Eg: Contains A OR B AND not C. Feedback on builder and layout is appreciated, some stuff is planned but not implemented like showing your search params on the grid and allowing you to clear them"),
+              el("li", {}, "Record tab re ordering now allows removal of tabs, now reads from the overflow menu and allows adding those too"),
+              el("li", {}, "Paid off tech debt, centralized many services and functions to share between modules, cleaned up legacy and duplicated code"),
+              el("li", {}, "Mitigated page load flash when using dark mode somewhat"),
+              el("li", {}, "Significantly improved efficiency & speed of ColorCode engine, rule creation will now show a live preview on the grid"),
+              el("li", {}, "Implemented Global configuration export/import")
             ])
           ]),
           el("div", { style: { marginBottom: "15px", borderBottom: "1px solid #45535e", paddingBottom: "10px" } }, [
             el("b", { style: { color: "#3498db", display: "block", marginBottom: "5px" } }, "Planned Features"),
             el("ul", { style: { paddingLeft: "20px", margin: "0" } }, [
-              el("li", {}, "Pay off tech debt"),
-              el("li", {}, "Global configuration export/import"),
+              el("li", {}, "Some optional minor features, WO QR codes, booked labor per WO visible in grid view, etc"),
               el("li", {}, "ColorCode rule pause button"),
               el("li", {}, "Relative date filtering for ColorCode rules"),
               el("li", {}, "Expanded hyperlink support for non-work order records")
@@ -5585,7 +7315,6 @@
             el("b", { style: { color: "#3498db", display: "block", marginBottom: "5px" } }, "Planned Research"),
             el("ul", { style: { paddingLeft: "20px", margin: "0" } }, [
               el("li", {}, "More applications to utilize Direct ExtJS modification of the APM Framework, or even direct AJAX server requests like we do with Labor Tally already and partially with Labor Booking, such as:"),
-              el("li", {}, "Mass work order editing and labor booking"),
               el("li", {}, "Possible personalized/custom shift snapshot/report depending on manager/smrt/mrt could be just WOs closed, assigned, multiple employees overview, etc but thats getting pretty advanced and far off I think"),
               el("li", {}, "Session state snapshot to bring you back exactly where you were before session timeout")
             ])
@@ -5595,8 +7324,7 @@
     ]);
   }
   function buildSettingsPanel() {
-    window._APM = window._APM || {};
-    window._APM.buildSettingsPanel = buildSettingsPanel;
+    APMApi.register("buildSettingsPanel", buildSettingsPanel);
     if (window.self !== window.top || document.getElementById("apm-settings-panel")) return;
     const panel = createMainPanel();
     const helpOverlay = createHelpOverlay();
@@ -5607,6 +7335,7 @@
     const tabOrderFields = buildTabOrderTab();
     const colorcodeFields = buildColorCodeTab();
     const generalFields = buildGeneralTab();
+    const diagnosticsFields = buildDiagnosticsTab();
     const footer = createFooter();
     panel.appendChild(header);
     panel.appendChild(tabContainer);
@@ -5614,6 +7343,7 @@
     panel.appendChild(tabOrderFields);
     panel.appendChild(colorcodeFields);
     panel.appendChild(generalFields);
+    panel.appendChild(diagnosticsFields);
     panel.appendChild(footer);
     document.body.appendChild(panel);
     document.body.appendChild(helpOverlay);
@@ -5626,332 +7356,409 @@
       tabOrderFields,
       colorcodeFields,
       generalFields,
+      diagnosticsFields,
       footer
     };
     bindSettingsEvents(state);
   }
   function buildAutoFillTab() {
     return el("div", { id: "apm-main-fields", className: "apm-panel-section" }, [
-      el("div", { className: "apm-template-box" }, [
-        el("div", { className: "apm-template-label" }, "Active Template:"),
-        el("div", { className: "apm-template-row" }, [
-          el("select", { id: "apm-c-preset-select", className: "apm-template-select" }),
-          el("button", { id: "apm-c-btn-save", className: "creator-btn apm-template-btn-update", title: "Update selection" }, "Update"),
-          el("button", { id: "apm-c-btn-new", className: "creator-btn apm-template-btn-new", title: "Create a fresh template" }, "New Template"),
-          el("button", { id: "apm-c-btn-del", className: "creator-btn apm-template-btn-del", title: "Delete template" }, "\u2716")
-        ])
-      ]),
-      el("div", { className: "apm-fields-wrapper" }, [
-        el("div", { className: "field-row", style: { marginBottom: "6px" } }, [
-          el("div", { className: "field-label", style: { color: "#f39c12", fontWeight: "bold", width: "65px", textAlign: "left", fontSize: "11px" } }, "Match:"),
-          el("input", { type: "text", id: "apm-c-keyword", className: "field-input", placeholder: "e.g., pre-sort, repair, jam", style: { fontFamily: "monospace", border: "1px solid #f39c12", height: "24px", padding: "0 8px", fontSize: "11px", transition: "all 0.2s" } })
-        ]),
-        el("div", { style: { display: "flex", gap: "6px", marginBottom: "4px" } }, [
-          el("div", { className: "field-row", style: { width: "105px", flexShrink: "0", margin: "0" } }, [
-            el("div", { className: "field-label", style: { width: "35px", textAlign: "left", fontSize: "11px" } }, "Org:"),
-            el("input", { type: "text", id: "apm-c-org", className: "field-input upper", placeholder: "Ignore", style: { height: "24px", padding: "0 6px", fontSize: "11px", border: "1px solid transparent", transition: "all 0.2s" } })
-          ]),
-          el("div", { className: "field-row", style: { flexGrow: "1", margin: "0" } }, [
-            el("div", { className: "field-label", style: { width: "70px", textAlign: "left", fontSize: "11px" } }, "Equipment:"),
-            el("input", { type: "text", id: "apm-c-eq", className: "field-input upper", placeholder: "Leave blank to ignore", style: { height: "24px", padding: "0 6px", fontSize: "11px", border: "1px solid transparent", transition: "all 0.2s" } })
+      el("div", { className: "apm-tab-content-scroll" }, [
+        el("div", { className: "apm-template-box" }, [
+          el("div", { className: "apm-template-label" }, "Active Template:"),
+          el("div", { className: "apm-template-row" }, [
+            el("select", { id: "apm-c-preset-select", className: "apm-template-select" }),
+            el("button", { id: "apm-c-btn-save", className: "creator-btn apm-template-btn-update", title: "Update selection" }, "Update"),
+            el("button", { id: "apm-c-btn-new", className: "creator-btn apm-template-btn-new", title: "Create a fresh template" }, "New Template"),
+            el("button", { id: "apm-c-btn-del", className: "creator-btn apm-template-btn-del", title: "Delete template" }, "\u2716")
           ])
         ]),
-        el("div", { style: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: "4px 10px", marginBottom: "6px" } }, [
-          el("div", { className: "field-row", style: { margin: "0" } }, [
-            el("div", { className: "field-label", style: { width: "40px", textAlign: "left", fontSize: "11px" } }, "Type:"),
-            el("select", { id: "apm-c-type", className: "field-input", style: { height: "24px", padding: "0 4px", fontSize: "11px", border: "1px solid transparent", transition: "all 0.2s" } }, [
-              el("option", { value: "" }, "- Ignore -"),
-              el("option", { value: "Breakdown" }, "Breakdown"),
-              el("option", { value: "Corrective" }, "Corrective"),
-              el("option", { value: "Project" }, "Project")
-            ])
+        el("div", { className: "apm-fields-wrapper" }, [
+          el("div", { className: "field-row", style: { marginBottom: "6px" } }, [
+            el("div", { className: "field-label", style: { color: "#f39c12", fontWeight: "bold", width: "65px", textAlign: "left", fontSize: "11px" } }, "Match:"),
+            el("input", { type: "text", id: "apm-c-keyword", className: "field-input", placeholder: "e.g., pre-sort, repair, jam", style: { fontFamily: "monospace", border: "1px solid #f39c12", height: "24px", padding: "0 8px", fontSize: "11px", transition: "all 0.2s" } })
           ]),
-          el("div", { className: "field-row", style: { margin: "0" } }, [
-            el("div", { className: "field-label", style: { width: "40px", textAlign: "left", fontSize: "11px" } }, "Status:"),
-            el("select", { id: "apm-c-status", className: "field-input", style: { height: "24px", padding: "0 4px", fontSize: "11px", border: "1px solid transparent", transition: "all 0.2s" } }, [
-              el("option", { value: "" }, "- Ignore -"),
-              el("option", { value: "Open" }, "Open"),
-              el("option", { value: "In Progress" }, "In Progress")
-            ])
-          ]),
-          el("div", { className: "field-row", style: { margin: "0" } }, [
-            el("div", { className: "field-label", style: { width: "40px", textAlign: "left", fontSize: "11px" } }, "Exec:"),
-            el("select", { id: "apm-c-exec", className: "field-input", style: { height: "24px", padding: "0 4px", fontSize: "11px", border: "1px solid transparent", transition: "all 0.2s" } }, [
-              el("option", { value: "" }, "- Ignore -"),
-              el("option", { value: "EXDN" }, "EXDN"),
-              el("option", { value: "EXDB" }, "EXDB"),
-              el("option", { value: "EXMW" }, "EXOPS"),
-              el("option", { value: "EXSHUT" }, "EXSHUT")
-            ])
-          ]),
-          el("div", { className: "field-row", style: { margin: "0" } }, [
-            el("div", { className: "field-label", style: { width: "40px", textAlign: "left", fontSize: "11px" } }, "Safety:"),
-            el("select", { id: "apm-c-safety", className: "field-input", style: { height: "24px", padding: "0 4px", fontSize: "11px", border: "1px solid transparent", transition: "all 0.2s" } }, [
-              el("option", { value: "" }, "- Ignore -"),
-              el("option", { value: "No" }, "No"),
-              el("option", { value: "Yes" }, "Yes")
-            ])
-          ])
-        ]),
-        el("div", { className: "apm-checklist-box", style: { marginBottom: "6px" } }, [
-          el("div", { className: "apm-checklist-title" }, "Automated Checklists:"),
-          el("div", { className: "apm-checklist-row" }, [
-            el("div", { className: "field-label", style: { width: "40px", textAlign: "left", color: "#fff", fontSize: "11px" } }, "1-Tech:"),
-            el("select", { id: "apm-c-loto-mode", className: "field-input", style: { width: "110px", height: "22px", padding: "0 4px", fontSize: "10px" } }, [
-              el("option", { value: "none" }, "- Ignore -"),
-              el("option", { value: "yes" }, "(Check YES)"),
-              el("option", { value: "no" }, "(Check NO)")
+          el("div", { style: { display: "flex", gap: "6px", marginBottom: "4px" } }, [
+            el("div", { className: "field-row", style: { width: "105px", flexShrink: "0", margin: "0" } }, [
+              el("div", { className: "field-label", style: { width: "35px", textAlign: "left", fontSize: "11px" } }, "Org:"),
+              el("input", { type: "text", id: "apm-c-org", className: "field-input upper", placeholder: "Ignore", style: { height: "24px", padding: "0 6px", fontSize: "11px", border: "1px solid transparent", transition: "all 0.2s" } })
             ]),
-            el("div", { className: "field-label", style: { flexGrow: "1", textAlign: "right", color: "#fff", fontSize: "11px", marginRight: "5px" } }, "10-Tech:"),
-            el("input", { type: "number", id: "apm-c-pm-checks", className: "field-input", min: "0", placeholder: "0", onblur: (e) => {
-              if (e.target.value === "") e.target.value = "0";
-            }, style: { width: "70px", height: "22px", padding: "0 4px", textAlign: "center", fontSize: "10px" } })
-          ])
-        ]),
-        el("div", { style: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: "4px 10px", marginBottom: "6px" } }, [
-          el("div", { className: "field-row", style: { margin: "0" } }, [
-            el("div", { className: "field-label", style: { width: "50px", textAlign: "left", fontSize: "11px" } }, "Problem:"),
-            el("input", { type: "text", id: "apm-c-prob", className: "field-input upper" })
+            el("div", { className: "field-row", style: { flexGrow: "1", margin: "0" } }, [
+              el("div", { className: "field-label", style: { width: "70px", textAlign: "left", fontSize: "11px" } }, "Equipment:"),
+              el("input", { type: "text", id: "apm-c-eq", className: "field-input upper", placeholder: "Leave blank to ignore", style: { height: "24px", padding: "0 6px", fontSize: "11px", border: "1px solid transparent", transition: "all 0.2s" } })
+            ])
           ]),
-          el("div", { className: "field-row", style: { margin: "0" } }, [
-            el("div", { className: "field-label", style: { width: "40px", textAlign: "left", fontSize: "11px" } }, "Failure:"),
-            el("input", { type: "text", id: "apm-c-fail", className: "field-input upper" })
-          ]),
-          el("div", { className: "field-row", style: { margin: "0" } }, [
-            el("div", { className: "field-label", style: { width: "50px", textAlign: "left", fontSize: "11px" } }, "Cause:"),
-            el("input", { type: "text", id: "apm-c-cause", className: "field-input upper" })
-          ]),
-          el("div", { className: "field-row", style: { margin: "0" } }, [
-            el("div", { className: "field-label", style: { width: "40px", textAlign: "left", fontSize: "11px" } }, "Assign:"),
-            el("input", { type: "text", id: "apm-c-assign", className: "field-input upper" })
-          ])
-        ]),
-        el("div", { style: { display: "flex", gap: "6px", marginBottom: "6px" } }, [
-          el("div", { className: "field-row", style: { flex: "1", margin: "0" } }, [
-            el("div", { className: "field-label", style: { width: "35px", textAlign: "left", fontSize: "11px" } }, "Start:"),
-            el("input", { type: "date", id: "apm-c-start", className: "field-input", style: { height: "24px", padding: "0 4px", fontSize: "10px" } })
-          ]),
-          el("div", { className: "field-row", style: { flex: "1", margin: "0" } }, [
-            el("div", { className: "field-label", style: { width: "30px", textAlign: "left", fontSize: "11px" } }, "End:"),
-            el("input", { type: "date", id: "apm-c-end", className: "field-input", style: { height: "24px", padding: "0 4px", fontSize: "10px" } })
-          ]),
-          el("div", { className: "field-row", style: { width: "85px", margin: "0", height: "28px" } }, [
-            el("div", { className: "field-label", style: { width: "35px", textAlign: "right", fontSize: "10px", color: "#1abc9c", fontWeight: "bold", lineHeight: "1", display: "flex", flexDirection: "column", justifyContent: "center", marginRight: "5px" } }, [
-              el("span", {}, "Book"),
-              el("span", {}, "Labor:")
+          el("div", { style: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: "4px 10px", marginBottom: "6px" } }, [
+            el("div", { className: "field-row", style: { margin: "0" } }, [
+              el("div", { className: "field-label", style: { width: "40px", textAlign: "left", fontSize: "11px" } }, "Type:"),
+              el("select", { id: "apm-c-type", className: "field-input", style: { height: "24px", padding: "0 4px", fontSize: "11px", border: "1px solid transparent", transition: "all 0.2s" } }, [
+                el("option", { value: "" }, "- Ignore -"),
+                el("option", { value: "Breakdown" }, "Breakdown"),
+                el("option", { value: "Corrective" }, "Corrective"),
+                el("option", { value: "Project" }, "Project")
+              ])
             ]),
-            el("input", { type: "text", id: "apm-c-labor-hours", className: "field-input", placeholder: "0", style: { height: "24px", padding: "0", fontSize: "11px", border: "1px solid #1abc9c", textAlign: "center", width: "40px" } })
+            el("div", { className: "field-row", style: { margin: "0" } }, [
+              el("div", { className: "field-label", style: { width: "40px", textAlign: "left", fontSize: "11px" } }, "Status:"),
+              el("select", { id: "apm-c-status", className: "field-input", style: { height: "24px", padding: "0 4px", fontSize: "11px", border: "1px solid transparent", transition: "all 0.2s" } }, [
+                el("option", { value: "" }, "- Ignore -"),
+                el("option", { value: "Open" }, "Open"),
+                el("option", { value: "In Progress" }, "In Progress")
+              ])
+            ]),
+            el("div", { className: "field-row", style: { margin: "0" } }, [
+              el("div", { className: "field-label", style: { width: "40px", textAlign: "left", fontSize: "11px" } }, "Exec:"),
+              el("select", { id: "apm-c-exec", className: "field-input", style: { height: "24px", padding: "0 4px", fontSize: "11px", border: "1px solid transparent", transition: "all 0.2s" } }, [
+                el("option", { value: "" }, "- Ignore -"),
+                el("option", { value: "EXDN" }, "EXDN"),
+                el("option", { value: "EXDB" }, "EXDB"),
+                el("option", { value: "EXMW" }, "EXOPS"),
+                el("option", { value: "EXSHUT" }, "EXSHUT")
+              ])
+            ]),
+            el("div", { className: "field-row", style: { margin: "0" } }, [
+              el("div", { className: "field-label", style: { width: "40px", textAlign: "left", fontSize: "11px" } }, "Safety:"),
+              el("select", { id: "apm-c-safety", className: "field-input", style: { height: "24px", padding: "0 4px", fontSize: "11px", border: "1px solid transparent", transition: "all 0.2s" } }, [
+                el("option", { value: "" }, "- Ignore -"),
+                el("option", { value: "No" }, "No"),
+                el("option", { value: "Yes" }, "Yes")
+              ])
+            ])
+          ]),
+          el("div", { className: "apm-checklist-box", style: { marginBottom: "6px" } }, [
+            el("div", { className: "apm-checklist-title" }, "Automated Checklists:"),
+            el("div", { className: "apm-checklist-row" }, [
+              el("div", { className: "field-label", style: { width: "40px", textAlign: "left", color: "#fff", fontSize: "11px" } }, "1-Tech:"),
+              el("select", { id: "apm-c-loto-mode", className: "field-input", style: { width: "110px", height: "22px", padding: "0 4px", fontSize: "10px" } }, [
+                el("option", { value: "none" }, "- Ignore -"),
+                el("option", { value: "yes" }, "(Check YES)"),
+                el("option", { value: "no" }, "(Check NO)")
+              ]),
+              el("div", { className: "field-label", style: { flexGrow: "1", textAlign: "right", color: "#fff", fontSize: "11px", marginRight: "5px" } }, "10-Tech:"),
+              el("input", { type: "number", id: "apm-c-pm-checks", className: "field-input", min: "0", placeholder: "0", onblur: (e) => {
+                if (e.target.value === "") e.target.value = "0";
+              }, style: { width: "70px", height: "22px", padding: "0 4px", textAlign: "center", fontSize: "10px" } })
+            ])
+          ]),
+          el("div", { style: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: "4px 10px", marginBottom: "6px" } }, [
+            el("div", { className: "field-row", style: { margin: "0" } }, [
+              el("div", { className: "field-label", style: { width: "50px", textAlign: "left", fontSize: "11px" } }, "Problem:"),
+              el("input", { type: "text", id: "apm-c-prob", className: "field-input upper" })
+            ]),
+            el("div", { className: "field-row", style: { margin: "0" } }, [
+              el("div", { className: "field-label", style: { width: "40px", textAlign: "left", fontSize: "11px" } }, "Failure:"),
+              el("input", { type: "text", id: "apm-c-fail", className: "field-input upper" })
+            ]),
+            el("div", { className: "field-row", style: { margin: "0" } }, [
+              el("div", { className: "field-label", style: { width: "50px", textAlign: "left", fontSize: "11px" } }, "Cause:"),
+              el("input", { type: "text", id: "apm-c-cause", className: "field-input upper" })
+            ]),
+            el("div", { className: "field-row", style: { margin: "0" } }, [
+              el("div", { className: "field-label", style: { width: "40px", textAlign: "left", fontSize: "11px" } }, "Assign:"),
+              el("input", { type: "text", id: "apm-c-assign", className: "field-input upper" })
+            ])
+          ]),
+          el("div", { style: { display: "flex", gap: "6px", marginBottom: "6px" } }, [
+            el("div", { className: "field-row", style: { flex: "1", margin: "0" } }, [
+              el("div", { className: "field-label", style: { width: "35px", textAlign: "left", fontSize: "11px" } }, "Start:"),
+              el("input", { type: "date", id: "apm-c-start", className: "field-input", style: { height: "24px", padding: "0 4px", fontSize: "10px" } })
+            ]),
+            el("div", { className: "field-row", style: { flex: "1", margin: "0" } }, [
+              el("div", { className: "field-label", style: { width: "30px", textAlign: "left", fontSize: "11px" } }, "End:"),
+              el("input", { type: "date", id: "apm-c-end", className: "field-input", style: { height: "24px", padding: "0 4px", fontSize: "10px" } })
+            ]),
+            el("div", { className: "field-row", style: { width: "85px", margin: "0", height: "28px" } }, [
+              el("div", { className: "field-label", style: { width: "35px", textAlign: "right", fontSize: "10px", color: "#1abc9c", fontWeight: "bold", lineHeight: "1", display: "flex", flexDirection: "column", justifyContent: "center", marginRight: "5px" } }, [
+                el("span", {}, "Book"),
+                el("span", {}, "Labor:")
+              ]),
+              el("input", { type: "text", id: "apm-c-labor-hours", className: "field-input", placeholder: "0", style: { height: "24px", padding: "0", fontSize: "11px", border: "1px solid #1abc9c", textAlign: "center", width: "40px" } })
+            ])
+          ]),
+          el("div", { className: "field-row", style: { margin: "0", alignItems: "flex-start" } }, [
+            el("div", { className: "field-label", style: { width: "50px", textAlign: "left", fontSize: "11px", marginTop: "5px" } }, "Closing:"),
+            el("textarea", { id: "apm-c-close", className: "field-input apm-textarea-input", placeholder: "Closing comments..." })
           ])
-        ]),
-        el("div", { className: "field-row", style: { margin: "0", alignItems: "flex-start" } }, [
-          el("div", { className: "field-label", style: { width: "50px", textAlign: "left", fontSize: "11px", marginTop: "5px" } }, "Closing:"),
-          el("textarea", { id: "apm-c-close", className: "field-input apm-textarea-input", placeholder: "Closing comments..." })
         ])
       ])
     ]);
   }
   function buildTabOrderTab() {
-    return el("div", { id: "apm-settings-fields", style: { display: "none" } }, [
-      el("div", { className: "apm-ui-settings-toggles" }, [
-        el("div", { id: "apm-s-tog-cols", className: "apm-ui-settings-btn active" }, "Grid Columns"),
-        el("div", { id: "apm-s-tog-tabs", className: "apm-ui-settings-btn inactive" }, "Record Tabs")
+    return el("div", { id: "apm-settings-fields", style: { display: "none" }, className: "apm-panel-section" }, [
+      el("div", { className: "apm-tab-content-scroll" }, [
+        el("div", { className: "apm-ui-settings-toggles" }, [
+          el("div", { id: "apm-s-tog-cols", className: "apm-ui-settings-btn active" }, "Grid Columns"),
+          el("div", { id: "apm-s-tog-tabs", className: "apm-ui-settings-btn inactive" }, "Record Tabs")
+        ]),
+        el("div", { id: "apm-s-title", style: { color: "#3498db", fontWeight: "bold", marginBottom: "5px" } }, "Visual Order:"),
+        el("div", { style: { fontSize: "11px", color: "#aaa", marginBottom: "10px" } }, "Drag and drop to reorder. Syncs automatically."),
+        el("div", { id: "apm-s-col-list", className: "apm-ui-settings-list" })
       ]),
-      el("div", { id: "apm-s-title", style: { color: "#3498db", fontWeight: "bold", marginBottom: "5px" } }, "Visual Order:"),
-      el("div", { style: { fontSize: "11px", color: "#aaa", marginBottom: "10px" } }, "Drag and drop to reorder. Syncs automatically."),
-      el("div", { id: "apm-s-col-list", className: "apm-ui-settings-list" }),
-      el("button", { id: "apm-s-btn-save-settings", className: "apm-ui-settings-save" }, "Save Layout Order"),
-      el("button", { id: "apm-s-btn-reset", className: "apm-ui-settings-reset" }, "Reset to Default")
+      el("div", { className: "apm-tab-action-footer" }, [
+        el("button", { id: "apm-s-btn-save-settings", className: "apm-ui-settings-save" }, "Save Layout Order"),
+        el("button", { id: "apm-s-btn-reset", className: "apm-ui-settings-reset" }, "Reset to Default")
+      ])
     ]);
   }
   function buildColorCodeTab() {
-    return el("div", { id: "apm-colorcode-fields", style: { display: "none", paddingBottom: "5px" } }, [
-      el("div", { className: "apm-cc-search-box", style: { background: "#22292f", padding: "12px", borderRadius: "6px", border: "1px solid #45535e", marginBottom: "15px" } }, [
-        el("div", { style: { display: "flex", gap: "10px", marginBottom: "12px" } }, [
-          el("div", { style: { flex: "1" } }, [
-            el("div", { style: { fontSize: "11px", color: "#95a5a6", marginBottom: "4px", fontWeight: "bold" } }, "Keyword (Search)"),
-            el("input", { type: "text", id: "cc-search", className: "field-input", placeholder: "Match multiple keywords separated by, comma,", style: { height: "30px", fontSize: "12px", width: "100%", boxSizing: "border-box" } })
+    return el("div", { id: "apm-colorcode-fields", style: { display: "none", paddingBottom: "5px" }, className: "apm-panel-section" }, [
+      el("div", { className: "apm-tab-content-scroll" }, [
+        el("div", { className: "apm-cc-search-box", style: { background: "#22292f", padding: "12px", borderRadius: "6px", border: "1px solid #45535e", marginBottom: "15px" } }, [
+          el("div", { style: { display: "flex", gap: "10px", marginBottom: "12px" } }, [
+            el("div", { style: { flex: "1" } }, [
+              el("div", { style: { fontSize: "11px", color: "#95a5a6", marginBottom: "4px", fontWeight: "bold" } }, "Keyword (Search)"),
+              el("input", { type: "text", id: "cc-search", className: "field-input", placeholder: "Match multiple keywords separated by, comma,", style: { height: "30px", fontSize: "12px", width: "100%", boxSizing: "border-box" } })
+            ]),
+            el("div", { style: { width: "50px" } }, [
+              el("div", { style: { fontSize: "11px", color: "#95a5a6", marginBottom: "4px", fontWeight: "bold", textAlign: "center" } }, "Color"),
+              el("input", { type: "color", id: "cc-color", value: "#e74c3c", tabIndex: -1, style: { width: "100%", height: "30px", padding: "0", border: "1px solid #45535e", borderRadius: "4px", cursor: "pointer", background: "none" } })
+            ])
           ]),
-          el("div", { style: { width: "50px" } }, [
-            el("div", { style: { fontSize: "11px", color: "#95a5a6", marginBottom: "4px", fontWeight: "bold", textAlign: "center" } }, "Color"),
-            el("input", { type: "color", id: "cc-color", value: "#e74c3c", tabIndex: -1, style: { width: "100%", height: "30px", padding: "0", border: "1px solid #45535e", borderRadius: "4px", cursor: "pointer", background: "none" } })
+          el("div", { style: { display: "flex", gap: "10px", alignItems: "flex-end", marginBottom: "15px" } }, [
+            el("div", { style: { flex: "1" } }, [
+              el("div", { style: { fontSize: "11px", color: "#95a5a6", marginBottom: "4px", fontWeight: "bold" } }, "Badge Text (Nametag)"),
+              el("input", { type: "text", id: "cc-tag", className: "field-input", placeholder: "(Leave blank for no nametag)", style: { height: "30px", fontSize: "12px", width: "100%", boxSizing: "border-box" } })
+            ])
+          ]),
+          el("div", { style: { display: "flex", gap: "8px", width: "100%", marginBottom: "15px" } }, [
+            el("button", { id: "cc-btn-fill", className: "apm-cc-style-btn active", title: "Fill Row Background", style: { flex: "1", height: "32px", display: "flex", alignItems: "center", justifyContent: "center", border: "1px solid #45535e", borderRadius: "4px", background: "#34495e", cursor: "pointer", color: "white", transition: "all 0.2s", fontSize: "11px", fontWeight: "bold" } }, "Fill Row"),
+            el("button", { id: "cc-btn-tag", className: "apm-cc-style-btn active", title: "Show Nametag", style: { flex: "1", height: "32px", display: "flex", alignItems: "center", justifyContent: "center", border: "1px solid #45535e", borderRadius: "4px", background: "#34495e", cursor: "pointer", color: "white", transition: "all 0.2s", fontSize: "11px", fontWeight: "bold" } }, "Name Tag")
+          ]),
+          el("div", { style: { display: "flex", gap: "8px", flex: "1", justifyContent: "space-between", alignItems: "center" } }, [
+            el("div", { style: { fontSize: "11px", color: "#1abc9c", fontStyle: "italic" } }, "\u2713 Live preview on grid"),
+            el("div", { style: { display: "flex", gap: "8px" } }, [
+              el("button", { id: "cc-add-btn", style: { flex: "1", maxWidth: "120px", background: "#3498db", color: "white", border: "none", borderRadius: "4px", height: "32px", cursor: "pointer", fontWeight: "bold", fontSize: "12px", transition: "background 0.2s", display: "flex", alignItems: "center", justifyContent: "center", gap: "6px" } }, [
+                el("span", {}, "\u{1F4BE}"),
+                el("span", { id: "cc-add-btn-text" }, "Save Rule")
+              ]),
+              el("button", { id: "cc-cancel-btn", style: { display: "inline-block", background: "#7f8c8d", color: "white", border: "none", borderRadius: "4px", height: "32px", padding: "0 12px", cursor: "pointer", fontWeight: "bold", fontSize: "12px", marginLeft: "8px" } }, "Cancel")
+            ])
           ])
         ]),
-        el("div", { style: { display: "flex", gap: "10px", alignItems: "flex-end", marginBottom: "15px" } }, [
-          el("div", { style: { flex: "1" } }, [
-            el("div", { style: { fontSize: "11px", color: "#95a5a6", marginBottom: "4px", fontWeight: "bold" } }, "Badge Text (Nametag)"),
-            el("input", { type: "text", id: "cc-tag", className: "field-input", placeholder: "(Leave blank for no nametag)", style: { height: "30px", fontSize: "12px", width: "100%", boxSizing: "border-box" } })
+        el("div", { className: "apm-cc-theme-box" }, [
+          el("div", { className: "apm-cc-theme-item" }, [
+            el("div", { id: "cc-uniform-label", className: "apm-cc-theme-label" }, "Uniform Shading"),
+            el("label", { className: "cc-toggle-switch" }, [
+              el("input", { type: "checkbox", id: "cc-setting-uniform", checked: true }),
+              el("span", { className: "cc-toggle-slider" })
+            ])
           ])
         ]),
-        el("div", { style: { display: "flex", gap: "10px", alignItems: "center", marginBottom: "15px" } }, [
-          el("div", { style: { display: "flex", gap: "8px" } }, [
-            el("button", { id: "cc-btn-fill", className: "apm-cc-style-btn active", title: "Fill Row Background", style: { padding: "0 12px", height: "32px", display: "flex", alignItems: "center", justifyContent: "center", border: "1px solid #45535e", borderRadius: "4px", background: "#34495e", cursor: "pointer", color: "white", transition: "all 0.2s", fontSize: "11px", fontWeight: "bold" } }, "Fill Row"),
-            el("button", { id: "cc-btn-tag", className: "apm-cc-style-btn active", title: "Show Nametag", style: { padding: "0 12px", height: "32px", display: "flex", alignItems: "center", justifyContent: "center", border: "1px solid #45535e", borderRadius: "4px", background: "#34495e", cursor: "pointer", color: "white", transition: "all 0.2s", fontSize: "11px", fontWeight: "bold" } }, "Name Tag")
-          ]),
-          el("div", { id: "cc-preview-row", style: { flex: "1", height: "32px", background: "rgba(231, 76, 60, 0.22)", borderLeft: "5px solid #e74c3c", borderRadius: "4px", display: "flex", alignItems: "center", padding: "0 10px", fontSize: "12px", color: "#ecf0f1", overflow: "hidden", position: "relative" } }, [
-            el("span", { style: { opacity: "0.6", whiteSpace: "nowrap" } }, "Preview Row Content..."),
-            el("div", { id: "cc-preview-tag", className: "apm-nametag", style: { position: "absolute", right: "10px", background: "#e74c3c" } }, "Sample Tag")
+        el("div", { id: "cc-rules-container", className: "apm-cc-rules-container" }),
+        el("div", { id: "cc-guide-container", className: "apm-cc-guide" }, [
+          el("p", {}, 'Rules match if ANY of the comma-separated keywords are found in a row. "Fill Row" is applied to every match.'),
+          el("p", {}, [
+            el("b", { style: { color: "white" } }, "Nametags: "),
+            'Type text into "Badge Text" to show a pill badge on matching cells. Leave it empty to only highlight the row without showing a tag. Use ',
+            el("code", {}, "\\n"),
+            " for line breaks."
           ])
-        ]),
-        el("div", { style: { display: "flex", gap: "8px", flex: "1", justifyContent: "flex-end" } }, [
-          el("button", { id: "cc-add-btn", style: { flex: "1", maxWidth: "120px", background: "#3498db", color: "white", border: "none", borderRadius: "4px", height: "32px", cursor: "pointer", fontWeight: "bold", fontSize: "12px", transition: "background 0.2s", display: "flex", alignItems: "center", justifyContent: "center", gap: "6px" } }, [
-            el("span", {}, "\u{1F4BE}"),
-            el("span", { id: "cc-add-btn-text" }, "Save Rule")
-          ]),
-          el("button", { id: "cc-cancel-btn", style: { display: "none", background: "#7f8c8d", color: "white", border: "none", borderRadius: "4px", height: "32px", padding: "0 12px", cursor: "pointer", fontWeight: "bold", fontSize: "12px" } }, "Cancel")
-        ])
-      ]),
-      el("div", { className: "apm-cc-theme-box" }, [
-        el("div", { className: "apm-cc-theme-item" }, [
-          el("div", { id: "cc-uniform-label", className: "apm-cc-theme-label" }, "Uniform Shading"),
-          el("label", { className: "cc-toggle-switch" }, [
-            el("input", { type: "checkbox", id: "cc-setting-uniform", checked: true }),
-            el("span", { className: "cc-toggle-slider" })
-          ])
-        ])
-      ]),
-      el("div", { id: "cc-rules-container", className: "apm-cc-rules-container" }),
-      el("div", { id: "cc-guide-container", className: "apm-cc-guide" }, [
-        el("p", {}, 'Rules match if ANY of the comma-separated keywords are found in a row. "Fill Row" is applied to every match.'),
-        el("p", {}, [
-          el("b", { style: { color: "white" } }, "Nametags: "),
-          'Type text into "Badge Text" to show a pill badge on matching cells. Leave it empty to only highlight the row without showing a tag. Use ',
-          el("code", {}, "\\n"),
-          " for line breaks."
         ])
       ])
     ]);
   }
   function buildGeneralTab() {
-    return el("div", { id: "apm-general-fields", style: { display: "none" }, className: "apm-general-box" }, [
-      el("div", { className: "apm-general-item" }, [
-        el("div", {}, [
-          el("div", { className: "apm-general-title" }, "PTP Timer"),
-          el("div", { className: "apm-general-desc" }, 'Show a 2-minute countdown timer overlay on the PTP screen if you want to follow the standard of "Take 2" minutes.')
+    FeatureFlags.register("colorCode", { label: "ColorCode Engine", description: "Real-time grid highlighting and nametags" });
+    FeatureFlags.register("forecast", { label: "Forecast Tools", description: "Site/Org filters and search" });
+    FeatureFlags.register("autoFill", { label: "AutoFill Profiles", description: "Automated form completion templates" });
+    FeatureFlags.register("laborBooker", { label: "Labor Booker", description: "Quick labor entry for WOs" });
+    FeatureFlags.register("ptpTimer", { label: "PTP Take-2 Timer", description: "Safety countdown on PTP screen" });
+    FeatureFlags.register("tabGridOrder", { label: "UI Customization", description: "Drag & drop reordering of grids/tabs" });
+    const flagItems = FeatureFlags.getAll().map((flag) => {
+      return el("div", { className: "apm-general-item" }, [
+        el("div", { style: { flex: "1" } }, [
+          el("div", { className: "apm-general-title", style: { fontSize: "12px" } }, flag.label),
+          el("div", { className: "apm-general-desc", style: { fontSize: "10px" } }, flag.description)
         ]),
         el("label", { className: "cc-toggle-switch" }, [
-          el("input", { type: "checkbox", id: "gen-setting-ptp", checked: !!apmGeneralSettings.ptpTimerEnabled }),
+          el("input", {
+            type: "checkbox",
+            checked: flag.value,
+            onchange: (e) => FeatureFlags.set(flag.id, e.target.checked)
+          }),
           el("span", { className: "cc-toggle-slider" })
         ])
-      ]),
-      el("div", { className: "apm-general-item" }, [
-        el("div", {}, [
-          el("div", { id: "gen-setting-links-title", className: "apm-general-title" }, apmGeneralSettings.openLinksInNewTab ? "Open Work Orders in New Tab" : "Open Work Orders in Current Tab"),
-          el("div", { className: "apm-general-desc" }, "Linkified WO numbers open in a new window vs the current window")
+      ]);
+    });
+    return el("div", { id: "apm-general-fields", style: { display: "none" }, className: "apm-panel-section" }, [
+      el("div", { className: "apm-tab-content-scroll" }, [
+        el("div", { className: "apm-settings-section", style: { borderBottom: "1px solid #45535e", paddingBottom: "15px", marginBottom: "15px" } }, [
+          el("h4", { style: { margin: "0 0 12px 0", color: "#3498db", fontSize: "14px", fontWeight: "bold", textTransform: "uppercase", letterSpacing: "1px" } }, "Feature Modules"),
+          el("div", { className: "apm-general-desc", style: { marginBottom: "15px" } }, "Enable or disable core modules to customize your experience."),
+          ...flagItems
         ]),
-        el("label", { className: "cc-toggle-switch" }, [
-          el("input", { type: "checkbox", id: "gen-setting-links", checked: !!apmGeneralSettings.openLinksInNewTab }),
-          el("span", { className: "cc-toggle-slider" })
-        ])
-      ]),
-      el("div", { className: "apm-general-item" }, [
-        el("div", {}, [
-          el("div", { className: "apm-general-title" }, "Show PTP Status Icons"),
-          el("div", { className: "apm-general-desc" }, "Inject \u2705 or \u274C icons into the Grid and Record Views to show your personal assessment history")
-        ]),
-        el("label", { className: "cc-toggle-switch" }, [
-          el("input", { type: "checkbox", id: "gen-setting-ptp-ui", checked: !!apmGeneralSettings.ptpTrackingEnabled }),
-          el("span", { className: "cc-toggle-slider" })
-        ])
-      ]),
-      el("div", { className: "apm-general-item" }, [
-        el("div", {}, [
-          el("div", { className: "apm-general-title" }, "Auto-Redirect"),
-          el("div", { className: "apm-general-desc" }, "Automatically return to APM Home if session expires")
-        ]),
-        el("label", { className: "cc-toggle-switch" }, [
-          el("input", { type: "checkbox", id: "gen-setting-redirect", checked: !!apmGeneralSettings.autoRedirect }),
-          el("span", { className: "cc-toggle-slider" })
-        ])
-      ]),
-      el("div", { className: "apm-general-item", style: { borderTop: "1px solid #45535e", paddingTop: "10px", marginTop: "10px" } }, [
-        el("div", {}, [
-          el("div", { className: "apm-general-title", style: { color: "#1abc9c" } }, "Regional: Date Format"),
-          el("div", { className: "apm-general-desc" }, "Choose the format your EAM expects for inputs.")
-        ]),
-        el("select", { id: "gen-setting-date-fmt", className: "apm-cc-theme-select", style: { width: "120px" } }, [
-          el("option", { value: "us" }, "MM/DD/YYYY"),
-          el("option", { value: "eu" }, "DD/MM/YYYY"),
-          el("option", { value: "mon" }, "DD-MON-YYYY")
-        ])
-      ]),
-      el("div", { className: "apm-general-item" }, [
-        el("div", {}, [
-          el("div", { className: "apm-general-title" }, "Regional: Separator"),
-          el("div", { className: "apm-general-desc" }, "The character between parts (e.g. / or -)")
-        ]),
-        el("select", { id: "gen-setting-date-sep", className: "apm-cc-theme-select", style: { width: "120px" } }, [
-          el("option", { value: "/" }, "/ (Slash)"),
-          el("option", { value: "-" }, "- (Dash)")
-        ])
-      ]),
-      el("div", { className: "apm-general-item" }, [
-        el("div", {}, [
-          el("div", { className: "apm-general-title" }, "Regional: Overrides"),
-          el("div", { className: "apm-general-desc" }, "Force standard date parsing in EAM (Disable if causing errors)")
-        ]),
-        el("label", { className: "cc-toggle-switch" }, [
-          el("input", { type: "checkbox", id: "gen-setting-date-over", checked: !!apmGeneralSettings.dateOverrideEnabled }),
-          el("span", { className: "cc-toggle-slider" })
-        ])
-      ]),
-      el("div", { className: "apm-general-item", style: { borderTop: "1px solid #45535e", paddingTop: "10px", marginTop: "10px" } }, [
-        el("div", {}, [
-          el("div", { className: "apm-general-title", style: { color: "#3498db" } }, "Interface Theme"),
-          el("div", { className: "apm-general-desc" }, "Choose the global visual style for APM elements.")
-        ]),
-        el("select", { id: "cc-setting-theme", className: "apm-cc-theme-select", style: { width: "125px" } }, [
-          el("option", { value: "default" }, "System Default"),
-          el("option", { value: "theme-hex-dark" }, "Dark Hex"),
-          el("option", { value: "theme-dark" }, "Dark Classic"),
-          el("option", { value: "theme-darkblue" }, "Dark Blue"),
-          el("option", { value: "theme-hex" }, "Light Hex"),
-          el("option", { value: "theme-orange" }, "Orange")
-        ])
-      ]),
-      // Software & Updates Section
-      el("div", { className: "apm-settings-section", style: { borderTop: "1px solid #45535e", padding: "15px 0", marginTop: "10px" } }, [
-        el("h4", { style: { margin: "0 0 12px 0", color: "#1abc9c", fontSize: "14px", fontWeight: "bold", textTransform: "uppercase", letterSpacing: "1px" } }, "Software & Updates"),
-        el("div", { className: "apm-general-item", style: { border: "none", padding: "5px 0" } }, [
-          el("div", { style: { flex: "1" } }, [
-            el("div", { className: "apm-general-title" }, "Diagnostic Logging"),
-            el("div", { className: "apm-general-desc" }, "Adjust information verbosity in the console.")
+        el("div", { className: "apm-settings-section", style: { paddingBottom: "15px", marginBottom: "15px" } }, [
+          el("h4", { style: { margin: "0 0 12px 0", color: "#3498db", fontSize: "14px", fontWeight: "bold", textTransform: "uppercase", letterSpacing: "1px" } }, "Global Preferences"),
+          el("div", { className: "apm-general-item" }, [
+            el("div", {}, [
+              el("div", { id: "gen-setting-links-title", className: "apm-general-title" }, apmGeneralSettings.openLinksInNewTab ? "Open Work Orders in New Tab" : "Open Work Orders in Current Tab"),
+              el("div", { className: "apm-general-desc" }, "Linkified WO numbers open in a new window vs the current window")
+            ]),
+            el("label", { className: "cc-toggle-switch" }, [
+              el("input", { type: "checkbox", id: "gen-setting-links", checked: !!apmGeneralSettings.openLinksInNewTab }),
+              el("span", { className: "cc-toggle-slider" })
+            ])
           ]),
-          el("select", { id: "gen-setting-log-level", className: "apm-cc-theme-select", style: { width: "120px" } }, [
-            el("option", { value: "error" }, "Error Only"),
-            el("option", { value: "warn" }, "Warning"),
-            el("option", { value: "info" }, "Info"),
-            el("option", { value: "debug" }, "Debug"),
-            el("option", { value: "verbose" }, "Verbose")
+          el("div", { className: "apm-general-item" }, [
+            el("div", {}, [
+              el("div", { className: "apm-general-title" }, "Show PTP Status Icons"),
+              el("div", { className: "apm-general-desc" }, "Inject \u2705 or \u274C icons into the Grid and Record Views to show your personal assessment history")
+            ]),
+            el("label", { className: "cc-toggle-switch" }, [
+              el("input", { type: "checkbox", id: "gen-setting-ptp-ui", checked: !!apmGeneralSettings.ptpTrackingEnabled }),
+              el("span", { className: "cc-toggle-slider" })
+            ])
+          ]),
+          el("div", { className: "apm-general-item" }, [
+            el("div", {}, [
+              el("div", { className: "apm-general-title" }, "Auto-Redirect"),
+              el("div", { className: "apm-general-desc" }, "Automatically return to APM Home if session expires")
+            ]),
+            el("label", { className: "cc-toggle-switch" }, [
+              el("input", { type: "checkbox", id: "gen-setting-redirect", checked: !!apmGeneralSettings.autoRedirect }),
+              el("span", { className: "cc-toggle-slider" })
+            ])
+          ]),
+          el("div", { className: "apm-general-item", style: { borderTop: "1px solid #45535e", paddingTop: "10px", marginTop: "10px" } }, [
+            el("div", {}, [
+              el("div", { className: "apm-general-title", style: { color: "#1abc9c" } }, "Regional: Date Format"),
+              el("div", { className: "apm-general-desc" }, "Choose the format your EAM expects for inputs.")
+            ]),
+            el("select", { id: "gen-setting-date-fmt", className: "apm-cc-theme-select", style: { width: "120px" } }, [
+              el("option", { value: "us" }, "MM/DD/YYYY"),
+              el("option", { value: "eu" }, "DD/MM/YYYY"),
+              el("option", { value: "mon" }, "DD-MON-YYYY")
+            ])
+          ]),
+          el("div", { className: "apm-general-item" }, [
+            el("div", {}, [
+              el("div", { className: "apm-general-title" }, "Regional: Separator"),
+              el("div", { className: "apm-general-desc" }, "The character between parts (e.g. / or -)")
+            ]),
+            el("select", { id: "gen-setting-date-sep", className: "apm-cc-theme-select", style: { width: "120px" } }, [
+              el("option", { value: "/" }, "/ (Slash)"),
+              el("option", { value: "-" }, "- (Dash)")
+            ])
+          ]),
+          el("div", { className: "apm-general-item" }, [
+            el("div", {}, [
+              el("div", { className: "apm-general-title" }, "Regional: Overrides"),
+              el("div", { className: "apm-general-desc" }, "Force standard date parsing in EAM (Disable if causing errors)")
+            ]),
+            el("label", { className: "cc-toggle-switch" }, [
+              el("input", { type: "checkbox", id: "gen-setting-date-over", checked: !!apmGeneralSettings.dateOverrideEnabled }),
+              el("span", { className: "cc-toggle-slider" })
+            ])
+          ]),
+          el("div", { className: "apm-general-item", style: { borderTop: "1px solid #45535e", paddingTop: "10px", marginTop: "10px" } }, [
+            el("div", {}, [
+              el("div", { className: "apm-general-title", style: { color: "#3498db" } }, "Interface Theme"),
+              el("div", { className: "apm-general-desc" }, "Choose the global visual style for APM elements.")
+            ]),
+            el("select", { id: "cc-setting-theme", className: "apm-cc-theme-select", style: { width: "125px" } }, [
+              el("option", { value: "default" }, "System Default"),
+              el("option", { value: "theme-hex-dark" }, "Dark Hex"),
+              el("option", { value: "theme-dark" }, "Dark Classic"),
+              el("option", { value: "theme-darkblue" }, "Dark Blue"),
+              el("option", { value: "theme-hex" }, "Light Hex"),
+              el("option", { value: "theme-orange" }, "Orange")
+            ])
           ])
         ]),
-        el("div", { className: "apm-general-item", style: { border: "none", padding: "5px 0" } }, [
-          el("div", { style: { flex: "1" } }, [
-            el("div", { className: "apm-general-title" }, "Update Track"),
-            el("div", { className: "apm-general-desc" }, "Stable releases or cutting-edge Beta builds.")
+        // Software & Updates Section
+        el("div", { className: "apm-settings-section", style: { borderTop: "1px solid #45535e", padding: "15px 0", marginTop: "10px" } }, [
+          el("h4", { style: { margin: "0 0 12px 0", color: "#1abc9c", fontSize: "14px", fontWeight: "bold", textTransform: "uppercase", letterSpacing: "1px" } }, "Software & Updates"),
+          el("div", { className: "apm-general-item", style: { border: "none", padding: "5px 0" } }, [
+            el("div", { style: { flex: "1" } }, [
+              el("div", { className: "apm-general-title" }, "Diagnostic Logging"),
+              el("div", { className: "apm-general-desc" }, "Adjust information verbosity in the console.")
+            ]),
+            el("select", { id: "gen-setting-log-level", className: "apm-cc-theme-select", style: { width: "120px" } }, [
+              el("option", { value: "error" }, "Error Only"),
+              el("option", { value: "warn" }, "Warning"),
+              el("option", { value: "info" }, "Info"),
+              el("option", { value: "debug" }, "Debug"),
+              el("option", { value: "verbose" }, "Verbose")
+            ])
           ]),
-          el("select", { id: "gen-setting-update-track", className: "apm-cc-theme-select", style: { width: "120px" } }, [
-            el("option", { value: "stable" }, "Stable Release"),
-            el("option", { value: "beta" }, "Beta / vNext")
+          el("div", { className: "apm-general-item", style: { border: "none", padding: "5px 0" } }, [
+            el("div", { style: { flex: "1" } }, [
+              el("div", { className: "apm-general-title" }, "Update Track"),
+              el("div", { className: "apm-general-desc" }, "Stable releases or cutting-edge Beta builds.")
+            ]),
+            el("select", { id: "gen-setting-update-track", className: "apm-cc-theme-select", style: { width: "120px" } }, [
+              el("option", { value: "stable" }, "Stable Release"),
+              el("option", { value: "beta" }, "Beta / vNext")
+            ])
+          ]),
+          el("div", { className: "apm-general-item", style: { border: "none", padding: "5px 0" } }, [
+            el("div", { style: { flex: "1" } }, [
+              el("div", { className: "apm-general-title" }, "Manual Version Check"),
+              el("div", { className: "apm-general-desc" }, "Check for the latest version manually.")
+            ]),
+            el("button", { id: "apm-btn-check-updates", className: "apm-footer-help-btn-box", style: { width: "100px", height: "30px", fontSize: "11px", minWidth: "100px" } }, "Check Now")
           ])
         ]),
-        el("div", { className: "apm-general-item", style: { border: "none", padding: "5px 0" } }, [
-          el("div", { style: { flex: "1" } }, [
-            el("div", { className: "apm-general-title" }, "Manual Version Check"),
-            el("div", { className: "apm-general-desc" }, "Check for the latest version manually.")
+        // Import / Export Section
+        el("div", { className: "apm-settings-section", style: { borderTop: "1px solid #45535e", padding: "15px 0", marginTop: "10px" } }, [
+          el("h4", { style: { margin: "0 0 12px 0", color: "#f39c12", fontSize: "14px", fontWeight: "bold", textTransform: "uppercase", letterSpacing: "1px" } }, "Backup & Restore"),
+          el("div", { className: "apm-general-desc", style: { marginBottom: "12px" } }, "Download to backup, or paste & import a previous backup."),
+          el("div", { className: "apm-general-item", style: { border: "none", padding: "8px 0", flexDirection: "column", gap: "8px", alignItems: "flex-start" } }, [
+            el("div", { style: { display: "flex", gap: "8px", width: "100%", flexWrap: "wrap" } }, [
+              el("button", { id: "apm-btn-export-settings", className: "apm-footer-help-btn-box", style: { width: "auto", padding: "6px 14px", fontSize: "11px" } }, "\u{1F4BE} Backup As File (.JSON)"),
+              el("button", { id: "apm-btn-copy-b64", className: "apm-footer-help-btn-box", style: { width: "auto", padding: "6px 14px", fontSize: "11px" } }, "\u{1F4CB} Copy To Clipboard (Base64)")
+            ]),
+            el("div", { style: { width: "100%", display: "flex", flexDirection: "column", gap: "8px" } }, [
+              el("button", { id: "apm-btn-import-settings", className: "apm-footer-help-btn-box", style: { width: "auto", padding: "6px 14px", fontSize: "11px" } }, "\u{1F4C2} Import from File"),
+              el("textarea", { id: "apm-import-paste-input", placeholder: "Or paste backup (JSON or Base64) and press Ctrl+Enter...", style: { width: "100%", height: "70px", fontSize: "11px", fontFamily: "monospace", padding: "8px", border: "1px solid #45535e", borderRadius: "4px", background: "#1a1f24", color: "#ecf0f1", boxSizing: "border-box", resize: "vertical" } })
+            ]),
+            el("input", { type: "file", id: "apm-import-file-input", accept: ".json", style: { display: "none" } })
           ]),
-          el("button", { id: "apm-btn-check-updates", className: "apm-footer-help-btn-box", style: { width: "100px", height: "30px", fontSize: "11px", minWidth: "100px" } }, "Check Now")
+          el("div", { id: "apm-import-status", style: { fontSize: "10px", color: "#95a5a6", marginTop: "8px", minHeight: "20px" } })
+        ])
+      ])
+    ]);
+  }
+  function buildDiagnosticsTab() {
+    return el("div", { id: "apm-diagnostics-fields", style: { display: "none" }, className: "apm-panel-section" }, [
+      el("div", { className: "apm-tab-content-scroll" }, [
+        el("div", { className: "apm-diagnostics-header", style: { display: "flex", justifyContent: "space-between", marginBottom: "10px" } }, [
+          el("span", { style: { color: "#1abc9c", fontWeight: "bold", fontSize: "12px" } }, "Runtime Telemetry"),
+          el("button", { id: "diag-btn-copy", className: "apm-footer-help-btn-box", style: { padding: "4px 10px", fontSize: "10px", width: "auto" } }, "\u{1F4CB} Copy Report")
+        ]),
+        el("div", { id: "diag-content" }, [
+          el("div", { style: { color: "#95a5a6", fontSize: "11px", textAlign: "center", marginTop: "50px" } }, "Loading statistics...")
         ])
       ])
     ]);
   }
   function createFooter() {
     return el("div", { className: "apm-footer" }, [
-      el("div", { id: "cc-footer-btns", style: { display: "none", justifyContent: "space-between", gap: "8px", marginBottom: "10px", padding: "0 5px" } }, [
-        el("button", { id: "cc-export-btn", className: "cc-footer-btn", title: "Export Rules to Clipboard" }, "\u{1F4E4} Export Config"),
-        el("button", { id: "cc-import-btn", className: "cc-footer-btn", title: "Import Rules" }, "\u{1F4E5} Import Config")
+      el("div", { id: "cc-footer-btns", style: { display: "none", flexDirection: "column", gap: "8px", marginBottom: "10px", padding: "0" } }, [
+        el("div", { style: { display: "flex", gap: "6px", width: "100%", boxSizing: "border-box" } }, [
+          el("button", { id: "cc-export-btn", className: "cc-footer-btn", style: { flex: "1", minWidth: "0", overflow: "hidden", textOverflow: "ellipsis" }, title: "Copy Base64 to clipboard (Shift+click to download JSON)" }, "\u{1F4E4} Copy Rules (Base64)"),
+          el("button", { id: "cc-export-download-btn", className: "cc-footer-btn", style: { flex: "1", minWidth: "0", overflow: "hidden", textOverflow: "ellipsis" }, title: "Download rules as JSON file" }, "\u{1F4BE} Download (.JSON)"),
+          el("button", { id: "cc-import-btn", className: "cc-footer-btn", style: { flex: "1", minWidth: "0", overflow: "hidden", textOverflow: "ellipsis" }, title: "Toggle import panel" }, "\u{1F4E5} Import Rules")
+        ]),
+        el("div", { id: "cc-import-panel", style: { display: "none", marginTop: "8px", padding: "10px", border: "1px solid #45535e", borderRadius: "4px", background: "rgba(52, 73, 94, 0.3)" } }, [
+          el("div", { style: { marginBottom: "8px" } }, [
+            el("div", { style: { fontSize: "11px", color: "#95a5a6", marginBottom: "4px", fontWeight: "bold" } }, "Import from File or Paste:"),
+            el("input", { type: "file", id: "cc-import-file-input", style: { display: "none" }, accept: ".json,application/json" }),
+            el("button", { id: "cc-import-file-btn", className: "cc-footer-btn", style: { width: "100%", marginBottom: "6px" } }, "\u{1F4C1} Select JSON File")
+          ]),
+          el("div", { style: { display: "flex", alignItems: "center", gap: "6px", marginBottom: "6px" } }, [
+            el("div", { style: { flex: "1", height: "1px", background: "#45535e" } }),
+            el("span", { style: { color: "#7f8c8d", fontSize: "10px" } }, "OR"),
+            el("div", { style: { flex: "1", height: "1px", background: "#45535e" } })
+          ]),
+          el("div", { style: { marginBottom: "6px" } }, [
+            el("textarea", { id: "cc-import-textarea", style: { width: "100%", height: "80px", padding: "6px", fontSize: "11px", fontFamily: "monospace", border: "1px solid #45535e", borderRadius: "4px", background: "#1a2332", color: "#ecf0f1", resize: "vertical", boxSizing: "border-box" }, placeholder: "Paste Base64 (APM:...) or JSON array here\\nCtrl+Enter to import" })
+          ]),
+          el("div", { style: { fontSize: "10px", color: "#7f8c8d", marginTop: "4px" } }, "Press Ctrl+Enter to import pasted data")
+        ])
       ]),
       el("div", { id: "apm-settings-update-container", style: { display: "none", marginBottom: "8px" } }, [
-        el("a", { href: UPDATE_URL, target: "_blank", className: "apm-footer-update-btn" }, "\u2728 Update Available")
+        el("a", { id: "apm-footer-update-link", href: UPDATE_URL, target: "_blank", className: "apm-footer-update-btn" }, "\u2728 Update Available")
       ]),
       el("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "center", width: "100%", padding: "0 8px" } }, [
         el("a", { href: "https://github.com/jaker788-create/APM-Master/issues", target: "_blank", style: { flex: "1", color: "#3498db", fontSize: "11px", textDecoration: "none", fontWeight: "bold", textAlign: "left" } }, "\u{1F41B} Bug Report"),
@@ -5969,6 +7776,7 @@
       tabOrderFields,
       colorcodeFields,
       generalFields,
+      diagnosticsFields,
       footer
     } = state;
     const selectEl = document.getElementById("apm-c-preset-select");
@@ -5976,6 +7784,7 @@
     const tabSettings = document.getElementById("tab-settings");
     const tabColorcode = document.getElementById("tab-colorcode");
     const tabGeneral = document.getElementById("tab-general");
+    const tabDiagnostics = document.getElementById("tab-diagnostics");
     const togCols = document.getElementById("apm-s-tog-cols");
     const togTabs = document.getElementById("apm-s-tog-tabs");
     const colListContainer = document.getElementById("apm-s-col-list");
@@ -6009,8 +7818,10 @@
     }, true);
     try {
       document.getElementById("apm-c-btn-close").onclick = () => {
+        cleanupColorCodeOnPanelClose();
         panel.style.display = "none";
       };
+      watchSettingsPanelClose();
       const ptpTog = document.getElementById("gen-setting-ptp");
       if (ptpTog) ptpTog.onchange = (e) => {
         setGeneralSetting("ptpTimerEnabled", e.target.checked);
@@ -6029,7 +7840,7 @@
         if (titleEl) {
           titleEl.textContent = e.target.checked ? "Open Work Orders in New Tab" : "Open Work Orders in Current Tab";
         }
-        if (typeof debouncedProcessColorCodeGrid === "function") debouncedProcessColorCodeGrid();
+        if (typeof invalidateColorCodeCache === "function") invalidateColorCodeCache();
       };
       const redirTog = document.getElementById("gen-setting-redirect");
       if (redirTog) redirTog.onchange = (e) => {
@@ -6062,46 +7873,169 @@
       }
       subscribeToUpdates(() => {
         const updateContainer = document.getElementById("apm-settings-update-container");
-        if (updateContainer) updateContainer.style.display = "block";
-        const updateLink = document.getElementById("apm-footer-update-link");
-        if (updateLink && window._apmUpdateUrl) {
-          updateLink.href = window._apmUpdateUrl;
-          if (window._apmRemoteVersion) {
-            updateLink.textContent = `\u2728 Update to v${window._apmRemoteVersion} Available`;
-          }
-        }
         const checkBtn2 = document.getElementById("apm-btn-check-updates");
-        if (checkBtn2) checkBtn2.style.display = "none";
+        if (window._apmUpdateAvailable) {
+          if (updateContainer) updateContainer.style.display = "block";
+          if (checkBtn2) checkBtn2.style.display = "none";
+          const updateLink = document.getElementById("apm-footer-update-link");
+          if (updateLink && window._apmUpdateUrl) {
+            updateLink.href = window._apmUpdateUrl;
+            if (window._apmRemoteVersion) {
+              updateLink.textContent = `\u2728 Update to v${window._apmRemoteVersion} Available`;
+            }
+          }
+        } else {
+          if (updateContainer) updateContainer.style.display = "none";
+          if (checkBtn2) checkBtn2.style.display = "inline-block";
+        }
       });
       const checkBtn = document.getElementById("apm-btn-check-updates");
       if (checkBtn) {
         checkBtn.onclick = () => {
           checkBtn.textContent = "Checking...";
           checkBtn.disabled = true;
-          checkForGlobalUpdates(true);
-          setTimeout(() => {
-            if (checkBtn) {
-              checkBtn.textContent = "Up to Date";
-              setTimeout(() => {
-                if (checkBtn) {
-                  checkBtn.textContent = "Check for Updates";
-                  checkBtn.disabled = false;
-                }
-              }, 3e3);
+          checkForGlobalUpdates(true, (hasUpdate) => {
+            if (hasUpdate) {
+              return;
             }
-          }, 1500);
+            checkBtn.textContent = "Up to Date";
+            setTimeout(() => {
+              if (checkBtn) {
+                checkBtn.textContent = "Check for Updates";
+                checkBtn.disabled = false;
+              }
+            }, 3e3);
+          });
+        };
+      }
+      const exportBtn = document.getElementById("apm-btn-export-settings");
+      if (exportBtn) {
+        exportBtn.onclick = () => {
+          try {
+            const jsonData = exportSettings();
+            downloadSettings(jsonData);
+          } catch (e) {
+            APMLogger.error("Settings", "Error exporting settings:", e);
+            showToast("Error exporting settings", "#e74c3c");
+          }
+        };
+      }
+      const copyB64Btn = document.getElementById("apm-btn-copy-b64");
+      if (copyB64Btn) {
+        copyB64Btn.onclick = () => {
+          try {
+            const jsonData = exportSettings();
+            const b64Data = encodeSettingsAsBase64(jsonData);
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+              navigator.clipboard.writeText(b64Data).then(() => {
+                showToast("Base64 backup copied to clipboard!", "#1abc9c");
+                copyB64Btn.textContent = "\u2713 Copied!";
+                setTimeout(() => {
+                  if (copyB64Btn) copyB64Btn.textContent = "\u{1F4CB} Copy To Clipboard (Base64)";
+                }, 2e3);
+              }).catch(() => {
+                showToast("Error copying to clipboard", "#e74c3c");
+              });
+            } else {
+              showToast("Clipboard not available in this browser", "#e74c3c");
+            }
+          } catch (e) {
+            APMLogger.error("Settings", "Error encoding settings:", e);
+            showToast("Error preparing safe format", "#e74c3c");
+          }
+        };
+      }
+      const importBtn = document.getElementById("apm-btn-import-settings");
+      const importFileInput = document.getElementById("apm-import-file-input");
+      const importPasteInput = document.getElementById("apm-import-paste-input");
+      if (importBtn && importFileInput && importPasteInput) {
+        importBtn.onclick = () => {
+          importFileInput.click();
+        };
+        importFileInput.onchange = (e) => {
+          const file = e.target.files[0];
+          if (!file) return;
+          const reader = new FileReader();
+          reader.onload = (evt) => {
+            try {
+              const content = evt.target.result;
+              processImport(content);
+            } catch (e2) {
+              APMLogger.error("Settings", "Error importing settings:", e2);
+              showToast("Error reading import file", "#e74c3c");
+            }
+          };
+          reader.readAsText(file);
+          importFileInput.value = "";
+        };
+        importPasteInput.addEventListener("keydown", (e) => {
+          if ((e.ctrlKey || e.metaKey) && e.key === "Enter") {
+            e.preventDefault();
+            performPasteImport();
+          }
+        });
+        importPasteInput.addEventListener("input", () => {
+          if (importPasteInput.value.trim()) {
+            importPasteInput.style.borderColor = "#3498db";
+          } else {
+            importPasteInput.style.borderColor = "#45535e";
+          }
+        });
+        const performPasteImport = () => {
+          const content = importPasteInput.value.trim();
+          if (!content) {
+            showToast("Please paste backup data first", "#f39c12");
+            return;
+          }
+          processImport(content);
+        };
+        const processImport = (content) => {
+          try {
+            const result = importSettings(content);
+            if (result.ok) {
+              const formatStr = result.format === "base64" ? "safe format" : "JSON";
+              const msg = `Settings imported from schema v${result.migratedFrom} (${formatStr})!`;
+              showToast(msg, "#1abc9c");
+              APMLogger.info("Settings", msg);
+              importPasteInput.value = "";
+              importPasteInput.style.borderColor = "#45535e";
+              setTimeout(() => {
+                location.reload();
+              }, 1500);
+            } else {
+              const errorMsg = result.errors.length > 0 ? result.errors.slice(0, 3).join("; ") : "Import failed";
+              showToast(errorMsg, "#e74c3c");
+              APMLogger.error("Settings", "Import errors:", result.errors);
+            }
+          } catch (e) {
+            APMLogger.error("Settings", "Error during import:", e);
+            showToast("Error processing import data", "#e74c3c");
+          }
         };
       }
     } catch (e) {
       APMLogger.error("Settings", "Error binding general listeners:", e);
     }
+    function downloadSettings(jsonData) {
+      const blob = new Blob([jsonData], { type: "application/json" });
+      const url2 = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url2;
+      link.download = `apm-master-settings-${(/* @__PURE__ */ new Date()).toISOString().split("T")[0]}.json`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url2);
+      showToast("Settings downloaded!", "#1abc9c");
+    }
     const resetTabs = () => {
-      [tabAutofill, tabSettings, tabColorcode, tabGeneral].forEach((t) => {
+      [tabAutofill, tabSettings, tabColorcode, tabGeneral, tabDiagnostics].forEach((t) => {
         t.className = "apm-tab-btn apm-tab-inactive";
       });
       document.getElementById("apm-tab-container").style.display = "flex";
       const ccFooterTools = document.getElementById("cc-footer-btns");
       if (ccFooterTools) ccFooterTools.style.display = "none";
+      APMScheduler2.removeTask("diag-ui-poll");
     };
     const loadSettingsView = () => {
       const resetBtn = document.getElementById("apm-s-btn-reset");
@@ -6145,10 +8079,11 @@
       state.activeTab = "autofill";
       resetTabs();
       tabAutofill.className = "apm-tab-btn apm-tab-active-autofill";
-      autofillFields.style.display = "block";
+      autofillFields.style.display = "flex";
       tabOrderFields.style.display = "none";
       colorcodeFields.style.display = "none";
       generalFields.style.display = "none";
+      diagnosticsFields.style.display = "none";
       renderPresetOptions(selectEl);
     };
     tabSettings.onclick = () => {
@@ -6156,9 +8091,10 @@
       resetTabs();
       tabSettings.className = "apm-tab-btn apm-tab-active-autofill";
       autofillFields.style.display = "none";
-      tabOrderFields.style.display = "block";
+      tabOrderFields.style.display = "flex";
       colorcodeFields.style.display = "none";
       generalFields.style.display = "none";
+      diagnosticsFields.style.display = "none";
       loadSettingsView();
     };
     tabColorcode.onclick = () => {
@@ -6167,8 +8103,9 @@
       tabColorcode.className = "apm-tab-btn apm-tab-active-autofill";
       autofillFields.style.display = "none";
       tabOrderFields.style.display = "none";
-      colorcodeFields.style.display = "block";
+      colorcodeFields.style.display = "flex";
       generalFields.style.display = "none";
+      diagnosticsFields.style.display = "none";
       const ccFooterTools = document.getElementById("cc-footer-btns");
       if (ccFooterTools) ccFooterTools.style.display = "flex";
     };
@@ -6179,8 +8116,165 @@
       autofillFields.style.display = "none";
       tabOrderFields.style.display = "none";
       colorcodeFields.style.display = "none";
-      generalFields.style.display = "block";
+      generalFields.style.display = "flex";
+      diagnosticsFields.style.display = "none";
     };
+    tabDiagnostics.onclick = () => {
+      state.activeTab = "diagnostics";
+      resetTabs();
+      tabDiagnostics.className = "apm-tab-btn apm-tab-active-autofill";
+      autofillFields.style.display = "none";
+      tabOrderFields.style.display = "none";
+      colorcodeFields.style.display = "none";
+      generalFields.style.display = "none";
+      diagnosticsFields.style.display = "flex";
+      refreshDiagnosticsUI();
+      APMScheduler2.registerTask("diag-ui-poll", 2e3, refreshDiagnosticsUI);
+    };
+    const copyBtn = document.getElementById("diag-btn-copy");
+    if (copyBtn) {
+      copyBtn.onclick = () => {
+        const data = JSON.stringify(Diagnostics.toJSON(), null, 2);
+        navigator.clipboard.writeText(data).then(() => {
+          showToast("Report copied to clipboard!", "#1abc9c");
+        });
+      };
+    }
+    const downloadBtn = document.getElementById("cc-export-download-btn");
+    if (downloadBtn) {
+      downloadBtn.onclick = () => {
+        try {
+          const rules = getRules();
+          const jsonStr = JSON.stringify(rules, null, 2);
+          const blob = new Blob([jsonStr], { type: "application/json" });
+          const url2 = URL.createObjectURL(blob);
+          const link = document.createElement("a");
+          const now = /* @__PURE__ */ new Date();
+          const dateStr = now.toISOString().split("T")[0];
+          link.href = url2;
+          link.download = `apm-colorcode-rules-${dateStr}.json`;
+          link.click();
+          URL.revokeObjectURL(url2);
+          showToast(`Downloaded ${rules.length} rules`, "#27ae60");
+        } catch (e) {
+          showToast("Download error: " + e.message, "#e74c3c");
+        }
+      };
+    }
+    function sparkline(arr) {
+      if (!arr || arr.length === 0) return "";
+      const blocks = [" ", "\u2582", "\u2583", "\u2584", "\u2585", "\u2586", "\u2587", "\u2588"];
+      const max = Math.max(...arr) || 1;
+      return arr.map((v) => blocks[Math.min(blocks.length - 1, Math.floor(v / max * (blocks.length - 1)))]).join("");
+    }
+    function refreshDiagnosticsUI() {
+      const container = document.getElementById("diag-content");
+      if (!container) return;
+      const data = Diagnostics.toJSON();
+      const renderRow = (label, value) => el("div", { style: { display: "flex", justifyContent: "space-between", fontSize: "11px", marginBottom: "3px" } }, [
+        el("span", { style: { color: "#95a5a6" } }, label),
+        el("span", { style: { color: "#3498db" } }, value || "---")
+      ]);
+      const renderTiming = (label, ms) => renderRow(label, ms ? `${ms}ms` : null);
+      const renderError = (err) => el("div", { style: { borderLeft: "2px solid #e74c3c", paddingLeft: "8px", marginBottom: "8px", fontSize: "10px" } }, [
+        el("div", { style: { color: "#e74c3c", fontWeight: "bold" } }, `[${err.tag}] ${err.timestamp.split("T")[1].substring(0, 8)}`),
+        el("div", { style: { color: "#ecf0f1", whiteSpace: "pre-wrap", overflow: "hidden" } }, err.message)
+      ]);
+      const renderFrame = (f) => el("div", { style: { background: "#2c3e50", padding: "6px", borderRadius: "4px", marginBottom: "5px", fontSize: "10px" } }, [
+        el("div", { style: { display: "flex", justifyContent: "space-between", marginBottom: "2px" } }, [
+          el("span", { style: { color: "#3498db", fontWeight: "bold" } }, f.id || "Unnamed Frame"),
+          el("span", { style: { color: f.accessible ? "#2ecc71" : "#e74c3c" } }, f.accessible ? "Accessible" : "Blocked")
+        ]),
+        f.accessible && el("div", { style: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: "2px", color: "#95a5a6" } }, [
+          el("span", {}, f.gridFound ? "\u2705 Grid Found" : "\u274C No Grid"),
+          el("span", {}, f.ccFound ? "\u2705 ColorCode" : "\u274C No CC"),
+          el("span", {}, f.tagsFound ? "\u2705 Nametags" : "\u274C No Tags"),
+          el("span", {}, f.styles ? "\u2705 Styles" : "\u274C No Styles")
+        ]),
+        f.error && el("div", { style: { color: "#e67e22", fontSize: "9px" } }, f.error)
+      ]);
+      const perf = Diagnostics.getPerformanceSummary();
+      const totalBoot = data.bootTimings.total || 1;
+      const getPerfColor = (ms, type = "boot") => {
+        if (type === "boot") {
+          if (ms < 500) return "#2ecc71";
+          if (ms < 1500) return "#f1c40f";
+          return "#e74c3c";
+        }
+        if (ms < 25) return "#2ecc71";
+        if (ms < 100) return "#f1c40f";
+        return "#e74c3c";
+      };
+      const renderBootBar = (label, ms) => {
+        const ratio = ms / totalBoot * 100;
+        const color = getPerfColor(ms, "boot");
+        const isTotal = label.includes("Total");
+        return el("div", { style: { marginBottom: "8px" } }, [
+          el("div", { style: { display: "flex", justifyContent: "space-between", fontSize: "10px", color: "#95a5a6", marginBottom: "2px" } }, [
+            el("span", {}, label),
+            el("span", { style: { color: isTotal ? "#f1c40f" : "#ecf0f1" } }, `T+ ${ms}ms`)
+          ]),
+          el("div", { style: { height: "4px", background: "rgba(255,255,255,0.05)", borderRadius: "2px", overflow: "hidden" } }, [
+            el("div", { style: { height: "100%", width: `${Math.max(2, Math.min(100, ratio))}%`, background: color, transition: "width 0.5s ease" } })
+          ])
+        ]);
+      };
+      const bootNodes = [
+        el("div", { style: { fontWeight: "bold", color: "#ecf0f1", fontSize: "11px", marginBottom: "10px", borderBottom: "1px solid #45535e", paddingBottom: "4px" } }, "Boot Waterfall"),
+        renderBootBar("DOM Ready", data.bootTimings.dom),
+        renderBootBar("Settings Load", data.bootTimings.settings),
+        renderBootBar("ExtJS Ready", data.bootTimings.extjs),
+        renderBootBar("Total Boot", data.bootTimings.total)
+      ];
+      const moduleTimings = Object.entries(data.bootTimings).filter(([k]) => k.startsWith("module.")).sort((a, b) => b[1] - a[1]);
+      if (moduleTimings.length > 0) {
+        bootNodes.push(el(
+          "div",
+          { style: { fontSize: "10px", color: "#7f8c8d", marginTop: "10px", display: "grid", gridTemplateColumns: "1fr 1fr", gap: "4px" } },
+          moduleTimings.map(([k, v]) => el("div", { style: { display: "flex", justifyContent: "space-between", padding: "2px 4px", background: "rgba(0,0,0,0.1)", borderRadius: "2px" } }, [
+            el("span", {}, k.replace("module.", "")),
+            el("span", { style: { color: getPerfColor(v, "module") } }, `${v}ms`)
+          ]))
+        ));
+      }
+      const renderEngineStat = (label, stat, history) => {
+        let pill = "\u{1F7E2}";
+        const color = getPerfColor(stat.avg, "boot");
+        if (color === "#f1c40f") pill = "\u{1F7E1}";
+        if (color === "#e74c3c") pill = "\u{1F534}";
+        return el("div", { style: { background: "#2c3e50", padding: "8px", borderRadius: "4px", marginBottom: "8px" } }, [
+          el("div", { style: { display: "flex", justifyContent: "space-between", marginBottom: "4px" } }, [
+            el("span", { style: { color: "#ecf0f1", fontSize: "11px", fontWeight: "bold" } }, `${pill} ${label}`),
+            el("span", { style: { color: "#3498db", fontSize: "11px" } }, `${stat.avg}ms avg`)
+          ]),
+          el("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "center" } }, [
+            el("span", { style: { color: "#7f8c8d", fontSize: "9px", fontFamily: "monospace" } }, sparkline(history)),
+            el("span", { style: { color: "#95a5a6", fontSize: "9px" } }, `max: ${stat.max}ms / p95: ${stat.p95}ms`)
+          ])
+        ]);
+      };
+      const nodes = [
+        ...bootNodes,
+        el("div", { style: { fontWeight: "bold", color: "#ecf0f1", fontSize: "11px", marginTop: "15px", marginBottom: "8px", borderBottom: "1px solid #45535e", paddingBottom: "4px" } }, "Engine Performance"),
+        renderEngineStat("ColorCode Engine", perf.colorCode, data.performance.colorCode),
+        renderEngineStat("EAM Query Service", perf.eamQuery, data.performance.eamQuery),
+        el("div", { style: { fontWeight: "bold", color: "#ecf0f1", fontSize: "11px", marginTop: "15px", marginBottom: "8px", borderBottom: "1px solid #45535e", paddingBottom: "4px" } }, "Scheduler Tasks (avg/max)"),
+        el("div", { style: { fontSize: "10px" } }, perf.scheduler.slice(0, 5).map((s) => el("div", { style: { display: "flex", justifyContent: "space-between", marginBottom: "2px" } }, [
+          el("span", { style: { color: "#95a5a6" } }, s.name),
+          el("span", { style: { color: "#3498db" } }, `${s.avg} / ${s.max}ms`)
+        ]))),
+        el("div", { style: { fontWeight: "bold", color: "#ecf0f1", fontSize: "11px", marginTop: "15px", marginBottom: "8px", borderBottom: "1px solid #45535e", paddingBottom: "4px" } }, "System State"),
+        renderRow("Uptime", `${data.uptime}s`),
+        renderRow("Hotkeys", data.frames.top.hotkeys ? "Active" : "Disabled"),
+        renderRow("Style injection", data.frames.top.styles ? "OK" : "Missing"),
+        el("div", { style: { fontWeight: "bold", color: "#ecf0f1", fontSize: "11px", marginTop: "15px", marginBottom: "8px", borderBottom: "1px solid #45535e", paddingBottom: "4px" } }, "Iframe Health"),
+        data.frames.frames.length === 0 ? el("div", { style: { color: "#95a5a6", fontSize: "10px" } }, "No iframes detected.") : el("div", {}, data.frames.frames.map(renderFrame)),
+        el("div", { style: { fontWeight: "bold", color: "#ecf0f1", fontSize: "11px", marginTop: "15px", marginBottom: "8px", borderBottom: "1px solid #45535e", paddingBottom: "4px" } }, "Recent Errors"),
+        data.errors.length === 0 ? el("div", { style: { color: "#95a5a6", fontSize: "10px", fontStyle: "italic" } }, "No errors captured.") : el("div", {}, data.errors.slice(0, 5).map(renderError))
+      ];
+      container.innerHTML = "";
+      nodes.forEach((node) => container.appendChild(node));
+    }
     document.getElementById("apm-c-btn-help").onclick = () => {
       document.getElementById("apm-help-overlay").style.display = "flex";
     };
@@ -6263,14 +8357,17 @@
       if (items.length > 0) {
         const visibleItems = items.filter((el2) => el2.dataset.hidden !== "true");
         const orderStr = visibleItems.map((el2) => el2.dataset.index).join(", ");
+        const funcName = apmGetActiveFunctionName();
+        const presets = getPresets();
         if (state.settingsMode === "cols") {
-          updatePresetConfig({ columnOrder: orderStr });
-          showToast("Grid Column order saved!", "#2ecc71");
+          const columnOrders = { ...presets.config.columnOrders || {}, [funcName]: orderStr };
+          updatePresetConfig({ columnOrders });
+          showToast(`Grid Column order saved for ${funcName}!`, "#2ecc71");
         } else {
-          updatePresetConfig({ tabOrder: orderStr });
-          const presets = getPresets();
+          const tabOrders = { ...presets.config.tabOrders || {}, [funcName]: orderStr };
+          updatePresetConfig({ tabOrders });
           const hiddenCount = (presets.config.hiddenTabs || []).length;
-          showToast(`Tab layout saved! (${hiddenCount} hidden)`, "#2ecc71");
+          showToast(`Tab layout saved for ${funcName}! (${hiddenCount} hidden)`, "#2ecc71");
         }
       } else {
         showToast("No items to save.", "#e74c3c");
@@ -6279,21 +8376,35 @@
     document.getElementById("apm-s-btn-reset").onclick = () => {
       if (!confirm("Reset layout to system defaults?")) return;
       const presets = getPresets();
+      const funcName = apmGetActiveFunctionName();
       if (state.settingsMode === "tabs") {
-        updatePresetConfig({ tabOrder: "", hiddenTabs: [] });
+        const tabOrders = { ...presets.config.tabOrders || {} };
+        delete tabOrders[funcName];
+        updatePresetConfig({ tabOrders, hiddenTabs: [] });
         invalidateTabCache();
         const allWins = getExtWindows();
         for (const win of allWins) {
           try {
             if (!win.Ext || !win.Ext.ComponentQuery) continue;
-            const tabPanels = win.Ext.ComponentQuery.query("tabpanel");
-            const mainTP = tabPanels.find((tp) => tp.rendered && !tp.isDestroyed && tp.items);
+            const tabPanels = win.Ext.ComponentQuery.query("tabpanel, uxtabpanel");
+            const mainTP = tabPanels.find((tp) => tp.rendered && !tp.isDestroyed && tp.items && tp.items.items.some((t) => (t.title || t.text || "").includes("Activities")));
             if (mainTP) {
               mainTP.items.items.forEach((item) => {
-                if (!item.isDestroyed && item.tab && item.tab.el && item.tab.el.dom) {
-                  item.tab.el.dom.classList.remove("apm-tab-hidden");
+                if (!item.isDestroyed && item.tab) {
+                  if (!item.tab.isVisible()) item.tab.show();
                 }
               });
+              const tabMenuPlugin = mainTP.plugins?.find?.((p) => p.ptype === "uxtabmenu");
+              if (tabMenuPlugin && tabMenuPlugin.tabsMenu && tabMenuPlugin.tabsMenu.items) {
+                tabMenuPlugin.tabsMenu.items.items.forEach((mi) => {
+                  if (!mi.isDestroyed && mi.handler) {
+                    try {
+                      mi.handler.call(mi.scope || mi, mi);
+                    } catch (e) {
+                    }
+                  }
+                });
+              }
               const defaultOrder = window._apmSystemDefaultTabOrder;
               if (defaultOrder && defaultOrder.length > 0) {
                 let layoutsSuspended = false;
@@ -6304,7 +8415,7 @@
                     if (mainTP.isDestroyed) return;
                     const currentIdx = mainTP.items.findIndexBy((item) => {
                       if (item.isDestroyed) return false;
-                      let name = (item.title || item.text || "").replace(/<[^>]*>?/gm, "").trim();
+                      let name = (item.title || item.text || item.tab && item.tab.getText?.() || "").replace(/<[^>]*>?/gm, "").trim();
                       return name === tabName;
                     });
                     if (currentIdx !== -1 && currentIdx !== targetIdx) {
@@ -6315,18 +8426,21 @@
                 } catch (e) {
                 } finally {
                   if (layoutsSuspended) win.Ext.resumeLayouts(true);
-                  if (!mainTP.isDestroyed && typeof mainTP.updateLayout === "function") mainTP.updateLayout();
                 }
               }
+              if (!mainTP.isDestroyed && typeof mainTP.updateLayout === "function") mainTP.updateLayout();
+              if (mainTP.getTabBar && mainTP.getTabBar().updateLayout) mainTP.getTabBar().updateLayout();
             }
           } catch (e) {
           }
         }
-        showToast("Tab layout reset to system defaults!", "#3498db");
+        showToast(`Tab layout reset for ${funcName}!`, "#3498db");
         performAutoFetch();
       } else {
-        updatePresetConfig({ columnOrder: "" });
-        showToast("Column layout reset to defaults!", "#3498db");
+        const columnOrders = { ...presets.config.columnOrders || {} };
+        delete columnOrders[funcName];
+        updatePresetConfig({ columnOrders });
+        showToast(`Column layout reset for ${funcName}!`, "#3498db");
         performAutoFetch();
       }
     };
@@ -6389,7 +8503,15 @@
     const isTabsMode = state.settingsMode === "tabs";
     let visibleItems = itemsArray;
     let hiddenItems = [];
+    const funcName = apmGetActiveFunctionName();
     if (isTabsMode) {
+      const siloOrder = presets.config.tabOrders?.[funcName] || "";
+      const preferredOrder = siloOrder.split(",").map((s) => s.trim()).filter((s) => s.length > 0);
+      itemsArray.forEach((c) => {
+        if (c.systemHidden && !presets.config.hiddenTabs.includes(c.index) && !preferredOrder.includes(c.index)) {
+          presets.config.hiddenTabs.push(c.index);
+        }
+      });
       visibleItems = itemsArray.filter((c) => !presets.config.hiddenTabs.includes(c.index));
       hiddenItems = itemsArray.filter((c) => presets.config.hiddenTabs.includes(c.index));
     }
@@ -6401,17 +8523,23 @@
       item.className = "apm-col-item";
       if (isHidden) {
         item.draggable = false;
-        item.style.opacity = "0.4";
         item.dataset.hidden = "true";
         item.style.cursor = "default";
         item.style.borderLeftColor = "#e74c3c";
-        const overflowHtml = c.isOverflow ? '<span class="apm-overflow-badge" title="This tab is in the EAM overflow menu (scrolled out of view)">Scrolled</span>' : "";
-        item.innerHTML = `<span><span style="text-decoration: line-through;"><b style="color:#7f8c8d;">\u2630</b> &nbsp; ${c.text}</span>${overflowHtml}</span> <button class="apm-tab-restore-btn" data-tab-name="${c.index}" style="background:#2ecc71; color:white; border:none; border-radius:4px; padding:2px 8px; cursor:pointer; font-size:12px; font-weight:bold;" title="Restore tab">\uFF0B</button>`;
+        const badges = [];
+        if (c.isOverflow) badges.push(el("span", { className: "apm-overflow-badge", title: 'This tab is in the "More" overflow menu' }, "More Menu"));
+        if (c.isPluginMenu) badges.push(el("span", { className: "apm-overflow-badge", style: { background: "#9b59b6" }, title: "This tab is managed by the EAM Menu plugin" }, "Framework Menu"));
+        if (c.systemHidden && !c.isPluginMenu) badges.push(el("span", { className: "apm-overflow-badge", style: { background: "#3498db" }, title: "This tab is hidden by EAM by default" }, "Hidden by EAM"));
+        const badgeHtml = badges.map((b) => b.outerHTML).join("");
+        item.innerHTML = `<span style="opacity:0.5; flex:1; display:flex; align-items:center;"><span style="text-decoration: line-through;"><b style="color:#7f8c8d;">\u2630</b> &nbsp; ${c.text}</span>${badgeHtml}</span> <button class="apm-tab-restore-btn" data-tab-name="${c.index}" style="background:#2ecc71; color:white; border:none; border-radius:4px; padding:4px 10px; cursor:pointer; font-size:14px; font-weight:bold; box-shadow: 0 2px 4px rgba(0,0,0,0.2); transition: transform 0.1s; position:relative; z-index:10;" title="Restore tab">\uFF0B</button>`;
       } else {
         item.draggable = true;
         const actionBtn = isTabsMode ? `<button class="apm-tab-hide-btn" data-tab-name="${c.index}" style="background:transparent; color:#e74c3c; border:none; border-radius:4px; padding:2px 6px; cursor:pointer; font-size:13px; font-weight:bold;" title="Hide tab">\u2716</button>` : `<span style="color:#7f8c8d; font-size:10px;">[${c.index}]</span>`;
-        const overflowHtml = isTabsMode && c.isOverflow ? '<span class="apm-overflow-badge" title="This tab is in the EAM overflow menu (scrolled out of view)">Scrolled</span>' : "";
-        item.innerHTML = `<span><span><b style="color:#3498db;">\u2630</b> &nbsp; ${c.text}</span>${overflowHtml}</span> ${actionBtn}`;
+        const badges = [];
+        if (isTabsMode && c.isOverflow) badges.push(el("span", { className: "apm-overflow-badge", title: 'This tab is in the "More" overflow menu' }, "More Menu"));
+        if (isTabsMode && c.isPluginMenu) badges.push(el("span", { className: "apm-overflow-badge", style: { background: "#9b59b6" }, title: "This tab is managed by the EAM Menu plugin" }, "Framework Menu"));
+        const badgeHtml = badges.map((b) => b.outerHTML).join("");
+        item.innerHTML = `<span><span><b style="color:#3498db;">\u2630</b> &nbsp; ${c.text}</span>${badgeHtml}</span> ${actionBtn}`;
         item.ondragstart = (e) => {
           e.dataTransfer.setData("text/plain", "");
           item.classList.add("dragging");
@@ -6434,18 +8562,35 @@
       colListContainer.querySelectorAll(".apm-tab-hide-btn").forEach((btn) => {
         btn.onclick = (e) => {
           e.stopPropagation();
-          if (!presets.config.hiddenTabs) presets.config.hiddenTabs = [];
           const tabName = btn.getAttribute("data-tab-name");
-          if (!presets.config.hiddenTabs.includes(tabName)) presets.config.hiddenTabs.push(tabName);
+          const p = getPresets();
+          if (!p.config.hiddenTabs) p.config.hiddenTabs = [];
+          if (!p.config.hiddenTabs.includes(tabName)) {
+            p.config.hiddenTabs.push(tabName);
+            updatePresetConfig({ hiddenTabs: p.config.hiddenTabs });
+          }
           renderDragList(state, colListContainer, itemsArray, emptyMsg);
         };
       });
       colListContainer.querySelectorAll(".apm-tab-restore-btn").forEach((btn) => {
+        btn.onmousedown = (e) => e.stopPropagation();
         btn.onclick = (e) => {
+          e.preventDefault();
           e.stopPropagation();
-          if (!presets.config.hiddenTabs) presets.config.hiddenTabs = [];
           const tabName = btn.getAttribute("data-tab-name");
-          presets.config.hiddenTabs = presets.config.hiddenTabs.filter((t) => t !== tabName);
+          const p = getPresets();
+          const newHidden = (p.config.hiddenTabs || []).filter((t) => t !== tabName);
+          const tabOrders = { ...p.config.tabOrders || {} };
+          let siloOrder = tabOrders[funcName] || "";
+          const orderArray = siloOrder ? siloOrder.split(",").map((s) => s.trim()) : [];
+          if (!orderArray.includes(tabName)) {
+            orderArray.push(tabName);
+            tabOrders[funcName] = orderArray.join(",");
+          }
+          updatePresetConfig({
+            hiddenTabs: newHidden,
+            tabOrders
+          });
           renderDragList(state, colListContainer, itemsArray, emptyMsg);
         };
       });
@@ -6490,18 +8635,21 @@
   init_utils();
   init_logger();
   init_ui_manager();
+  init_api();
+  init_context();
   var tbWin = apmGetGlobalWindow();
   function injectToggleBtnNatively() {
     if (!isTopFrame()) return;
     const topDoc = tbWin.top.document;
-    if (!window._apmForecastToggleBound) {
-      window._apmForecastToggleBound = true;
+    if (!window[FLAGS.FORECAST_TOGGLE]) {
+      window[FLAGS.FORECAST_TOGGLE] = true;
       window.addEventListener("APM_TOGGLE_FORECAST", (e) => {
         APMLogger.debug("APM Master", "Event: APM_TOGGLE_FORECAST fired.");
         UIManager.toggle("eam-forecast-panel", () => {
           let panel = document.getElementById("eam-forecast-panel");
-          if (!panel && typeof window._APM?.buildForecastUI === "function") {
-            window._APM.buildForecastUI();
+          const buildUI = APMApi.get("buildForecastUI");
+          if (!panel && typeof buildUI === "function") {
+            buildUI();
             panel = document.getElementById("eam-forecast-panel");
           }
           if (!panel) {
@@ -6531,8 +8679,9 @@
         APMLogger.debug("APM Master", "Event: APM_TOGGLE_SETTINGS fired.");
         UIManager.toggle("apm-settings-panel", () => {
           let p = document.getElementById("apm-settings-panel");
-          if (!p && typeof window._APM?.buildSettingsPanel === "function") {
-            window._APM.buildSettingsPanel();
+          const buildUI = APMApi.get("buildSettingsPanel");
+          if (!p && typeof buildUI === "function") {
+            buildUI();
             p = document.getElementById("apm-settings-panel");
           }
           if (!p) return;
@@ -6543,15 +8692,8 @@
           if (left < 10) left = 10;
           p.style.top = top + "px";
           p.style.left = left + "px";
-          p.style.display = "block";
+          p.style.display = "flex";
           p.style.visibility = "visible";
-          const naturalHeight = p.scrollHeight || p.offsetHeight;
-          const availableHeight = window.innerHeight - top - 20;
-          if (naturalHeight > availableHeight) {
-            p.style.zoom = (availableHeight / naturalHeight).toFixed(3);
-          } else {
-            p.style.zoom = "1";
-          }
           APMLogger.info("APM Master", "Settings panel opened.");
         });
       });
@@ -6651,7 +8793,7 @@
           APMLogger.error("Toolbar", "Native Button Injection Error:", e);
         }
       };
-      APMScheduler.registerTask("ext-btn-injection", 500, tryInjectButtons);
+      APMScheduler2.registerTask("ext-btn-injection", 500, tryInjectButtons);
       tryInjectButtons();
     }
   }
@@ -6663,6 +8805,7 @@
   init_state();
   init_logger();
   init_scheduler();
+  init_feature_flags();
   var ptpSeconds = 120;
   function initPtpTimerUI() {
     let timerUI = document.getElementById("apm-ptp-timer");
@@ -6700,7 +8843,7 @@
     };
     closeBtn.onclick = () => {
       timerUI.style.display = "none";
-      APMScheduler.removeTask("ptp-countdown");
+      APMScheduler2.removeTask("ptp-countdown");
       window._ptpTimerRunning = false;
       window._ptpDismissed = true;
     };
@@ -6728,16 +8871,16 @@
     };
     closeBtn.onclick = () => {
       timerUI.style.display = "none";
-      APMScheduler.removeTask("ptp-countdown");
+      APMScheduler2.removeTask("ptp-countdown");
       window._ptpTimerRunning = false;
       window._ptpDismissed = true;
     };
-    APMScheduler.registerTask("ptp-countdown", 1e3, () => {
+    APMScheduler2.registerTask("ptp-countdown", 1e3, () => {
       ptpSeconds--;
       const timeEl = document.getElementById("apm-ptp-time");
       if (!timeEl) return;
       if (ptpSeconds <= 0) {
-        APMScheduler.removeTask("ptp-countdown");
+        APMScheduler2.removeTask("ptp-countdown");
         timeEl.textContent = "READY";
         timerUI.style.background = "#2ecc71";
         timerUI.style.borderColor = "#27ae60";
@@ -6751,15 +8894,16 @@
   function stopPtpTimer() {
     const timerUI = document.getElementById("apm-ptp-timer");
     if (timerUI) timerUI.style.display = "none";
-    APMScheduler.removeTask("ptp-countdown");
+    APMScheduler2.removeTask("ptp-countdown");
     window._ptpTimerRunning = false;
     window._ptpDismissed = true;
   }
   function checkPtpStatus(hasHeartbeat = false) {
+    if (!FeatureFlags.isEnabled("ptpTimer")) return;
     const timerUI = document.getElementById("apm-ptp-timer");
     if (timerUI && !apmGeneralSettings.ptpTimerEnabled) {
       timerUI.style.display = "none";
-      APMScheduler.removeTask("ptp-countdown");
+      APMScheduler2.removeTask("ptp-countdown");
       window._ptpTimerRunning = false;
     }
   }
@@ -6774,6 +8918,9 @@
   init_logger();
   init_toast();
   init_state();
+  init_scheduler();
+  init_feature_flags();
+  init_eam_query();
   var autoFillObservers = /* @__PURE__ */ new Map();
   function formatEAMDate(dateStr) {
     if (!dateStr) return "";
@@ -6826,29 +8973,7 @@
   }
   async function searchEquipmentNative(searchTerm, win) {
     const ext = win.Ext;
-    let eam = win.EAM || window.EAM;
-    if (!eam) {
-      try {
-        eam = window.top.EAM;
-      } catch (e) {
-      }
-    }
-    let eamid = "", tenant = "";
-    if (eam && eam.Context) {
-      eamid = eam.Context.eamid;
-      tenant = eam.Context.tenant;
-    }
-    if (!eamid || !tenant) {
-      let topSearch = "";
-      try {
-        topSearch = window.top.location.search;
-      } catch (e) {
-      }
-      const params = ext.Object.fromQueryString(win.location.search || topSearch);
-      eamid = params.eamid || "";
-      tenant = params.tenant || "";
-    }
-    if (!ext || !eamid) return searchTerm;
+    if (!ext) return searchTerm;
     let currentOrg = "";
     const orgField = ext.ComponentQuery.query('[name="organization"]')[0];
     if (orgField && orgField.getValue()) {
@@ -6865,16 +8990,18 @@
         currentOrg = window.EAM.Context.organization;
       }
     }
-    return new Promise((resolve) => {
-      ext.Ajax.request({
-        url: "OSEQPP.xmlhttp",
-        method: "POST",
-        params: {
-          GRID_NAME: "LVOBJL",
-          SYSTEM_FUNCTION_NAME: "OSEQPP",
-          USER_FUNCTION_NAME: "WSJOBS",
-          CURRENT_TAB_NAME: "HDR",
-          COMPONENT_INFO_TYPE: "DATA_ONLY",
+    try {
+      const { records } = await eamQuery({
+        endpoint: "OSEQPP.xmlhttp",
+        gridName: "LVOBJL",
+        gridId: "LVOBJL",
+        // Fallback if gridId is not defined but it is usually gridName for these
+        userFunction: "WSJOBS",
+        systemFunction: "OSEQPP",
+        filters: {
+          equipmentcode: searchTerm
+        },
+        extraParams: {
           LOV_TAGNAME: "equipment",
           filterfields: "equipmentcode",
           filteroperator: "CONTAINS",
@@ -6893,25 +9020,15 @@
           LOV_ALIAS_TYPE_4: "text",
           LOV_ALIAS_NAME_5: "param.department",
           LOV_ALIAS_VALUE_5: "RME",
-          LOV_ALIAS_TYPE_5: "text",
-          eamid,
-          tenant
-        },
-        success: function(response) {
-          try {
-            const data = ext.decode(response.responseText);
-            const rows = data.pageData.grid.GRIDRESULT.GRID.DATA;
-            if (rows && rows.length > 0) resolve(rows[0].equipmentcode);
-            else resolve(searchTerm);
-          } catch (e) {
-            resolve(searchTerm);
-          }
-        },
-        failure: function() {
-          resolve(searchTerm);
+          LOV_ALIAS_TYPE_5: "text"
         }
       });
-    });
+      if (records && records.length > 0) return records[0].equipmentcode;
+      return searchTerm;
+    } catch (e) {
+      APMLogger.error("AutoFill", "searchEquipmentNative error:", e);
+      return searchTerm;
+    }
   }
   async function executeLaborBookingNative(hours, win) {
     if (!hours || isNaN(hours) || hours <= 0) return;
@@ -7309,6 +9426,7 @@
     }
   }
   function injectAutoFillTriggers() {
+    if (!FeatureFlags.isEnabled("autoFill")) return;
     if (window.self !== window.top || getIsAutoFillRunning()) return;
     const allDocs = getAccessibleDocs();
     const presets = getPresets();
@@ -7320,8 +9438,16 @@
         let isRvActiveLocal = false;
         let foundTitleLocal = "";
         const rvForms = win.Ext.ComponentQuery.query("form[id*=recordview]") || win.Ext.ComponentQuery.query("form[name=recordview]");
-        const activeRv = rvForms.find((f) => f.rendered && f.isVisible(true));
-        if (activeRv) {
+        const activeRv = rvForms.find((f) => {
+          if (!f.rendered || f.isDestroyed || !f.isVisible || !f.isVisible()) return false;
+          const dom = f.getEl()?.dom;
+          if (!dom) return false;
+          const style = win.getComputedStyle(dom);
+          return style.display !== "none" && style.visibility !== "hidden" && dom.offsetWidth > 0 && style.opacity !== "0";
+        });
+        const grids = win.Ext.ComponentQuery.query("gridpanel");
+        const mainGrid = grids.find((g) => g.rendered && !g.isDestroyed && g.isVisible && g.isVisible() && g.getWidth() > 300);
+        if (activeRv && (!mainGrid || activeRv.getEl().dom.contains(mainGrid.getEl().dom) === false)) {
           isRvActiveLocal = true;
           const record = activeRv.getRecord();
           if (record) {
@@ -7334,12 +9460,22 @@
         }
         const existingBtn = d.getElementById("apm-btn-do-autofill");
         if (!isRvActiveLocal || !foundTitleLocal) {
-          if (existingBtn) existingBtn.remove();
+          if (existingBtn) {
+            APMLogger.debug("AutoFill", "Cleaning up button (Context inactive or Grid dominant)");
+            existingBtn.remove();
+          }
           return;
         }
-        const headerEl = d.querySelector("span.recordcode");
+        const headerEl = Array.from(d.querySelectorAll("span.recordcode")).find((el2) => {
+          const style = window.getComputedStyle(el2);
+          const hasText = /[a-zA-Z0-9]/.test(el2.textContent);
+          return style.display !== "none" && style.visibility !== "hidden" && el2.offsetParent !== null && hasText;
+        });
         if (!headerEl) {
-          if (existingBtn) existingBtn.remove();
+          if (existingBtn) {
+            APMLogger.debug("AutoFill", "Cleaning up button (Header missing, hidden, or empty)");
+            existingBtn.remove();
+          }
           return;
         }
         let hasMatch = false;
@@ -7378,6 +9514,7 @@
     });
   }
   function initAutoFillObserver() {
+    if (!FeatureFlags.isEnabled("autoFill")) return;
     if (window.self !== window.top) return;
     const setupObserver = (doc) => {
       if (!doc || autoFillObservers.has(doc)) return;
@@ -7419,21 +9556,12 @@
       autoFillObservers.set(doc, observer);
     };
     injectAutoFillTriggers();
-    setInterval(() => {
-      const docs = getAccessibleDocs();
-      let anyButtonVisible = false;
-      for (const d of docs) {
-        if (d.getElementById("apm-btn-do-autofill")) {
-          anyButtonVisible = true;
-          break;
-        }
-      }
-      if (anyButtonVisible) {
-        APMLogger.debug("AutoFill", "Safety polling: active button detected");
-        injectAutoFillTriggers();
-      }
-    }, 1e3);
-    setInterval(() => {
+    APMScheduler2.registerTask("autofill-button-poll", 2e3, () => {
+      if (!FeatureFlags.isEnabled("autoFill")) return;
+      injectAutoFillTriggers();
+    }, { isIdle: true });
+    APMScheduler2.registerTask("autofill-doc-discovery", 5e3, () => {
+      if (!FeatureFlags.isEnabled("autoFill")) return;
       const currentDocs = getAccessibleDocs();
       for (const [doc, obs] of autoFillObservers.entries()) {
         if (!currentDocs.includes(doc)) {
@@ -7446,7 +9574,7 @@
         }
       }
       currentDocs.forEach(setupObserver);
-    }, 5e3);
+    }, { isIdle: true });
     setupObserver(document);
   }
 
@@ -7458,6 +9586,7 @@
   init_ui_manager();
   init_constants();
   init_storage();
+  init_feature_flags();
   var LaborTracker = (function() {
     if (!isTopFrame()) return { init: function() {
     } };
@@ -7769,6 +9898,7 @@
     }
     return {
       init: function() {
+        if (!FeatureFlags.isEnabled("laborBooker")) return;
         if (!isTopFrame()) return;
         if (isInitialized) {
           if (!document.getElementById("apm-labor-trigger")) injectUI();
@@ -7825,12 +9955,13 @@
 
   // src/ui/conflict-notice.js
   init_storage();
+  init_constants();
   function checkLegacyConflicts() {
     if (window.self !== window.top) return;
     const STORAGE_KEY2 = "apm_conflict_notice_shown";
     const isShown = APMStorage.get(STORAGE_KEY2);
     const isBetterApmDetected = !!document.getElementById("better-apm-styles") || !!document.querySelector(".better-apm-btn");
-    if (isBetterApmDetected && isShown === true && !APMStorage.get("apm_better_apm_warned")) {
+    if (isBetterApmDetected && isShown === true && !APMStorage.get(CONFLICT_WARNED_KEY)) {
       APMStorage.remove(STORAGE_KEY2);
     }
     if (APMStorage.get(STORAGE_KEY2) === true && !isBetterApmDetected) return;
@@ -7881,7 +10012,7 @@
               style: { width: "100%", padding: "12px", borderRadius: "8px", cursor: "pointer", fontWeight: "bold", border: "none" },
               onclick: () => {
                 APMStorage.set(STORAGE_KEY2, true);
-                if (isBetterApmDetected) APMStorage.set("apm_better_apm_warned", true);
+                if (isBetterApmDetected) APMStorage.set(CONFLICT_WARNED_KEY, true);
                 overlay.remove();
               }
             }, "Got it, I'll check my settings!")
@@ -7975,9 +10106,6 @@
     }
   }
 
-  // src/boot.js
-  init_migration_manager();
-
   // src/core/session.js
   init_state();
   init_logger();
@@ -7986,31 +10114,31 @@
   init_constants();
   init_state();
   init_network();
+  init_context();
+  init_api();
   var SessionMonitor = {
     init() {
       if (typeof window === "undefined") return;
-      if (isTopFrame()) {
+      if (AppContext.isTop) {
         APMLogger.info("APM Session", "Initializing Monitor...");
       }
       this.restore();
       this.hookXHR();
       this.hookFetch();
-      if (isTopFrame()) {
+      if (AppContext.isTop) {
         this.setupGlobalRedirects();
       }
     },
     setupGlobalRedirects() {
-      const topWin = apmGetGlobalWindow().top;
-      topWin._APM = topWin._APM || {};
-      topWin._APM.checkSession = () => this.monitorStatus();
-      topWin._APM.forceRedirect = () => this.forceRedirect();
+      APMApi.register("checkSession", () => this.monitorStatus());
+      APMApi.register("forceRedirect", () => this.forceRedirect());
     },
     restore() {
       const stored = APMStorage.get("ApmSession");
       if (stored) {
         try {
           Object.assign(AppState.session, stored);
-          if (isTopFrame()) {
+          if (AppContext.isTop) {
             APMLogger.info("APM Session", "Restored from storage:", AppState.session);
           }
         } catch (e) {
@@ -8018,24 +10146,24 @@
       }
     },
     save() {
-      APMStorage.set("ApmSession", AppState.session);
+      APMStorage.set(SESSION_STORAGE_KEY, AppState.session);
     },
     hookXHR() {
       const self = this;
       const origOpen = XMLHttpRequest.prototype.open;
       const origSend = XMLHttpRequest.prototype.send;
-      XMLHttpRequest.prototype.open = function(method, url) {
-        this._apmUrl = (url || "").toString();
+      XMLHttpRequest.prototype.open = function(method, url2) {
+        this._apmUrl = (url2 || "").toString();
         return origOpen.apply(this, arguments);
       };
       XMLHttpRequest.prototype.send = function(body) {
-        const url = this._apmUrl;
+        const url2 = this._apmUrl;
         const payload = body && typeof body === "string" ? body : null;
         this.addEventListener("load", function() {
           if (this.status === 200) {
-            self.tryCaptureFromTraffic(url, payload);
+            self.tryCaptureFromTraffic(url2, payload);
             if (this.responseText) {
-              self.processResponse(url, this.responseText);
+              self.processResponse(url2, this.responseText);
             }
           }
         });
@@ -8046,17 +10174,17 @@
       const self = this;
       const origFetch = window.fetch;
       window.fetch = async function(...args) {
-        const url = args[0] instanceof Request ? args[0].url : typeof args[0] === "string" ? args[0] : "";
+        const url2 = args[0] instanceof Request ? args[0].url : typeof args[0] === "string" ? args[0] : "";
         const options = (args[0] instanceof Request ? args[0] : args[1]) || {};
         const payload = options.body && typeof options.body === "string" ? options.body : null;
         const response = await origFetch.apply(this, args);
         if (response.ok) {
-          self.tryCaptureFromTraffic(url, payload);
+          self.tryCaptureFromTraffic(url2, payload);
           try {
-            if (url.includes("BSSTRT") || url.includes("GRIDDATA")) {
+            if (url2.includes("BSSTRT") || url2.includes("GRIDDATA")) {
               const clone = response.clone();
               const text = await clone.text();
-              self.processResponse(url, text);
+              self.processResponse(url2, text);
             }
           } catch (e) {
           }
@@ -8064,10 +10192,10 @@
         return response;
       };
     },
-    tryCaptureFromTraffic(url, payload) {
-      if (url) {
-        const eamMatch = url.match(/[?&]eamid=([^&]+)/);
-        const tenantMatch = url.match(/[?&]tenant=([^&]+)/);
+    tryCaptureFromTraffic(url2, payload) {
+      if (url2) {
+        const eamMatch = url2.match(/[?&]eamid=([^&]+)/);
+        const tenantMatch = url2.match(/[?&]tenant=([^&]+)/);
         if (eamMatch) this.updateState("eamid", eamMatch[1]);
         if (tenantMatch) this.updateState("tenant", tenantMatch[1]);
       }
@@ -8078,9 +10206,9 @@
         if (tenantMatch) this.updateState("tenant", tenantMatch[1]);
       }
     },
-    processResponse(url, text) {
-      if (!url || !text) return;
-      if (url.includes("BSSTRT")) {
+    processResponse(url2, text) {
+      if (!url2 || !text) return;
+      if (url2.includes("BSSTRT")) {
         try {
           const data = JSON.parse(text);
           const user = data?.pageData?.functionData?.sessionUserID;
@@ -8103,7 +10231,7 @@
         AppState.session[key] = finalValue;
         this.save();
         if (key === "user") {
-          APMStorage.set("apmLastKnownEmpId", finalValue);
+          APMStorage.set(LABOR_LAST_EMP_KEY, finalValue);
         }
         if (AppState.session.eamid && AppState.session.tenant && AppState.session.user) {
           const wasInitialized = AppState.session.isInitialized;
@@ -8116,11 +10244,11 @@
       }
     },
     monitorStatus() {
-      if (!isTopFrame()) return;
+      if (!AppContext.isTop) return;
       if (window.__apmRedirecting) return;
       if (!apmGeneralSettings.autoRedirect) return;
       const currentUrl = window.location.href.toLowerCase();
-      const isLanding = window.location.hostname.includes("hexagon.com") || window.location.hostname.includes("octave.com");
+      const { isLanding } = AppContext;
       if (isLanding && !currentUrl.includes("logindisp")) {
         APMLogger.info("APM Session", "Landing page detected (Hexagon/Octave), triggering session timeout redirect.");
         this.forceRedirect();
@@ -8149,8 +10277,8 @@
         const allWins = getExtWindows();
         for (const win of allWins) {
           try {
-            const url = win.location.href.toLowerCase();
-            const isAuthPage = url.includes("logindisp") || url.includes("federate.amazon.com") || url.includes("midway") || url.includes("saml") || url.includes("okta.com") || url.includes("octave.com");
+            const url2 = win.location.href.toLowerCase();
+            const isAuthPage = url2.includes("logindisp") || url2.includes("federate.amazon.com") || url2.includes("midway") || url2.includes("saml") || url2.includes("okta.com") || url2.includes("octave.com");
             if (isAuthPage && !window.location.href.includes("logindisp")) {
               timeoutDetected = true;
               break;
@@ -8171,8 +10299,8 @@
       if (!session.eamid || !session.tenant) return;
       APMLogger.debug("APM Session", "Refreshing session heartbeat...");
       try {
-        const url = `https://us1.eam.hxgnsmartcloud.com/web/base/logindisp?tenant=${session.tenant || DEFAULT_TENANT}`;
-        const resp = await apmFetch(url, {
+        const url2 = `https://us1.eam.hxgnsmartcloud.com/web/base/logindisp?tenant=${session.tenant || DEFAULT_TENANT}`;
+        const resp = await apmFetch(url2, {
           method: "HEAD",
           credentials: "include"
         });
@@ -8203,13 +10331,33 @@
   init_utils();
   init_logger();
   init_state();
+  init_context();
+  init_ajax_hooks();
+  init_api();
   var injectionTO = null;
   var ExtConsistencyManager = {
     init() {
-      const topWin = apmGetGlobalWindow().top;
-      topWin._APM = topWin._APM || {};
-      topWin._APM.bindConsistencyListeners = () => this.bindAll();
-      topWin._APM.triggerResponsiveInjections = () => this.triggerInjections();
+      APMApi.register("bindConsistencyListeners", () => this.bindAll());
+      APMApi.register("triggerDiscoveryBurst", () => this.triggerDiscoveryBurst());
+      APMApi.register("triggerResponsiveInjections", () => this.triggerInjections());
+      this.registerGlobalAjaxHooks();
+    },
+    registerGlobalAjaxHooks() {
+      AjaxHooks.onRequestException("auth-redirect", (win, conn, response) => {
+        if (response && response.status === 401 && apmGeneralSettings.autoRedirect) {
+          APMLogger.info("APM Master", "Instant timeout detected (401). Auto-redirecting...");
+          APMApi.forceRedirect?.();
+        }
+      });
+      AjaxHooks.onRequestComplete("login-detect", (win, conn, response) => {
+        if (response && response.responseText && apmGeneralSettings.autoRedirect) {
+          const text = response.responseText.toLowerCase();
+          if (text.includes("logindisp") || text.includes("octave.com") || text.includes("okta.com")) {
+            APMLogger.info("APM Master", "Login redirect detected in Ajax response. Auto-redirecting...");
+            APMApi.forceRedirect?.();
+          }
+        }
+      });
     },
     triggerInjections() {
       clearTimeout(injectionTO);
@@ -8220,32 +10368,68 @@
     bindAll() {
       const wins = getExtWindows();
       for (const win of wins) {
+        if (!isWindowAccessible(win)) continue;
         try {
-          this.setupAjaxInterceptors(win);
+          AjaxHooks.install(win);
+          this.setupComponentWatcher(win);
           this.setupComponentListeners(win);
+          if (win.Ext) {
+            debouncedProcessColorCodeGrid(win.document);
+          }
         } catch (e) {
           APMLogger.debug("ExtConsistency", "Error binding to window:", e);
         }
       }
     },
-    setupAjaxInterceptors(win) {
-      if (!win.Ext || !win.Ext.Ajax || win.__apmAjaxInterceptor) return;
-      win.Ext.Ajax.on("requestexception", (conn, response) => {
-        if (response && response.status === 401 && apmGeneralSettings.autoRedirect) {
-          APMLogger.info("APM Master", "Instant timeout detected (401). Auto-redirecting...");
-          if (window.top._APM && window.top._APM.forceRedirect) window.top._APM.forceRedirect();
+    /**
+     * Triggers a temporary high-frequency discovery pulse (Burst Mode)
+     * after AJAX activity or major UI changes.
+     */
+    triggerDiscoveryBurst() {
+      const scheduler = typeof APMScheduler !== "undefined" ? APMScheduler : null;
+      if (!scheduler) {
+        this.bindAll();
+        return;
+      }
+      let iterations = 10;
+      APMLogger.debug("ExtConsistency", "Starting Discovery Burst Mode...");
+      scheduler.registerTask("grid-discovery-burst", 500, () => {
+        this.bindAll();
+        iterations--;
+        if (iterations <= 0) {
+          scheduler.removeTask("grid-discovery-burst");
+          APMLogger.debug("ExtConsistency", "Discovery Burst Mode complete.");
         }
-      });
-      win.Ext.Ajax.on("requestcomplete", (conn, response, options) => {
-        if (response && response.responseText && apmGeneralSettings.autoRedirect) {
-          const text = response.responseText.toLowerCase();
-          if (text.includes("logindisp") || text.includes("octave.com") || text.includes("okta.com")) {
-            APMLogger.info("APM Master", "Login redirect detected in Ajax response. Auto-redirecting...");
-            if (window.top._APM && window.top._APM.forceRedirect) window.top._APM.forceRedirect();
+      }, { executeImmediately: true });
+    },
+    setupAjaxInterceptors(win) {
+      AjaxHooks.install(win);
+    },
+    /**
+     * Injects a prototype override to detect new components (grids/tabs) instantly
+     * as they are initialized by ExtJS.
+     */
+    setupComponentWatcher(win) {
+      if (!win.Ext || !win.Ext.Component || win[FLAGS.CONSISTENCY_BOUND + "_watcher"]) return;
+      const self = this;
+      const originalInit = win.Ext.Component.prototype.initComponent;
+      win.Ext.Component.prototype.initComponent = function() {
+        const res = originalInit.apply(this, arguments);
+        if (this.isXType) {
+          if (this.isXType("gridpanel") || this.isXType("tabpanel")) {
+            setTimeout(() => {
+              if (this.isDestroyed) return;
+              if (this.isXType("gridpanel")) {
+                self.bindGridListeners(this);
+              } else {
+                self.bindTabListeners(this);
+              }
+            }, 100);
           }
         }
-      });
-      win.__apmAjaxInterceptor = true;
+        return res;
+      };
+      win[FLAGS.CONSISTENCY_BOUND + "_watcher"] = true;
     },
     hookStoreReader(store) {
       if (!store || store.__apmReaderHook) return;
@@ -8291,17 +10475,17 @@
       });
     },
     captureTabDefaults(tp) {
-      if (tp.__apmDefaultsCaptured || tp.isDestroyed) return;
+      if (tp[FLAGS.TAB_CAPTURED] || tp.isDestroyed) return;
       const isMainPanel = tp.items && tp.items.items && tp.items.items.some(
         (t) => /Activities|Checklist|Comments/.test(t.title || t.text || "")
       );
       if (isMainPanel && !window._apmSystemDefaultTabOrder) {
         window._apmSystemDefaultTabOrder = tp.items.items.filter((t) => !t.isDestroyed).map((t) => (t.title || t.text || "").replace(/<[^>]*>?/gm, "").trim()).filter((n) => n && n !== "&#160;");
       }
-      tp.__apmDefaultsCaptured = true;
+      tp[FLAGS.TAB_CAPTURED] = true;
     },
     bindTabListeners(tp) {
-      if (tp.__apmConsistencyListener || tp.isDestroyed) return;
+      if (tp[FLAGS.CONSISTENCY_BOUND] || tp.isDestroyed) return;
       const win = tp.getEl?.()?.dom?.ownerDocument?.defaultView || window;
       const trigger = () => {
         APMLogger.debug("ExtConsistency", `Tab Activity on ${tp.id}. Re-scanning for components...`);
@@ -8309,46 +10493,107 @@
           applyTabConsistency();
           this.setupComponentListeners(win);
           this.triggerInjections();
+          const cc = APMApi.get("invalidateColorCodeCache");
+          if (cc) {
+            cc(win.document);
+            setTimeout(() => cc(win.document), 350);
+          }
         }, 50);
       };
+      const syncNativeState = (item, action) => {
+        if (isSuppressingNativeEvents()) {
+          APMLogger.debug("ExtConsistency", `Ignoring native ${action} event due to suppression flag.`);
+          return;
+        }
+        const rawName = item.title || item.text || item.tab && item.tab.getText?.() || "";
+        const tabName = rawName.replace(/<[^>]*>?/gm, "").trim();
+        if (!tabName || tabName === "&#160;") return;
+        const p = getPresets();
+        const params = new URLSearchParams(win.location.search);
+        let funcName = params.get("SYSTEM_FUNCTION_NAME") || "GLOBAL";
+        if (funcName === "GLOBAL" || funcName === "WSTABS" || funcName === "WSFLTR") {
+          funcName = apmGetActiveFunctionName();
+        }
+        if (action === "remove") {
+          APMLogger.info("ExtConsistency", `Native REMOVE detected for: ${tabName} (Silo: ${funcName})`);
+          const hiddenTabs = p.config.hiddenTabs || [];
+          if (!hiddenTabs.includes(tabName)) {
+            updatePresetConfig({ hiddenTabs: [...hiddenTabs, tabName] });
+          }
+        } else if (action === "add") {
+          APMLogger.info("ExtConsistency", `Native ADD detected for: ${tabName} (Silo: ${funcName})`);
+          const hiddenTabs = (p.config.hiddenTabs || []).filter((t) => t !== tabName);
+          const tabOrders = { ...p.config.tabOrders || {} };
+          let siloOrder = tabOrders[funcName] || "";
+          const orderArray = siloOrder ? siloOrder.split(",").map((s) => s.trim()) : [];
+          if (!orderArray.includes(tabName)) {
+            orderArray.push(tabName);
+            tabOrders[funcName] = orderArray.join(",");
+          }
+          updatePresetConfig({ hiddenTabs, tabOrders });
+        }
+      };
       tp.on("tabchange", trigger);
-      tp.on("add", trigger);
+      tp.on("add", (tp2, item) => {
+        syncNativeState(item, "add");
+        trigger();
+      });
+      tp.on("remove", (tp2, item) => {
+        syncNativeState(item, "remove");
+        trigger();
+      });
+      tp.on("move", (tp2, item, fromIdx, toIdx) => {
+        if (isSuppressingNativeEvents() || !item) return;
+        APMLogger.debug("ExtConsistency", `Native MOVE detected for ${item.id || "item"} from ${fromIdx} to ${toIdx}. Triggering re-sync.`);
+        trigger();
+      });
       tp.on("activate", trigger);
-      tp.__apmConsistencyListener = true;
+      tp[FLAGS.CONSISTENCY_BOUND] = true;
     },
     bindGridListeners(grid) {
-      if (grid.__apmConsistencyListener || grid.isDestroyed || !grid.headerCt) return;
+      if (grid[FLAGS.CONSISTENCY_BOUND] || grid.isDestroyed || !grid.headerCt) return;
+      const win = grid.getEl?.()?.dom?.ownerDocument?.defaultView || window;
       const store = grid.getStore();
       APMLogger.debug("ExtConsistency", `Binding grid: ${grid.id}, Store: ${store?.storeId || "none"}`);
       grid.headerCt.on("columnmove", () => setTimeout(applyGridConsistency, 50));
       const bindStore = (s) => {
-        if (!s || s.__apmGetCacheHook) return;
+        if (!s || s[FLAGS.GRID_HOOK]) return;
         this.hookStoreReader(s);
         APMLogger.debug("ExtConsistency", `Hooking load event for store: ${s.storeId || "unnamed"}`);
         s.on("load", (storeInstance, records, successful, operation) => {
           if (!successful || grid.isDestroyed) return;
           APMLogger.debug("ExtConsistency", `Load detected on ${grid.id} (Store: ${s.storeId}). Checking for more records...`);
           recursiveGridFetch(grid, { operation });
+          if (typeof debouncedProcessColorCodeGrid === "function") {
+            debouncedProcessColorCodeGrid(grid.getEl()?.dom?.ownerDocument || document);
+          }
         });
-        s.__apmGetCacheHook = true;
+        s[FLAGS.GRID_HOOK] = true;
       };
       bindStore(grid.getStore());
       grid.on("reconfigure", (g, store2) => {
-        APMLogger.debug("ExtConsistency", `Grid reconfigured: ${grid.id}. Re-hooking store...`);
+        APMLogger.debug("ExtConsistency", `Grid reconfigured: ${grid.id}. Re-hooking...`);
         bindStore(store2);
+        setupExtGridListeners(win);
       });
-      grid.__apmConsistencyListener = true;
+      setupExtGridListeners(win);
+      grid.on("destroy", () => {
+        APMLogger.debug("ExtConsistency", `Grid destroyed: ${grid.id}. Invalidating cache.`);
+        findMainGrid(true);
+      });
+      grid[FLAGS.CONSISTENCY_BOUND] = true;
       setTimeout(applyGridConsistency, 50);
     }
   };
 
   // src/boot.js
+  init_context();
+  init_feature_flags();
+  init_diagnostics();
   function initBootSequence(win = window) {
     const isTop = win === win.top;
     if (isTop) {
       try {
-        MigrationManager.run();
-        initializeGeneralSettings();
         loadPresets();
         loadColorCodePrefs();
         initGlobalSync();
@@ -8362,12 +10607,12 @@
     }
     BootManager.waitForExt(win);
     BootManager.onBoot(() => {
-      if (!isTop) return;
-      const isLanding = window.location.hostname.includes("octave.com") || window.location.hostname.includes("hexagon.com");
-      APMScheduler.registerTask("session-monitor", 1e4, () => {
+      const isLanding = AppContext.isLanding;
+      const isShell = AppContext.isShell;
+      APMScheduler2.registerTask("session-monitor", 1e4, () => {
         SessionMonitor.monitorStatus();
       }, { isIdle: true });
-      APMScheduler.registerTask("session-heartbeat", 3e5, () => {
+      APMScheduler2.registerTask("session-heartbeat", 3e5, () => {
         SessionMonitor.refreshSession();
       }, { isIdle: true });
       if (isLanding) {
@@ -8377,46 +10622,67 @@
       const tasks = [
         { name: "Styles", fn: injectStaticStyles },
         { name: "DateOverride", fn: initDateOverride },
-        { name: "ConflictCheck", fn: checkLegacyConflicts },
-        { name: "ForecastUI", fn: buildForecastUI },
-        { name: "SearchUI", fn: buildSearchUI },
-        { name: "Shortcuts", fn: initForecastShortcuts },
-        { name: "ForecastFilter", fn: () => ForecastFilter && ForecastFilter.init && ForecastFilter.init() },
-        { name: "LaborTracker", fn: () => LaborTracker && LaborTracker.init && LaborTracker.init() },
-        { name: "SettingsPanel", fn: buildSettingsPanel },
-        { name: "ColorCodeLogic", fn: setupColorCodeLogic },
-        { name: "AutoFillObserver", fn: initAutoFillObserver },
-        { name: "NativeToggle", fn: injectToggleBtnNatively },
-        { name: "PtpStatus", fn: checkPtpStatus }
+        { name: "ConflictCheck", onlyTop: true, noShell: true, fn: checkLegacyConflicts },
+        { name: "ForecastUI", flag: "forecast", onlyTop: true, fn: buildForecastUI },
+        { name: "SearchUI", flag: "forecast", onlyTop: true, fn: buildSearchUI },
+        { name: "Shortcuts", flag: "forecast", fn: initForecastShortcuts },
+        { name: "ForecastFilter", flag: "forecast", noShell: true, fn: () => ForecastFilter && ForecastFilter.init && ForecastFilter.init() },
+        { name: "LaborTracker", flag: "laborBooker", onlyTop: true, fn: () => LaborTracker && LaborTracker.init && LaborTracker.init() },
+        { name: "SettingsPanel", onlyTop: true, fn: buildSettingsPanel },
+        { name: "ColorCodeLogic", flag: "colorCode", noShell: true, fn: setupColorCodeLogic },
+        { name: "AutoFillObserver", flag: "autoFill", noShell: true, fn: initAutoFillObserver },
+        { name: "TabGridOrder", flag: "tabGridOrder", noShell: true, fn: () => {
+          applyGridConsistency();
+          applyTabConsistency();
+        } },
+        { name: "NativeToggle", flag: "colorCode", onlyTop: true, fn: injectToggleBtnNatively },
+        { name: "PtpStatus", flag: "ptpTimer", onlyTop: true, noShell: true, fn: checkPtpStatus }
       ];
       tasks.forEach((task) => {
         try {
+          if (isShell && task.noShell) {
+            return;
+          }
+          if (task.flag && !FeatureFlags.isEnabled(task.flag)) {
+            APMLogger.debug("Boot", `Skipping disabled feature: ${task.name}`);
+            return;
+          }
+          if (task.onlyTop && !isTop) {
+            return;
+          }
+          const start = performance.now();
           task.fn();
+          const duration = performance.now() - start;
+          Diagnostics.recordTiming(`module.${task.name}`, parseFloat(duration.toFixed(2)));
         } catch (e) {
           APMLogger.error("Boot", `Failed to initialize ${task.name}:`, e);
         }
       });
       ExtConsistencyManager.bindAll();
-      APMScheduler.registerTask("consistency-bind", 1e4, () => ExtConsistencyManager.bindAll());
-      APMScheduler.registerTask("ui-persistence", 3e3, () => {
+      APMScheduler2.registerTask("consistency-bind", 1e4, () => ExtConsistencyManager.bindAll());
+      APMScheduler2.registerTask("ui-persistence", 3e3, () => {
         if (!isTopFrame()) return;
         if (!document.getElementById("apm-settings-panel")) {
           APMLogger.info("APM Master", "Settings panel missing, re-injecting...");
           buildSettingsPanel();
         }
-        if (!document.getElementById("eam-forecast-panel")) {
+        if (FeatureFlags.isEnabled("forecast") && !document.getElementById("eam-forecast-panel")) {
           APMLogger.info("APM Master", "Forecast panel missing, re-injecting...");
           buildForecastUI();
         }
-        if (!document.getElementById("apm-quick-search-container")) {
+        if (FeatureFlags.isEnabled("forecast") && !document.getElementById("apm-quick-search-container")) {
           APMLogger.info("APM Master", "Quick Search missing, re-injecting...");
           buildSearchUI();
         }
-        if (!document.getElementById("apm-labor-trigger")) {
+        if (FeatureFlags.isEnabled("tabGridOrder")) {
+          applyTabConsistency();
+          applyGridConsistency();
+        }
+        if (FeatureFlags.isEnabled("laborBooker") && !document.getElementById("apm-labor-trigger")) {
           APMLogger.info("APM Master", "Labor Tally missing/detached, re-injecting...");
           LaborTracker.init();
         }
-        initForecastShortcuts();
+        if (FeatureFlags.isEnabled("forecast")) initForecastShortcuts();
       });
     });
   }
@@ -8874,10 +11140,10 @@
       APMLogger.info("APM Master", "PTP Sandbox: Assessment list hit. Requesting timer stop...");
       window.top.postMessage({ type: "APM_PTP_STOP_TIMER" }, "*");
     };
-    const handleAssessmentResponse = (url, text, status, requestBody) => {
+    const handleAssessmentResponse = (url2, text, status, requestBody) => {
       try {
         let woFromUrl = null;
-        const urlMatch = url.match(/[?&](?:workOrderId|workorder_id)=(\d+)/i);
+        const urlMatch = url2.match(/[?&](?:workOrderId|workorder_id)=(\d+)/i);
         if (urlMatch) woFromUrl = urlMatch[1];
         let bodyObj = null;
         if (requestBody && typeof requestBody === "string") {
@@ -8888,10 +11154,10 @@
         }
         const woFromBody = bodyObj?.workorder_id;
         const targetWo = woFromBody || woFromUrl;
-        if (url.includes("get_all_assessment")) {
+        if (url2.includes("get_all_assessment")) {
           triggerStopTimer();
         }
-        if (url.includes("create_assessment") && status === 200) {
+        if (url2.includes("create_assessment") && status === 200) {
           if (targetWo) triggerStart(targetWo);
           return;
         }
@@ -8906,10 +11172,10 @@
           if (finalWo) triggerCompletion(finalWo);
         } else if (assessmentStatus === "CANCELLED") {
           if (finalWo) triggerCancel(finalWo);
-        } else if (url.includes("get_revisions") && res?.body?.revisions) {
+        } else if (url2.includes("get_revisions") && res?.body?.revisions) {
           const inactiveRev = res.body.revisions.find((r) => r.status === "inactive");
           if (inactiveRev && finalWo) triggerCancel(finalWo);
-        } else if (url.includes("submit_assessment")) {
+        } else if (url2.includes("submit_assessment")) {
           if (text.includes("COMPLETE") && finalWo) {
             triggerCompletion(finalWo);
           } else if (text.includes("CANCELLED") && finalWo) {
@@ -8921,8 +11187,8 @@
     };
     const origOpen = XMLHttpRequest.prototype.open;
     const origSend = XMLHttpRequest.prototype.send;
-    XMLHttpRequest.prototype.open = function(method, url) {
-      this._apmUrl = (url || "").toString();
+    XMLHttpRequest.prototype.open = function(method, url2) {
+      this._apmUrl = (url2 || "").toString();
       return origOpen.apply(this, arguments);
     };
     XMLHttpRequest.prototype.send = function(body) {
@@ -8937,12 +11203,12 @@
     window.fetch = async function(...args) {
       const response = await origFetch.apply(this, args);
       try {
-        const url = args[0] instanceof Request ? args[0].url : typeof args[0] === "string" ? args[0] : "";
-        if (url && (url.includes("submit_assessment") || url.includes("get_assessment") || url.includes("create_assessment") || url.includes("get_revisions") || url.includes("get_all_assessment"))) {
+        const url2 = args[0] instanceof Request ? args[0].url : typeof args[0] === "string" ? args[0] : "";
+        if (url2 && (url2.includes("submit_assessment") || url2.includes("get_assessment") || url2.includes("create_assessment") || url2.includes("get_revisions") || url2.includes("get_all_assessment"))) {
           const clone = response.clone();
           const text = await clone.text();
           const reqObj = args[0] instanceof Request ? args[0] : args[1] || {};
-          handleAssessmentResponse(url, text, response.status, reqObj.body);
+          handleAssessmentResponse(url2, text, response.status, reqObj.body);
         }
       } catch (e) {
       }
@@ -9012,8 +11278,18 @@
 
   // src/modules/colorcode/nametag-filter.js
   init_logger();
+  init_api();
   init_utils();
-  var activeNametagFilter = "";
+  function getActiveNametagFilter() {
+    const root = apmGetGlobalWindow();
+    const topWin = root.top || root;
+    return topWin.activeNametagFilter || "";
+  }
+  function setActiveNametagFilter(kw) {
+    const root = apmGetGlobalWindow();
+    const topWin = root.top || root;
+    topWin.activeNametagFilter = kw || "";
+  }
   function forceFooterText(gridDom, count) {
     if (!gridDom) return;
     const text = `Records: ${count} of ${count}`;
@@ -9036,14 +11312,18 @@
     }
   }
   function applyNametagFilter(kw) {
+    APMLogger.debug("Nametag", `applyNametagFilter called with kw: "${kw}"`);
     const ctx = findMainGrid();
     if (!ctx) return;
     const store = ctx.grid.getStore();
     const gridDom = ctx.grid.getEl().dom;
     const view = ctx.grid.getView();
-    if (store._nativeGetTotalCount) store.getTotalCount = store._nativeGetTotalCount;
+    if (!store._nativeGetTotalCount) {
+      store._nativeGetTotalCount = store.getTotalCount;
+    }
     store.clearFilter();
-    activeNametagFilter = kw || "";
+    const activeFilter = kw || "";
+    setActiveNametagFilter(activeFilter);
     const startFilter = performance.now();
     try {
       const keywords = kw.split(",").map((s) => s.trim().toLowerCase()).filter((s) => s);
@@ -9056,16 +11336,18 @@
           }
           return keywords.some((k) => record._apmSearchText.includes(k));
         });
+        if (view) {
+          view.refresh();
+        }
       }
       const endFilter = performance.now();
       const matchesCount = store.getCount();
       APMLogger.debug("Nametag", `Applied to '${ctx.grid.id}': ${matchesCount} matches in ${(endFilter - startFilter).toFixed(2)}ms`);
       const triggerPulse = (msg) => {
-        const gWin = apmGetGlobalWindow();
-        const topWin = gWin ? gWin.top : null;
-        if (topWin?._APM?.invalidateColorCodeCache) {
+        const invalidate = APMApi.invalidateColorCodeCache;
+        if (invalidate) {
           APMLogger.debug("Nametag", `${msg} rendering pulse for '${ctx.grid.id}'`);
-          topWin._APM.invalidateColorCodeCache(ctx.doc);
+          invalidate(ctx.doc);
         }
       };
       triggerPulse("Immediate");
@@ -9077,14 +11359,14 @@
         store._apmCacheHook = true;
       }
       const count = store.getCount();
-      if (!store._nativeGetTotalCount) store._nativeGetTotalCount = store.getTotalCount;
       store.getTotalCount = function() {
         return count;
       };
       forceFooterText(gridDom, count);
       if (view && !view.__apmFooterHook) {
         view.on("refresh", () => {
-          if (activeNametagFilter && ctx.grid && !ctx.grid.isDestroyed && ctx.grid.rendered) {
+          const currentFilter = getActiveNametagFilter();
+          if (currentFilter && ctx.grid && !ctx.grid.isDestroyed && ctx.grid.rendered) {
             try {
               const el2 = ctx.grid.getEl();
               if (el2 && el2.dom) {
@@ -9108,6 +11390,8 @@
   init_ui_manager();
   init_storage();
   init_theme_resolver();
+  init_api();
+  init_logger();
   function initMessageRouter() {
     window.addEventListener("message", (e) => {
       const d = e.data;
@@ -9153,8 +11437,27 @@
         if (window.self === window.top) stopPtpTimer();
       }
       if (d.type === "APM_SET_FILTER") {
-        if (typeof window._APM?.applyNametagFilter === "function") {
-          window._APM.applyNametagFilter(d.kw);
+        APMLogger.debug("Router", `Received APM_SET_FILTER: "${d.kw}" from ${d.sourceFrame || e.origin || "unknown"}`);
+        const topWin = window.top || window;
+        const currentFilter = topWin.activeNametagFilter;
+        if (currentFilter === d.kw && d.kw !== "") {
+          APMLogger.debug("Router", "Filter state already matches global. Skipping application.");
+          return;
+        }
+        const applyFilter = APMApi.applyNametagFilter;
+        if (typeof applyFilter === "function") {
+          applyFilter(d.kw);
+        }
+      }
+      if (d.apmMaster === "hotkey" && d.action) {
+        APMLogger.debug("Router", `Received hotkey action: "${d.action}"`);
+        if (window.self === window.top) {
+          const execFn = APMApi.get("executeForecast");
+          if (typeof execFn === "function") {
+            execFn(d.action);
+          } else {
+            APMLogger.warn("Router", "executeForecast not registered on top window");
+          }
         }
       }
     });
@@ -9167,7 +11470,7 @@
       }
     });
     history[wo] = { status, time: Date.now() };
-    APMStorage.set("apm_ptp_history", history);
+    APMStorage.set(PTP_HISTORY_KEY, history);
     const event = new CustomEvent("APM_PTP_UPDATED_EVENT", { detail: { wo, data: history[wo] } });
     window.dispatchEvent(event);
     const broadcast = (win) => {
@@ -9186,6 +11489,8 @@
   init_labor_booker();
   init_utils();
   init_logger();
+  init_ajax_hooks();
+  init_api();
   var _gridObservers = /* @__PURE__ */ new Map();
   function injectStylesIntoDoc(doc) {
     if (!doc || doc.getElementById("apm-static-styles")) return;
@@ -9217,7 +11522,12 @@
         debouncedProcessColorCodeGrid(doc);
       }
     });
-    observer.observe(doc.body || doc.documentElement, { childList: true, subtree: true });
+    const target = doc.body || doc.documentElement;
+    if (target) {
+      observer.observe(target, { childList: true, subtree: true });
+    } else {
+      APMLogger.debug("FrameManager", "Skipping observer: document not ready or empty");
+    }
     _gridObservers.set(win, { active: true, observer });
     debouncedProcessColorCodeGrid(doc, true);
   }
@@ -9234,70 +11544,28 @@
         _gridObservers.delete(win);
       }
     }
+    AjaxHooks.onRequestComplete("discovery-burst", (win, conn, response, options) => {
+      const url2 = options?.url || "";
+      const upperUrl = url2.toUpperCase();
+      if (upperUrl.includes("REQUEST") || upperUrl.includes("SEARCH") || upperUrl.includes("GRID") || upperUrl.includes(".XMLHTTP") || upperUrl.includes(".HDR") || upperUrl.includes(".LST") || upperUrl.includes("GRIDDATA") || upperUrl.includes("GETCACHE") || upperUrl.includes("COMMON")) {
+        setTimeout(() => {
+          APMApi.triggerDiscoveryBurst?.();
+          APMApi.triggerResponsiveInjections?.();
+          if (typeof applyTabConsistency === "function") applyTabConsistency();
+          if (typeof applyGridConsistency === "function") applyGridConsistency();
+          debouncedProcessColorCodeGrid(win.document);
+        }, 100);
+      }
+    });
     attachObserverToDoc(document, window);
-    if (!window.__apmIframeObserver) {
-      window.__apmIframeObserver = new MutationObserver((mutations) => {
-        const hasSrcChange = mutations.some((m) => m.type === "attributes" && m.attributeName === "src" && m.target.tagName === "IFRAME");
-        if (hasSrcChange && window.top._APM?.checkSession) {
-          window.top._APM.checkSession();
-        }
-      });
-      window.__apmIframeObserver.observe(document.body, {
-        attributes: true,
-        subtree: true,
-        attributeFilter: ["src"]
-      });
-    }
-    const injectComponentWatcher = (win) => {
-      if (!win.Ext || !win.Ext.Component || win.__apmWatcherInjected) return;
-      const originalInit = win.Ext.Component.prototype.initComponent;
-      win.Ext.Component.prototype.initComponent = function() {
-        const res = originalInit.apply(this, arguments);
-        if (this.isXType) {
-          if (this.isXType("gridpanel") || this.isXType("tabpanel")) {
-            setTimeout(() => {
-              if (!this.isDestroyed) triggerConsistencyForComponent(this, win);
-            }, 100);
-          }
-        }
-        return res;
-      };
-      win.__apmWatcherInjected = true;
-    };
-    const triggerConsistencyForComponent = (comp, win) => {
-      const fd = win.document;
-      if (comp.isXType("gridpanel")) {
-        if (typeof setupExtGridListeners === "function") setupExtGridListeners(win);
-        processColorCodeGrid(fd);
-        if (window.top._APM?.bindConsistencyListeners) window.top._APM.bindConsistencyListeners();
-      } else if (comp.isXType("tabpanel") || comp.isXType("uxtabpanel")) {
-        if (window.top._APM?.bindConsistencyListeners) window.top._APM.bindConsistencyListeners();
-      }
-    };
-    const injectAjaxWatcher = (win) => {
-      if (!win.Ext || !win.Ext.Ajax || win.__apmAjaxWatcherInjected) return;
-      win.Ext.Ajax.on("requestcomplete", (conn, response, options) => {
-        const url = options?.url || "";
-        if (url.includes("request") || url.includes("search") || url.includes("grid") || url.includes(".xmlhttp") || url.includes(".HDR") || url.includes(".LST") || url.includes("GRIDDATA")) {
-          setTimeout(() => {
-            if (window.top._APM?.bindConsistencyListeners) window.top._APM.bindConsistencyListeners();
-            if (window.top._APM?.triggerResponsiveInjections) window.top._APM.triggerResponsiveInjections();
-            if (typeof applyTabConsistency === "function") applyTabConsistency();
-            if (typeof applyGridConsistency === "function") applyGridConsistency();
-            debouncedProcessColorCodeGrid();
-          }, 100);
-        }
-      });
-      win.__apmAjaxWatcherInjected = true;
-    };
+    AjaxHooks.install(window);
     document.querySelectorAll("iframe").forEach((f) => {
-      if (!f.hasApmLoadBound) {
-        f.addEventListener("load", () => {
-          if (window.top._APM?.checkSession) window.top._APM.checkSession();
-          setTimeout(scanAndAttachFrames, 250);
-        });
-        f.hasApmLoadBound = true;
-      }
+      if (f.hasApmLoadBound) return;
+      f.addEventListener("load", () => {
+        APMApi.checkSession?.();
+        setTimeout(scanAndAttachFrames, 250);
+      });
+      f.hasApmLoadBound = true;
       try {
         const fw = f.contentWindow;
         const fd = f.contentDocument;
@@ -9309,16 +11577,17 @@
             enforceTheme(fw, fd);
             fullStyleUpdate(fd);
           }
-          injectComponentWatcher(fw);
-          injectAjaxWatcher(fw);
-          if (!fd.hasApmEventsBound) {
+          ExtConsistencyManager.setupComponentWatcher(fw);
+          AjaxHooks.install(fw);
+          if (!fd.hasApmEventsBound && !fw.__apmEventsBound) {
             const bindHooks = () => {
               try {
+                if (fd.hasApmEventsBound || fw.__apmEventsBound) return;
                 fd.addEventListener("keydown", (e) => {
-                  if (window.top._APM?.checkHotkey) window.top._APM.checkHotkey(e);
+                  APMApi.get("checkHotkey")?.(e);
                 }, true);
                 fd.addEventListener("mousedown", (e) => {
-                  if (window.top._APM?.handleGlobalClick) window.top._APM.handleGlobalClick(e);
+                  APMApi.get("handleGlobalClick")?.(e);
                 }, true);
                 fd.addEventListener("click", (e) => {
                   if (e.target.closest?.(".apm-nametag") || e.target.closest?.(".apm-copy-icon")) {
@@ -9330,6 +11599,7 @@
                   UIManager2.hookFrame(fw);
                 });
                 fd.hasApmEventsBound = true;
+                fw.__apmEventsBound = true;
               } catch (err) {
               }
             };
@@ -9352,108 +11622,42 @@
   // src/index.js
   init_labor_booker();
   init_ui_manager();
-
-  // src/ui/filter-banner.js
-  var FilterBanner = /* @__PURE__ */ (function() {
-    let banner = null;
-    function ensureBanner() {
-      if (banner) return banner;
-      banner = document.createElement("div");
-      banner.id = "apm-filter-banner";
-      banner.className = "apm-ui-panel";
-      banner.style.cssText = `
-            position: fixed;
-            top: 10px;
-            left: 50%;
-            transform: translateX(-50%);
-            background: #e74c3c;
-            color: white;
-            padding: 6px 16px;
-            border-radius: 20px;
-            font-weight: bold;
-            font-size: 13px;
-            cursor: pointer;
-            z-index: 2147483647;
-            display: none;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.5);
-            transition: opacity 0.2s;
-        `;
-      banner.onclick = () => {
-        window.activeNametagFilter = "";
-        hide();
-        window.dispatchEvent(new CustomEvent("APM_CLEAR_FILTER"));
-      };
-      document.body.appendChild(banner);
-      return banner;
-    }
-    function show(filterText) {
-      const b = ensureBanner();
-      const keywords = filterText.split(",").map((s) => s.trim());
-      const display = keywords.length > 2 ? `${keywords[0]}, ${keywords[1]}...` : filterText;
-      b.innerHTML = `\u{1F50D} Showing: "${display}" \u2716`;
-      b.style.display = "block";
-    }
-    function hide() {
-      if (banner) banner.style.display = "none";
-    }
-    return {
-      show,
-      hide
-    };
-  })();
-
-  // src/index.js
   init_scheduler();
-  var mainWin = typeof unsafeWindow !== "undefined" ? unsafeWindow : window;
-  (function() {
-    const isLanding = mainWin.location.hostname.includes("octave.com") || mainWin.location.hostname.includes("hexagon.com");
-    if (isLanding && mainWin.self === mainWin.top) {
-      try {
-        const stored = localStorage.getItem("apm_v1_general_settings");
-        const autoRedirect = stored ? JSON.parse(stored).autoRedirect !== false : true;
-        if (autoRedirect && !mainWin.location.href.includes("logindisp")) {
-          const DEFAULT_TENANT2 = "AMAZONRMENA_PRD";
-          const redirectUrl = `https://us1.eam.hxgnsmartcloud.com/web/base/logindisp?tenant=${DEFAULT_TENANT2}`;
-          console.info("[APM] Ultra-Fast Landing Page Redirect Triggered.");
-          mainWin.location.replace(redirectUrl);
-          throw new Error("APM_REDIRECT_EXIT");
-        }
-      } catch (e) {
-        if (e.message === "APM_REDIRECT_EXIT") return;
-      }
-    }
-  })();
-  mainWin._APM = mainWin._APM || {};
-  var _APM = mainWin._APM;
+  init_feature_flags();
   APMLogger.debug("Boot", `APM script initializing in frame: ${window.location.pathname} (Top: ${window.self === window.top})`);
   enforceTheme(mainWin, mainWin.document);
+  MigrationManager.run();
   initializeGeneralSettings();
   BootManager.markReady("settings");
   SessionMonitor.init();
   UIManager.init();
-  UIManager.registerPanel("apm-filter-banner");
-  var isEAM = mainWin.location.hostname.includes("hxgnsmartcloud.com");
-  var isPTP = /\.ptp\.amazon\.dev|insights/i.test(mainWin.location.hostname);
-  var isLandingPage = mainWin.location.hostname.includes("octave.com") || mainWin.location.hostname.includes("hexagon.com");
+  var { isEAM, isPTP, isLanding: isLandingPage } = AppContext;
   if (isEAM || isPTP || isLandingPage) {
-    if (isPTP) initPtpSandbox();
+    if (isPTP && FeatureFlags.isEnabled("ptpTimer")) initPtpSandbox();
     if (isEAM) {
       loadColorCodePrefs();
+      cleanupStalePreviewRules();
       fullStyleUpdate();
       if (mainWin.self === mainWin.top) {
         setTimeout(checkForGlobalUpdates, 1e4);
       }
       initMessageRouter();
-      LaborBooker.init(mainWin);
+      if (FeatureFlags.isEnabled("laborBooker")) {
+        LaborBooker.init(mainWin);
+      }
     }
     if (isEAM || isPTP) {
-      _APM.applyNametagFilter = applyNametagFilter;
-      _APM.Logger = APMLogger;
-      _APM.mainWin = mainWin;
+      if (FeatureFlags.isEnabled("colorCode")) {
+        APMApi.register("applyNametagFilter", applyNametagFilter);
+      }
+      APMApi.register("Logger", APMLogger);
+      APMApi.register("mainWin", mainWin);
     }
   }
-  _APM.closeAllPanels = (explicit) => UIManager.closeAll(explicit);
-  _APM.handleGlobalClick = (e) => {
+  APMApi.register("closeAllPanels", (explicit) => UIManager.closeAll(explicit));
+  APMApi.register("MigrationManager", MigrationManager);
+  var handleGlobalClick = (e) => {
+    if (e._apmHandled) return;
     let target = e.target;
     if (!target) return;
     APMLogger.debug("Core", `Mousedown on: ${target.tagName} (Class: ${target.className})`);
@@ -9478,36 +11682,45 @@
       const kw = nametag.getAttribute("data-filter-kw");
       APMLogger.debug("Core", `Nametag click detected: ${kw}`);
       if (kw !== null) {
+        e._apmHandled = true;
         const topWin = typeof mainWin !== "undefined" && mainWin.top ? mainWin.top : window.top;
-        const isAlreadyActive = topWin.activeNametagFilter === kw;
+        const currentGlobal = topWin.activeNametagFilter;
+        const isAlreadyActive = currentGlobal === kw;
         const newFilter = isAlreadyActive ? "" : kw;
+        APMLogger.debug("Core", `Nametag Click Logic: currentGlobal="${currentGlobal}", targetKw="${kw}", isAlreadyActive=${isAlreadyActive}, newFilter="${newFilter}"`);
         topWin.activeNametagFilter = newFilter;
         if (newFilter) {
-          FilterBanner.show(newFilter);
           showToast(`Filter Applied: ${newFilter}`, "#27ae60", true);
         } else {
-          FilterBanner.hide();
           showToast("Filter Cleared", "#7f8c8d");
         }
-        if (typeof _APM.applyNametagFilter === "function") {
-          _APM.applyNametagFilter(newFilter);
+        const applyNametagFilterFn = APMApi.get("applyNametagFilter");
+        if (typeof applyNametagFilterFn === "function") {
+          applyNametagFilterFn(newFilter);
         }
-        document.querySelectorAll("iframe").forEach((f) => {
-          try {
-            f.contentWindow.postMessage({ type: "APM_SET_FILTER", kw: newFilter }, "*");
-          } catch (err) {
+        if (kw) {
+          const msg = { type: "APM_SET_FILTER", kw: newFilter, sourceFrame: window.location.href };
+          window.postMessage(msg, "*");
+          document.querySelectorAll("iframe").forEach((f) => {
+            try {
+              f.contentWindow.postMessage(msg, "*");
+            } catch (err) {
+            }
+          });
+          if (window !== topWin) {
+            topWin.postMessage(msg, "*");
           }
-        });
+        }
       }
       return;
     }
     if (icon) {
       e.preventDefault();
       e.stopPropagation();
-      const url = icon.getAttribute("data-wo-copy-url");
-      APMLogger.debug("Core", `Icon click detected: ${url}`);
-      if (url) {
-        navigator.clipboard.writeText(url).then(() => {
+      const url2 = icon.getAttribute("data-wo-copy-url");
+      APMLogger.debug("Core", `Icon click detected: ${url2}`);
+      if (url2) {
+        navigator.clipboard.writeText(url2).then(() => {
           icon.classList.add("apm-copy-success");
           setTimeout(() => icon.classList.remove("apm-copy-success"), 1500);
         });
@@ -9515,7 +11728,8 @@
       return;
     }
   };
-  document.addEventListener("mousedown", _APM.handleGlobalClick, true);
+  APMApi.register("handleGlobalClick", handleGlobalClick);
+  document.addEventListener("mousedown", APMApi.get("handleGlobalClick"), true);
   document.addEventListener("click", (e) => {
     if (e.target.closest?.(".apm-nametag") || e.target.closest?.(".apm-copy-icon")) {
       e.preventDefault();
@@ -9536,33 +11750,39 @@
     const observer = new MutationObserver((mutations) => {
       const hasNewIframe = mutations.some((m) => Array.from(m.addedNodes).some((n) => n.nodeType === 1 && (n.tagName === "IFRAME" || n.querySelector && n.querySelector("iframe"))));
       if (hasNewIframe) {
-        APMScheduler.runTaskNow("frame-sync-pulse");
+        APMScheduler2.runTaskNow("frame-sync-pulse");
       }
     });
     const startObservers = () => {
       if (document.body) observer.observe(document.body, { childList: true, subtree: true });
       BootManager.markReady("dom");
-      APMScheduler.registerTask("frame-sync-pulse", 5e3, scanAndAttachFrames);
-      APMScheduler.runTaskNow("frame-sync-pulse");
+      APMScheduler2.registerTask("frame-sync-pulse", 5e3, scanAndAttachFrames);
+      APMScheduler2.runTaskNow("frame-sync-pulse");
       if (mainWin.self === mainWin.top) {
-        APMScheduler.registerTask("ptp-status-check", 15e3, checkPtpStatus, { isIdle: true });
+        APMScheduler2.registerTask("ptp-status-check", 15e3, checkPtpStatus, { isIdle: true });
       }
     };
     if (document.body) {
+      processColorCodeGrid(document);
       startObservers();
     } else {
       window.addEventListener("DOMContentLoaded", startObservers);
     }
     window.addEventListener("APM_CLEAR_FILTER", () => {
       mainWin.activeNametagFilter = "";
-      if (typeof _APM.applyNametagFilter === "function") _APM.applyNametagFilter("");
+      const applyNametagFilterFn = APMApi.get("applyNametagFilter");
+      if (typeof applyNametagFilterFn === "function") applyNametagFilterFn("");
       showToast("Filter Cleared", "#7f8c8d");
+      const msg = { type: "APM_SET_FILTER", kw: "" };
+      window.postMessage(msg, "*");
       document.querySelectorAll("iframe").forEach((f) => {
         try {
-          f.contentWindow.postMessage({ type: "APM_SET_FILTER", kw: "" }, "*");
+          f.contentWindow.postMessage(msg, "*");
         } catch (err) {
         }
       });
+      const topWin = typeof mainWin !== "undefined" && mainWin.top ? mainWin.top : window.top;
+      if (window !== topWin) topWin.postMessage(msg, "*");
     });
   };
   init();
