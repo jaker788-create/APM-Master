@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         APM Master: Unified Tools
 // @namespace    https://w.amazon.com/bin/view/Users/rosendah/APM-Master/
-// @version      14.5.2
+// @version      14.5.3
 // @description  Quality of life and automation tool that uses native EAM ExtJS Framework functions for high reliability and capability. This is actively supported tool so Slack me or submit bug report/feature request through the bug report button in the menu.
 // @author       Jacob Rosendahl
 // @icon         https://media.licdn.com/dms/image/v2/D5603AQGdCV0_LQKRfQ/profile-displayphoto-scale_100_100/B56ZyZLvQ5HgAg-/0/1772096519061?e=1773878400&v=beta&t=eWO1Jiy0-WbzG_yBv-SBrmmsVOPMexF57-q1Xh_VXCk
@@ -93,7 +93,7 @@
       PRESET_STORAGE_KEY = "apm_v1_autofill_presets";
       STORAGE_KEY = "apm_v1_forecast_prefs";
       APM_GENERAL_STORAGE = "apm_v1_general_settings";
-      CURRENT_VERSION = "14.5.2";
+      CURRENT_VERSION = "14.5.3";
       VERSION_CHECK_URL = "https://raw.githubusercontent.com/jaker788-create/APM-Master/Automation/forecast.user.js";
       UPDATE_URL = "https://github.com/jaker788-create/APM-Master/releases/download/Automation/forecast.user.js";
       LABOR_EMPS_STORAGE = "apm_v1_labor_employees";
@@ -283,6 +283,17 @@
     } catch (e) {
     }
     return false;
+  }
+  function debounce(func, wait) {
+    let timeout;
+    return function executedFunction(...args) {
+      const later = () => {
+        clearTimeout(timeout);
+        func(...args);
+      };
+      clearTimeout(timeout);
+      timeout = setTimeout(later, wait);
+    };
   }
   function getExtWindows() {
     const root = apmGetGlobalWindow();
@@ -1674,9 +1685,11 @@
       init_diagnostics();
       TaskScheduler = class {
         constructor() {
+          this.instanceId = Math.random().toString(36).substring(7);
           this.tasks = [];
           this.running = false;
           this.timeoutId = null;
+          APMLogger.info("Scheduler", `New TaskScheduler instance created: ${this.instanceId}`);
         }
         /**
          * Register a recurring task
@@ -1696,6 +1709,7 @@
             isIdle,
             lastRun: executeImmediately ? 0 : performance.now()
           });
+          APMLogger.info("Scheduler", `[${this.instanceId}] Task registered: ${id} (${intervalMs}ms)`);
           if (!this.running) {
             this.start();
           }
@@ -1737,6 +1751,9 @@
                   APMLogger.error("Scheduler", `Error in task '${task.id}':`, e);
                 }
                 const duration = performance.now() - start;
+                if (duration > 50) {
+                  APMLogger.warn("Scheduler", `Task '${task.id}' took ${duration.toFixed(2)}ms`);
+                }
                 Diagnostics.recordSchedulerTask(task.id, duration);
                 task.lastRun = performance.now();
               };
@@ -1780,6 +1797,7 @@
         getTasks() {
           return this.tasks.map((t) => ({
             id: t.id,
+            instance: this.instanceId,
             intervalMs: t.intervalMs,
             isIdle: t.isIdle,
             lastRunMs: t.lastRun
@@ -2124,6 +2142,7 @@
       LaborBooker = (function() {
         const laborWin = apmGetGlobalWindow();
         let isRunning2 = false;
+        let bookingPending = false;
         let isPreparing = false;
         let laborObservers = /* @__PURE__ */ new Map();
         let hoursPresets = ["0.1", "0.25", "0.5", "0.75", "1", "1.5", "2", "2.5", "3"];
@@ -2160,6 +2179,43 @@
             ensureParam("isdetailfieldchanged", "true");
           }
         });
+        function detectActivityCode(fAct) {
+          if (!fAct) return "10";
+          const current = fAct.getValue();
+          if (current !== null && current !== void 0 && current !== "") return String(current);
+          return "10";
+        }
+        function cleanupBooForm(win) {
+          if (!isWindowAccessible(win) || !win.Ext) return;
+          try {
+            const booTab = win.Ext.ComponentQuery.query("uxtabcontainer[itemId=BOO]:not([destroyed=true])").find((t) => t.rendered && !t.isDestroyed && t.isVisible(true));
+            if (!booTab) return;
+            const formPanel = win.Ext.ComponentQuery.query("form:not([destroyed=true])", booTab)[0];
+            if (!formPanel || !formPanel.getForm) return;
+            const form = formPanel.getForm();
+            const empVal = form.findField("employee")?.getValue();
+            const hrsVal = form.findField("hrswork")?.getValue();
+            if (!empVal || hrsVal) return;
+            const cancelBtn = win.Ext.ComponentQuery.query(
+              'button[action=cancelRec]:not([destroyed=true]), button[tooltip="Cancel"]:not([destroyed=true])',
+              booTab
+            )[0];
+            if (cancelBtn && !cancelBtn.isHidden() && !cancelBtn.disabled) {
+              if (cancelBtn.handler) cancelBtn.handler.call(cancelBtn.scope || cancelBtn, cancelBtn);
+              else cancelBtn.fireEvent("click", cancelBtn);
+              APMLogger.debug("LaborBooker", "BOO form cleaned up on popup close (cancelRec)");
+              return;
+            }
+            const empField = form.findField("employee");
+            if (empField) {
+              empField.setValue("");
+              empField.fireEvent("change", empField, "");
+              APMLogger.debug("LaborBooker", "BOO form cleaned up on popup close (cleared employee)");
+            }
+          } catch (e) {
+            APMLogger.debug("LaborBooker", "cleanupBooForm error:", e.message);
+          }
+        }
         function checkTabAndInject(win) {
           if (!FeatureFlags.isEnabled("laborBooker")) return;
           if (!isWindowAccessible(win) || !win.Ext || !win.Ext.ComponentQuery) return;
@@ -2250,9 +2306,7 @@
                 }
                 if (fAct) {
                   await ExtUtils.ensureStoreLoaded(fAct, win);
-                  if (fAct.store && fAct.store.getCount() > 0) {
-                    if (ExtUtils.setFieldValue(form, "booactivity", "10", true)) break;
-                  }
+                  if (fAct.store && fAct.store.getCount() > 0) break;
                 }
               }
               await delay(400);
@@ -2343,8 +2397,10 @@
                 input.value = val;
                 const dInput = win.document.getElementById("apm-lb-date").value;
                 const type = win.document.querySelector('input[name="lb-type"]:checked').value;
+                bookingPending = true;
                 UIManager.closeAll(true);
                 setTimeout(() => {
+                  bookingPending = false;
                   showToast(`Booking ${val}h... \u23F3`, "#3498db");
                   executeBookingFlow({ hours: val, date: dInput, type }, win);
                 }, 10);
@@ -2412,6 +2468,11 @@
             `;
             popup.appendChild(sumSide);
             win.document.body.appendChild(popup);
+            new MutationObserver(() => {
+              if (popup.style.display === "none" && !bookingPending) {
+                cleanupBooForm(win);
+              }
+            }).observe(popup, { attributes: true, attributeFilter: ["style"] });
             const nightToggle = win.document.getElementById("apm-lb-night-toggle");
             nightToggle.onchange = (e) => {
               APMStorage.set(LABOR_NIGHT_SHIFT_KEY, e.target.checked);
@@ -2445,8 +2506,10 @@
               const hours = isCorrection ? `-${Math.abs(hRaw)}` : Math.abs(hRaw).toString();
               const date = dateInput.value;
               const type = win.document.querySelector('input[name="lb-type"]:checked').value;
+              bookingPending = true;
               UIManager.closeAll(true);
               setTimeout(() => {
+                bookingPending = false;
                 showToast(`Booking ${hours}h... \u23F3`, "#3498db");
                 executeBookingFlow({ hours, date, type }, win);
               }, 10);
@@ -2560,7 +2623,7 @@
               const formPanel = targetExt.ComponentQuery.query("form:not([destroyed=true])", booTab)[0];
               if (formPanel && formPanel.getForm && formPanel.getForm()) {
                 const form = formPanel.getForm();
-                if (!form.findField("employee")?.getValue() && employee) {
+                if (employee) {
                   ExtUtils.setFieldValue(form, "employee", employee, true);
                   await delay(150);
                 }
@@ -2574,7 +2637,8 @@
                 }
                 const fAct = form.findField("booactivity");
                 await ExtUtils.ensureStoreLoaded(fAct, targetWin);
-                ExtUtils.setFieldValue(form, "booactivity", "10", true);
+                const actCode = detectActivityCode(fAct);
+                ExtUtils.setFieldValue(form, "booactivity", actCode, true);
                 const fRate = form.findField("rate") || form.findField("laborrate") || form.findField("traderate") || form.findField("costrate") || form.findField("trarate");
                 const fRD = form.findField("ratedate");
                 if (fRate) {
@@ -2680,21 +2744,76 @@
           if (!win.Ext) return null;
           try {
             const hdrTab = win.Ext.ComponentQuery.query("uxtabcontainer[itemId=HDR]")[0];
-            if (!hdrTab) return null;
-            const formPanel = hdrTab.down("form");
-            if (!formPanel) return null;
-            const record = formPanel.getRecord();
-            if (!record) return null;
-            let compVal = record.get("datecompleted");
+            if (hdrTab) {
+              const formPanel = hdrTab.down("form");
+              if (formPanel && formPanel.getRecord) {
+                const record = formPanel.getRecord();
+                if (record) {
+                  const compVal = record.get("datecompleted");
+                  if (compVal) {
+                    const dateStr = parseCompletionDateValue(compVal);
+                    if (dateStr) return dateStr;
+                  }
+                }
+              }
+            }
+            const allTabs = win.Ext.ComponentQuery.query("uxtabcontainer:not([destroyed=true])");
+            for (const tab of allTabs) {
+              const form = tab.down("form");
+              if (form && form.getRecord) {
+                const rec = form.getRecord();
+                if (rec && rec.get("datecompleted")) {
+                  const dateStr = parseCompletionDateValue(rec.get("datecompleted"));
+                  if (dateStr) return dateStr;
+                }
+              }
+            }
+          } catch (e) {
+            APMLogger.debug("LaborBooker", "Error extracting completion date:", e.message);
+          }
+          return null;
+        }
+        function parseCompletionDateValue(compVal) {
+          try {
             if (!compVal) return null;
             if (compVal instanceof Date) return getLocalIsoDate(compVal);
             if (typeof compVal === "string") {
               const parts = compVal.split(" ")[0].split("/");
-              if (parts.length === 3) return `${parts[2]}-${parts[0].padStart(2, "0")}-${parts[1].padStart(2, "0")}`;
+              if (parts.length === 3) {
+                return `${parts[2]}-${parts[0].padStart(2, "0")}-${parts[1].padStart(2, "0")}`;
+              }
             }
           } catch (e) {
           }
           return null;
+        }
+        function clearNativeFields() {
+          if (isRunning2) return;
+          try {
+            const wins = getExtWindows();
+            for (const win of wins) {
+              if (!isWindowAccessible(win) || !win.Ext || !win.Ext.ComponentQuery) continue;
+              const booTab = win.Ext.ComponentQuery.query("uxtabcontainer[itemId=BOO]:not([destroyed=true])").find((t) => t.rendered && t.isVisible(true));
+              if (!booTab) continue;
+              const formPanel = win.Ext.ComponentQuery.query("form:not([destroyed=true])", booTab)[0];
+              if (formPanel && formPanel.getForm) {
+                const form = formPanel.getForm();
+                const record = formPanel.getRecord();
+                if (record && (record.phantom || record.dirty)) {
+                  APMLogger.debug("LaborBooker", "Clearing native EAM fields on menu close.");
+                  ["employee", "hrswork", "datework", "octype", "booactivity", "ocrtype"].forEach((fName) => {
+                    ExtUtils.setFieldValue(form, fName, "");
+                  });
+                  if (form.updateRecord) form.updateRecord(record);
+                  record.commit();
+                  const fDetail = form.findField("isdetailfieldchanged");
+                  if (fDetail) ExtUtils.setFieldValue(form, "isdetailfieldchanged", "false");
+                }
+              }
+            }
+          } catch (e) {
+            APMLogger.error("LaborBooker", "Error in clearNativeFields:", e);
+          }
         }
         function initLaborObserver(win) {
           if (!isWindowAccessible(win)) return;
@@ -2728,6 +2847,12 @@
             const targetWin = win || laborWin;
             initLaborObserver(targetWin);
             UIManager.registerPanel("apm-labor-popup", ["#apm-quick-book-btn", ".apm-autofill-btn"]);
+            UIManager.addExternalHandler(() => {
+              const p = targetWin.document.getElementById("apm-labor-popup");
+              if (p && p.style.display === "none") {
+                clearNativeFields();
+              }
+            });
             window.addEventListener("APM_SESSION_UPDATED", () => {
               if (!isWindowAccessible(targetWin)) return;
               const p = targetWin.document.getElementById("apm-labor-popup");
@@ -3432,7 +3557,9 @@
       }
     }
     /**
-     * Helper to wait for ExtJS if it's expected but not yet loaded
+     * Helper to wait for ExtJS if it's expected but not yet loaded.
+     * If the tab is hidden (background tab), defers polling until visible to avoid
+     * burning the timeout window against browser timer throttling (~1Hz in bg tabs).
      */
     waitForExt(win = window, maxWait = 5e3) {
       if (AppContext.isLanding) {
@@ -3440,34 +3567,49 @@
         this.markReady("extjs");
         return;
       }
-      const start = Date.now();
-      const check = () => {
-        let ext = null;
-        try {
-          const topWin = window.top;
-          ext = win.Ext || (isWindowAccessible(topWin) ? topWin.Ext : null);
-        } catch (e) {
-          ext = win.Ext;
-        }
-        if (ext && ext.isReady) {
-          this.markReady("extjs");
-        } else if (Date.now() - start < maxWait) {
-          if (ext && Date.now() - start > 1e3) {
-            APMLogger.info("BootManager", "ExtJS detected but isReady stalled > 1s. Proceeding eager.");
+      const startPolling = () => {
+        const start = Date.now();
+        const check = () => {
+          let ext = null;
+          try {
+            const topWin = window.top;
+            ext = win.Ext || (isWindowAccessible(topWin) ? topWin.Ext : null);
+          } catch (e) {
+            ext = win.Ext;
+          }
+          if (ext && ext.isReady) {
             this.markReady("extjs");
-            return;
-          }
-          setTimeout(check, 20);
-        } else {
-          if (ext) {
-            APMLogger.info("BootManager", "ExtJS detected but isReady stalled. Proceeding.");
+          } else if (Date.now() - start < maxWait) {
+            if (ext && Date.now() - start > 3e3) {
+              APMLogger.info("BootManager", "ExtJS detected but isReady stalled > 3s. Proceeding eager.");
+              this.markReady("extjs");
+              return;
+            }
+            setTimeout(check, 20);
           } else {
-            APMLogger.warn("BootManager", "ExtJS not detected. Proceeding anyway.");
+            if (ext) {
+              APMLogger.info("BootManager", "ExtJS detected but isReady stalled. Proceeding.");
+            } else {
+              APMLogger.warn("BootManager", "ExtJS not detected. Proceeding anyway.");
+            }
+            this.markReady("extjs");
           }
-          this.markReady("extjs");
-        }
+        };
+        check();
       };
-      check();
+      if (document.hidden) {
+        APMLogger.info("BootManager", "Tab hidden at boot \u2014 deferring ExtJS poll until visible.");
+        const onVisible = () => {
+          if (!document.hidden) {
+            document.removeEventListener("visibilitychange", onVisible);
+            APMLogger.info("BootManager", "Tab became visible. Starting ExtJS poll.");
+            startPolling();
+          }
+        };
+        document.addEventListener("visibilitychange", onVisible);
+      } else {
+        startPolling();
+      }
     }
   };
   var BootManager = new BootManagerClass();
@@ -3509,6 +3651,16 @@
     }
   }
   function savePresets() {
+    const profiles = AppState.autofill.presets.autofill;
+    if (!profiles || Object.keys(profiles).length === 0) {
+      try {
+        const stored = APMStorage.get(PRESET_STORAGE_KEY);
+        if (stored?.autofill && Object.keys(stored.autofill).length > 0) {
+          AppState.autofill.presets.autofill = stored.autofill;
+        }
+      } catch (e) {
+      }
+    }
     AppState.autofill.presets._v = 1;
     APMStorage.set(PRESET_STORAGE_KEY, AppState.autofill.presets);
   }
@@ -4286,12 +4438,12 @@
 .eam-fc-title { margin:0; font-size:18px; color:#ffffff; font-weight: normal; }
 .eam-fc-controls { display:flex; align-items:center; gap:10px; }
 .eam-fc-mode-btn { background:#2b343c; color:#1abc9c; border:1px solid #1abc9c; padding: 4px 10px; border-radius:15px; cursor:pointer; font-size:11px; font-weight:bold; transition: all 0.2s; }
-.eam-fc-close-btn { background:#505f6e; color:#ffffff; border:none; padding: 4px 10px; border-radius:4px; cursor:pointer; font-size:14px; font-weight:bold; transition: background 0.2s; }
+.eam-fc-close-btn { background:#505f6e; color:#ffffff; border:none; padding: 4px 10px; border-radius:4px; cursor:pointer; font-size:12px; font-weight:bold; transition: background 0.2s; }
 .eam-fc-close-btn:hover { background: #e74c3c !important; }
 .eam-fc-adv-box { display:none; flex-direction:column; gap:4px; margin-bottom:15px; }
 .eam-fc-row { display:flex; gap:5px; align-items:center; }
 .eam-fc-label { font-size:12px; color:#b0bec5; white-space:nowrap; }
-.eam-fc-select { flex-grow:1; padding:6px; border-radius:4px; border:none; background:#ecf0f1; color:#2c3e50; font-weight:bold; cursor:pointer; }
+.eam-fc-select { flex-grow:1; height:28px; padding:0 6px; border-radius:4px; border:none; background:#ecf0f1; color:#2c3e50; font-size:12px; font-weight:bold; cursor:pointer; box-sizing:border-box; }
 .org-btn { background: #4a5a6a; color: white; border: none; padding: 6px 10px; border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 12px; transition: background 0.2s; }
 .org-btn:hover { background: #5c6d7e; }
 .org-btn-add:hover { background: #3498db !important; }
@@ -4300,12 +4452,12 @@
 /* =========================
  * Toggle Switches
  * ========================= */
-.eam-slider-switch { position: relative; display: inline-block; width: 34px; height: 18px; margin: 0; flex-shrink: 0; }
+.eam-slider-switch { position: relative; display: inline-block; width: 32px; height: 18px; margin: 0; flex-shrink: 0; }
 .eam-slider-switch input { opacity: 0; width: 0; height: 0; }
-.eam-slider-track { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: rgba(52, 152, 219, 0.2); transition: .3s; border-radius: 18px; border: 1px solid #3498db; }
-.eam-slider-track:before { position: absolute; content: ""; height: 12px; width: 12px; left: 2px; bottom: 2px; background-color: #3498db; transition: .3s; border-radius: 50%; }
-.eam-slider-switch input:checked + .eam-slider-track { background-color: #3498db; }
-.eam-slider-switch input:checked + .eam-slider-track:before { transform: translateX(16px); background-color: #ffffff; }
+.eam-slider-track { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #505f6e; transition: .3s; border-radius: 18px; }
+.eam-slider-track:before { position: absolute; content: ""; height: 12px; width: 12px; left: 3px; bottom: 3px; background-color: white; transition: .3s; border-radius: 50%; }
+.eam-slider-switch input:checked + .eam-slider-track { background-color: #1abc9c; }
+.eam-slider-switch input:checked + .eam-slider-track:before { transform: translateX(14px); }
 
 /* =========================
  * Tabs and Hidden Classes
@@ -4350,13 +4502,13 @@
 /* =========================
  * Settings Panel & AutoFill
  * ========================= */
-.apm-settings-container { position:fixed; z-index:2147483647; padding:12px; background:#35404a; color:white; border:1px solid #2c353c; border-radius:8px; box-shadow: 0px 8px 25px rgba(0,0,0,0.6); font-family:sans-serif; width: 440px; max-width: 95vw; max-height: calc(100vh - 100px); display:flex; flex-direction: column; overflow: hidden; display:none; }
+.apm-settings-container { position:fixed; z-index:2147483647; padding:12px; background:#35404a; color:white; border:1px solid #2c353c; border-radius:8px; box-shadow: 0px 8px 25px rgba(0,0,0,0.6); font-family:sans-serif; width: 440px; max-width: 95vw; max-height: 90vh; display:flex; flex-direction: column; overflow: hidden; box-sizing: border-box; display:none; }
 
 .apm-settings-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; }
 .apm-settings-title { margin:0; font-size:16px; color:#ffffff; font-weight:normal; }
 .apm-settings-close-btn { background:#505f6e; color:#ffffff; border:none; padding:4px 10px; border-radius:4px; cursor:pointer; font-size:12px; font-weight:bold; }
 .apm-tab-container { display:flex; margin-bottom:10px; background:#2b343c; border-radius:6px; overflow:hidden; flex-shrink: 0; }
-.apm-panel-section { display:none; flex-direction: column; flex: 1; min-height: 0; align-items: stretch; overflow: visible; }
+.apm-panel-section { display:none; flex-direction: column; flex: 1; min-height: 0; align-items: stretch; overflow: hidden; }
 .apm-tab-content-scroll { overflow-y: auto; padding-right: 15px; flex: 1; min-height: 0; margin-bottom: 5px; scrollbar-gutter: stable; }
 /* Scrollbar Styling */
 .apm-tab-content-scroll::-webkit-scrollbar { width: 6px; }
@@ -4364,15 +4516,15 @@
 .apm-tab-content-scroll::-webkit-scrollbar-thumb { background: #4a5a6a; border-radius: 3px; }
 .apm-tab-content-scroll::-webkit-scrollbar-thumb:hover { background: #5c6d7e; }
 .apm-template-box { background: rgba(0,0,0,0.25); padding: 8px 10px; border-radius: 6px; margin-bottom: 12px; border: 1px solid #45535e; }
-.apm-template-label { font-size: 10px; color: #b0bec5; margin-bottom: 4px; font-weight: bold; text-transform: uppercase; letter-spacing: 0.5px; }
+.apm-template-label { font-size: 11px; color: #b0bec5; margin-bottom: 4px; font-weight: bold; text-transform: uppercase; letter-spacing: 0.5px; }
 .apm-template-row { display: flex; gap: 5px; align-items: center; }
-.apm-template-select { flex-grow:1; height: 26px; padding:0 6px; border-radius:4px; border:none; font-weight:bold; cursor:pointer; font-size:12px; background: #ecf0f1; color: #2c3e50; }
-.apm-template-btn-update { background:#3498db; color:white; padding: 4px 10px; height: 26px; }
-.apm-template-btn-new { background:#2ecc71; color:white; padding: 4px 10px; height: 26px; }
-.apm-template-btn-del { background:#e74c3c; color:white; padding: 0; width: 26px; height: 26px; display: flex; align-items: center; justify-content: center; }
+.apm-template-select { flex-grow:1; height: 28px; padding:0 6px; border-radius:4px; border:none; font-weight:bold; cursor:pointer; font-size:12px; background: #ecf0f1; color: #2c3e50; box-sizing:border-box; }
+.apm-template-btn-update { background:#3498db; color:white; padding: 4px 10px; height: 28px; }
+.apm-template-btn-new { background:#2ecc71; color:white; padding: 4px 10px; height: 28px; }
+.apm-template-btn-del { background:#e74c3c; color:white; padding: 0; width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; }
 .apm-fields-wrapper { padding: 0 4px; margin-bottom: 5px; }
 .apm-checklist-box { background: rgba(26, 188, 156, 0.08); border: 1px solid rgba(26, 188, 156, 0.2); padding: 6px 8px; border-radius: 6px; margin-bottom: 10px; flex-wrap: wrap; }
-.apm-checklist-title { width: 100%; font-size: 10px; color: #1abc9c; margin-bottom: 4px; font-weight: bold; text-transform: uppercase; letter-spacing: 0.5px; }
+.apm-checklist-title { width: 100%; font-size: 11px; color: #1abc9c; margin-bottom: 4px; font-weight: bold; text-transform: uppercase; letter-spacing: 0.5px; }
 .apm-checklist-row { display: flex; gap: 8px; width: 100%; align-items: center; }
 .apm-textarea-input { height: 54px; padding: 6px 8px; font-size: 11px; line-height: 1.3; resize: none; font-family: sans-serif; border: 1px solid transparent; transition: all 0.2s; }
 .apm-ui-settings-toggles { display:flex; margin-bottom:10px; background:#22292f; border-radius:4px; overflow:hidden; }
@@ -4381,8 +4533,8 @@
 .apm-ui-settings-btn.inactive { background:transparent; color:#7f8c8d; }
 .apm-ui-settings-list { background:#22292f; border:1px solid #45535e; border-radius:4px; padding:5px; min-height:60px; max-height: 45vh; overflow-y:auto; margin-bottom:10px; }
 
-.apm-ui-settings-save { width:100%; background:#2ecc71; color:white; border:none; padding:12px; border-radius:6px; cursor:pointer; font-weight:bold; font-size:14px; }
-.apm-ui-settings-reset { width:100%; background:#e74c3c; color:white; border:none; padding:8px; border-radius:6px; cursor:pointer; font-weight:bold; font-size:12px; margin-top:6px; display:none; }
+.apm-ui-settings-save { width:100%; background:#2ecc71; color:white; border:none; padding:8px 12px; border-radius:6px; cursor:pointer; font-weight:bold; font-size:13px; }
+.apm-ui-settings-reset { width:100%; background:#e74c3c; color:white; border:none; padding:6px 12px; border-radius:6px; cursor:pointer; font-weight:bold; font-size:12px; margin-top:6px; display:none; }
 .apm-tab-action-footer { flex-shrink: 0; padding: 12px 15px 5px 0; border-top: 1px solid rgba(255,255,255,0.1); margin-top: 5px; }
 .apm-cc-search-box { background: rgba(0,0,0,0.25); border: 1px solid #45535e; padding: 8px 10px; border-radius: 6px; margin-bottom: 8px; }
 .apm-cc-search-row { display: flex; gap: 8px; margin-bottom: 8px; }
@@ -4434,18 +4586,18 @@
 .eam-fc-days-box { background:#2b343c; padding:10px; border-radius:6px; margin-bottom:15px; font-size:13px; display:flex; justify-content:space-between; align-items:center; }
 .eam-fc-custom-dates { display:none; background:#2b343c; padding:10px; border-radius:6px; margin-bottom:15px; gap:10px; flex-direction:column; }
 .eam-fc-custom-row { display:flex; align-items:center; justify-content:space-between; gap:10px; }
-.eam-fc-date-input { flex-grow:1; padding:6px; border-radius:4px; border:none; background:#ecf0f1; color:#2c3e50; font-weight:bold; font-family:monospace; font-size:12px; cursor:pointer; }
+.eam-fc-date-input { flex-grow:1; height:28px; padding:0 6px; border-radius:4px; border:none; background:#ecf0f1; color:#2c3e50; font-weight:bold; font-family:monospace; font-size:12px; cursor:pointer; box-sizing:border-box; }
 .eam-fc-assigned-box { display:none; gap:10px; margin-bottom:10px; align-items:center; }
-.eam-fc-input-text { flex-grow:1; padding:6px; border-radius:4px; border:none; background:#ecf0f1; color:#2c3e50; text-transform:uppercase; }
-.eam-fc-shift-text { width:60px; padding:6px; border-radius:4px; border:none; background:#ecf0f1; color:#2c3e50; text-transform:uppercase; }
+.eam-fc-input-text { flex-grow:1; height:28px; padding:0 6px; border-radius:4px; border:none; background:#ecf0f1; color:#2c3e50; font-size:12px; text-transform:uppercase; box-sizing:border-box; }
+.eam-fc-shift-text { width:60px; height:28px; padding:0 6px; border-radius:4px; border:none; background:#ecf0f1; color:#2c3e50; font-size:12px; text-transform:uppercase; box-sizing:border-box; }
 .eam-fc-desc-box { display:flex; gap:10px; margin-bottom:20px; align-items:center; }
-.eam-fc-desc-input { flex-grow:1; padding:6px; border-radius:4px; border:none; background:#ecf0f1; color:#2c3e50; }
+.eam-fc-desc-input { flex-grow:1; height:28px; padding:0 6px; border-radius:4px; border:none; background:#ecf0f1; color:#2c3e50; font-size:12px; box-sizing:border-box; }
 .eam-fc-run-box { display:flex; justify-content:space-between; gap:15px; }
-.eam-fc-btn-run { background:#1abc9c; color:white; border:none; padding:10px; border-radius:6px; cursor:pointer; font-weight:bold; flex: 1; font-size:14px; transition: background 0.2s; }
+.eam-fc-btn-run { background:#1abc9c; color:white; border:none; padding:8px 12px; border-radius:6px; cursor:pointer; font-weight:bold; flex: 1; font-size:13px; transition: background 0.2s; }
 .eam-fc-today-box { display:flex; align-items:center; background: rgba(52, 152, 219, 0.15); border: 1px solid rgba(52, 152, 219, 0.4); border-radius:6px; padding: 4px 6px; gap:8px; flex: 0 0 auto; }
 .eam-fc-today-lbl { display:flex; align-items:center; gap:6px; cursor:pointer; margin:0; }
 .eam-fc-today-txt { color:#3498db; font-size:11px; font-weight:bold; white-space:nowrap; user-select:none; margin-top:1px; width:105px; display:inline-block; text-align:left; }
-.eam-fc-btn-today { background:#3498db; color:white; border:none; padding:8px 12px; border-radius:4px; cursor:pointer; font-weight:bold; font-size:14px; transition: background 0.2s; }
+.eam-fc-btn-today { background:#3498db; color:white; border:none; padding:8px 12px; border-radius:4px; cursor:pointer; font-weight:bold; font-size:13px; transition: background 0.2s; }
 .eam-fc-footer { display:flex; justify-content:space-between; align-items:center; font-size:11.5px; color:#95a5a6; margin-top:15px; border-top: 1px solid #4a5a6a; padding-top:10px; }
 .eam-fc-help-link { background:transparent; color:#3498db; border:none; padding: 0; cursor: pointer; font-size: 11.5px; text-decoration: underline; }
 .eam-fc-guide-box { display:none; max-height: 60vh; overflow-y: auto; padding-right: 6px; }
@@ -4485,10 +4637,11 @@
 .creator-btn { cursor: pointer; transition: background 0.2s; font-weight: bold; border-radius: 4px; border: none; padding: 6px 12px; font-size: 12px; }
 .field-row { display: flex; gap: 10px; margin-bottom: 10px; align-items: center; min-width: 0; }
 .field-label { font-size: 12px; color: #b0bec5; white-space: nowrap; width: 100px; text-align: right; }
-.field-input { flex-grow: 1; padding: 6px; border-radius: 4px; border: 1px solid transparent; background: #ecf0f1; color: #2c3e50; min-width: 0; width: 100%; box-sizing: border-box; transition: all 0.2s ease-in-out; }
+.field-input { flex-grow: 1; height: 28px; padding: 0 6px; border-radius: 4px; border: 1px solid transparent; background: #ecf0f1; color: #2c3e50; min-width: 0; width: 100%; box-sizing: border-box; transition: all 0.2s ease-in-out; }
+.field-input textarea, textarea.field-input { height: auto; padding: 6px; }
 .field-input.upper { text-transform: uppercase; }
 #apm-creator-panel .field-input:focus { border-color: #3498db !important; background: #ffffff !important; box-shadow: 0 0 5px rgba(52, 152, 219, 0.4) !important; }
-.apm-tab-btn { flex: 1; min-width: 0; height: 44px; padding: 4px; text-align: center; cursor: pointer; font-weight: bold; transition: all 0.2s; border-bottom: 3px solid transparent; font-size: 11px; display: flex; flex-direction: column; align-items: center; justify-content: center; line-height: 1.2; box-sizing: border-box; flex-shrink: 0; }
+.apm-tab-btn { flex: 1; min-width: 0; height: 36px; padding: 4px; text-align: center; cursor: pointer; font-weight: bold; transition: all 0.2s; border-bottom: 3px solid transparent; font-size: 11px; display: flex; flex-direction: column; align-items: center; justify-content: center; line-height: 1.2; box-sizing: border-box; flex-shrink: 0; }
 .apm-tab-active-autofill { color: #3498db; border-bottom: 3px solid #3498db; background: rgba(52, 152, 219, 0.05); }
 .apm-tab-inactive { color: #7f8c8d; }
 .apm-tab-inactive:hover { color: #bdc3c7; background: rgba(255,255,255,0.02); }
@@ -4521,7 +4674,7 @@
     const style = document.createElement("style");
     style.id = "apm-static-styles";
     style.textContent = APM_STATIC_STYLES;
-    document.head.appendChild(style);
+    (document.head || document.documentElement).appendChild(style);
   }
   var SVG_CLOUD = `
 <svg viewBox="0 0 24 24" width="22" height="22" style="vertical-align: text-bottom; margin-bottom: 2px; overflow: visible;">
@@ -4693,7 +4846,7 @@
             ]),
             el("span", { id: "eam-today-toggle-text", className: "eam-fc-today-txt" }, forecastState.todayOnly ? "Today Only" : "Includes Past Due")
           ]),
-          el("button", { id: "eam-btn-today", className: "eam-fc-btn-today", title: "Search Today (Alt + T)" }, "Today")
+          el("button", { id: "eam-btn-today", className: "eam-fc-btn-today", title: "Search Today (Alt + T) - Does not apply description filter" }, "Today")
         ])
       ]),
       el("div", { className: "eam-fc-footer" }, [
@@ -5177,10 +5330,30 @@
   function buildForecastUI() {
     APMApi.register("buildForecastUI", buildForecastUI);
     if (window.self !== window.top) return;
+    injectForecastStyles();
     let panel = document.getElementById("eam-forecast-panel");
     if (!panel) {
       UIManager.registerPanel("eam-forecast-panel", ["#apm-forecast-ext-btn", ".apm-fc-btn"]);
       panel = el("div", { id: "eam-forecast-panel", style: { display: "none" }, className: "eam-fc-container apm-ui-panel" });
+      {
+        const dpr = window.devicePixelRatio || 1;
+        const ZOOM_BLEND = 0.5;
+        const zoomFactor = dpr < 1 ? 1 + (1 / dpr - 1) * ZOOM_BLEND : 1;
+        if (dpr < 1) panel.style.zoom = zoomFactor;
+        const vHeight = window.innerHeight;
+        const vWidth = window.innerWidth;
+        const topPos = 60;
+        const rightMargin = 20;
+        const panelWidth = 500;
+        const bottomMargin = 60;
+        const clampedRight = Math.max(10, Math.min(rightMargin, vWidth - panelWidth - rightMargin));
+        panel.style.top = topPos + "px";
+        panel.style.right = clampedRight + "px";
+        panel.style.maxHeight = Math.max(300, (vHeight - topPos - bottomMargin) / zoomFactor) + "px";
+        panel.style.overflowY = "auto";
+        panel.style.overflowX = "hidden";
+        panel.style.boxSizing = "border-box";
+      }
       const header = el("div", { className: "eam-fc-header" }, [
         el("div", { className: "eam-fc-title-box" }, [
           el("h4", { className: "eam-fc-title", innerHTML: 'WO Forecast <span style="color:#1abc9c; font-weight: bold;">Tool</span>' }),
@@ -5314,11 +5487,12 @@
     border-color: #3498db;
 }
 `;
-  if (!document.getElementById("apm-fc-advanced-styles")) {
+  function injectForecastStyles() {
+    if (document.getElementById("apm-fc-advanced-styles")) return;
     const s = document.createElement("style");
     s.id = "apm-fc-advanced-styles";
     s.innerHTML = styles;
-    document.head.appendChild(s);
+    (document.head || document.documentElement).appendChild(s);
   }
   function initForecastShortcuts() {
     const handleHotkey = (action, isWO = false) => {
@@ -6894,6 +7068,7 @@
     setTimeout(() => {
       _cleanupScheduled = false;
       applyTabConsistency(11);
+      APMApi.get("triggerResponsiveInjections")?.();
     }, delay2);
   }
   function isSuppressingNativeEvents() {
@@ -7081,6 +7256,7 @@
                   if (mainTabPanel && !mainTabPanel.isDestroyed) {
                     APMLogger.debug("TabGridOrder", "Executing second-pass cleanup to ensure EAM didn't re-shuffle.");
                     applyTabConsistency(11);
+                    APMApi.get("triggerResponsiveInjections")?.();
                   }
                 }, 2e3);
               }
@@ -7193,19 +7369,24 @@
     panel.id = "apm-settings-panel";
     panel.className = "apm-settings-container apm-ui-panel";
     const dpr = window.devicePixelRatio || 1;
+    const ZOOM_BLEND = 0.5;
+    const zoomFactor = dpr < 1 ? 1 + (1 / dpr - 1) * ZOOM_BLEND : 1;
     if (dpr < 1) {
-      panel.style.zoom = 1 / dpr;
+      panel.style.zoom = zoomFactor;
     }
     const margin = 20;
     const vHeight = window.innerHeight;
     const vWidth = window.innerWidth;
     const panelWidth = 440;
+    const bottomMargin = 60;
     let topPos = 60;
     let rightPos = margin;
     if (topPos > vHeight - 100) topPos = 10;
     if (rightPos + panelWidth > vWidth) rightPos = Math.max(10, vWidth - panelWidth - margin);
     panel.style.top = topPos + "px";
     panel.style.right = rightPos + "px";
+    const maxHeight = Math.max(300, (vHeight - topPos - bottomMargin) / zoomFactor);
+    panel.style.maxHeight = maxHeight + "px";
     return panel;
   }
   function createHeader() {
@@ -7365,7 +7546,7 @@
     return el("div", { id: "apm-main-fields", className: "apm-panel-section" }, [
       el("div", { className: "apm-tab-content-scroll" }, [
         el("div", { className: "apm-template-box" }, [
-          el("div", { className: "apm-template-label" }, "Active Template:"),
+          el("div", { className: "apm-template-label" }, "Saved Templates:"),
           el("div", { className: "apm-template-row" }, [
             el("select", { id: "apm-c-preset-select", className: "apm-template-select" }),
             el("button", { id: "apm-c-btn-save", className: "creator-btn apm-template-btn-update", title: "Update selection" }, "Update"),
@@ -7375,23 +7556,23 @@
         ]),
         el("div", { className: "apm-fields-wrapper" }, [
           el("div", { className: "field-row", style: { marginBottom: "6px" } }, [
-            el("div", { className: "field-label", style: { color: "#f39c12", fontWeight: "bold", width: "65px", textAlign: "left", fontSize: "11px" } }, "Match:"),
-            el("input", { type: "text", id: "apm-c-keyword", className: "field-input", placeholder: "e.g., pre-sort, repair, jam", style: { fontFamily: "monospace", border: "1px solid #f39c12", height: "24px", padding: "0 8px", fontSize: "11px", transition: "all 0.2s" } })
+            el("div", { className: "field-label", title: "keywords to match WO title, separate multiple keywords with comma ,", style: { color: "#f39c12", fontWeight: "bold", width: "65px", textAlign: "left" } }, "Match:"),
+            el("input", { type: "text", id: "apm-c-keyword", className: "field-input", title: "keywords to match WO title, separate multiple keywords with comma ,", placeholder: "e.g., pre-sort, repair, jam", style: { fontFamily: "monospace", border: "1px solid #f39c12", height: "28px", padding: "0 8px", transition: "all 0.2s" } })
           ]),
           el("div", { style: { display: "flex", gap: "6px", marginBottom: "4px" } }, [
             el("div", { className: "field-row", style: { width: "105px", flexShrink: "0", margin: "0" } }, [
-              el("div", { className: "field-label", style: { width: "35px", textAlign: "left", fontSize: "11px" } }, "Org:"),
-              el("input", { type: "text", id: "apm-c-org", className: "field-input upper", placeholder: "Ignore", style: { height: "24px", padding: "0 6px", fontSize: "11px", border: "1px solid transparent", transition: "all 0.2s" } })
+              el("div", { className: "field-label", style: { width: "35px", textAlign: "left" } }, "Org:"),
+              el("input", { type: "text", id: "apm-c-org", className: "field-input upper", placeholder: "Ignore", style: { height: "28px", padding: "0 6px", border: "1px solid transparent", transition: "all 0.2s" } })
             ]),
             el("div", { className: "field-row", style: { flexGrow: "1", margin: "0" } }, [
-              el("div", { className: "field-label", style: { width: "70px", textAlign: "left", fontSize: "11px" } }, "Equipment:"),
-              el("input", { type: "text", id: "apm-c-eq", className: "field-input upper", placeholder: "Leave blank to ignore", style: { height: "24px", padding: "0 6px", fontSize: "11px", border: "1px solid transparent", transition: "all 0.2s" } })
+              el("div", { className: "field-label", title: "partial match will grab first search result", style: { width: "70px", textAlign: "left" } }, "Equipment:"),
+              el("input", { type: "text", id: "apm-c-eq", className: "field-input upper", title: "partial match will grab first search result", placeholder: "Leave blank to ignore", style: { height: "28px", padding: "0 6px", border: "1px solid transparent", transition: "all 0.2s" } })
             ])
           ]),
           el("div", { style: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: "4px 10px", marginBottom: "6px" } }, [
             el("div", { className: "field-row", style: { margin: "0" } }, [
-              el("div", { className: "field-label", style: { width: "40px", textAlign: "left", fontSize: "11px" } }, "Type:"),
-              el("select", { id: "apm-c-type", className: "field-input", style: { height: "24px", padding: "0 4px", fontSize: "11px", border: "1px solid transparent", transition: "all 0.2s" } }, [
+              el("div", { className: "field-label", style: { width: "40px", textAlign: "left" } }, "Type:"),
+              el("select", { id: "apm-c-type", className: "field-input", style: { height: "28px", padding: "0 4px", border: "1px solid transparent", transition: "all 0.2s" } }, [
                 el("option", { value: "" }, "- Ignore -"),
                 el("option", { value: "Breakdown" }, "Breakdown"),
                 el("option", { value: "Corrective" }, "Corrective"),
@@ -7399,26 +7580,27 @@
               ])
             ]),
             el("div", { className: "field-row", style: { margin: "0" } }, [
-              el("div", { className: "field-label", style: { width: "40px", textAlign: "left", fontSize: "11px" } }, "Status:"),
-              el("select", { id: "apm-c-status", className: "field-input", style: { height: "24px", padding: "0 4px", fontSize: "11px", border: "1px solid transparent", transition: "all 0.2s" } }, [
+              el("div", { className: "field-label", style: { width: "40px", textAlign: "left" } }, "Status:"),
+              el("select", { id: "apm-c-status", className: "field-input", style: { height: "28px", padding: "0 4px", border: "1px solid transparent", transition: "all 0.2s" } }, [
                 el("option", { value: "" }, "- Ignore -"),
                 el("option", { value: "Open" }, "Open"),
                 el("option", { value: "In Progress" }, "In Progress")
               ])
             ]),
             el("div", { className: "field-row", style: { margin: "0" } }, [
-              el("div", { className: "field-label", style: { width: "40px", textAlign: "left", fontSize: "11px" } }, "Exec:"),
-              el("select", { id: "apm-c-exec", className: "field-input", style: { height: "24px", padding: "0 4px", fontSize: "11px", border: "1px solid transparent", transition: "all 0.2s" } }, [
+              el("div", { className: "field-label", style: { width: "40px", textAlign: "left" } }, "Exec:"),
+              el("select", { id: "apm-c-exec", className: "field-input", style: { height: "28px", padding: "0 4px", border: "1px solid transparent", transition: "all 0.2s" } }, [
                 el("option", { value: "" }, "- Ignore -"),
-                el("option", { value: "EXDN" }, "EXDN"),
-                el("option", { value: "EXDB" }, "EXDB"),
-                el("option", { value: "EXMW" }, "EXOPS"),
-                el("option", { value: "EXSHUT" }, "EXSHUT")
+                el("option", { value: "EXDN" }, "EXDN - No Shutdown Required"),
+                el("option", { value: "EXDB" }, "EXDB - During Break"),
+                el("option", { value: "EXMW" }, "EXMW - Maintenance Window"),
+                el("option", { value: "EXOPS" }, "EXOPS - Stop Agreement With OPS"),
+                el("option", { value: "EXSHUT" }, "EXSHUT - Shutdown")
               ])
             ]),
             el("div", { className: "field-row", style: { margin: "0" } }, [
-              el("div", { className: "field-label", style: { width: "40px", textAlign: "left", fontSize: "11px" } }, "Safety:"),
-              el("select", { id: "apm-c-safety", className: "field-input", style: { height: "24px", padding: "0 4px", fontSize: "11px", border: "1px solid transparent", transition: "all 0.2s" } }, [
+              el("div", { className: "field-label", style: { width: "40px", textAlign: "left" } }, "Safety:"),
+              el("select", { id: "apm-c-safety", className: "field-input", style: { height: "28px", padding: "0 4px", border: "1px solid transparent", transition: "all 0.2s" } }, [
                 el("option", { value: "" }, "- Ignore -"),
                 el("option", { value: "No" }, "No"),
                 el("option", { value: "Yes" }, "Yes")
@@ -7428,55 +7610,54 @@
           el("div", { className: "apm-checklist-box", style: { marginBottom: "6px" } }, [
             el("div", { className: "apm-checklist-title" }, "Automated Checklists:"),
             el("div", { className: "apm-checklist-row" }, [
-              el("div", { className: "field-label", style: { width: "40px", textAlign: "left", color: "#fff", fontSize: "11px" } }, "1-Tech:"),
-              el("select", { id: "apm-c-loto-mode", className: "field-input", style: { width: "110px", height: "22px", padding: "0 4px", fontSize: "10px" } }, [
+              el("div", { className: "field-label", title: "Select y/n to fill out during autofill process.", style: { width: "40px", textAlign: "left", color: "#fff" } }, "1-Tech:"),
+              el("select", { id: "apm-c-loto-mode", className: "field-input", title: "Select y/n to fill out during autofill process.", style: { width: "115px", height: "28px", padding: "0 4px", fontSize: "11px" } }, [
                 el("option", { value: "none" }, "- Ignore -"),
                 el("option", { value: "yes" }, "(Check YES)"),
                 el("option", { value: "no" }, "(Check NO)")
               ]),
-              el("div", { className: "field-label", style: { flexGrow: "1", textAlign: "right", color: "#fff", fontSize: "11px", marginRight: "5px" } }, "10-Tech:"),
-              el("input", { type: "number", id: "apm-c-pm-checks", className: "field-input", min: "0", placeholder: "0", onblur: (e) => {
+              el("div", { className: "field-label", title: "How many checkboxes you want filled during autofill process", style: { flexGrow: "1", textAlign: "right", color: "#fff", marginRight: "5px" } }, "10-Tech PM:"),
+              el("input", { type: "number", id: "apm-c-pm-checks", className: "field-input", title: "How many checkboxes you want filled during autofill process", min: "0", placeholder: "0", onblur: (e) => {
                 if (e.target.value === "") e.target.value = "0";
-              }, style: { width: "70px", height: "22px", padding: "0 4px", textAlign: "center", fontSize: "10px" } })
+              }, style: { width: "55px", height: "28px", padding: "0 4px", textAlign: "center", fontSize: "12px" } })
             ])
           ]),
+          el("div", { style: { fontSize: "11px", fontWeight: "bold", textTransform: "uppercase", letterSpacing: "0.5px", color: "#b0bec5", marginBottom: "4px" } }, "Trouble Codes & Assignment"),
           el("div", { style: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: "4px 10px", marginBottom: "6px" } }, [
             el("div", { className: "field-row", style: { margin: "0" } }, [
-              el("div", { className: "field-label", style: { width: "50px", textAlign: "left", fontSize: "11px" } }, "Problem:"),
+              el("div", { className: "field-label", style: { width: "50px", textAlign: "left" } }, "Problem:"),
               el("input", { type: "text", id: "apm-c-prob", className: "field-input upper" })
             ]),
             el("div", { className: "field-row", style: { margin: "0" } }, [
-              el("div", { className: "field-label", style: { width: "40px", textAlign: "left", fontSize: "11px" } }, "Failure:"),
+              el("div", { className: "field-label", style: { width: "40px", textAlign: "left" } }, "Failure:"),
               el("input", { type: "text", id: "apm-c-fail", className: "field-input upper" })
             ]),
             el("div", { className: "field-row", style: { margin: "0" } }, [
-              el("div", { className: "field-label", style: { width: "50px", textAlign: "left", fontSize: "11px" } }, "Cause:"),
+              el("div", { className: "field-label", style: { width: "50px", textAlign: "left" } }, "Cause:"),
               el("input", { type: "text", id: "apm-c-cause", className: "field-input upper" })
             ]),
             el("div", { className: "field-row", style: { margin: "0" } }, [
-              el("div", { className: "field-label", style: { width: "40px", textAlign: "left", fontSize: "11px" } }, "Assign:"),
+              el("div", { className: "field-label", style: { width: "40px", textAlign: "left" } }, "Assign:"),
               el("input", { type: "text", id: "apm-c-assign", className: "field-input upper" })
             ])
           ]),
-          el("div", { style: { display: "flex", gap: "6px", marginBottom: "6px" } }, [
+          el("div", { style: { fontSize: "11px", fontWeight: "bold", textTransform: "uppercase", letterSpacing: "0.5px", color: "#b0bec5", marginBottom: "4px" } }, "Schedule & Labor"),
+          el("div", { style: { display: "flex", gap: "6px", marginBottom: "4px" } }, [
             el("div", { className: "field-row", style: { flex: "1", margin: "0" } }, [
-              el("div", { className: "field-label", style: { width: "35px", textAlign: "left", fontSize: "11px" } }, "Start:"),
-              el("input", { type: "date", id: "apm-c-start", className: "field-input", style: { height: "24px", padding: "0 4px", fontSize: "10px" } })
+              el("div", { className: "field-label", style: { width: "35px", textAlign: "left" } }, "Start:"),
+              el("input", { type: "date", id: "apm-c-start", className: "field-input", style: { height: "28px", padding: "0 4px" } })
             ]),
             el("div", { className: "field-row", style: { flex: "1", margin: "0" } }, [
-              el("div", { className: "field-label", style: { width: "30px", textAlign: "left", fontSize: "11px" } }, "End:"),
-              el("input", { type: "date", id: "apm-c-end", className: "field-input", style: { height: "24px", padding: "0 4px", fontSize: "10px" } })
-            ]),
-            el("div", { className: "field-row", style: { width: "85px", margin: "0", height: "28px" } }, [
-              el("div", { className: "field-label", style: { width: "35px", textAlign: "right", fontSize: "10px", color: "#1abc9c", fontWeight: "bold", lineHeight: "1", display: "flex", flexDirection: "column", justifyContent: "center", marginRight: "5px" } }, [
-                el("span", {}, "Book"),
-                el("span", {}, "Labor:")
-              ]),
-              el("input", { type: "text", id: "apm-c-labor-hours", className: "field-input", placeholder: "0", style: { height: "24px", padding: "0", fontSize: "11px", border: "1px solid #1abc9c", textAlign: "center", width: "40px" } })
+              el("div", { className: "field-label", style: { width: "30px", textAlign: "left" } }, "End:"),
+              el("input", { type: "date", id: "apm-c-end", className: "field-input", style: { height: "28px", padding: "0 4px" } })
             ])
           ]),
+          el("div", { className: "field-row", style: { marginBottom: "6px" } }, [
+            el("div", { className: "field-label", title: "Choose how many hours you want booked during the autofill process.", style: { width: "65px", textAlign: "left", color: "#1abc9c", fontWeight: "bold" } }, "Book Labor:"),
+            el("input", { type: "text", id: "apm-c-labor-hours", className: "field-input", title: "Choose how many hours you want booked during the autofill process.", placeholder: "0 hours", style: { height: "28px", padding: "0 8px", border: "1px solid #1abc9c", width: "80px", flexGrow: "0" } })
+          ]),
           el("div", { className: "field-row", style: { margin: "0", alignItems: "flex-start" } }, [
-            el("div", { className: "field-label", style: { width: "50px", textAlign: "left", fontSize: "11px", marginTop: "5px" } }, "Closing:"),
+            el("div", { className: "field-label", style: { width: "65px", textAlign: "left", marginTop: "5px" } }, "Closing:"),
             el("textarea", { id: "apm-c-close", className: "field-input apm-textarea-input", placeholder: "Closing comments..." })
           ])
         ])
@@ -7507,31 +7688,31 @@
           el("div", { style: { display: "flex", gap: "10px", marginBottom: "12px" } }, [
             el("div", { style: { flex: "1" } }, [
               el("div", { style: { fontSize: "11px", color: "#95a5a6", marginBottom: "4px", fontWeight: "bold" } }, "Keyword (Search)"),
-              el("input", { type: "text", id: "cc-search", className: "field-input", placeholder: "Match multiple keywords separated by, comma,", style: { height: "30px", fontSize: "12px", width: "100%", boxSizing: "border-box" } })
+              el("input", { type: "text", id: "cc-search", className: "field-input", placeholder: "Match multiple keywords separated by, comma,", style: { height: "28px", fontSize: "12px", width: "100%", boxSizing: "border-box" } })
             ]),
             el("div", { style: { width: "50px" } }, [
               el("div", { style: { fontSize: "11px", color: "#95a5a6", marginBottom: "4px", fontWeight: "bold", textAlign: "center" } }, "Color"),
-              el("input", { type: "color", id: "cc-color", value: "#e74c3c", tabIndex: -1, style: { width: "100%", height: "30px", padding: "0", border: "1px solid #45535e", borderRadius: "4px", cursor: "pointer", background: "none" } })
+              el("input", { type: "color", id: "cc-color", value: "#e74c3c", tabIndex: -1, style: { width: "100%", height: "28px", padding: "0", border: "1px solid #45535e", borderRadius: "4px", cursor: "pointer", background: "none" } })
             ])
           ]),
           el("div", { style: { display: "flex", gap: "10px", alignItems: "flex-end", marginBottom: "15px" } }, [
             el("div", { style: { flex: "1" } }, [
               el("div", { style: { fontSize: "11px", color: "#95a5a6", marginBottom: "4px", fontWeight: "bold" } }, "Badge Text (Nametag)"),
-              el("input", { type: "text", id: "cc-tag", className: "field-input", placeholder: "(Leave blank for no nametag)", style: { height: "30px", fontSize: "12px", width: "100%", boxSizing: "border-box" } })
+              el("input", { type: "text", id: "cc-tag", className: "field-input", placeholder: "(Leave blank for no nametag)", style: { height: "28px", fontSize: "12px", width: "100%", boxSizing: "border-box" } })
             ])
           ]),
           el("div", { style: { display: "flex", gap: "8px", width: "100%", marginBottom: "15px" } }, [
-            el("button", { id: "cc-btn-fill", className: "apm-cc-style-btn active", title: "Fill Row Background", style: { flex: "1", height: "32px", display: "flex", alignItems: "center", justifyContent: "center", border: "1px solid #45535e", borderRadius: "4px", background: "#34495e", cursor: "pointer", color: "white", transition: "all 0.2s", fontSize: "11px", fontWeight: "bold" } }, "Fill Row"),
-            el("button", { id: "cc-btn-tag", className: "apm-cc-style-btn active", title: "Show Nametag", style: { flex: "1", height: "32px", display: "flex", alignItems: "center", justifyContent: "center", border: "1px solid #45535e", borderRadius: "4px", background: "#34495e", cursor: "pointer", color: "white", transition: "all 0.2s", fontSize: "11px", fontWeight: "bold" } }, "Name Tag")
+            el("button", { id: "cc-btn-fill", className: "apm-cc-style-btn active", title: "Fill Row Background", style: { flex: "1", height: "28px", display: "flex", alignItems: "center", justifyContent: "center", border: "1px solid #45535e", borderRadius: "4px", background: "#34495e", cursor: "pointer", color: "white", transition: "all 0.2s", fontSize: "11px", fontWeight: "bold" } }, "Fill Row"),
+            el("button", { id: "cc-btn-tag", className: "apm-cc-style-btn active", title: "Show Nametag", style: { flex: "1", height: "28px", display: "flex", alignItems: "center", justifyContent: "center", border: "1px solid #45535e", borderRadius: "4px", background: "#34495e", cursor: "pointer", color: "white", transition: "all 0.2s", fontSize: "11px", fontWeight: "bold" } }, "Name Tag")
           ]),
           el("div", { style: { display: "flex", gap: "8px", flex: "1", justifyContent: "space-between", alignItems: "center" } }, [
             el("div", { style: { fontSize: "11px", color: "#1abc9c", fontStyle: "italic" } }, "\u2713 Live preview on grid"),
             el("div", { style: { display: "flex", gap: "8px" } }, [
-              el("button", { id: "cc-add-btn", style: { flex: "1", maxWidth: "120px", background: "#3498db", color: "white", border: "none", borderRadius: "4px", height: "32px", cursor: "pointer", fontWeight: "bold", fontSize: "12px", transition: "background 0.2s", display: "flex", alignItems: "center", justifyContent: "center", gap: "6px" } }, [
+              el("button", { id: "cc-add-btn", style: { flex: "1", maxWidth: "120px", background: "#3498db", color: "white", border: "none", borderRadius: "4px", height: "28px", cursor: "pointer", fontWeight: "bold", fontSize: "12px", transition: "background 0.2s", display: "flex", alignItems: "center", justifyContent: "center", gap: "6px" } }, [
                 el("span", {}, "\u{1F4BE}"),
                 el("span", { id: "cc-add-btn-text" }, "Save Rule")
               ]),
-              el("button", { id: "cc-cancel-btn", style: { display: "inline-block", background: "#7f8c8d", color: "white", border: "none", borderRadius: "4px", height: "32px", padding: "0 12px", cursor: "pointer", fontWeight: "bold", fontSize: "12px", marginLeft: "8px" } }, "Cancel")
+              el("button", { id: "cc-cancel-btn", style: { display: "inline-block", background: "#7f8c8d", color: "white", border: "none", borderRadius: "4px", height: "28px", padding: "0 12px", cursor: "pointer", fontWeight: "bold", fontSize: "12px", marginLeft: "8px" } }, "Cancel")
             ])
           ])
         ]),
@@ -9339,28 +9520,65 @@
     if (hdrContainers.length > 0) mainTabPanel.setActiveTab(hdrContainers[0]);
   }
   async function executeAutoFillFlow(fallbackTitle) {
-    if (window.self !== window.top) return;
     if (getIsAutoFillRunning()) return;
-    const wins = getExtWindows();
-    for (const win of wins) {
-      try {
-        if (win.Ext && win.Ext.ComponentQuery) {
-          const tabContainers = win.Ext.ComponentQuery.query("uxtabcontainer[itemId=HDR]");
-          if (tabContainers.length > 0) {
-            const hdrTab = tabContainers[0];
-            const tabPanel = hdrTab.up("tabpanel");
-            if (tabPanel && tabPanel.getActiveTab() !== hdrTab) {
-              APMLogger.info("APM AutoFill", "Switching to HDR tab...");
-              tabPanel.setActiveTab(hdrTab);
-              await new Promise((r) => setTimeout(r, 150));
-            }
-          }
-        }
-      } catch (e) {
-      }
-    }
     setIsAutoFillRunning(true);
     try {
+      let gridNavWin = null;
+      for (const win of getExtWindows()) {
+        if (!win.Ext?.ComponentQuery || gridNavWin) break;
+        for (const grid of win.Ext.ComponentQuery.query("gridpanel")) {
+          if (grid.isDestroyed || !grid.rendered) continue;
+          const sel = grid.getSelectionModel?.().getSelection?.();
+          if (!sel?.length) continue;
+          const view = grid.getView();
+          const rowIndex = grid.getStore().indexOf(sel[0]);
+          const rowEl = view.getRow?.(rowIndex) ?? view.getNode?.(rowIndex);
+          APMLogger.info("APM AutoFill", `Grid row selected \u2014 navigating to record view (grid: ${grid.id})`);
+          grid.fireEvent("itemdblclick", grid, sel[0], rowEl, rowIndex, {});
+          gridNavWin = win;
+          break;
+        }
+      }
+      if (gridNavWin) {
+        await waitForAjax(gridNavWin);
+        await delay(200);
+      }
+      const wins = getExtWindows();
+      for (const win of wins) {
+        try {
+          if (!win.Ext || !win.Ext.ComponentQuery) continue;
+          const hdrContainers = win.Ext.ComponentQuery.query("uxtabcontainer[itemId=HDR]");
+          if (hdrContainers.length > 0) {
+            const hdrTab = hdrContainers[0];
+            const tabPanel = hdrTab.up("tabpanel");
+            if (tabPanel && tabPanel.getActiveTab() !== hdrTab) {
+              APMLogger.info("APM AutoFill", "Switching to Record View (HDR) tab...");
+              tabPanel.setActiveTab(hdrTab);
+              await new Promise((r) => setTimeout(r, 250));
+              await waitForAjax(win);
+            }
+            break;
+          }
+          const rvForms = win.Ext.ComponentQuery.query("form[id*=recordview]") || [];
+          const rvForm = rvForms.find((f) => f.rendered && !f.isDestroyed);
+          if (rvForm) {
+            let tabItem = rvForm;
+            let tabPanel = null;
+            while (tabItem.ownerCt) {
+              tabPanel = tabItem.ownerCt.isXType?.("tabpanel") ? tabItem.ownerCt : null;
+              if (tabPanel) break;
+              tabItem = tabItem.ownerCt;
+            }
+            if (tabPanel && tabPanel.getActiveTab() !== tabItem) {
+              APMLogger.info("APM AutoFill", `Switching to Record View tab (${tabItem.id})...`);
+              tabPanel.setActiveTab(tabItem);
+              await new Promise((r) => setTimeout(r, 250));
+            }
+          }
+        } catch (e) {
+          APMLogger.error("APM AutoFill", "Error switching to record view tab:", e);
+        }
+      }
       loadPresets();
       let activeTitle = "";
       const allDocs = [document];
@@ -9427,7 +9645,11 @@
   }
   function injectAutoFillTriggers() {
     if (!FeatureFlags.isEnabled("autoFill")) return;
-    if (window.self !== window.top || getIsAutoFillRunning()) return;
+    if (getIsAutoFillRunning()) {
+      APMLogger.debug("AutoFill", "Scan skipped: AutoFill is currently running");
+      return;
+    }
+    APMLogger.debug("AutoFill", "--- Starting Scan ---");
     const allDocs = getAccessibleDocs();
     const presets = getPresets();
     allDocs.forEach((d) => {
@@ -9435,46 +9657,53 @@
         if (!d || !d.body) return;
         const win = d.defaultView;
         if (!win || !win.Ext) return;
-        let isRvActiveLocal = false;
-        let foundTitleLocal = "";
         const rvForms = win.Ext.ComponentQuery.query("form[id*=recordview]") || win.Ext.ComponentQuery.query("form[name=recordview]");
-        const activeRv = rvForms.find((f) => {
-          if (!f.rendered || f.isDestroyed || !f.isVisible || !f.isVisible()) return false;
-          const dom = f.getEl()?.dom;
-          if (!dom) return false;
-          const style = win.getComputedStyle(dom);
-          return style.display !== "none" && style.visibility !== "hidden" && dom.offsetWidth > 0 && style.opacity !== "0";
-        });
-        const grids = win.Ext.ComponentQuery.query("gridpanel");
-        const mainGrid = grids.find((g) => g.rendered && !g.isDestroyed && g.isVisible && g.isVisible() && g.getWidth() > 300);
-        if (activeRv && (!mainGrid || activeRv.getEl().dom.contains(mainGrid.getEl().dom) === false)) {
-          isRvActiveLocal = true;
-          const record = activeRv.getRecord();
+        let foundTitleLocal = "";
+        const rvForm = rvForms.find((f) => f.rendered && !f.isDestroyed);
+        APMLogger.debug("AutoFill", `[${d.location.pathname}] Forms found: ${rvForms?.length || 0}, rendered form: ${!!rvForm ? rvForm.id : "NONE"}`);
+        if (rvForm) {
+          const record = rvForm.getRecord?.();
           if (record) {
             foundTitleLocal = (record.get("description") || "").trim().toLowerCase();
           }
           if (!foundTitleLocal) {
-            const descField = activeRv.getForm().findField("description");
+            const descField = rvForm.getForm?.().findField?.("description");
             if (descField) foundTitleLocal = (descField.getValue() || "").trim().toLowerCase();
           }
         }
-        const existingBtn = d.getElementById("apm-btn-do-autofill");
-        if (!isRvActiveLocal || !foundTitleLocal) {
-          if (existingBtn) {
-            APMLogger.debug("AutoFill", "Cleaning up button (Context inactive or Grid dominant)");
-            existingBtn.remove();
+        if (!foundTitleLocal) {
+          const grids = win.Ext.ComponentQuery.query("gridpanel");
+          for (const grid of grids) {
+            if (grid.isDestroyed || !grid.rendered) continue;
+            try {
+              const sel = grid.getSelectionModel?.().getSelection?.();
+              if (sel && sel.length > 0) {
+                const title = (sel[0].get("description") || sel[0].get("DESCRIPTION") || "").trim().toLowerCase();
+                if (title) {
+                  foundTitleLocal = title;
+                  break;
+                }
+              }
+            } catch (e) {
+            }
           }
-          return;
         }
-        const headerEl = Array.from(d.querySelectorAll("span.recordcode")).find((el2) => {
-          const style = window.getComputedStyle(el2);
-          const hasText = /[a-zA-Z0-9]/.test(el2.textContent);
-          return style.display !== "none" && style.visibility !== "hidden" && el2.offsetParent !== null && hasText;
-        });
-        if (!headerEl) {
-          if (existingBtn) {
-            APMLogger.debug("AutoFill", "Cleaning up button (Header missing, hidden, or empty)");
-            existingBtn.remove();
+        APMLogger.debug("AutoFill", `[${d.location.pathname}] Title resolved: "${foundTitleLocal}"`);
+        const existingCmp = win.Ext.getCmp("apm-btn-do-autofill");
+        const existingDomBtn = d.getElementById("apm-btn-do-autofill");
+        const removeExisting = () => {
+          if (existingCmp && !existingCmp.isDestroyed) existingCmp.destroy();
+          else if (existingDomBtn) existingDomBtn.remove();
+        };
+        const hasExisting = () => {
+          if (existingCmp && !existingCmp.isDestroyed && existingCmp.getEl?.()?.dom && d.body.contains(existingCmp.getEl().dom)) return true;
+          if (existingDomBtn && d.body.contains(existingDomBtn)) return true;
+          return false;
+        };
+        if (!foundTitleLocal) {
+          if (existingCmp || existingDomBtn) {
+            APMLogger.debug("AutoFill", `Cleaning up button \u2014 no WO title found (${d.location.pathname})`);
+            removeExisting();
           }
           return;
         }
@@ -9488,69 +9717,139 @@
             break;
           }
         }
-        if (hasMatch) {
-          if (!existingBtn) {
-            const btn = d.createElement("button");
-            btn.id = "apm-btn-do-autofill";
-            btn.innerHTML = "Auto Fill \u26A1";
-            btn.style.cssText = "margin-left: 15px; padding: 4px 12px; background: #3498db; color: white; border: none; border-radius: 4px; font-weight: bold; cursor: pointer; font-size: 11px; vertical-align: middle; transition: background 0.2s; box-shadow: 0 1px 3px rgba(0,0,0,0.2); height: 24px; line-height: 1;";
-            btn.onmouseenter = () => {
-              btn.style.background = "#2980b9";
-            };
-            btn.onmouseleave = () => {
-              btn.style.background = "#3498db";
-            };
-            btn.onclick = (e) => {
-              e.preventDefault();
-              executeAutoFillFlow("");
-            };
-            headerEl.insertAdjacentElement("afterend", btn);
+        if (!hasMatch) {
+          if (existingCmp || existingDomBtn) {
+            APMLogger.debug("AutoFill", `Removing button: no keyword match for "${foundTitleLocal}"`);
+            removeExisting();
           }
-        } else if (existingBtn) {
-          existingBtn.remove();
+          return;
         }
+        if (hasExisting()) return;
+        removeExisting();
+        let parentContainer = null;
+        let insertIdx = -1;
+        const anchorIconEl = d.querySelector(".toolbarExpandRight");
+        if (anchorIconEl) {
+          const anchorDomBtn = anchorIconEl.closest(".x-btn");
+          if (anchorDomBtn?.id) {
+            const anchorCmp = win.Ext.getCmp(anchorDomBtn.id);
+            if (anchorCmp) {
+              const container = anchorCmp.up("toolbar") || anchorCmp.up("container");
+              if (container) {
+                parentContainer = container;
+                let directChild = anchorCmp;
+                while (directChild.ownerCt && directChild.ownerCt !== parentContainer) {
+                  directChild = directChild.ownerCt;
+                }
+                insertIdx = parentContainer.items.indexOf(directChild) + 1;
+              }
+            }
+          }
+        }
+        if (!parentContainer) {
+          const tabPanels = win.Ext.ComponentQuery.query("tabpanel, uxtabpanel");
+          const mainTabPanel = tabPanels.find(
+            (tp) => tp.rendered && !tp.isDestroyed && tp.items?.items?.some((t) => {
+              const txt = t.title || t.text || "";
+              return /Activities|Checklist|Comments/i.test(txt);
+            })
+          );
+          const tabBarEl = mainTabPanel?.tabBar?.el?.dom;
+          if (!tabBarEl) return;
+          APMLogger.info("AutoFill", `Injecting AutoFill button (tab bar fallback) for: "${foundTitleLocal}" in ${d.location.pathname}`);
+          const btn = d.createElement("button");
+          btn.id = "apm-btn-do-autofill";
+          btn.innerHTML = "Auto Fill \u26A1";
+          btn.style.cssText = "position:absolute; right:10px; top:50%; transform:translateY(-50%); padding:3px 10px; background:#3498db; color:white; border:none; border-radius:4px; font-weight:bold; cursor:pointer; font-size:11px; z-index:10; height:22px; line-height:1; box-shadow:0 1px 3px rgba(0,0,0,0.2);";
+          btn.addEventListener("mouseenter", () => {
+            btn.style.background = "#2980b9";
+          });
+          btn.addEventListener("mouseleave", () => {
+            btn.style.background = "#3498db";
+          });
+          btn.addEventListener("click", (e) => {
+            e.preventDefault();
+            executeAutoFillFlow(foundTitleLocal);
+          });
+          if (win.getComputedStyle(tabBarEl).position === "static") tabBarEl.style.position = "relative";
+          tabBarEl.appendChild(btn);
+          return;
+        }
+        APMLogger.info("AutoFill", `Injecting AutoFill button for: "${foundTitleLocal}" at index ${insertIdx} in ${d.location.pathname}`);
+        parentContainer.insert(insertIdx, {
+          xtype: "component",
+          id: "apm-btn-do-autofill",
+          margin: "0 4px",
+          html: '<button style="padding:3px 10px;background:#3498db;color:white;border:none;border-radius:4px;font-weight:bold;cursor:pointer;font-size:11px;height:22px;line-height:1;box-shadow:0 1px 3px rgba(0,0,0,0.2);vertical-align:middle;">Auto Fill \u26A1</button>',
+          listeners: {
+            afterrender(cmp) {
+              const btn = cmp.el.dom.querySelector("button");
+              if (!btn) return;
+              btn.addEventListener("mouseenter", () => {
+                btn.style.background = "#2980b9";
+              });
+              btn.addEventListener("mouseleave", () => {
+                btn.style.background = "#3498db";
+              });
+              btn.addEventListener("click", (e) => {
+                e.preventDefault();
+                executeAutoFillFlow(foundTitleLocal);
+              });
+            }
+          }
+        });
       } catch (e) {
       }
     });
   }
   function initAutoFillObserver() {
-    if (!FeatureFlags.isEnabled("autoFill")) return;
-    if (window.self !== window.top) return;
+    APMLogger.info("AutoFill", "initAutoFillObserver entry");
+    if (!FeatureFlags.isEnabled("autoFill")) {
+      APMLogger.warn("AutoFill", "initAutoFillObserver exited: flag disabled");
+      return;
+    }
+    APMLogger.info("AutoFill", "initAutoFillObserver proceeding");
     const setupObserver = (doc) => {
       if (!doc || autoFillObservers.has(doc)) return;
       APMLogger.debug("AutoFill", "Setting up observer for document:", doc.location.href);
+      const debouncedInject = debounce(() => {
+        APMLogger.debug("AutoFill", "MutationObserver triggered injection check");
+        injectAutoFillTriggers();
+      }, 300);
       const observer = new MutationObserver((mutations) => {
         let shouldCheck = false;
         for (const m of mutations) {
           if (m.type === "childList") {
-            const hasAdd = Array.from(m.addedNodes).some(
-              (n) => n.nodeType === 1 && (n.classList.contains("recordcode") || n.querySelector(".recordcode") || n.id?.includes("recordview"))
+            const hasRelevant = [...m.addedNodes, ...m.removedNodes].some(
+              (n) => n.nodeType === 1 && (n.classList.contains("recordcode") || n.querySelector?.(".recordcode") || n.id?.includes("recordview") || n.classList.contains("x-panel-header"))
             );
-            const hasRem = Array.from(m.removedNodes).some(
-              (n) => n.nodeType === 1 && (n.classList.contains("recordcode") || n.querySelector(".recordcode") || n.id?.includes("recordview"))
-            );
-            if (hasAdd || hasRem) {
+            if (hasRelevant) {
+              APMLogger.debug("AutoFill", `Mutation (ChildList) detected for ${doc.location.pathname}`);
               shouldCheck = true;
               break;
             }
-          } else if (m.type === "attributes") {
+          } else if (m.type === "attributes" || m.type === "characterData") {
             if (m.target && m.target.nodeType === 1) {
               const t = m.target;
-              if (t.id?.includes("recordview") || t.classList.contains("recordcode")) {
+              if (t.id?.includes("recordview") || t.classList.contains("recordcode") || t.querySelector?.(".recordcode")) {
                 shouldCheck = true;
                 break;
               }
+            } else if (m.type === "characterData") {
+              shouldCheck = true;
+              break;
             }
           }
         }
         if (shouldCheck) {
-          injectAutoFillTriggers();
+          debouncedInject();
         }
       });
       observer.observe(doc.body || doc.documentElement, {
         childList: true,
         subtree: true,
         attributes: true,
+        characterData: true,
         attributeFilter: ["style", "class", "hidden"]
       });
       autoFillObservers.set(doc, observer);
@@ -9558,10 +9857,12 @@
     injectAutoFillTriggers();
     APMScheduler2.registerTask("autofill-button-poll", 2e3, () => {
       if (!FeatureFlags.isEnabled("autoFill")) return;
+      APMLogger.debug("AutoFill", "Task: autofill-button-poll firing");
       injectAutoFillTriggers();
-    }, { isIdle: true });
-    APMScheduler2.registerTask("autofill-doc-discovery", 5e3, () => {
+    }, { isIdle: false });
+    APMScheduler2.registerTask("autofill-doc-discovery", 2e3, () => {
       if (!FeatureFlags.isEnabled("autoFill")) return;
+      APMLogger.debug("AutoFill", "Task: autofill-doc-discovery firing");
       const currentDocs = getAccessibleDocs();
       for (const [doc, obs] of autoFillObservers.entries()) {
         if (!currentDocs.includes(doc)) {
@@ -9574,7 +9875,7 @@
         }
       }
       currentDocs.forEach(setupObserver);
-    }, { isIdle: true });
+    }, { isIdle: false });
     setupObserver(document);
   }
 
@@ -9907,8 +10208,14 @@
         injectUI();
         isInitialized = true;
         UIManager.addExternalHandler(() => {
-          const isVisibleDom = panel.style.display !== "none" && panel.style.visibility !== "hidden";
-          if (isVisibleDom) {
+          const isHidden = panel.style.display === "none" || panel.style.visibility === "hidden";
+          if (isHidden) {
+            if (selectedEmployee !== "") {
+              APMLogger.debug("LaborTracker", "Resetting selectedEmployee to Self on panel close.");
+              selectedEmployee = "";
+              APMStorage.set(LABOR_ACTIVE_STORAGE, "");
+              renderEmpSelect();
+            }
             applyDocking();
           }
         });
@@ -10098,7 +10405,9 @@
   function handleAutoFillPresetsSync(data) {
     try {
       const next = JSON.parse(data);
-      if (next.autofill) AppState.autofill.presets.autofill = next.autofill;
+      if (next.autofill && Object.keys(next.autofill).length > 0) {
+        AppState.autofill.presets.autofill = next.autofill;
+      }
       if (next.config) AppState.autofill.presets.config = next.config;
       window.dispatchEvent(new CustomEvent("APM_PRESETS_SYNC_REQUIRED"));
     } catch (err) {
@@ -10630,7 +10939,7 @@
         { name: "LaborTracker", flag: "laborBooker", onlyTop: true, fn: () => LaborTracker && LaborTracker.init && LaborTracker.init() },
         { name: "SettingsPanel", onlyTop: true, fn: buildSettingsPanel },
         { name: "ColorCodeLogic", flag: "colorCode", noShell: true, fn: setupColorCodeLogic },
-        { name: "AutoFillObserver", flag: "autoFill", noShell: true, fn: initAutoFillObserver },
+        { name: "AutoFillObserver", flag: "autoFill", onlyTop: true, fn: initAutoFillObserver },
         { name: "TabGridOrder", flag: "tabGridOrder", noShell: true, fn: () => {
           applyGridConsistency();
           applyTabConsistency();
@@ -10683,6 +10992,11 @@
           LaborTracker.init();
         }
         if (FeatureFlags.isEnabled("forecast")) initForecastShortcuts();
+      });
+      APMScheduler2.registerTask("scheduler-investigator", 1e4, () => {
+        const tasks2 = APMScheduler2.getTasks();
+        const instanceId = APMScheduler2.instanceId;
+        APMLogger.info("Scheduler", `[${instanceId}] Live tasks (${tasks2.length}):`, tasks2.map((t) => t.id).join(", "));
       });
     });
   }
