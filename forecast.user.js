@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         APM Master: Unified Tools
 // @namespace    https://w.amazon.com/bin/view/Users/rosendah/APM-Master/
-// @version      14.5.3
+// @version      14.5.4
 // @description  Quality of life and automation tool that uses native EAM ExtJS Framework functions for high reliability and capability. This is actively supported tool so Slack me or submit bug report/feature request through the bug report button in the menu.
 // @author       Jacob Rosendahl
 // @icon         https://media.licdn.com/dms/image/v2/D5603AQGdCV0_LQKRfQ/profile-displayphoto-scale_100_100/B56ZyZLvQ5HgAg-/0/1772096519061?e=1773878400&v=beta&t=eWO1Jiy0-WbzG_yBv-SBrmmsVOPMexF57-q1Xh_VXCk
@@ -93,7 +93,7 @@
       PRESET_STORAGE_KEY = "apm_v1_autofill_presets";
       STORAGE_KEY = "apm_v1_forecast_prefs";
       APM_GENERAL_STORAGE = "apm_v1_general_settings";
-      CURRENT_VERSION = "14.5.3";
+      CURRENT_VERSION = "14.5.4";
       VERSION_CHECK_URL = "https://raw.githubusercontent.com/jaker788-create/APM-Master/Automation/forecast.user.js";
       UPDATE_URL = "https://github.com/jaker788-create/APM-Master/releases/download/Automation/forecast.user.js";
       LABOR_EMPS_STORAGE = "apm_v1_labor_employees";
@@ -1110,16 +1110,20 @@
   });
 
   // src/core/toast.js
-  function showToast(msg, color, keepOpen = false) {
+  function showToast(msg, color, keepOpen = false, onClick = null) {
     let t = document.getElementById("apm-global-toast");
     if (!t) {
       t = document.createElement("div");
       t.id = "apm-global-toast";
-      t.style.cssText = "position:fixed; top:15px; left:50%; transform:translateX(-50%); z-index:9999999; padding:8px 20px; border-radius:30px; font-weight:bold; font-family:sans-serif; font-size:13px; color:white; opacity:0; pointer-events:none; transition:opacity 0.3s ease; box-shadow:0 4px 15px rgba(0,0,0,0.4);";
+      t.style.cssText = "position:fixed; top:15px; left:50%; transform:translateX(-50%); z-index:9999999; padding:8px 20px; border-radius:30px; font-weight:bold; font-family:sans-serif; font-size:13px; color:white; opacity:0; transition:opacity 0.3s ease, transform 0.3s ease; box-shadow:0 4px 15px rgba(0,0,0,0.4);";
       document.body.appendChild(t);
     }
+    t.onclick = null;
+    t.style.cursor = "default";
+    t.style.pointerEvents = "none";
     if (!msg) {
       t.style.opacity = "0";
+      t.style.transform = "translateX(-50%) translateY(-20px)";
       setTimeout(() => {
         t.style.display = "none";
       }, 300);
@@ -1128,12 +1132,25 @@
     t.textContent = msg;
     t.style.background = color || "#3498db";
     t.style.display = "block";
-    setTimeout(() => t.style.opacity = "1", 10);
+    if (onClick) {
+      t.style.pointerEvents = "auto";
+      t.style.cursor = "pointer";
+      t.onclick = (e) => {
+        e.stopPropagation();
+        onClick(e);
+      };
+    } else if (keepOpen) {
+    }
+    setTimeout(() => {
+      t.style.opacity = "1";
+      t.style.transform = "translateX(-50%) translateY(0)";
+    }, 10);
     if (window._apmToastTO) clearTimeout(window._apmToastTO);
     if (!keepOpen) {
       const duration = 5e3;
       window._apmToastTO = setTimeout(() => {
         t.style.opacity = "0";
+        t.style.transform = "translateX(-50%) translateY(-20px)";
         setTimeout(() => t.style.display = "none", 300);
       }, duration);
     }
@@ -1957,7 +1974,8 @@
     extraParams = {},
     // { rawParam: value }
     maxRows = 5e3,
-    pageSize = 100
+    pageSize = 100,
+    includePagination = true
   }) {
     const queryStart = performance.now();
     const session = AppState.session;
@@ -1974,14 +1992,20 @@
       COMPONENT_INFO_TYPE: "DATA_ONLY",
       eamid: session.eamid,
       tenant: currentTenant,
-      MAX_ROWS: maxRows.toString(),
-      NUMBER_OF_ROWS_FIRST_RETURNED: pageSize.toString(),
-      LIST_ALL_ROWS: "YES",
-      FORCE_REQUERY: "YES",
+      ...includePagination ? {
+        MAX_ROWS: maxRows.toString(),
+        NUMBER_OF_ROWS_FIRST_RETURNED: pageSize.toString(),
+        LIST_ALL_ROWS: "YES",
+        FORCE_REQUERY: "YES"
+      } : {},
       ...extraParams,
       ...buildMaddonFilters2(filters)
     };
-    const payload = new URLSearchParams(payloadObj);
+    const cleanPayload = {};
+    for (const [k, v] of Object.entries(payloadObj)) {
+      if (v !== void 0 && v !== null) cleanPayload[k] = v;
+    }
+    const payload = new URLSearchParams(cleanPayload);
     try {
       const firstResp = await apmFetch(url2, {
         method: "POST",
@@ -2142,14 +2166,10 @@
       LaborBooker = (function() {
         const laborWin = apmGetGlobalWindow();
         let isRunning2 = false;
-        let bookingPending = false;
-        let isPreparing = false;
         let laborObservers = /* @__PURE__ */ new Map();
         let hoursPresets = ["0.1", "0.25", "0.5", "0.75", "1", "1.5", "2", "2.5", "3"];
         AjaxHooks.onBeforeRequest("labor-save", (win, conn, options) => {
           if (!FeatureFlags.isEnabled("laborBooker")) return;
-          const popup = win.document.getElementById("apm-labor-popup");
-          if (popup?.style.display === "none" && !isRunning2) return;
           const url2 = options.url || "";
           const params = options.params || {};
           const isSave = url2.includes("pageaction=SAVE") && (url2.includes("WSJOBS.BOO") || params.GRID_NAME === "WSJOBS_BOO");
@@ -2184,37 +2204,6 @@
           const current = fAct.getValue();
           if (current !== null && current !== void 0 && current !== "") return String(current);
           return "10";
-        }
-        function cleanupBooForm(win) {
-          if (!isWindowAccessible(win) || !win.Ext) return;
-          try {
-            const booTab = win.Ext.ComponentQuery.query("uxtabcontainer[itemId=BOO]:not([destroyed=true])").find((t) => t.rendered && !t.isDestroyed && t.isVisible(true));
-            if (!booTab) return;
-            const formPanel = win.Ext.ComponentQuery.query("form:not([destroyed=true])", booTab)[0];
-            if (!formPanel || !formPanel.getForm) return;
-            const form = formPanel.getForm();
-            const empVal = form.findField("employee")?.getValue();
-            const hrsVal = form.findField("hrswork")?.getValue();
-            if (!empVal || hrsVal) return;
-            const cancelBtn = win.Ext.ComponentQuery.query(
-              'button[action=cancelRec]:not([destroyed=true]), button[tooltip="Cancel"]:not([destroyed=true])',
-              booTab
-            )[0];
-            if (cancelBtn && !cancelBtn.isHidden() && !cancelBtn.disabled) {
-              if (cancelBtn.handler) cancelBtn.handler.call(cancelBtn.scope || cancelBtn, cancelBtn);
-              else cancelBtn.fireEvent("click", cancelBtn);
-              APMLogger.debug("LaborBooker", "BOO form cleaned up on popup close (cancelRec)");
-              return;
-            }
-            const empField = form.findField("employee");
-            if (empField) {
-              empField.setValue("");
-              empField.fireEvent("change", empField, "");
-              APMLogger.debug("LaborBooker", "BOO form cleaned up on popup close (cleared employee)");
-            }
-          } catch (e) {
-            APMLogger.debug("LaborBooker", "cleanupBooForm error:", e.message);
-          }
         }
         function checkTabAndInject(win) {
           if (!FeatureFlags.isEnabled("laborBooker")) return;
@@ -2257,7 +2246,6 @@
                 UIManager.toggle("apm-labor-popup", () => {
                   APMLogger.debug("LaborBooker", "Quick Book button atomic toggle -> opening");
                   showQuickBookPopup(win, btn);
-                  setTimeout(() => prepareForm(win), 300);
                 });
               };
               parent.appendChild(btn);
@@ -2270,50 +2258,6 @@
               zIndex: 10
             });
           } catch (e) {
-          }
-        }
-        async function prepareForm(win) {
-          if (isPreparing) return;
-          isPreparing = true;
-          try {
-            if (!win.Ext) return;
-            const ext = win.Ext;
-            const booTab = ext.ComponentQuery.query("uxtabcontainer[itemId=BOO]:not([destroyed=true])").find((t) => t.rendered && !t.isDestroyed && t.isVisible(true));
-            if (!booTab) return;
-            const existingForm = ext.ComponentQuery.query("form:not([destroyed=true])", booTab)[0];
-            const hasExistingBlank = existingForm && existingForm.getForm && existingForm.getForm().findField("employee")?.getValue();
-            if (!hasExistingBlank) {
-              const addBtn = ext.ComponentQuery.query('button[action=addRec]:not([destroyed=true]), button[tooltip="Add Record"]:not([destroyed=true])', booTab)[0];
-              if (addBtn && !addBtn.disabled) {
-                if (addBtn.handler) addBtn.handler.call(addBtn.scope || addBtn, addBtn);
-                else addBtn.fireEvent("click", addBtn);
-                await waitForAjax(win);
-                await delay(200);
-              }
-            }
-            const employee = extractEmployee();
-            for (let i = 0; i < 15; i++) {
-              await new Promise((r) => setTimeout(r, 0));
-              const popup = win.document.getElementById("apm-labor-popup");
-              if (popup && popup.style.display === "none") return;
-              const formPanel = ext.ComponentQuery.query("form:not([destroyed=true])", booTab)[0];
-              if (formPanel && formPanel.getForm) {
-                const form = formPanel.getForm();
-                const fEmp = form.findField("employee");
-                const fAct = form.findField("booactivity");
-                if (fEmp && !fEmp.getValue() && employee) {
-                  ExtUtils.setFieldValue(form, "employee", employee, true);
-                }
-                if (fAct) {
-                  await ExtUtils.ensureStoreLoaded(fAct, win);
-                  if (fAct.store && fAct.store.getCount() > 0) break;
-                }
-              }
-              await delay(400);
-            }
-          } catch (e) {
-          } finally {
-            isPreparing = false;
           }
         }
         async function showQuickBookPopup(win, anchorBtn) {
@@ -2397,10 +2341,8 @@
                 input.value = val;
                 const dInput = win.document.getElementById("apm-lb-date").value;
                 const type = win.document.querySelector('input[name="lb-type"]:checked').value;
-                bookingPending = true;
                 UIManager.closeAll(true);
                 setTimeout(() => {
-                  bookingPending = false;
                   showToast(`Booking ${val}h... \u23F3`, "#3498db");
                   executeBookingFlow({ hours: val, date: dInput, type }, win);
                 }, 10);
@@ -2468,11 +2410,6 @@
             `;
             popup.appendChild(sumSide);
             win.document.body.appendChild(popup);
-            new MutationObserver(() => {
-              if (popup.style.display === "none" && !bookingPending) {
-                cleanupBooForm(win);
-              }
-            }).observe(popup, { attributes: true, attributeFilter: ["style"] });
             const nightToggle = win.document.getElementById("apm-lb-night-toggle");
             nightToggle.onchange = (e) => {
               APMStorage.set(LABOR_NIGHT_SHIFT_KEY, e.target.checked);
@@ -2506,10 +2443,8 @@
               const hours = isCorrection ? `-${Math.abs(hRaw)}` : Math.abs(hRaw).toString();
               const date = dateInput.value;
               const type = win.document.querySelector('input[name="lb-type"]:checked').value;
-              bookingPending = true;
               UIManager.closeAll(true);
               setTimeout(() => {
-                bookingPending = false;
                 showToast(`Booking ${hours}h... \u23F3`, "#3498db");
                 executeBookingFlow({ hours, date, type }, win);
               }, 10);
@@ -2684,6 +2619,15 @@
               await delay(400);
             }
             if (!injectionSuccess) throw new Error("Fields failed to stick (EAM Cascade/Clear)");
+            const preForm = targetExt.ComponentQuery.query("form:not([destroyed=true])", booTab)[0];
+            if (preForm && preForm.getForm) {
+              const pf = preForm.getForm();
+              const rf = pf.findField("traderate");
+              if (rf && !rf.getValue()) ExtUtils.setFieldValue(pf, "traderate", "0.00");
+              const rd = pf.findField("ratedate");
+              if (rd && !rd.getValue()) ExtUtils.setFieldValue(pf, "ratedate", "0.|01/01/2020|01/01/2035");
+              if (!pf.findField("isdetailfieldchanged")?.getValue()) ExtUtils.setFieldValue(pf, "isdetailfieldchanged", "true");
+            }
             let saveBtn = targetExt.ComponentQuery.query("button[action=saveRec]:not([destroyed=true]), button.uft-id-saverec:not([destroyed=true])", booTab)[0];
             if (!saveBtn) {
               saveBtn = targetExt.ComponentQuery.query("button[action=saveRec]:not([destroyed=true]), button.uft-id-saverec:not([destroyed=true])").find((b) => b.rendered && !(typeof b.isHidden === "function" && b.isHidden()));
@@ -2787,34 +2731,6 @@
           }
           return null;
         }
-        function clearNativeFields() {
-          if (isRunning2) return;
-          try {
-            const wins = getExtWindows();
-            for (const win of wins) {
-              if (!isWindowAccessible(win) || !win.Ext || !win.Ext.ComponentQuery) continue;
-              const booTab = win.Ext.ComponentQuery.query("uxtabcontainer[itemId=BOO]:not([destroyed=true])").find((t) => t.rendered && t.isVisible(true));
-              if (!booTab) continue;
-              const formPanel = win.Ext.ComponentQuery.query("form:not([destroyed=true])", booTab)[0];
-              if (formPanel && formPanel.getForm) {
-                const form = formPanel.getForm();
-                const record = formPanel.getRecord();
-                if (record && (record.phantom || record.dirty)) {
-                  APMLogger.debug("LaborBooker", "Clearing native EAM fields on menu close.");
-                  ["employee", "hrswork", "datework", "octype", "booactivity", "ocrtype"].forEach((fName) => {
-                    ExtUtils.setFieldValue(form, fName, "");
-                  });
-                  if (form.updateRecord) form.updateRecord(record);
-                  record.commit();
-                  const fDetail = form.findField("isdetailfieldchanged");
-                  if (fDetail) ExtUtils.setFieldValue(form, "isdetailfieldchanged", "false");
-                }
-              }
-            }
-          } catch (e) {
-            APMLogger.error("LaborBooker", "Error in clearNativeFields:", e);
-          }
-        }
         function initLaborObserver(win) {
           if (!isWindowAccessible(win)) return;
           const doc = win.document;
@@ -2847,12 +2763,6 @@
             const targetWin = win || laborWin;
             initLaborObserver(targetWin);
             UIManager.registerPanel("apm-labor-popup", ["#apm-quick-book-btn", ".apm-autofill-btn"]);
-            UIManager.addExternalHandler(() => {
-              const p = targetWin.document.getElementById("apm-labor-popup");
-              if (p && p.style.display === "none") {
-                clearNativeFields();
-              }
-            });
             window.addEventListener("APM_SESSION_UPDATED", () => {
               if (!isWindowAccessible(targetWin)) return;
               const p = targetWin.document.getElementById("apm-labor-popup");
@@ -3014,7 +2924,27 @@
   init_utils();
   function applyThemeHooks(targetWin, targetDoc, themeName, state) {
     if (!isWindowAccessible(targetWin)) return;
-    if (!themeName || themeName === "default") return;
+    if (!themeName || themeName === "default") {
+      state.activeTheme = themeName || "default";
+      const flashStyle = targetDoc.getElementById("apm-flash-prevent");
+      if (flashStyle) {
+        flashStyle.remove();
+        APMLogger.debug("APM Master", "Removed stale flash-prevent for default theme");
+      }
+      const csMeta = targetDoc.querySelector('meta[name="color-scheme"][content="dark"]');
+      if (csMeta) csMeta.remove();
+      const themeVars = targetDoc.getElementById("apm-theme-root-vars");
+      if (themeVars) themeVars.remove();
+      if (targetWin === targetWin.top) {
+        try {
+          const baseDomain = targetWin.location.hostname.split(".").slice(-2).join(".");
+          const cookieDomain = baseDomain.includes("hxgnsmartcloud") || baseDomain.includes("hexagon") || baseDomain.includes("amazon") ? `domain=.${baseDomain};` : "";
+          targetDoc.cookie = `apm_theme_hint=default; path=/; ${cookieDomain} max-age=31536000; SameSite=Lax`;
+        } catch (e) {
+        }
+      }
+      return;
+    }
     state.activeTheme = themeName;
     const manifestPath = "eam/" + themeName + ".json";
     const isDark = themeName.includes("dark") || themeName.includes("hex");
@@ -3252,7 +3182,15 @@
                   }
                 }
               } else {
-                clearGuards2(targetDoc);
+                applyEnforcer("default");
+                if (isWindowAccessible(targetWin)) {
+                  for (let i = 0; i < targetWin.frames.length; i++) {
+                    try {
+                      targetWin.frames[i].postMessage({ type: "APM_SET_THEME", value: "default" }, "*");
+                    } catch (err) {
+                    }
+                  }
+                }
               }
             }
             return r;
@@ -3290,11 +3228,11 @@
     if (startTheme !== "default") {
       applyEnforcer(startTheme);
     } else {
-      clearGuards(targetDoc);
+      applyEnforcer("default");
       if (targetWin !== targetWin.top) {
         let tries = 0;
         const requestTheme = () => {
-          if (state.activeTheme) return;
+          if (state.activeTheme && state.activeTheme !== "default") return;
           try {
             targetWin.top.postMessage({ type: "APM_GET_THEME" }, "*");
           } catch (e) {
@@ -3661,13 +3599,51 @@
       } catch (e) {
       }
     }
+    const config = AppState.autofill.presets.config;
+    const localTabCount = Object.keys(config.tabOrders || {}).length;
+    const localColCount = Object.keys(config.columnOrders || {}).length;
+    if (localTabCount === 0 || localColCount === 0) {
+      try {
+        const stored = APMStorage.get(PRESET_STORAGE_KEY);
+        if (stored?.config) {
+          if (localTabCount === 0 && stored.config.tabOrders && Object.keys(stored.config.tabOrders).length > 0) {
+            config.tabOrders = stored.config.tabOrders;
+            APMLogger.debug("Autofill", "Recovered stored tabOrders before save");
+          }
+          if (localColCount === 0 && stored.config.columnOrders && Object.keys(stored.config.columnOrders).length > 0) {
+            config.columnOrders = stored.config.columnOrders;
+            APMLogger.debug("Autofill", "Recovered stored columnOrders before save");
+          }
+        }
+      } catch (e) {
+      }
+    }
     AppState.autofill.presets._v = 1;
     APMStorage.set(PRESET_STORAGE_KEY, AppState.autofill.presets);
   }
   function getPresets() {
+    const config = AppState.autofill.presets.config;
+    if (Object.keys(config.tabOrders || {}).length === 0 && Object.keys(config.columnOrders || {}).length === 0 && (config.hiddenTabs || []).length === 0) {
+      try {
+        const stored = APMStorage.get(PRESET_STORAGE_KEY);
+        if (stored?.config) {
+          AppState.autofill.presets.config = { ...config, ...stored.config };
+          APMLogger.debug("Autofill", "Hydrated config from storage for getPresets()");
+        }
+        if (stored?.autofill && Object.keys(AppState.autofill.presets.autofill || {}).length === 0) {
+          AppState.autofill.presets.autofill = stored.autofill;
+        }
+      } catch (e) {
+      }
+    }
     return JSON.parse(JSON.stringify(AppState.autofill.presets));
   }
   function updatePresetConfig(updates) {
+    const config = AppState.autofill.presets.config;
+    if (Object.keys(config.tabOrders || {}).length === 0 && Object.keys(config.columnOrders || {}).length === 0) {
+      loadPresets();
+      APMLogger.debug("Autofill", "Loaded presets before updatePresetConfig (config was empty)");
+    }
     AppState.autofill.presets.config = { ...AppState.autofill.presets.config, ...updates };
     savePresets();
     window.dispatchEvent(new CustomEvent("APM_PRESETS_SYNC_REQUIRED"));
@@ -3758,6 +3734,249 @@
   // src/modules/forecast/forecast-engine.js
   init_utils();
   init_forecast_prefs();
+
+  // src/ui/dom-helpers.js
+  function el(tag, props = {}, children = []) {
+    const element = document.createElement(tag);
+    for (const [key, value] of Object.entries(props)) {
+      if (key === "style" && typeof value === "object") {
+        Object.assign(element.style, value);
+      } else if (key === "dataset" && typeof value === "object") {
+        Object.assign(element.dataset, value);
+      } else if (key.startsWith("on") && typeof value === "function") {
+        element[key] = value;
+      } else if (key === "className") {
+        element.className = value;
+      } else if (key === "innerHTML") {
+        element.innerHTML = value;
+      } else if (["checked", "value", "disabled", "readOnly", "title"].includes(key)) {
+        element[key] = value;
+      } else {
+        element.setAttribute(key, value);
+      }
+    }
+    const childrenArray = Array.isArray(children) ? children : children !== null && children !== void 0 ? [children] : [];
+    for (const child of childrenArray) {
+      if (typeof child === "string" || typeof child === "number") {
+        element.appendChild(document.createTextNode(child));
+      } else if (child && (child.nodeType && (child.nodeType === 1 || child.nodeType === 3 || child.nodeType === 11) || child instanceof SVGElement || child.constructor && child.constructor.name && child.constructor.name.includes("Element"))) {
+        element.appendChild(child);
+      }
+    }
+    return element;
+  }
+
+  // src/modules/forecast/components/forecast-profile-manager.js
+  init_forecast_prefs();
+  init_logger();
+  function createProfileManager(callbacks = {}) {
+    const modal = el("div", { id: "apm-spies-modal", className: "apm-modal-overlay", style: { display: "none" } }, [
+      el("div", { className: "apm-modal-content", style: { width: "420px" } }, [
+        el("div", { className: "apm-modal-header" }, [
+          el("h4", { style: { margin: 0, color: "#3498db" } }, [
+            "Custom Dataspy Builder ",
+            el("span", { style: { fontSize: "10px", verticalAlign: "middle", background: "#e67e22", color: "white", padding: "1px 5px", borderRadius: "3px", marginLeft: "5px", fontWeight: "bold" } }, "BETA")
+          ]),
+          el("button", { id: "apm-spies-close", className: "eam-fc-close-btn" }, "\u2716")
+        ]),
+        el("div", { className: "apm-modal-body", style: { padding: "15px" } }, [
+          el("div", { className: "eam-fc-row", style: { marginBottom: "15px" } }, [
+            el("label", { className: "eam-fc-label", style: { width: "90px" } }, "Profile Name:"),
+            el("input", { type: "text", id: "spy-name", className: "eam-fc-input-text", placeholder: "e.g., Weekly PMs", style: { flex: 1 } })
+          ]),
+          el("div", { style: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px" } }, [
+            el("div", { style: { gridColumn: "span 2" } }, [
+              el("label", { className: "eam-fc-label", style: { display: "block", marginBottom: "4px" } }, "Work Order Description:"),
+              el("div", { style: { display: "flex", gap: "5px" } }, [
+                el("input", { type: "text", id: "spy-desc", className: "eam-fc-input-text", placeholder: "Keywords...", style: { flex: 1 } }),
+                // These buttons need to be handled by the form/orchestrator or imported
+                el("button", { className: "eam-fc-btn-small", title: "Exclude (!)", onclick: () => togglePrefix("spy-desc", "!") }, "!"),
+                el("button", { className: "eam-fc-btn-small", title: "Exact (=)", onclick: () => togglePrefix("spy-desc", "=") }, "="),
+                el("button", { className: "eam-fc-btn-small", title: "Begins (^)", onclick: () => togglePrefix("spy-desc", "^") }, "^")
+              ])
+            ]),
+            el("div", {}, [
+              el("label", { className: "eam-fc-label", style: { display: "block", marginBottom: "4px" } }, "Equipment:"),
+              el("div", { style: { display: "flex", gap: "3px" } }, [
+                el("input", { type: "text", id: "spy-eq", className: "eam-fc-input-text", placeholder: "PUMP*", style: { flex: 1 } }),
+                el("button", { className: "eam-fc-btn-small", title: "Exclude", onclick: () => togglePrefix("spy-eq", "!") }, "!")
+              ])
+            ]),
+            el("div", {}, [
+              el("label", { className: "eam-fc-label", style: { display: "block", marginBottom: "4px" } }, "Eq. Description:"),
+              el("input", { type: "text", id: "spy-eqdesc", className: "eam-fc-input-text", style: { width: "100%" } })
+            ]),
+            el("div", {}, [
+              el("label", { className: "eam-fc-label", style: { display: "block", marginBottom: "4px" } }, "Assigned To:"),
+              el("input", { type: "text", id: "spy-assigned", className: "eam-fc-input-text", style: { width: "100%" } })
+            ]),
+            el("div", {}, [
+              el("label", { className: "eam-fc-label", style: { display: "block", marginBottom: "4px" } }, "Shift:"),
+              el("input", { type: "text", id: "spy-shift", className: "eam-fc-input-text", placeholder: "A, B...", style: { width: "100%" } })
+            ]),
+            el("div", {}, [
+              el("label", { className: "eam-fc-label", style: { display: "block", marginBottom: "4px" } }, "WO Type:"),
+              el("input", { type: "text", id: "spy-type", className: "eam-fc-input-text", placeholder: "PM, REPAIR", style: { width: "100%" } })
+            ]),
+            el("div", { style: { gridColumn: "span 2" } }, [
+              el("label", { className: "eam-fc-label", style: { display: "block", marginBottom: "4px" } }, "Exclude Specific Dates:"),
+              el("input", { type: "text", id: "spy-ex-dates", className: "eam-fc-input-text", placeholder: "03/15/2026, 03/16/2026...", style: { width: "100%" } })
+            ]),
+            el("div", { style: { gridColumn: "span 2" } }, [
+              el("label", { className: "eam-fc-label", style: { display: "block", marginBottom: "4px" } }, "Org (Site):"),
+              el("input", { type: "text", id: "spy-org", className: "eam-fc-input-text", style: { width: "100%" } })
+            ])
+          ]),
+          el("div", { style: { marginTop: "15px", display: "flex", gap: "10px" } }, [
+            el("button", { id: "spy-btn-save", className: "eam-fc-btn-run", style: { flex: 1, height: "35px" } }, "Save Profile"),
+            el("button", { id: "spy-btn-delete", className: "eam-fc-btn-today", style: { background: "#e74c3c", borderColor: "#c0392b", flex: 0.4 } }, "Delete")
+          ])
+        ]),
+        el("div", { className: "apm-modal-footer", style: { padding: "10px 15px", borderTop: "1px solid #45535e" } }, [
+          el("div", { className: "eam-fc-label", style: { marginBottom: "5px" } }, "Manage Saved Spies:"),
+          el("select", { id: "spy-manager-select", className: "eam-fc-select", style: { width: "100%" } }, [
+            el("option", { value: "" }, "-- Create New Profile --")
+          ])
+        ])
+      ])
+    ]);
+    setupModalListeners(modal);
+    return modal;
+  }
+  function togglePrefix(id, prefix) {
+    const el2 = document.getElementById(id);
+    if (!el2) return;
+    const start = el2.selectionStart;
+    const end = el2.selectionEnd;
+    let fullVal = el2.value;
+    if (start !== end) {
+      let selected = fullVal.substring(start, end).trim();
+      if (selected.startsWith(prefix)) {
+        selected = selected.substring(prefix.length).trim();
+      } else {
+        if (selected.startsWith("!") || selected.startsWith("=") || selected.startsWith("^")) {
+          selected = selected.substring(1).trim();
+        }
+        selected = prefix + selected;
+      }
+      el2.value = fullVal.substring(0, start) + selected + fullVal.substring(end);
+      el2.setSelectionRange(start, start + selected.length);
+    } else {
+      let val = fullVal.trim();
+      if (val.startsWith(prefix)) {
+        el2.value = val.substring(prefix.length).trim();
+      } else {
+        if (val.startsWith("!") || val.startsWith("=") || val.startsWith("^")) {
+          val = val.substring(1).trim();
+        }
+        el2.value = prefix + val;
+      }
+    }
+    el2.focus();
+  }
+  function setupModalListeners(modal) {
+    modal.querySelector("#apm-spies-close").onclick = () => {
+      modal.style.display = "none";
+    };
+    const spyMgrSelect = modal.querySelector("#spy-manager-select");
+    spyMgrSelect.onchange = () => {
+      const id = spyMgrSelect.value;
+      const prof = savedProfiles.find((p) => p.id === id);
+      modal.querySelector("#spy-name").value = prof ? prof.name : "";
+      modal.querySelector("#spy-eq").value = prof ? prof.equipment || "" : "";
+      modal.querySelector("#spy-eqdesc").value = prof ? prof.eqDesc || "" : "";
+      modal.querySelector("#spy-desc").value = prof ? prof.desc || "" : "";
+      modal.querySelector("#spy-assigned").value = prof ? prof.assigned || "" : "";
+      modal.querySelector("#spy-shift").value = prof ? prof.shift || "" : "";
+      modal.querySelector("#spy-type").value = prof ? prof.type || "" : "";
+      modal.querySelector("#spy-org").value = prof ? prof.org || "" : "";
+      modal.querySelector("#spy-ex-dates").value = prof ? prof.exDates || "" : "";
+    };
+    modal.querySelector("#spy-btn-save").onclick = () => {
+      const name = modal.querySelector("#spy-name").value.trim();
+      if (!name) {
+        alert("Please enter a profile name.");
+        return;
+      }
+      const id = spyMgrSelect.value || "prof_" + Date.now();
+      const profData = {
+        id,
+        name,
+        equipment: modal.querySelector("#spy-eq").value.trim(),
+        eqDesc: modal.querySelector("#spy-eqdesc").value.trim(),
+        desc: modal.querySelector("#spy-desc").value.trim(),
+        assigned: modal.querySelector("#spy-assigned").value.trim(),
+        shift: modal.querySelector("#spy-shift").value.trim(),
+        type: modal.querySelector("#spy-type").value.trim(),
+        org: modal.querySelector("#spy-org").value.trim(),
+        exDates: modal.querySelector("#spy-ex-dates").value.trim()
+      };
+      APMLogger.info("Forecast", `Saving Profile: ${name}`, profData);
+      const existingIdx = savedProfiles.findIndex((p) => p.id === id);
+      if (existingIdx >= 0) savedProfiles[existingIdx] = profData;
+      else savedProfiles.push(profData);
+      setSelectedProfileId(id);
+      renderProfiles_Global();
+      updateProfileUI_Global();
+      saveAllPreferences();
+      alert("Profile saved!");
+    };
+    modal.querySelector("#spy-btn-delete").onclick = () => {
+      const id = spyMgrSelect.value;
+      if (!id) return;
+      if (confirm("Delete this profile?")) {
+        setSavedProfiles(savedProfiles.filter((p) => p.id !== id));
+        if (selectedProfileId === id) setSelectedProfileId("manual");
+        renderProfiles_Global();
+        updateProfileUI_Global();
+        saveAllPreferences();
+        spyMgrSelect.value = "";
+        spyMgrSelect.onchange();
+      }
+    };
+  }
+  function renderProfiles_Global() {
+    const spyMgrSelect = document.getElementById("spy-manager-select");
+    const profSelect = document.getElementById("eam-profile-select");
+    if (!spyMgrSelect || !profSelect) return;
+    const opts = '<option value="">-- Create New Profile --</option>' + savedProfiles.map((p) => `<option value="${p.id}">${p.name}</option>`).join("");
+    spyMgrSelect.innerHTML = opts;
+    const profOpts = '<option value="manual">[ Manual Native Search ]</option>' + savedProfiles.map((p) => `<option value="${p.id}">Profile: ${p.name}</option>`).join("");
+    profSelect.innerHTML = profOpts;
+    profSelect.value = selectedProfileId || "manual";
+  }
+  function updateProfileUI_Global() {
+    const profSelect = document.getElementById("eam-profile-select");
+    const summary = document.getElementById("eam-profile-summary");
+    const summaryText = document.getElementById("eam-profile-summary-text");
+    const manualInputs = document.getElementById("eam-manual-inputs");
+    const descBox = document.querySelector(".eam-fc-desc-box");
+    if (!profSelect) return;
+    const selectedId = profSelect.value;
+    if (selectedId === "manual") {
+      if (summary) summary.style.display = "none";
+      if (manualInputs) manualInputs.style.display = "block";
+      if (descBox) descBox.style.display = "flex";
+    } else {
+      const prof = savedProfiles.find((p) => p.id === selectedId);
+      if (prof) {
+        if (summary) summary.style.display = "block";
+        if (manualInputs) manualInputs.style.display = "none";
+        if (descBox) descBox.style.display = "none";
+        const details = [];
+        if (prof.equipment) details.push(`Eq: ${prof.equipment}`);
+        if (prof.eqDesc) details.push(`EqDesc: ${prof.eqDesc}`);
+        if (prof.desc) details.push(`Desc: ${prof.desc}`);
+        if (prof.assigned) details.push(`Assigned: ${prof.assigned}`);
+        if (prof.shift) details.push(`Shift: ${prof.shift}`);
+        if (prof.type) details.push(`Type: ${prof.type}`);
+        if (prof.org) details.push(`Org: ${prof.org}`);
+        summaryText.textContent = details.length > 0 ? details.join(" | ") : "No specific filters set (All Records)";
+      }
+    }
+  }
+
+  // src/modules/forecast/forecast-engine.js
   init_logger();
 
   // src/core/status.js
@@ -3811,6 +4030,7 @@
   init_ui_manager();
   init_ajax_hooks();
   init_feature_flags();
+  init_toast();
   var isRunning = false;
   var isStopped = false;
   var currentMode = "normal";
@@ -4331,6 +4551,15 @@
         endOpClass
       };
       applyForecastFiltersExtJS(extjsFilterData);
+      if (activeProfile && mode !== "clear") {
+        showToast(`Dataspy: ${activeProfile.name} (Click to Clear)`, "#1abc9c", true, () => {
+          executeForecast("clear");
+          setSelectedProfileId("manual");
+          updateProfileUI_Global();
+          saveAllPreferences();
+          showToast(null);
+        });
+      }
       if (mode === "clear") {
         setStatus(mode, "", "#1abc9c");
       } else {
@@ -4347,37 +4576,6 @@
 
   // src/modules/forecast/forecast-ui.js
   init_forecast_prefs();
-
-  // src/ui/dom-helpers.js
-  function el(tag, props = {}, children = []) {
-    const element = document.createElement(tag);
-    for (const [key, value] of Object.entries(props)) {
-      if (key === "style" && typeof value === "object") {
-        Object.assign(element.style, value);
-      } else if (key === "dataset" && typeof value === "object") {
-        Object.assign(element.dataset, value);
-      } else if (key.startsWith("on") && typeof value === "function") {
-        element[key] = value;
-      } else if (key === "className") {
-        element.className = value;
-      } else if (key === "innerHTML") {
-        element.innerHTML = value;
-      } else if (["checked", "value", "disabled", "readOnly", "title"].includes(key)) {
-        element[key] = value;
-      } else {
-        element.setAttribute(key, value);
-      }
-    }
-    const childrenArray = Array.isArray(children) ? children : children !== null && children !== void 0 ? [children] : [];
-    for (const child of childrenArray) {
-      if (typeof child === "string" || typeof child === "number") {
-        element.appendChild(document.createTextNode(child));
-      } else if (child && (child.nodeType && (child.nodeType === 1 || child.nodeType === 3 || child.nodeType === 11) || child instanceof SVGElement || child.constructor && child.constructor.name && child.constructor.name.includes("Element"))) {
-        element.appendChild(child);
-      }
-    }
-    return element;
-  }
 
   // src/ui/styles.js
   var APM_STATIC_STYLES = `
@@ -5042,216 +5240,6 @@
     });
   }
 
-  // src/modules/forecast/components/forecast-profile-manager.js
-  init_forecast_prefs();
-  init_logger();
-  function createProfileManager(callbacks = {}) {
-    const modal = el("div", { id: "apm-spies-modal", className: "apm-modal-overlay", style: { display: "none" } }, [
-      el("div", { className: "apm-modal-content", style: { width: "420px" } }, [
-        el("div", { className: "apm-modal-header" }, [
-          el("h4", { style: { margin: 0, color: "#3498db" } }, [
-            "Custom Dataspy Builder ",
-            el("span", { style: { fontSize: "10px", verticalAlign: "middle", background: "#e67e22", color: "white", padding: "1px 5px", borderRadius: "3px", marginLeft: "5px", fontWeight: "bold" } }, "BETA")
-          ]),
-          el("button", { id: "apm-spies-close", className: "eam-fc-close-btn" }, "\u2716")
-        ]),
-        el("div", { className: "apm-modal-body", style: { padding: "15px" } }, [
-          el("div", { className: "eam-fc-row", style: { marginBottom: "15px" } }, [
-            el("label", { className: "eam-fc-label", style: { width: "90px" } }, "Profile Name:"),
-            el("input", { type: "text", id: "spy-name", className: "eam-fc-input-text", placeholder: "e.g., Weekly PMs", style: { flex: 1 } })
-          ]),
-          el("div", { style: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px" } }, [
-            el("div", { style: { gridColumn: "span 2" } }, [
-              el("label", { className: "eam-fc-label", style: { display: "block", marginBottom: "4px" } }, "Work Order Description:"),
-              el("div", { style: { display: "flex", gap: "5px" } }, [
-                el("input", { type: "text", id: "spy-desc", className: "eam-fc-input-text", placeholder: "Keywords...", style: { flex: 1 } }),
-                // These buttons need to be handled by the form/orchestrator or imported
-                el("button", { className: "eam-fc-btn-small", title: "Exclude (!)", onclick: () => togglePrefix("spy-desc", "!") }, "!"),
-                el("button", { className: "eam-fc-btn-small", title: "Exact (=)", onclick: () => togglePrefix("spy-desc", "=") }, "="),
-                el("button", { className: "eam-fc-btn-small", title: "Begins (^)", onclick: () => togglePrefix("spy-desc", "^") }, "^")
-              ])
-            ]),
-            el("div", {}, [
-              el("label", { className: "eam-fc-label", style: { display: "block", marginBottom: "4px" } }, "Equipment:"),
-              el("div", { style: { display: "flex", gap: "3px" } }, [
-                el("input", { type: "text", id: "spy-eq", className: "eam-fc-input-text", placeholder: "PUMP*", style: { flex: 1 } }),
-                el("button", { className: "eam-fc-btn-small", title: "Exclude", onclick: () => togglePrefix("spy-eq", "!") }, "!")
-              ])
-            ]),
-            el("div", {}, [
-              el("label", { className: "eam-fc-label", style: { display: "block", marginBottom: "4px" } }, "Eq. Description:"),
-              el("input", { type: "text", id: "spy-eqdesc", className: "eam-fc-input-text", style: { width: "100%" } })
-            ]),
-            el("div", {}, [
-              el("label", { className: "eam-fc-label", style: { display: "block", marginBottom: "4px" } }, "Assigned To:"),
-              el("input", { type: "text", id: "spy-assigned", className: "eam-fc-input-text", style: { width: "100%" } })
-            ]),
-            el("div", {}, [
-              el("label", { className: "eam-fc-label", style: { display: "block", marginBottom: "4px" } }, "Shift:"),
-              el("input", { type: "text", id: "spy-shift", className: "eam-fc-input-text", placeholder: "A, B...", style: { width: "100%" } })
-            ]),
-            el("div", {}, [
-              el("label", { className: "eam-fc-label", style: { display: "block", marginBottom: "4px" } }, "WO Type:"),
-              el("input", { type: "text", id: "spy-type", className: "eam-fc-input-text", placeholder: "PM, REPAIR", style: { width: "100%" } })
-            ]),
-            el("div", { style: { gridColumn: "span 2" } }, [
-              el("label", { className: "eam-fc-label", style: { display: "block", marginBottom: "4px" } }, "Exclude Specific Dates:"),
-              el("input", { type: "text", id: "spy-ex-dates", className: "eam-fc-input-text", placeholder: "03/15/2026, 03/16/2026...", style: { width: "100%" } })
-            ]),
-            el("div", { style: { gridColumn: "span 2" } }, [
-              el("label", { className: "eam-fc-label", style: { display: "block", marginBottom: "4px" } }, "Org (Site):"),
-              el("input", { type: "text", id: "spy-org", className: "eam-fc-input-text", style: { width: "100%" } })
-            ])
-          ]),
-          el("div", { style: { marginTop: "15px", display: "flex", gap: "10px" } }, [
-            el("button", { id: "spy-btn-save", className: "eam-fc-btn-run", style: { flex: 1, height: "35px" } }, "Save Profile"),
-            el("button", { id: "spy-btn-delete", className: "eam-fc-btn-today", style: { background: "#e74c3c", borderColor: "#c0392b", flex: 0.4 } }, "Delete")
-          ])
-        ]),
-        el("div", { className: "apm-modal-footer", style: { padding: "10px 15px", borderTop: "1px solid #45535e" } }, [
-          el("div", { className: "eam-fc-label", style: { marginBottom: "5px" } }, "Manage Saved Spies:"),
-          el("select", { id: "spy-manager-select", className: "eam-fc-select", style: { width: "100%" } }, [
-            el("option", { value: "" }, "-- Create New Profile --")
-          ])
-        ])
-      ])
-    ]);
-    setupModalListeners(modal);
-    return modal;
-  }
-  function togglePrefix(id, prefix) {
-    const el2 = document.getElementById(id);
-    if (!el2) return;
-    const start = el2.selectionStart;
-    const end = el2.selectionEnd;
-    let fullVal = el2.value;
-    if (start !== end) {
-      let selected = fullVal.substring(start, end).trim();
-      if (selected.startsWith(prefix)) {
-        selected = selected.substring(prefix.length).trim();
-      } else {
-        if (selected.startsWith("!") || selected.startsWith("=") || selected.startsWith("^")) {
-          selected = selected.substring(1).trim();
-        }
-        selected = prefix + selected;
-      }
-      el2.value = fullVal.substring(0, start) + selected + fullVal.substring(end);
-      el2.setSelectionRange(start, start + selected.length);
-    } else {
-      let val = fullVal.trim();
-      if (val.startsWith(prefix)) {
-        el2.value = val.substring(prefix.length).trim();
-      } else {
-        if (val.startsWith("!") || val.startsWith("=") || val.startsWith("^")) {
-          val = val.substring(1).trim();
-        }
-        el2.value = prefix + val;
-      }
-    }
-    el2.focus();
-  }
-  function setupModalListeners(modal) {
-    modal.querySelector("#apm-spies-close").onclick = () => {
-      modal.style.display = "none";
-    };
-    const spyMgrSelect = modal.querySelector("#spy-manager-select");
-    spyMgrSelect.onchange = () => {
-      const id = spyMgrSelect.value;
-      const prof = savedProfiles.find((p) => p.id === id);
-      modal.querySelector("#spy-name").value = prof ? prof.name : "";
-      modal.querySelector("#spy-eq").value = prof ? prof.equipment || "" : "";
-      modal.querySelector("#spy-eqdesc").value = prof ? prof.eqDesc || "" : "";
-      modal.querySelector("#spy-desc").value = prof ? prof.desc || "" : "";
-      modal.querySelector("#spy-assigned").value = prof ? prof.assigned || "" : "";
-      modal.querySelector("#spy-shift").value = prof ? prof.shift || "" : "";
-      modal.querySelector("#spy-type").value = prof ? prof.type || "" : "";
-      modal.querySelector("#spy-org").value = prof ? prof.org || "" : "";
-      modal.querySelector("#spy-ex-dates").value = prof ? prof.exDates || "" : "";
-    };
-    modal.querySelector("#spy-btn-save").onclick = () => {
-      const name = modal.querySelector("#spy-name").value.trim();
-      if (!name) {
-        alert("Please enter a profile name.");
-        return;
-      }
-      const id = spyMgrSelect.value || "prof_" + Date.now();
-      const profData = {
-        id,
-        name,
-        equipment: modal.querySelector("#spy-eq").value.trim(),
-        eqDesc: modal.querySelector("#spy-eqdesc").value.trim(),
-        desc: modal.querySelector("#spy-desc").value.trim(),
-        assigned: modal.querySelector("#spy-assigned").value.trim(),
-        shift: modal.querySelector("#spy-shift").value.trim(),
-        type: modal.querySelector("#spy-type").value.trim(),
-        org: modal.querySelector("#spy-org").value.trim(),
-        exDates: modal.querySelector("#spy-ex-dates").value.trim()
-      };
-      APMLogger.info("Forecast", `Saving Profile: ${name}`, profData);
-      const existingIdx = savedProfiles.findIndex((p) => p.id === id);
-      if (existingIdx >= 0) savedProfiles[existingIdx] = profData;
-      else savedProfiles.push(profData);
-      setSelectedProfileId(id);
-      renderProfiles_Global();
-      updateProfileUI_Global();
-      saveAllPreferences();
-      alert("Profile saved!");
-    };
-    modal.querySelector("#spy-btn-delete").onclick = () => {
-      const id = spyMgrSelect.value;
-      if (!id) return;
-      if (confirm("Delete this profile?")) {
-        setSavedProfiles(savedProfiles.filter((p) => p.id !== id));
-        if (selectedProfileId === id) setSelectedProfileId("manual");
-        renderProfiles_Global();
-        updateProfileUI_Global();
-        saveAllPreferences();
-        spyMgrSelect.value = "";
-        spyMgrSelect.onchange();
-      }
-    };
-  }
-  function renderProfiles_Global() {
-    const spyMgrSelect = document.getElementById("spy-manager-select");
-    const profSelect = document.getElementById("eam-profile-select");
-    if (!spyMgrSelect || !profSelect) return;
-    const opts = '<option value="">-- Create New Profile --</option>' + savedProfiles.map((p) => `<option value="${p.id}">${p.name}</option>`).join("");
-    spyMgrSelect.innerHTML = opts;
-    const profOpts = '<option value="manual">[ Manual Native Search ]</option>' + savedProfiles.map((p) => `<option value="${p.id}">Profile: ${p.name}</option>`).join("");
-    profSelect.innerHTML = profOpts;
-    profSelect.value = selectedProfileId || "manual";
-  }
-  function updateProfileUI_Global() {
-    const profSelect = document.getElementById("eam-profile-select");
-    const summary = document.getElementById("eam-profile-summary");
-    const summaryText = document.getElementById("eam-profile-summary-text");
-    const manualInputs = document.getElementById("eam-manual-inputs");
-    const descBox = document.querySelector(".eam-fc-desc-box");
-    if (!profSelect) return;
-    const selectedId = profSelect.value;
-    if (selectedId === "manual") {
-      if (summary) summary.style.display = "none";
-      if (manualInputs) manualInputs.style.display = "block";
-      if (descBox) descBox.style.display = "flex";
-    } else {
-      const prof = savedProfiles.find((p) => p.id === selectedId);
-      if (prof) {
-        if (summary) summary.style.display = "block";
-        if (manualInputs) manualInputs.style.display = "none";
-        if (descBox) descBox.style.display = "none";
-        const details = [];
-        if (prof.equipment) details.push(`Eq: ${prof.equipment}`);
-        if (prof.eqDesc) details.push(`EqDesc: ${prof.eqDesc}`);
-        if (prof.desc) details.push(`Desc: ${prof.desc}`);
-        if (prof.assigned) details.push(`Assigned: ${prof.assigned}`);
-        if (prof.shift) details.push(`Shift: ${prof.shift}`);
-        if (prof.type) details.push(`Type: ${prof.type}`);
-        if (prof.org) details.push(`Org: ${prof.org}`);
-        summaryText.textContent = details.length > 0 ? details.join(" | ") : "No specific filters set (All Records)";
-      }
-    }
-  }
-
   // src/modules/forecast/components/forecast-guidance.js
   function createGuidance(callbacks = {}) {
     const { onBack } = callbacks;
@@ -5906,6 +5894,9 @@
     if (previewOverride) {
       console.log(`[processColorCodeGrid] Using preview override:`, previewOverride.search);
       rawRules = rawRules.filter((r) => r.id !== "__preview__");
+      if (previewOverride._editingId) {
+        rawRules = rawRules.filter((r) => r.id !== previewOverride._editingId);
+      }
       rawRules = [...rawRules, previewOverride];
     } else {
       const stale = rawRules.find((r) => r.id === "__preview__");
@@ -6077,10 +6068,11 @@
           view.on("viewready", trigger);
           view.on("groupcollapse", trigger);
           view.on("groupexpand", trigger);
+          const scrollHandler = doubleTrigger;
           const attachScroll = (el2) => {
             if (!el2 || !el2.dom) return;
-            el2.dom.removeEventListener("scroll", trigger);
-            el2.dom.addEventListener("scroll", trigger, { passive: true });
+            el2.dom.removeEventListener("scroll", scrollHandler);
+            el2.dom.addEventListener("scroll", scrollHandler, { passive: true });
           };
           if (view.rendered) {
             attachScroll(view.el);
@@ -6089,7 +6081,13 @@
               if (scroller && scroller.getElement) attachScroll(scroller.getElement());
             }
           } else {
-            view.on("render", () => attachScroll(view.el));
+            view.on("render", () => {
+              attachScroll(view.el);
+              if (view.getScroller) {
+                const scroller = view.getScroller();
+                if (scroller && scroller.getElement) attachScroll(scroller.getElement());
+              }
+            });
           }
           view._apmHooksInjected = true;
         }
@@ -6366,6 +6364,7 @@
   init_utils();
   var _setupInitialized = false;
   var _previewDebounceTimer = null;
+  var _editingId = null;
   function buildTempRuleFromFormState() {
     const search = document.getElementById("cc-search")?.value || "";
     const color = document.getElementById("cc-color")?.value || "#e74c3c";
@@ -6379,7 +6378,8 @@
       tag,
       fill,
       showTag,
-      _isPreview: true
+      _isPreview: true,
+      _editingId: _editingId || null
     };
     console.log(`[PREVIEW] buildTempRuleFromFormState:`, rule);
     return rule;
@@ -6398,7 +6398,6 @@
       banner.className = "apm-ui-panel";
       document.body.appendChild(banner);
     }
-    let editingId = null;
     const rContainer = document.getElementById("cc-rules-container");
     if (!rContainer) return;
     const updatePreview = () => {
@@ -6473,8 +6472,8 @@
         saveSync();
       });
       rContainer.querySelectorAll(".rule-edit-btn").forEach((b) => b.onclick = (e) => {
-        editingId = parseFloat(e.target.dataset.id);
-        const r = getRules().find((x) => x.id === editingId);
+        _editingId = parseFloat(e.target.dataset.id);
+        const r = getRules().find((x) => x.id === _editingId);
         if (r) {
           document.getElementById("cc-search").value = r.search;
           document.getElementById("cc-tag").value = r.tag || "";
@@ -6519,7 +6518,7 @@
       });
     };
     const resetForm = () => {
-      editingId = null;
+      _editingId = null;
       document.getElementById("cc-search").value = "";
       document.getElementById("cc-tag").value = "";
       document.getElementById("cc-color").value = "#e74c3c";
@@ -6597,8 +6596,8 @@
         showTag: tagActive && tag.length > 0
       };
       let rs = getRules();
-      if (editingId) {
-        const idx = rs.findIndex((r) => r.id === editingId);
+      if (_editingId) {
+        const idx = rs.findIndex((r) => r.id === _editingId);
         if (idx > -1) {
           rs[idx] = { id: rs[idx].id, ...nr };
         }
@@ -7047,6 +7046,7 @@
                 if (layoutsSuspended) win.Ext.resumeLayouts(true);
                 if (!mainGrid.isDestroyed && mainGrid.getView && !mainGrid.getView().isDestroyed) {
                   mainGrid.getView().refresh();
+                  debouncedProcessColorCodeGrid(win.document);
                 }
               }
             }
@@ -7121,15 +7121,16 @@
           if (hasOrder && retryCount < 1) {
             APMLogger.info("TabGridOrder", `[Silo: ${funcName}] Initial Preferred Order:`, preferredOrder);
           }
-          const panelItemCount = mainTabPanel.items.items.length;
+          const realTabItems = mainTabPanel.items.items.filter(
+            (item) => !item.isDestroyed && item.tab && (item.title || item.text || item.tab.getText?.())
+          );
+          const panelItemCount = realTabItems.length;
           const hiddenInThisPanel = hiddenTabs.filter(
-            (name) => mainTabPanel.items.findIndexBy((item) => normalizeTabName(item.title || item.text || item.tab && item.tab.getText?.()) === name) !== -1
+            (name) => realTabItems.some((item) => normalizeTabName(item.title || item.text || item.tab && item.tab.getText?.()) === name)
           );
           const coveredCount = preferredOrder.length + hiddenInThisPanel.length;
           if (preferredOrder.length > 0 && coveredCount < Math.ceil(panelItemCount * 0.15) && panelItemCount > 3) {
-            APMLogger.warn("TabGridOrder", `Ignoring suspicious partial tabOrder for ${funcName} (${preferredOrder.length} visible + ${hiddenInThisPanel.length} hidden vs ${panelItemCount} total).`);
-            showToast(`Tab order for "${funcName}" looks incomplete and was skipped. Re-save your tab layout to fix this.`, "warn");
-            continue;
+            APMLogger.warn("TabGridOrder", `Low coverage for ${funcName}: ${preferredOrder.length} saved + ${hiddenInThisPanel.length} hidden = ${coveredCount} covered vs ${panelItemCount} real tabs. Applying anyway.`);
           }
           const activeTab = mainTabPanel.getActiveTab ? mainTabPanel.getActiveTab() : null;
           const activeTabName = activeTab ? normalizeTabName(activeTab.title || activeTab.text || activeTab.tab && activeTab.tab.getText?.()) : null;
@@ -7361,6 +7362,7 @@
   init_state();
   init_constants();
   init_api();
+  init_storage();
   init_diagnostics();
   init_scheduler();
   init_feature_flags();
@@ -7896,6 +7898,12 @@
             el("input", { type: "file", id: "apm-import-file-input", accept: ".json", style: { display: "none" } })
           ]),
           el("div", { id: "apm-import-status", style: { fontSize: "10px", color: "#95a5a6", marginTop: "8px", minHeight: "20px" } })
+        ]),
+        // Danger Zone
+        el("div", { className: "apm-settings-section", style: { borderTop: "1px solid #e74c3c", padding: "15px 0", marginTop: "10px" } }, [
+          el("h4", { style: { margin: "0 0 8px 0", color: "#e74c3c", fontSize: "14px", fontWeight: "bold", textTransform: "uppercase", letterSpacing: "1px" } }, "Danger Zone"),
+          el("div", { className: "apm-general-desc", style: { marginBottom: "12px" } }, "Permanently erase all APM Master data from GM storage and localStorage. This cannot be undone \u2014 back up first!"),
+          el("button", { id: "apm-btn-wipe-all", className: "apm-footer-help-btn-box", style: { width: "auto", padding: "8px 18px", fontSize: "12px", background: "#e74c3c", color: "white", border: "1px solid #c0392b", fontWeight: "bold" } }, "\u{1F5D1} Wipe All Saved Data")
         ])
       ])
     ]);
@@ -8191,6 +8199,38 @@
           } catch (e) {
             APMLogger.error("Settings", "Error during import:", e);
             showToast("Error processing import data", "#e74c3c");
+          }
+        };
+      }
+      const wipeBtn = document.getElementById("apm-btn-wipe-all");
+      if (wipeBtn) {
+        wipeBtn.onclick = () => {
+          if (!confirm("\u26A0\uFE0F This will permanently delete ALL APM Master settings, templates, tab orders, color code rules, and labor data.\n\nMake sure you have a backup first!\n\nContinue?")) return;
+          if (!confirm("Are you absolutely sure? This cannot be undone.")) return;
+          try {
+            const keys = APMStorage.list();
+            let count = 0;
+            keys.forEach((key) => {
+              APMStorage.remove(key);
+              count++;
+            });
+            const localKeys = Object.keys(localStorage).filter((k) => k.startsWith("apm") || k.startsWith("Apm") || k.startsWith("APM"));
+            localKeys.forEach((k) => localStorage.removeItem(k));
+            count += localKeys.length;
+            const baseDomain = window.location.hostname.split(".").slice(-2).join(".");
+            const cookieNames = ["apm_theme_hint", "apm_gen_settings", "apm_transition_active"];
+            cookieNames.forEach((name) => {
+              document.cookie = `${name}=; path=/; domain=.${baseDomain}; max-age=0; SameSite=Lax`;
+              document.cookie = `${name}=; path=/; max-age=0; SameSite=Lax`;
+            });
+            const csMeta = document.querySelector('meta[name="color-scheme"]');
+            if (csMeta) csMeta.remove();
+            APMLogger.info("Settings", `Wiped ${count} storage entries + ${cookieNames.length} cookies.`);
+            showToast(`All data wiped (${count} entries). Reloading...`, "#e74c3c");
+            setTimeout(() => location.reload(), 1500);
+          } catch (e) {
+            APMLogger.error("Settings", "Error wiping data:", e);
+            showToast("Error wiping data \u2014 check console", "#e74c3c");
           }
         };
       }
@@ -9175,13 +9215,14 @@
       const { records } = await eamQuery({
         endpoint: "OSEQPP.xmlhttp",
         gridName: "LVOBJL",
-        gridId: "LVOBJL",
-        // Fallback if gridId is not defined but it is usually gridName for these
+        // gridId and dataspyId intentionally omitted — stripped by eamQuery's
+        // undefined filter. Manual LOV uses numeric IDs (67, 101718) that are
+        // instance-specific; omitting lets the server resolve from GRID_NAME.
         userFunction: "WSJOBS",
         systemFunction: "OSEQPP",
-        filters: {
-          equipmentcode: searchTerm
-        },
+        // No filters — avoids MADDON params that manual LOV search doesn't use
+        includePagination: false,
+        // Manual LOV doesn't send pagination params
         extraParams: {
           LOV_TAGNAME: "equipment",
           filterfields: "equipmentcode",
@@ -9228,21 +9269,22 @@
     }
   }
   async function handleEamPopups(win) {
-    if (!win.Ext || !win.Ext.ComponentQuery) return;
-    const msgBoxes = win.Ext.ComponentQuery.query("window:not([destroyed=true])").filter(
-      (w) => w.isVisible && w.isVisible() && (w.cls?.includes("x-message-box") || w.title === "Confirmation" || w.title === "EAM")
+    if (!win.Ext || !win.Ext.ComponentQuery) return false;
+    const allWindows = win.Ext.ComponentQuery.query("window:not([destroyed=true])").filter(
+      (w) => w.isVisible && w.isVisible() && !w.id?.includes("recordview")
     );
-    for (const box of msgBoxes) {
-      const yesBtn = win.Ext.ComponentQuery.query("button[text=Yes]:not([destroyed=true])", box)[0];
-      if (yesBtn && !yesBtn.disabled && yesBtn.isVisible()) {
-        APMLogger.info("AutoFill", `Auto-clicking "Yes" on EAM popup: ${box.title || "Untitled"}`);
-        if (yesBtn.handler) yesBtn.handler.call(yesBtn.scope || yesBtn, yesBtn);
-        else yesBtn.fireEvent("click", yesBtn);
+    let dismissed = false;
+    for (const box of allWindows) {
+      const btn = win.Ext.ComponentQuery.query("button[text=Yes]:not([destroyed=true])", box)[0] || win.Ext.ComponentQuery.query("button[text=OK]:not([destroyed=true])", box)[0] || win.Ext.ComponentQuery.query("button[text=Ok]:not([destroyed=true])", box)[0];
+      if (btn && !btn.disabled && btn.isVisible()) {
+        APMLogger.info("AutoFill", `Auto-clicking "${btn.text}" on EAM popup: ${box.title || "Untitled"}`);
+        if (btn.handler) btn.handler.call(btn.scope || btn, btn);
+        else btn.fireEvent("click", btn);
         await delay(300);
-        return true;
+        dismissed = true;
       }
     }
-    return false;
+    return dismissed;
   }
   async function injectExtJSFieldsNative(data) {
     showToast("Locating active EAM Form...", "#f1c40f", true);
@@ -9291,6 +9333,8 @@
       let finalEquipment = await searchEquipmentNative(data.eq, activeWin);
       showToast("Setting Equipment...", "#f1c40f", true);
       await setEamLovFieldDirect(activeExt, mainForm, "equipment", finalEquipment);
+      await waitForAjax(activeWin);
+      await handleEamPopups(activeWin);
       await waitForAjax(activeWin);
       await delay(150);
     }
@@ -10337,8 +10381,11 @@
   init_state();
   init_constants();
   init_logger();
+  var _syncInitialized = false;
   function initGlobalSync() {
     if (typeof window === "undefined") return;
+    if (_syncInitialized) return;
+    _syncInitialized = true;
     window.addEventListener("storage", (e) => {
       if (!e.newValue) return;
       switch (e.key) {
@@ -10387,7 +10434,15 @@
   }
   function handleColorCodeRulesSync(data) {
     try {
-      AppState.colorCode.rules = JSON.parse(data);
+      const parsed = JSON.parse(data);
+      if (parsed && parsed._v !== void 0 && Array.isArray(parsed.rules)) {
+        AppState.colorCode.rules = parsed.rules;
+      } else if (Array.isArray(parsed)) {
+        AppState.colorCode.rules = parsed;
+      } else {
+        APMLogger.warn("Sync", "Unexpected CC rules format, skipping sync");
+        return;
+      }
       window.dispatchEvent(new CustomEvent("APM_CC_SYNC_REQUIRED"));
     } catch (err) {
       APMLogger.warn("Sync", "Failed to sync colorcode rules", err);
@@ -10901,11 +10956,11 @@
   init_diagnostics();
   function initBootSequence(win = window) {
     const isTop = win === win.top;
+    initGlobalSync();
     if (isTop) {
       try {
         loadPresets();
         loadColorCodePrefs();
-        initGlobalSync();
         BootManager.markReady("settings");
       } catch (e) {
         APMLogger.error("Boot", "Failed to load initial settings:", e);
@@ -10992,6 +11047,15 @@
           LaborTracker.init();
         }
         if (FeatureFlags.isEnabled("forecast")) initForecastShortcuts();
+        if (FeatureFlags.isEnabled("colorCode")) {
+          const wins = getExtWindows();
+          for (const w of wins) {
+            try {
+              if (w.Ext) debouncedProcessColorCodeGrid(w.document);
+            } catch (e) {
+            }
+          }
+        }
       });
       APMScheduler2.registerTask("scheduler-investigator", 1e4, () => {
         const tasks2 = APMScheduler2.getTasks();
@@ -11415,6 +11479,26 @@
 
     /* Keep header/nav links white even with global link colors */
     #root header a, #root nav a { color: var(--fg) !important; }
+
+    /* === Cloudscape Popover (xjuzf hash = popover component) ===
+       Popovers keep their default white bg unless explicitly darkened.
+       White text from the broad b/p rule above then becomes invisible.
+       Target every layer of the popover stack via the shared hash. */
+    #root [class*="awsui_container_xjuzf_"],
+    #root [class*="awsui_container-body_xjuzf_"],
+    #root [class*="awsui_body_xjuzf_"],
+    #root [class*="awsui_content_xjuzf_"] {
+      background-color: var(--bg-2) !important;
+      color: var(--fg) !important;
+      border-color: var(--border) !important;
+    }
+    /* Arrow tip: inner face matches body, outer ring matches border */
+    #root [class*="awsui_arrow-inner_xjuzf_"] {
+      background-color: var(--bg-2) !important;
+    }
+    #root [class*="awsui_arrow-outer_xjuzf_"] {
+      background-color: var(--border) !important;
+    }
 `;
   function applyPtpCss(on) {
     let existing = document.getElementById(STYLE_ID);
@@ -11718,14 +11802,16 @@
       }
       if (d.type === "APM_GET_THEME" || d.apmMaster === "getTheme") {
         const activeTheme = ThemeResolver.getPreferredTheme();
-        const target = e.origin && e.origin !== "null" ? e.origin : "*";
-        try {
-          e.source?.postMessage({
-            type: "APM_SET_THEME",
-            apmMaster: "theme",
-            value: activeTheme
-          }, target);
-        } catch (err) {
+        if (activeTheme && activeTheme !== "default") {
+          const target = e.origin && e.origin !== "null" ? e.origin : "*";
+          try {
+            e.source?.postMessage({
+              type: "APM_SET_THEME",
+              apmMaster: "theme",
+              value: activeTheme
+            }, target);
+          } catch (err) {
+          }
         }
       }
       if (d.type === "APM_PTP_CLICK_AWAY") {
