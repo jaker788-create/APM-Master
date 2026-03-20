@@ -129,7 +129,6 @@
           systemFunc: "WSJOBS",
           entityKey: "workordernum",
           dataIndex: "workordernum",
-          needsOrg: false,
           drillbackFlag: "FROMEMAIL",
           pattern: /(?:^|\D)([123]\d{9,})(?=\D|$)/
         },
@@ -138,7 +137,6 @@
           systemFunc: "WSJOBS",
           entityKey: "workordernum",
           dataIndex: "workordernum",
-          needsOrg: false,
           drillbackFlag: "FROMEMAIL",
           pattern: /(?:^|\D)([123]\d{9,})(?=\D|$)/
         },
@@ -147,7 +145,6 @@
           systemFunc: "SSRCVI",
           entityKey: "receiptcode",
           dataIndex: "receiptcode",
-          needsOrg: true,
           drillbackFlag: "DRILLBACK",
           pattern: /(?:^|\D)([123]\d{9,})(?=\D|$)/
         },
@@ -156,7 +153,6 @@
           systemFunc: "SSPART",
           entityKey: "partcode",
           dataIndex: "partcode",
-          needsOrg: true,
           drillbackFlag: "DRILLBACK",
           pattern: null
         }
@@ -6148,28 +6144,6 @@
       APMLogger.debug("ColorCode", "resolveEntityColumn grid search error:", e);
     }
   }
-  function getEamOrganization() {
-    try {
-      const root = typeof unsafeWindow !== "undefined" ? unsafeWindow : window;
-      const searched = /* @__PURE__ */ new Set();
-      const search = (win) => {
-        if (!win || searched.has(win)) return null;
-        searched.add(win);
-        try {
-          if (win.EAM && win.EAM.Context && win.EAM.Context.organization) return win.EAM.Context.organization;
-          for (let i = 0; i < win.frames.length; i++) {
-            const result = search(win.frames[i]);
-            if (result) return result;
-          }
-        } catch (e) {
-        }
-        return null;
-      };
-      return search(root.top) || search(root) || "*";
-    } catch (e) {
-      return "*";
-    }
-  }
   function buildEntityUrl(entityId, config, userFunc) {
     const tenant = window.EAM && window.EAM.AppData && window.EAM.AppData.tenant ? window.EAM.AppData.tenant : LINK_CONFIG.tenant;
     const params = new URLSearchParams({
@@ -6179,7 +6153,6 @@
       USER_FUNCTION_NAME: userFunc
     });
     params.set(config.entityKey, entityId);
-    params.set("organization", getEamOrganization());
     return `https://${window.location.hostname}/web/base/logindisp?${params.toString()}`;
   }
   function applyCellProcessors(cell, rowMatches, ptpHistory) {
