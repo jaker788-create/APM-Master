@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         APM Master: Unified Tools
 // @namespace    https://w.amazon.com/bin/view/Users/rosendah/APM-Master/
-// @version      14.5.4
+// @version      14.5.5
 // @description  Quality of life and automation tool that uses native EAM ExtJS Framework functions for high reliability and capability. This is actively supported tool so Slack me or submit bug report/feature request through the bug report button in the menu.
 // @author       Jacob Rosendahl
 // @icon         https://media.licdn.com/dms/image/v2/D5603AQGdCV0_LQKRfQ/profile-displayphoto-scale_100_100/B56ZyZLvQ5HgAg-/0/1772096519061?e=1773878400&v=beta&t=eWO1Jiy0-WbzG_yBv-SBrmmsVOPMexF57-q1Xh_VXCk
@@ -84,7 +84,7 @@
   });
 
   // src/core/constants.js
-  var KEY_THEME, CC_STORAGE_RULES, CC_STORAGE_SET, PRESET_STORAGE_KEY, STORAGE_KEY, APM_GENERAL_STORAGE, CURRENT_VERSION, VERSION_CHECK_URL, UPDATE_URL, LABOR_EMPS_STORAGE, LABOR_ACTIVE_STORAGE, LABOR_DOCK_STORAGE, LABOR_PREFS_STORAGE, LABOR_NIGHT_SHIFT_KEY, LABOR_LAST_EMP_KEY, SESSION_STORAGE_KEY, PTP_HISTORY_KEY, UPDATE_CHECK_KEY, CONFLICT_WARNED_KEY, MIGRATIONS_DONE_KEY, BETA_VERSION_CHECK_URL, BETA_UPDATE_URL, LOG_LEVELS, DEFAULT_TENANT, SESSION_TIMEOUT_URL, LINK_CONFIG;
+  var KEY_THEME, CC_STORAGE_RULES, CC_STORAGE_SET, PRESET_STORAGE_KEY, STORAGE_KEY, APM_GENERAL_STORAGE, CURRENT_VERSION, VERSION_CHECK_URL, UPDATE_URL, LABOR_EMPS_STORAGE, LABOR_ACTIVE_STORAGE, LABOR_DOCK_STORAGE, LABOR_PREFS_STORAGE, LABOR_NIGHT_SHIFT_KEY, LABOR_LAST_EMP_KEY, SESSION_STORAGE_KEY, PTP_HISTORY_KEY, UPDATE_CHECK_KEY, CONFLICT_WARNED_KEY, MIGRATIONS_DONE_KEY, BETA_VERSION_CHECK_URL, BETA_UPDATE_URL, LOG_LEVELS, DEFAULT_TENANT, SESSION_TIMEOUT_URL, LINK_CONFIG, ENTITY_REGISTRY;
   var init_constants = __esm({
     "src/core/constants.js"() {
       KEY_THEME = "apm_v1_ui_theme";
@@ -93,7 +93,7 @@
       PRESET_STORAGE_KEY = "apm_v1_autofill_presets";
       STORAGE_KEY = "apm_v1_forecast_prefs";
       APM_GENERAL_STORAGE = "apm_v1_general_settings";
-      CURRENT_VERSION = "14.5.4";
+      CURRENT_VERSION = "14.5.5";
       VERSION_CHECK_URL = "https://raw.githubusercontent.com/jaker788-create/APM-Master/Automation/forecast.user.js";
       UPDATE_URL = "https://github.com/jaker788-create/APM-Master/releases/download/Automation/forecast.user.js";
       LABOR_EMPS_STORAGE = "apm_v1_labor_employees";
@@ -122,6 +122,40 @@
         tenant: "AMAZONRMENA_PRD",
         userFuncName: "WSJOBS",
         woPattern: /\b([123]\d{9,})\b/
+      };
+      ENTITY_REGISTRY = {
+        WSJOBS: {
+          label: "Work Order",
+          systemFunc: "WSJOBS",
+          entityKey: "workordernum",
+          dataIndex: "workordernum",
+          drillbackFlag: "FROMEMAIL",
+          pattern: /(?:^|\D)([123]\d{9,})(?=\D|$)/
+        },
+        CTJOBS: {
+          label: "Compliance Work Order",
+          systemFunc: "WSJOBS",
+          entityKey: "workordernum",
+          dataIndex: "workordernum",
+          drillbackFlag: "FROMEMAIL",
+          pattern: /(?:^|\D)([123]\d{9,})(?=\D|$)/
+        },
+        SSRCVI: {
+          label: "Repair Receipt",
+          systemFunc: "SSRCVI",
+          entityKey: "receiptcode",
+          dataIndex: "receiptcode",
+          drillbackFlag: "DRILLBACK",
+          pattern: /(?:^|\D)([123]\d{9,})(?=\D|$)/
+        },
+        SSPART: {
+          label: "Part",
+          systemFunc: "SSPART",
+          entityKey: "partcode",
+          dataIndex: "partcode",
+          drillbackFlag: "DRILLBACK",
+          pattern: null
+        }
       };
     }
   });
@@ -392,6 +426,41 @@
       }
     }
     return "GLOBAL";
+  }
+  function apmGetActiveFunctionNames() {
+    const wins = getExtWindows();
+    for (const win of wins) {
+      try {
+        const params = new URLSearchParams(win.location.search);
+        const sys = params.get("SYSTEM_FUNCTION_NAME");
+        const usr = params.get("USER_FUNCTION_NAME");
+        if (sys && sys !== "WSTABS" && sys !== "WSFLTR") {
+          return { systemFunc: sys, userFunc: usr || sys };
+        }
+      } catch (e) {
+      }
+    }
+    for (const win of wins) {
+      try {
+        const params = new URLSearchParams(win.location.search);
+        const sys = params.get("SYSTEM_FUNCTION_NAME");
+        const usr = params.get("USER_FUNCTION_NAME");
+        if (sys) return { systemFunc: sys, userFunc: usr || sys };
+      } catch (e) {
+      }
+    }
+    return { systemFunc: "GLOBAL", userFunc: "GLOBAL" };
+  }
+  function clickLikeUser(el2) {
+    try {
+      const rect = el2.getBoundingClientRect();
+      const opts = { bubbles: true, cancelable: true, view: window, clientX: rect.left + rect.width / 2, clientY: rect.top + rect.height / 2 };
+      el2.dispatchEvent(new MouseEvent("mousedown", opts));
+      el2.dispatchEvent(new MouseEvent("mouseup", opts));
+      el2.dispatchEvent(new MouseEvent("click", opts));
+    } catch (e) {
+      el2.click?.();
+    }
   }
   function formatDate(d) {
     if (!d || isNaN(d.getTime())) return "";
@@ -1286,7 +1355,8 @@
           isSimpleMode: prefs.isSimpleMode !== void 0 ? prefs.isSimpleMode : true,
           isCustomDateMode: !!prefs.isCustomDateMode,
           customStart: prefs.customStart || "",
-          customEnd: prefs.customEnd || ""
+          customEnd: prefs.customEnd || "",
+          target: prefs.target || "WSJOBS"
         };
         return prefs;
       }
@@ -1299,7 +1369,7 @@
   }
   function saveAllPreferences() {
     const prefsToSave = {
-      _v: 1,
+      _v: 2,
       ...forecastState,
       orgs: savedOrgs,
       selectedOrg,
@@ -1335,7 +1405,8 @@
         isSimpleMode: true,
         isCustomDateMode: false,
         customStart: "",
-        customEnd: ""
+        customEnd: "",
+        target: "WSJOBS"
       };
     }
   });
@@ -3780,6 +3851,13 @@
           el("button", { id: "apm-spies-close", className: "eam-fc-close-btn" }, "\u2716")
         ]),
         el("div", { className: "apm-modal-body", style: { padding: "15px" } }, [
+          el("div", { className: "eam-fc-row", style: { marginBottom: "10px" } }, [
+            el("label", { className: "eam-fc-label", style: { width: "90px" } }, "Applies To:"),
+            el("select", { id: "spy-target", className: "eam-fc-select", style: { flex: 1, color: "#e67e22", fontWeight: "bold" } }, [
+              el("option", { value: "WSJOBS" }, "Work Orders"),
+              el("option", { value: "CTJOBS" }, "Compliance Work Orders")
+            ])
+          ]),
           el("div", { className: "eam-fc-row", style: { marginBottom: "15px" } }, [
             el("label", { className: "eam-fc-label", style: { width: "90px" } }, "Profile Name:"),
             el("input", { type: "text", id: "spy-name", className: "eam-fc-input-text", placeholder: "e.g., Weekly PMs", style: { flex: 1 } })
@@ -3882,6 +3960,7 @@
     spyMgrSelect.onchange = () => {
       const id = spyMgrSelect.value;
       const prof = savedProfiles.find((p) => p.id === id);
+      modal.querySelector("#spy-target").value = prof ? prof.target || "WSJOBS" : "WSJOBS";
       modal.querySelector("#spy-name").value = prof ? prof.name : "";
       modal.querySelector("#spy-eq").value = prof ? prof.equipment || "" : "";
       modal.querySelector("#spy-eqdesc").value = prof ? prof.eqDesc || "" : "";
@@ -3902,6 +3981,7 @@
       const profData = {
         id,
         name,
+        target: modal.querySelector("#spy-target").value === "CTJOBS" ? "CTJOBS" : "WSJOBS",
         equipment: modal.querySelector("#spy-eq").value.trim(),
         eqDesc: modal.querySelector("#spy-eqdesc").value.trim(),
         desc: modal.querySelector("#spy-desc").value.trim(),
@@ -3941,7 +4021,10 @@
     if (!spyMgrSelect || !profSelect) return;
     const opts = '<option value="">-- Create New Profile --</option>' + savedProfiles.map((p) => `<option value="${p.id}">${p.name}</option>`).join("");
     spyMgrSelect.innerHTML = opts;
-    const profOpts = '<option value="manual">[ Manual Native Search ]</option>' + savedProfiles.map((p) => `<option value="${p.id}">Profile: ${p.name}</option>`).join("");
+    const profOpts = '<option value="manual">[ Manual Native Search ]</option>' + savedProfiles.map((p) => {
+      const suffix = p.target === "CTJOBS" ? " [CT]" : "";
+      return `<option value="${p.id}">Profile: ${p.name}${suffix}</option>`;
+    }).join("");
     profSelect.innerHTML = profOpts;
     profSelect.value = selectedProfileId || "manual";
   }
@@ -3964,6 +4047,7 @@
         if (manualInputs) manualInputs.style.display = "none";
         if (descBox) descBox.style.display = "none";
         const details = [];
+        if (prof.target === "CTJOBS") details.push("Target: Compliance");
         if (prof.equipment) details.push(`Eq: ${prof.equipment}`);
         if (prof.eqDesc) details.push(`EqDesc: ${prof.eqDesc}`);
         if (prof.desc) details.push(`Desc: ${prof.desc}`);
@@ -4034,6 +4118,102 @@
   var isRunning = false;
   var isStopped = false;
   var currentMode = "normal";
+  var currentTarget = "WSJOBS";
+  function detectActiveTarget() {
+    for (const win of getExtWindows()) {
+      try {
+        if (!win.Ext?.ComponentQuery) continue;
+        const activeTabs = win.Ext.ComponentQuery.query("tab[active=true]:not([destroyed=true])");
+        for (const tab of activeTabs) {
+          const text = (tab.text || "").toUpperCase();
+          if (text.includes("COMPLIANCE") && text.includes("WORK")) return "CTJOBS";
+          if (text.includes("WORK ORDER") && !text.includes("COMPLIANCE")) return "WSJOBS";
+        }
+      } catch (e) {
+      }
+    }
+    return "WSJOBS";
+  }
+  function getWinUserFunc(win) {
+    try {
+      const params = new URLSearchParams(win.location.search);
+      const fromUrl = params.get("USER_FUNCTION_NAME");
+      if (fromUrl) return fromUrl;
+    } catch (e) {
+    }
+    try {
+      const fromEAM = win.EAM?.USER_FUNCTION_NAME;
+      if (fromEAM) return fromEAM;
+    } catch (e) {
+    }
+    return "";
+  }
+  function buildEamScreenUrl(target) {
+    return `WSJOBS?USER_FUNCTION_NAME=${target}&FUNCTION_CLASS=WEBL`;
+  }
+  function suppressEamTransitionError(win) {
+    const suppressors = [];
+    try {
+      const origOnerror = win.onerror;
+      win.onerror = function(msg, url2, line, col, error) {
+        const msgStr = String(msg || "");
+        if (msgStr.includes("items") && msgStr.includes("null")) {
+          APMLogger.debug("Forecast", "Suppressed EAM transition error (window.onerror):", msgStr);
+          return true;
+        }
+        if (origOnerror) return origOnerror.call(this, msg, url2, line, col, error);
+        return false;
+      };
+      suppressors.push(() => {
+        win.onerror = origOnerror;
+      });
+    } catch (e) {
+    }
+    try {
+      const origHandle = win.Ext?.Error?.handle;
+      if (win.Ext?.Error) {
+        win.Ext.Error.handle = function(err) {
+          const msg = err && (err.msg || err.message || String(err)) || "";
+          if (msg.includes("items") && msg.includes("null")) {
+            APMLogger.debug("Forecast", "Suppressed EAM transition error (Ext.Error.handle):", msg);
+            return true;
+          }
+          return origHandle ? origHandle.apply(this, arguments) : false;
+        };
+        suppressors.push(() => {
+          win.Ext.Error.handle = origHandle;
+        });
+      }
+    } catch (e) {
+    }
+    return () => {
+      suppressors.forEach((fn) => {
+        try {
+          fn();
+        } catch (e) {
+        }
+      });
+      APMLogger.debug("Forecast", "EAM error suppression removed");
+    };
+  }
+  function launchScreenDirect(win, target) {
+    try {
+      const nav = win.EAM?.Nav;
+      if (!nav || typeof nav.launchScreen !== "function") {
+        APMLogger.warn("Forecast", "EAM.Nav.launchScreen not available");
+        return false;
+      }
+      const url2 = buildEamScreenUrl(target);
+      APMLogger.info("Forecast", `Direct navigation via EAM.Nav.launchScreen("${url2}")`);
+      const cleanup = suppressEamTransitionError(win);
+      nav.launchScreen(url2, null, { fromNav: true });
+      setTimeout(cleanup, 5e3);
+      return true;
+    } catch (e) {
+      APMLogger.error("Forecast", "EAM.Nav.launchScreen failed:", e);
+      return false;
+    }
+  }
   AjaxHooks.onBeforeRequest("forecast-maddon", (win, conn, options) => {
     if (!FeatureFlags.isEnabled("forecast")) return;
     if (!isRunning) return;
@@ -4047,6 +4227,11 @@
     const isWorkOrderSearch = url2.includes("WSJOBS.xmlhttp") || params.GRID_NAME === "WSJOBS";
     const isCacheRequest = url2.includes("GETCACHE") || typeof params === "string" && params.includes("COMPONENT_INFO_TYPE_MODE=CACHE") || params.COMPONENT_INFO_TYPE_MODE === "CACHE";
     if (isWorkOrderSearch && !isCacheRequest) {
+      const winUserFunc = getWinUserFunc(win);
+      if (winUserFunc) {
+        if (currentTarget === "CTJOBS" && winUserFunc !== "CTJOBS") return;
+        if (currentTarget === "WSJOBS" && winUserFunc === "CTJOBS") return;
+      }
       let maddonParams = null;
       const skipManual = ["today", "quick", "clear"].includes(currentMode);
       if (profId && profId !== "manual") {
@@ -4198,11 +4383,12 @@
     endD.setDate(baseSunday.getDate() + maxDay + endWeekOffset);
     return { start: formatDate(startD), end: formatDate(endD) };
   }
-  function isGridReady() {
+  function isGridReady(target = "WSJOBS") {
     const wins = getExtWindows();
     for (const win of wins) {
       try {
         if (!win.Ext?.ComponentQuery) continue;
+        const winUserFunc = getWinUserFunc(win);
         const grids = win.Ext.ComponentQuery.query("gridpanel:not([destroyed=true])");
         for (const grid of grids) {
           if (grid.rendered && grid.getStore) {
@@ -4212,11 +4398,18 @@
             const className = (store.$className || "").toLowerCase();
             const proxyUrl = (store.getProxy?.()?.url || "").toLowerCase();
             const winFunc = (win.EAM?.USER_FUNCTION_NAME || "").toUpperCase();
-            const isWSJOBS = storeId.includes("wsjobs") || className.includes("wsjobs") || proxyUrl.includes("wsjobs") || winFunc === "WSJOBS";
-            if (isWSJOBS) {
-              APMLogger.debug("Forecast", `isGridReady found WSJOBS grid: ${grid.id} (Store: ${storeId})`);
-              return true;
+            const isWoGrid = storeId.includes("wsjobs") || storeId.includes("ctjobs") || className.includes("wsjobs") || proxyUrl.includes("wsjobs") || winFunc === "WSJOBS" || winFunc === "CTJOBS";
+            if (!isWoGrid) continue;
+            if (winUserFunc) {
+              if (target === "CTJOBS" && winUserFunc !== "CTJOBS") continue;
+              if (target === "WSJOBS" && winUserFunc === "CTJOBS") continue;
             }
+            if (!winUserFunc) {
+              const visible = grid.isVisible ? grid.isVisible(true) : true;
+              if (!visible) continue;
+            }
+            APMLogger.debug("Forecast", `isGridReady found ${target} grid: ${grid.id} (Store: ${storeId}, Frame: ${winUserFunc || "unknown"})`);
+            return true;
           }
         }
       } catch (e) {
@@ -4224,14 +4417,20 @@
     }
     return false;
   }
-  async function navigateTo(tabText, menuPathArray) {
-    function isExactMatch(rawText, target) {
+  async function navigateTo(tabText, menuPathArray, options = {}) {
+    function isExactMatch(rawText, matchText) {
       if (!rawText) return false;
       const cleanText = rawText.replace(/<[^>]*>?/gm, "").replace(/&nbsp;/g, " ").trim();
-      if (cleanText.toUpperCase().includes("COMPLIANCE")) return false;
-      if (cleanText === target) return true;
-      if (cleanText.startsWith(target + " ") || cleanText.startsWith(target + "(")) return true;
-      if (cleanText.includes("- " + target)) return true;
+      const upper = cleanText.toUpperCase();
+      const isComplianceTab = upper.includes("COMPLIANCE");
+      const isWoRelated = upper.includes("ORDERS");
+      if (isWoRelated) {
+        if (options.target === "CTJOBS" && !isComplianceTab) return false;
+        if (options.target !== "CTJOBS" && isComplianceTab) return false;
+      }
+      if (cleanText === matchText) return true;
+      if (cleanText.startsWith(matchText + " ") || cleanText.startsWith(matchText + "(")) return true;
+      if (cleanText.includes("- " + matchText)) return true;
       return false;
     }
     for (const win of getExtWindows()) {
@@ -4244,22 +4443,39 @@
           else targetTab.fireEvent("click", targetTab);
           return;
         }
+      } catch (e) {
+      }
+    }
+    const target = options.target || "WSJOBS";
+    for (const win of getExtWindows()) {
+      try {
+        if (launchScreenDirect(win, target)) {
+          await delay(1500);
+          return;
+        }
+      } catch (e) {
+      }
+    }
+    APMLogger.warn("Forecast", "EAM.Nav.launchScreen unavailable, falling back to menu navigation");
+    for (const win of getExtWindows()) {
+      try {
+        if (!win.Ext || !win.Ext.ComponentQuery) continue;
         if (menuPathArray && menuPathArray.length === 2) {
           const btns = win.Ext.ComponentQuery.query("button");
           let topBtn = btns.find((b) => !b.hidden && isExactMatch(b.text, menuPathArray[0]) && b.showMenu);
-          if (topBtn) {
-            topBtn.showMenu();
-            await delay(200);
+          if (topBtn && topBtn.el && topBtn.el.dom) {
+            clickLikeUser(topBtn.el.dom);
+            await delay(300);
             const menuItems = win.Ext.ComponentQuery.query("menuitem");
             let childItem = menuItems.find(
               (item) => !item.hidden && !(typeof item.isHidden === "function" && item.isHidden()) && isExactMatch(item.text, menuPathArray[1])
             );
-            if (childItem) {
+            if (childItem && childItem.el && childItem.el.dom) {
+              clickLikeUser(childItem.el.dom);
+            } else if (childItem) {
               if (childItem.handler) childItem.handler.call(childItem.scope || childItem, childItem);
-              else if (childItem.el && childItem.el.dom) childItem.el.dom.click();
               else childItem.fireEvent("click", childItem);
             }
-            if (win.Ext.menu && win.Ext.menu.Manager) win.Ext.menu.Manager.hideAll();
             return;
           }
         }
@@ -4267,15 +4483,28 @@
       }
     }
   }
-  async function returnToListView() {
+  async function returnToListView(target = "WSJOBS") {
     let targetExt = null;
     for (const win of getExtWindows()) {
       try {
         if (!win.Ext || !win.Ext.ComponentQuery) continue;
+        const winUserFunc = getWinUserFunc(win);
         const grids = win.Ext.ComponentQuery.query("gridpanel:not([destroyed=true])");
         const found = grids.some((g) => {
-          const store = g.getStore && g.getStore();
-          return store && store.storeId && store.storeId.toLowerCase().includes("wsjobs");
+          if (!g.rendered || !g.getStore) return false;
+          const store = g.getStore();
+          if (!store) return false;
+          const sid = (store.storeId || "").toLowerCase();
+          const isWo = sid.includes("wsjobs") || sid.includes("ctjobs");
+          if (!isWo) return false;
+          if (winUserFunc) {
+            if (target === "CTJOBS" && winUserFunc !== "CTJOBS") return false;
+            if (target === "WSJOBS" && winUserFunc === "CTJOBS") return false;
+          } else {
+            const visible = g.isVisible ? g.isVisible(true) : true;
+            if (!visible) return false;
+          }
+          return true;
         });
         if (found) {
           targetExt = win.Ext;
@@ -4317,15 +4546,29 @@
   async function applyForecastFiltersExtJS(filterData) {
     let targetExt = null;
     let foundFrame = false;
+    const gridTarget = filterData.target || "WSJOBS";
     let targetWin = window;
     for (let attempts = 0; attempts < 40; attempts++) {
       for (const win of getExtWindows()) {
         try {
           if (!win.Ext || !win.Ext.ComponentQuery) continue;
+          const winUserFunc = getWinUserFunc(win);
           const grids = win.Ext.ComponentQuery.query("gridpanel:not([destroyed=true])");
           foundFrame = grids.some((g) => {
-            const store = g.getStore && g.getStore();
-            return store && store.storeId && store.storeId.toLowerCase().includes("wsjobs");
+            if (!g.rendered || !g.getStore) return false;
+            const store = g.getStore();
+            if (!store) return false;
+            const sid = (store.storeId || "").toLowerCase();
+            const isWo = sid.includes("wsjobs") || sid.includes("ctjobs");
+            if (!isWo) return false;
+            if (winUserFunc) {
+              if (gridTarget === "CTJOBS" && winUserFunc !== "CTJOBS") return false;
+              if (gridTarget === "WSJOBS" && winUserFunc === "CTJOBS") return false;
+            } else {
+              const visible = g.isVisible ? g.isVisible(true) : true;
+              if (!visible) return false;
+            }
+            return true;
           });
           if (foundFrame) {
             targetExt = win.Ext;
@@ -4438,7 +4681,7 @@
       }
     }
   }
-  async function executeForecast(mode = "normal") {
+  async function executeForecast(mode = "normal", targetOverride = null) {
     if (!FeatureFlags.isEnabled("forecast")) return;
     if (window.self !== window.top) return;
     if (isRunning) return;
@@ -4496,6 +4739,24 @@
     }
     isRunning = true;
     isStopped = false;
+    const profSelect = document.getElementById("eam-profile-select");
+    const activeProfIdEarly = profSelect ? profSelect.value : "manual";
+    const activeProfileEarly = activeProfIdEarly !== "manual" ? savedProfiles.find((p) => p.id === activeProfIdEarly) : null;
+    if (activeProfileEarly && activeProfileEarly.target) {
+      currentTarget = activeProfileEarly.target;
+    } else if (targetOverride) {
+      currentTarget = targetOverride;
+    } else {
+      const targetSelect = document.getElementById("eam-target-select");
+      const advSite = document.getElementById("eam-adv-site");
+      const isAdvancedVisible = advSite && advSite.style.display !== "none";
+      if (isAdvancedVisible && targetSelect) {
+        currentTarget = targetSelect.value || "WSJOBS";
+      } else {
+        currentTarget = detectActiveTarget();
+      }
+    }
+    APMLogger.debug("Forecast", `Target resolved: ${currentTarget}`);
     initAjaxInterceptors();
     try {
       if (mode !== "quick") saveAllPreferences();
@@ -4503,11 +4764,11 @@
       if (mode === "quick") setStatus(mode, "Jumping...", "#3498db");
       else if (mode === "clear") setStatus(mode, "Clearing...", "#f1c40f");
       else triggerThunderstrike();
-      await navigateTo("Work Orders", ["Work", "Work Orders"]);
+      await navigateTo("Work Orders", ["Work", "Work Orders"], { target: currentTarget });
       setStatus(mode, "Expanding...", "#f1c40f");
       let gridFound = false;
-      for (let i = 0; i < 40; i++) {
-        if (isGridReady()) {
+      for (let i = 0; i < 60; i++) {
+        if (isGridReady(currentTarget)) {
           gridFound = true;
           break;
         }
@@ -4517,13 +4778,11 @@
         setStatus(mode, "Grid timeout.", "#e74c3c");
         return;
       }
-      await returnToListView();
+      await returnToListView(currentTarget);
       setStatus(mode, mode === "clear" ? "Wiping Fields..." : "Injecting API...", "#f1c40f");
       const todayOnlyCheckbox = document.getElementById("eam-today-only-toggle");
       const isTodayOnly = todayOnlyCheckbox && todayOnlyCheckbox.checked;
-      const profSelect = document.getElementById("eam-profile-select");
-      const activeProfId = profSelect ? profSelect.value : "manual";
-      const activeProfile = activeProfId !== "manual" ? savedProfiles.find((p) => p.id === activeProfId) : null;
+      const activeProfile = activeProfileEarly;
       const effectiveStartDate = dates.start || dates.end;
       const effectiveEndDate = dates.end || dates.start;
       const isSingleDay = effectiveStartDate === effectiveEndDate;
@@ -4538,6 +4797,7 @@
         }
       }
       const extjsFilterData = {
+        target: currentTarget,
         isClearMode: mode === "clear",
         isWoSearch: mode === "quick",
         profile: activeProfile,
@@ -4979,8 +5239,13 @@
         ]),
         el("div", { id: "eam-manual-inputs" }, [
           el("div", { className: "eam-fc-row" }, [
-            el("label", { className: "eam-fc-label" }, "Site Code (Org):"),
-            el("select", { id: "eam-org-select", className: "eam-fc-select", style: { textTransform: "uppercase" } }, [
+            el("label", { className: "eam-fc-label", style: { width: "42px", minWidth: "42px" } }, "Target:"),
+            el("select", { id: "eam-target-select", className: "eam-fc-select", style: { width: "105px", minWidth: "105px", flex: "none", color: "#e67e22", fontWeight: "bold" } }, [
+              el("option", { value: "WSJOBS" }, "Work Orders"),
+              el("option", { value: "CTJOBS" }, "Compliance")
+            ]),
+            el("label", { className: "eam-fc-label", style: { width: "30px", minWidth: "30px", marginLeft: "6px" } }, "Site:"),
+            el("select", { id: "eam-org-select", className: "eam-fc-select", style: { textTransform: "uppercase", flex: 1 } }, [
               el("option", { value: "" }, "-- All Sites --")
             ]),
             el("button", { id: "eam-add-org-btn", className: "org-btn org-btn-add", title: "Add New Site" }, "+"),
@@ -5105,6 +5370,14 @@
       updateForecastState({ customEnd: e.target.value });
       saveAllPreferences();
     });
+    const targetSelect = container.querySelector("#eam-target-select");
+    if (targetSelect) {
+      targetSelect.value = forecastState.target || "WSJOBS";
+      targetSelect.addEventListener("change", () => {
+        updateForecastState({ target: targetSelect.value });
+        saveAllPreferences();
+      });
+    }
     container.querySelector("#eam-add-org-btn").onclick = () => {
       const newOrg = prompt("Enter new Site Code (Org):");
       if (newOrg && newOrg.trim()) {
@@ -5451,6 +5724,8 @@
         cb.dataset.explicit = prefs.days[i] ? "true" : "false";
       });
     }
+    const targetSelect = panel.querySelector("#eam-target-select");
+    if (targetSelect) targetSelect.value = prefs.target || "WSJOBS";
     renderOrgs(panel);
     renderProfiles_Global();
     updateCheckboxVisuals(panel);
@@ -5652,10 +5927,7 @@
   init_diagnostics();
   init_feature_flags();
   init_storage();
-  var PTP_LINK_CONFIG = {
-    woPattern: /(?:^|\D)([123]\d{9,})(?=\D|$)/,
-    recordCodePattern: /(?:^|\D)([123]\d{9,})(?=\D|$)/
-  };
+  init_ajax_hooks();
   var _rowCache = /* @__PURE__ */ new WeakMap();
   var _rowCacheGeneration = 0;
   var _lastRuleFingerprint = "";
@@ -5793,15 +6065,94 @@
       ["--cc-row-bg", "--cc-row-bg-alt", "--cc-row-bg-hover", "--cc-row-bg-sel"].forEach((p) => row.style.removeProperty(p));
     }
   }
-  function buildSafeWoUrl(woNum) {
-    const currentTenant = window.EAM && window.EAM.AppData && window.EAM.AppData.tenant ? window.EAM.AppData.tenant : LINK_CONFIG.tenant;
+  var _entityColumnId = null;
+  var _activeEntityConfig = null;
+  var _activeUserFunc = null;
+  var _xhrUserFunc = null;
+  var _xhrSystemFunc = null;
+  AjaxHooks.onBeforeRequest("entity-detect", (win, conn, options) => {
+    const url2 = options.url || "";
+    if (!url2.includes("FUNCTION_CLASS=WEBL")) return;
+    try {
+      const urlObj = new URL(url2, win.location.origin);
+      const usr = urlObj.searchParams.get("USER_FUNCTION_NAME");
+      const sys = urlObj.searchParams.get("SYSTEM_FUNCTION_NAME");
+      if (usr) {
+        _xhrUserFunc = usr;
+        if (sys) {
+          _xhrSystemFunc = sys;
+        } else {
+          const pathParts = urlObj.pathname.split("/");
+          const last = pathParts[pathParts.length - 1];
+          if (last && last !== "base") _xhrSystemFunc = last;
+        }
+        APMLogger.debug("ColorCode", `XHR entity detect: userFunc=${_xhrUserFunc}, systemFunc=${_xhrSystemFunc}`);
+      }
+    } catch (e) {
+    }
+  });
+  AjaxHooks.onBeforeRequest("entity-detect-hdr", (win, conn, options) => {
+    const url2 = options.url || "";
+    if (!url2.includes(".HDR") && !url2.includes(".LST")) return;
+    try {
+      const params = typeof options.params === "string" ? new URLSearchParams(options.params) : null;
+      const paramsObj = typeof options.params === "object" ? options.params : null;
+      const usr = params?.get("USER_FUNCTION_NAME") || paramsObj?.USER_FUNCTION_NAME;
+      const sys = params?.get("SYSTEM_FUNCTION_NAME") || paramsObj?.SYSTEM_FUNCTION_NAME;
+      if (usr && usr !== "WSTABS" && usr !== "WSFLTR") {
+        _xhrUserFunc = usr;
+        if (sys) _xhrSystemFunc = sys;
+        APMLogger.debug("ColorCode", `XHR entity detect (HDR/LST): userFunc=${_xhrUserFunc}, systemFunc=${_xhrSystemFunc}`);
+      }
+    } catch (e) {
+    }
+  });
+  function resolveEntityColumn(doc) {
+    let userFunc = _xhrUserFunc;
+    if (!userFunc) {
+      const fromFrames = apmGetActiveFunctionNames();
+      userFunc = fromFrames.userFunc;
+    }
+    _activeUserFunc = userFunc || "WSJOBS";
+    const config = ENTITY_REGISTRY[_activeUserFunc];
+    if (!config) {
+      _activeEntityConfig = ENTITY_REGISTRY.WSJOBS;
+      _entityColumnId = null;
+      return;
+    }
+    _activeEntityConfig = config;
+    APMLogger.debug("ColorCode", `Entity resolved: userFunc=${_activeUserFunc}, label=${config.label}, dataIndex=${config.dataIndex}`);
+    _entityColumnId = null;
+    try {
+      const win = doc.defaultView || window;
+      if (win.Ext && win.Ext.ComponentQuery) {
+        const grids = win.Ext.ComponentQuery.query("gridpanel:not([destroyed=true])");
+        for (const g of grids) {
+          if (!g.rendered || g.isDestroyed || !g.headerCt) continue;
+          if (g.getEl()?.dom?.ownerDocument !== doc) continue;
+          const col = g.headerCt.items.items.find(
+            (c) => c.dataIndex === config.dataIndex && c.rendered
+          );
+          if (col?.id) {
+            _entityColumnId = col.id;
+            APMLogger.debug("ColorCode", `Entity column found: ${col.id} (dataIndex=${config.dataIndex})`);
+            break;
+          }
+        }
+      }
+    } catch (e) {
+      APMLogger.debug("ColorCode", "resolveEntityColumn grid search error:", e);
+    }
+  }
+  function buildEntityUrl(entityId, config, userFunc) {
+    const tenant = window.EAM && window.EAM.AppData && window.EAM.AppData.tenant ? window.EAM.AppData.tenant : LINK_CONFIG.tenant;
     const params = new URLSearchParams({
-      tenant: currentTenant,
-      FROMEMAIL: "YES",
-      SYSTEM_FUNCTION_NAME: LINK_CONFIG.userFuncName,
-      USER_FUNCTION_NAME: LINK_CONFIG.userFuncName,
-      workordernum: woNum
+      tenant,
+      [config.drillbackFlag]: "YES",
+      SYSTEM_FUNCTION_NAME: config.systemFunc,
+      USER_FUNCTION_NAME: userFunc
     });
+    params.set(config.entityKey, entityId);
     return `https://${window.location.hostname}/web/base/logindisp?${params.toString()}`;
   }
   function applyCellProcessors(cell, rowMatches, ptpHistory) {
@@ -5812,13 +6163,25 @@
     const existingLink = hasLinkAttr ? cell.querySelector(".apm-wo-link") : null;
     const linkSettingChanged = existingLink && existingLink.getAttribute("target") === "_blank" !== !!apmGeneralSettings?.openLinksInNewTab;
     if (!hasLinkAttr || physicalLinkMissing || linkSettingChanged) {
-      const match = cellText.match(/(?:^|\D)([123]\d{9,})(?=\D|$)/);
-      if (match) {
-        const woNum = match[1];
-        const safeUrl = buildSafeWoUrl(woNum);
+      let entityId = null;
+      const config = _activeEntityConfig || ENTITY_REGISTRY.WSJOBS;
+      const userFunc = _activeUserFunc || "WSJOBS";
+      if (_entityColumnId) {
+        const gridCell = cell.closest(".x-grid-cell");
+        if (gridCell && gridCell.getAttribute("data-columnid") === _entityColumnId) {
+          const trimmed = cellText.trim();
+          if (trimmed) entityId = trimmed;
+        }
+      }
+      if (!entityId && config.pattern) {
+        const match = cellText.match(config.pattern);
+        if (match) entityId = match[1];
+      }
+      if (entityId) {
+        const safeUrl = buildEntityUrl(entityId, config, userFunc);
         const isNewTab = apmGeneralSettings?.openLinksInNewTab;
         const targetAttr = isNewTab ? 'target="_blank"' : "";
-        cell.innerHTML = `<span style="white-space:nowrap"><a class="apm-wo-link" href="${safeUrl}" ${targetAttr}>${woNum}</a><span class="apm-copy-icon" title="Copy link to clipboard" data-wo-copy-url="${safeUrl}"></span></span>`;
+        cell.innerHTML = `<span style="white-space:nowrap"><a class="apm-wo-link" href="${safeUrl}" ${targetAttr}>${entityId}</a><span class="apm-copy-icon" title="Copy link to clipboard" data-wo-copy-url="${safeUrl}"></span></span>`;
         if (!isNewTab) {
           const link = cell.querySelector(".apm-wo-link");
           if (link) link.addEventListener("click", (e) => {
@@ -5828,7 +6191,7 @@
           });
         }
         cell.setAttribute("data-apm-linkified", "true");
-        cell.setAttribute("data-wo-num", woNum);
+        cell.setAttribute("data-wo-num", entityId);
       } else if (hasLinkAttr) {
         cell.removeAttribute("data-apm-linkified");
         cell.removeAttribute("data-wo-num");
@@ -5917,6 +6280,7 @@
     }
     const activeRules = getCompiledRules(rawRules);
     const ptpHistory = getPtpHistory();
+    resolveEntityColumn(doc);
     const ruleFingerprint = `${settings.uniformHighlight}|${_compiledRulesFingerprint}`;
     if (ruleFingerprint !== _lastRuleFingerprint) {
       _lastRuleFingerprint = ruleFingerprint;
@@ -5952,7 +6316,7 @@
         const cached = _rowCache.get(row);
         const isRecycled = record && cached?.recId !== record.internalId || cached?.textRaw !== rawText;
         if (!isRecycled && cached && cached.gen === _rowCacheGeneration) {
-          const needsRepaint = cached.hasTag && !row.querySelector(".apm-nametag") || cached.hasWo && !row.querySelector(".apm-wo-link") || cached.hasFill && !row.hasAttribute("data-cc-rule");
+          const needsRepaint = cached.hasTag && !row.querySelector(".apm-nametag") || cached.hasEntity && !row.querySelector(".apm-wo-link") || cached.hasFill && !row.hasAttribute("data-cc-rule");
           if (!needsRepaint) {
             row.setAttribute("data-cc-gen", _rowCacheGeneration);
             return;
@@ -5963,7 +6327,8 @@
         const rowMatches = activeRules.filter((r) => r.regex.test(lowerText));
         const fillRule = rowMatches.find((r) => r.fill);
         const tagRulesCount = rowMatches.filter((r) => r.showTag).length;
-        const hasWo = PTP_LINK_CONFIG.woPattern.test(rawText);
+        const entityConfig = _activeEntityConfig || ENTITY_REGISTRY.WSJOBS;
+        const hasEntity = _entityColumnId ? true : entityConfig.pattern ? entityConfig.pattern.test(rawText) : false;
         _rowCache.set(row, {
           len: textLen,
           textRaw: rawText,
@@ -5971,7 +6336,7 @@
           gen: _rowCacheGeneration,
           hasFill: !!fillRule,
           hasTag: tagRulesCount > 0,
-          hasWo
+          hasEntity
         });
         applyRowColoring(row, fillRule, settings);
         const cells = row.querySelectorAll(".x-grid-cell-inner");
@@ -5982,17 +6347,25 @@
       }
     });
     try {
+      const headerConfig = _activeEntityConfig || ENTITY_REGISTRY.WSJOBS;
+      const headerUserFunc = _activeUserFunc || "WSJOBS";
       doc.querySelectorAll("span.recordcode").forEach((el2) => {
         const textContent = el2.textContent;
-        const match = textContent.match(PTP_LINK_CONFIG.recordCodePattern) || textContent.match(PTP_LINK_CONFIG.woPattern);
-        if (match) {
-          const woNum = match[1];
+        let entityId = null;
+        if (headerConfig.pattern) {
+          const match = textContent.match(headerConfig.pattern);
+          if (match) entityId = match[1];
+        } else {
+          const cleanText = textContent.replace(/[\u200B-\u200D\uFEFF]/g, "").trim();
+          if (cleanText) entityId = cleanText;
+        }
+        if (entityId) {
           if (!el2.hasAttribute("data-wo-num")) {
-            el2.setAttribute("data-wo-num", woNum);
-            el2.insertAdjacentHTML("beforeend", `<span class="apm-copy-icon" title="Copy link to clipboard" data-wo-copy-url="${buildSafeWoUrl(woNum)}"></span>`);
+            el2.setAttribute("data-wo-num", entityId);
+            el2.insertAdjacentHTML("beforeend", `<span class="apm-copy-icon" title="Copy link to clipboard" data-wo-copy-url="${buildEntityUrl(entityId, headerConfig, headerUserFunc)}"></span>`);
           }
           if (apmGeneralSettings.ptpTrackingEnabled) {
-            const ptpRecord = ptpHistory[woNum];
+            const ptpRecord = ptpHistory[entityId];
             const existingPtpTag = doc.querySelector(".apm-ptp-status-tag-header");
             if (ptpRecord) {
               const s = ptpRecord.status;
