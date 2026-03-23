@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         APM Master: Unified Tools
 // @namespace    https://w.amazon.com/bin/view/Users/rosendah/APM-Master/
-// @version      14.6.3
+// @version      14.6.4
 // @description  Quality of life and automation tool that uses native EAM ExtJS Framework functions for high reliability and capability. This is actively supported tool so Slack me or submit bug report/feature request through the bug report button in the menu.
 // @author       Jacob Rosendahl
 // @icon         https://media.licdn.com/dms/image/v2/D5603AQGdCV0_LQKRfQ/profile-displayphoto-scale_100_100/B56ZyZLvQ5HgAg-/0/1772096519061?e=1773878400&v=beta&t=eWO1Jiy0-WbzG_yBv-SBrmmsVOPMexF57-q1Xh_VXCk
@@ -59,14 +59,16 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
         isEAM: hostname.includes("hxgnsmartcloud.com"),
         // 'amazon.dev' targets the PTP development domain; 'insights' matches the
         // HxGN EAM Insights subdomain where the PTP timer iframe is hosted.
-        isPTP: /amazon\.dev|insights/i.test(hostname),
+        isPTP: /\.amazon\.dev$|insights\.hxgnsmartcloud\.com/i.test(hostname),
         isLanding: hostname.includes("octave.com") || hostname.includes("hexagon.com"),
         isShell: url.includes("/base/common"),
         // Auth / Transition Domains
         isIDP: hostname.includes("federate.amazon.com"),
         isSSO: hostname.includes("sso."),
         isSAML: url.includes("saml"),
-        isSubmit: document.title === "Submit Form",
+        get isSubmit() {
+          return document.title === "Submit Form";
+        },
         isEAMAuth: hostname.includes("hxgnsmartcloud.com") && (url.includes("/sso/") || url.includes("/sp/") || url.includes("ssoservlet")),
         // Frame Context
         isTop: window === window.top,
@@ -98,7 +100,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
   });
 
   // src/core/constants.js
-  var KEY_THEME, CC_STORAGE_RULES, CC_STORAGE_SET, PRESET_STORAGE_KEY, STORAGE_KEY, APM_GENERAL_STORAGE, CURRENT_VERSION, VERSION_CHECK_URL, UPDATE_URL, LABOR_EMPS_STORAGE, LABOR_ACTIVE_STORAGE, LABOR_DOCK_STORAGE, LABOR_PREFS_STORAGE, LABOR_NIGHT_SHIFT_KEY, LABOR_LAST_EMP_KEY, SESSION_STORAGE_KEY, PTP_HISTORY_KEY, UPDATE_CHECK_KEY, CONFLICT_WARNED_KEY, MIGRATIONS_DONE_KEY, WELCOME_SEEN_KEY, BETA_VERSION_CHECK_URL, BETA_UPDATE_URL, LOG_LEVELS, DEFAULT_TENANT, SESSION_TIMEOUT_URL, LINK_CONFIG, MIN_GRID_COLUMNS, MIN_TAB_ITEMS, ENTITY_REGISTRY;
+  var KEY_THEME, CC_STORAGE_RULES, CC_STORAGE_SET, PRESET_STORAGE_KEY, STORAGE_KEY, APM_GENERAL_STORAGE, CURRENT_VERSION, VERSION_CHECK_URL, UPDATE_URL, LABOR_EMPS_STORAGE, LABOR_ACTIVE_STORAGE, LABOR_DOCK_STORAGE, LABOR_PREFS_STORAGE, LABOR_NIGHT_SHIFT_KEY, LABOR_LAST_EMP_KEY, SESSION_STORAGE_KEY, PTP_HISTORY_KEY, UPDATE_CHECK_KEY, CONFLICT_WARNED_KEY, MIGRATIONS_DONE_KEY, WELCOME_SEEN_KEY, BETA_VERSION_CHECK_URL, BETA_UPDATE_URL, LOG_LEVELS, DEFAULT_TENANT, SESSION_TIMEOUT_URL, LINK_CONFIG, MIN_GRID_COLUMNS, MIN_TAB_ITEMS, ENTITY_REGISTRY, SCREEN_TITLES;
   var init_constants = __esm({
     "src/core/constants.js"() {
       KEY_THEME = "apm_v1_ui_theme";
@@ -107,7 +109,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
       PRESET_STORAGE_KEY = "apm_v1_autofill_presets";
       STORAGE_KEY = "apm_v1_forecast_prefs";
       APM_GENERAL_STORAGE = "apm_v1_general_settings";
-      CURRENT_VERSION = "14.6.3";
+      CURRENT_VERSION = "14.6.4";
       VERSION_CHECK_URL = "https://raw.githubusercontent.com/jaker788-create/APM-Master/main/forecast.user.js";
       UPDATE_URL = "https://raw.githubusercontent.com/jaker788-create/APM-Master/main/forecast.user.js";
       LABOR_EMPS_STORAGE = "apm_v1_labor_employees";
@@ -147,7 +149,9 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
           entityKey: "workordernum",
           dataIndex: "workordernum",
           drillbackFlag: "FROMEMAIL",
-          pattern: /(?:^|\D)([123]\d{9,})(?=\D|$)/
+          pattern: /(?:^|\D)([123]\d{9,})(?=\D|$)/,
+          screenTitle: "Work Orders",
+          descriptionField: "workorderdesc"
         },
         CTJOBS: {
           label: "Compliance Work Order",
@@ -155,7 +159,9 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
           entityKey: "workordernum",
           dataIndex: "workordernum",
           drillbackFlag: "FROMEMAIL",
-          pattern: /(?:^|\D)([123]\d{9,})(?=\D|$)/
+          pattern: /(?:^|\D)([123]\d{9,})(?=\D|$)/,
+          screenTitle: "Compliance Work Orders",
+          descriptionField: "workorderdesc"
         },
         SSRCVI: {
           label: "Repair Receipt",
@@ -163,7 +169,9 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
           entityKey: "receiptcode",
           dataIndex: "receiptcode",
           drillbackFlag: "DRILLBACK",
-          pattern: /(?:^|\D)([123]\d{9,})(?=\D|$)/
+          pattern: /(?:^|\D)([123]\d{9,})(?=\D|$)/,
+          screenTitle: "Repair Receipts",
+          descriptionField: "receiptdescription"
         },
         SSPART: {
           label: "Part",
@@ -171,8 +179,13 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
           entityKey: "partcode",
           dataIndex: "partcode",
           drillbackFlag: "DRILLBACK",
-          pattern: null
+          pattern: null,
+          screenTitle: "Parts",
+          descriptionField: "partdescription"
         }
+      };
+      SCREEN_TITLES = {
+        BSSTRT: "Start Screen"
       };
     }
   });
@@ -193,7 +206,11 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
       const cookieMatch = document.cookie.match(/apm_gen_settings=([^;]+)/);
       if (cookieMatch) {
         try {
-          parsed = JSON.parse(decodeURIComponent(cookieMatch[1]));
+          const raw = JSON.parse(decodeURIComponent(cookieMatch[1]));
+          const COOKIE_KEYS = ["autoRedirect", "dateFormat", "dateSeparator", "updateTrack"];
+          parsed = Object.fromEntries(
+            Object.entries(raw).filter(([k]) => COOKIE_KEYS.includes(k))
+          );
           APMLogger.info("APM State", "Recovered from cookie:", parsed);
           if (parsed.logLevel) APMLogger.setLevel(parsed.logLevel);
         } catch (e) {
@@ -201,12 +218,16 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
       }
     }
     if (parsed) {
+      const existingFlags = { ...apmGeneralSettings.flags };
       Object.assign(apmGeneralSettings, DEFAULT_SETTINGS, parsed);
+      apmGeneralSettings.flags = { ...existingFlags, ...parsed.flags || {} };
     } else {
       if (isTopFrame()) {
         APMLogger.info("APM State", "No stored settings found, using defaults.");
       }
+      const existingFlags = { ...apmGeneralSettings.flags };
       Object.assign(apmGeneralSettings, DEFAULT_SETTINGS);
+      apmGeneralSettings.flags = { ...existingFlags };
     }
     _settingsInitialized = true;
     APMLogger.info("APM State", "Initialization complete.");
@@ -312,10 +333,6 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
   });
 
   // src/core/utils.js
-  function escapeHtml(str) {
-    if (!str) return "";
-    return String(str).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
-  }
   function apmGetGlobalWindow() {
     return typeof unsafeWindow !== "undefined" ? unsafeWindow : window;
   }
@@ -324,7 +341,18 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
       const origin = targetWin.location.origin;
       targetWin.postMessage(data, origin);
     } catch (e) {
-      targetWin.postMessage(data, "*");
+      const host = window.location.hostname;
+      let targetOrigin = window.location.origin;
+      if (host.includes("hxgnsmartcloud.com")) {
+        targetOrigin = window.location.origin;
+      } else if (host.includes("amazon.dev")) {
+        targetOrigin = window.location.origin;
+      }
+      try {
+        targetWin.postMessage(data, targetOrigin);
+      } catch (e2) {
+        targetWin.postMessage(data, "*");
+      }
     }
   }
   function isFrameVisible(win) {
@@ -662,16 +690,26 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
       if (opts.onUpdate) opts.onUpdate(zoomFactor, dpr);
     };
     update();
+    let currentMql = null;
+    let currentHandler = null;
+    let cancelled = false;
     const listen = () => {
-      const mql = window.matchMedia(`(resolution: ${window.devicePixelRatio}dppx)`);
-      const handler = () => {
+      if (cancelled) return;
+      currentMql = window.matchMedia(`(resolution: ${window.devicePixelRatio}dppx)`);
+      currentHandler = () => {
         update();
-        mql.removeEventListener("change", handler);
+        currentMql.removeEventListener("change", currentHandler);
         listen();
       };
-      mql.addEventListener("change", handler);
+      currentMql.addEventListener("change", currentHandler);
     };
     listen();
+    return () => {
+      cancelled = true;
+      if (currentMql && currentHandler) {
+        currentMql.removeEventListener("change", currentHandler);
+      }
+    };
   }
   function waitForAjax(win) {
     return new Promise((resolve) => {
@@ -871,11 +909,14 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
             if (typeof GM_getValue !== "undefined") {
               const gmVal = GM_getValue(key);
               if (gmVal !== void 0 && gmVal !== null) {
-                try {
-                  return JSON.parse(gmVal);
-                } catch (e) {
-                  return gmVal;
+                if (typeof gmVal === "string") {
+                  try {
+                    return JSON.parse(gmVal);
+                  } catch (e) {
+                    return gmVal;
+                  }
                 }
+                return gmVal;
               }
             }
             const localRaw = localStorage.getItem(key);
@@ -917,8 +958,14 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
          * @param {string} key 
          */
         remove(key) {
-          if (typeof GM_deleteValue !== "undefined") GM_deleteValue(key);
-          localStorage.removeItem(key);
+          try {
+            if (typeof GM_deleteValue !== "undefined") GM_deleteValue(key);
+          } catch (e) {
+          }
+          try {
+            localStorage.removeItem(key);
+          } catch (e) {
+          }
         },
         /**
          * Lists all keys in GM storage.
@@ -1091,10 +1138,10 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
             return target[prop];
           },
           set() {
-            return false;
+            return true;
           },
           deleteProperty() {
-            return false;
+            return true;
           }
         });
         if (!unsafeWindow._APM) unsafeWindow._APM = {};
@@ -1125,6 +1172,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
         },
         errors: [],
         // last 50 errors with timestamps
+        _watchers: /* @__PURE__ */ new Map(),
         startTime: Date.now(),
         /**
          * Record a timing landmark.
@@ -1225,6 +1273,9 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
         watchElement(selector) {
           const target = document.querySelector(selector);
           if (!target) return false;
+          if (this._watchers.has(selector)) {
+            this._watchers.get(selector).disconnect();
+          }
           const observer = new MutationObserver((mutations) => {
             this.addError({
               tag: "Sentinel",
@@ -1233,7 +1284,16 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
             console.warn("[Diagnostics] Sentinel alert:", mutations);
           });
           observer.observe(target, { childList: true, subtree: true, attributes: true });
+          this._watchers.set(selector, observer);
           return true;
+        },
+        unwatchElement(selector) {
+          if (this._watchers.has(selector)) {
+            this._watchers.get(selector).disconnect();
+            this._watchers.delete(selector);
+            return true;
+          }
+          return false;
         },
         /**
          * Calculates summary statistics for the UI.
@@ -1542,6 +1602,28 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
     }
   });
 
+  // src/core/origin-guard.js
+  function isTrustedOrigin(origin) {
+    if (!origin || origin === "null") return false;
+    if (origin === window.location.origin) return true;
+    try {
+      const hostname2 = new URL(origin).hostname;
+      return TRUSTED_PATTERNS.some((p) => p.test(hostname2));
+    } catch {
+      return false;
+    }
+  }
+  var TRUSTED_PATTERNS;
+  var init_origin_guard = __esm({
+    "src/core/origin-guard.js"() {
+      TRUSTED_PATTERNS = [
+        /\.hxgnsmartcloud\.com$/,
+        /\.hexagon\.com$/,
+        /\.ptp\.amazon\.dev$/
+      ];
+    }
+  });
+
   // src/modules/forecast/forecast-prefs.js
   var forecast_prefs_exports = {};
   __export(forecast_prefs_exports, {
@@ -1662,6 +1744,41 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
     }
   });
 
+  // src/ui/dom-helpers.js
+  function el(tag, props = {}, children = []) {
+    const element = document.createElement(tag);
+    for (const [key, value] of Object.entries(props)) {
+      if (key === "style" && typeof value === "object") {
+        Object.assign(element.style, value);
+      } else if (key === "dataset" && typeof value === "object") {
+        Object.assign(element.dataset, value);
+      } else if (key.startsWith("on") && typeof value === "function") {
+        element[key] = value;
+      } else if (key === "className") {
+        element.className = value;
+      } else if (key === "innerHTML" || key === "unsafeHTML") {
+        element.innerHTML = value;
+      } else if (["checked", "value", "disabled", "readOnly", "title"].includes(key)) {
+        element[key] = value;
+      } else {
+        element.setAttribute(key, value);
+      }
+    }
+    const childrenArray = Array.isArray(children) ? children : children !== null && children !== void 0 ? [children] : [];
+    for (const child of childrenArray) {
+      if (typeof child === "string" || typeof child === "number") {
+        element.appendChild(document.createTextNode(child));
+      } else if (child && (child.nodeType && (child.nodeType === 1 || child.nodeType === 3 || child.nodeType === 11) || child instanceof SVGElement)) {
+        element.appendChild(child);
+      }
+    }
+    return element;
+  }
+  var init_dom_helpers = __esm({
+    "src/ui/dom-helpers.js"() {
+    }
+  });
+
   // src/core/ui-manager.js
   var ui_manager_exports = {};
   __export(ui_manager_exports, {
@@ -1672,6 +1789,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
     "src/core/ui-manager.js"() {
       init_logger();
       init_utils();
+      init_origin_guard();
       UIManager = /* @__PURE__ */ (function() {
         const localPanels = /* @__PURE__ */ new Set();
         let isInitialized = false;
@@ -1689,7 +1807,10 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
             }
             return root._apmUi;
           } catch (e) {
-            return window._apmUiFallback || { panels: /* @__PURE__ */ new Set(), triggers: /* @__PURE__ */ new Set(), lastTriggerTime: 0, activePanelId: null };
+            if (!window._apmUiFallback) {
+              window._apmUiFallback = { panels: /* @__PURE__ */ new Set(), triggers: /* @__PURE__ */ new Set(), lastTriggerTime: 0, activePanelId: null };
+            }
+            return window._apmUiFallback;
           }
         };
         function initUIManager() {
@@ -1714,12 +1835,12 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
           try {
             window.top.addEventListener("APM_CLOSE_UI", handleCloseSignal);
             window.addEventListener("message", (e) => {
-              if (e.data?.type === "APM_CLOSE_UI") handleCloseSignal(e);
+              if (e.data?.type === "APM_CLOSE_UI" && isTrustedOrigin(e.origin)) handleCloseSignal(e);
             });
           } catch (e) {
             window.addEventListener("APM_CLOSE_UI", handleCloseSignal);
             window.addEventListener("message", (e2) => {
-              if (e2.data?.type === "APM_CLOSE_UI") handleCloseSignal(e2);
+              if (e2.data?.type === "APM_CLOSE_UI" && isTrustedOrigin(e2.origin)) handleCloseSignal(e2);
             });
           }
           hookFrame(window);
@@ -1918,6 +2039,8 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
             beforerequest: (conn, options) => {
               if (options._apmHooked) return;
               options._apmHooked = true;
+              options._apmCompleted = false;
+              options._apmExcepted = false;
               handlers.beforerequest.forEach((fn, id) => {
                 try {
                   fn(win, conn, options);
@@ -1927,6 +2050,8 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
               });
             },
             requestcomplete: (conn, response, options) => {
+              if (options._apmCompleted) return;
+              options._apmCompleted = true;
               handlers.requestcomplete.forEach((fn, id) => {
                 try {
                   fn(win, conn, response, options);
@@ -1936,6 +2061,8 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
               });
             },
             requestexception: (conn, response, options) => {
+              if (options._apmExcepted) return;
+              options._apmExcepted = true;
               handlers.requestexception.forEach((fn, id) => {
                 try {
                   fn(win, conn, response, options);
@@ -2116,6 +2243,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
                 task.lastRun = performance.now();
               };
               if (task.isIdle && typeof window.requestIdleCallback === "function") {
+                task.lastRun = performance.now();
                 window.requestIdleCallback(runTask, { timeout: 2e3 });
               } else {
                 runTask();
@@ -2183,7 +2311,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
           url: url2,
           headers: options.headers || {},
           data: options.body,
-          cookie: options.credentials === "include" || options.credentials === "same-origin",
+          anonymous: !(options.credentials === "include" || options.credentials === "same-origin"),
           onload: (res) => {
             const response = new Response(res.responseText, {
               status: res.status,
@@ -2283,17 +2411,12 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
       });
       const includes = allRules.filter((r) => r.type === "include");
       const excludes = allRules.filter((r) => r.type === "exclude");
-      const fieldRules = [...includes, ...excludes];
-      fieldRules.forEach((rule, idx) => {
+      includes.forEach((rule, idx) => {
         maddonParams[`MADDON_FILTER_ALIAS_NAME_${seq}`] = alias;
         maddonParams[`MADDON_FILTER_OPERATOR_${seq}`] = rule.operator;
         maddonParams[`MADDON_FILTER_VALUE_${seq}`] = rule.value;
         maddonParams[`MADDON_FILTER_SEQNUM_${seq}`] = seq.toString();
-        if (rule.type === "include") {
-          maddonParams[`MADDON_FILTER_JOINER_${seq}`] = idx === includes.length - 1 ? "AND" : "OR";
-        } else {
-          maddonParams[`MADDON_FILTER_JOINER_${seq}`] = "AND";
-        }
+        maddonParams[`MADDON_FILTER_JOINER_${seq}`] = idx === includes.length - 1 ? "AND" : "OR";
         if (includes.length > 1) {
           maddonParams[`MADDON_LPAREN_${seq}`] = idx === 0 ? "true" : "false";
           maddonParams[`MADDON_RPAREN_${seq}`] = idx === includes.length - 1 ? "true" : "false";
@@ -2301,6 +2424,16 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
           maddonParams[`MADDON_LPAREN_${seq}`] = "false";
           maddonParams[`MADDON_RPAREN_${seq}`] = "false";
         }
+        seq++;
+      });
+      excludes.forEach((rule) => {
+        maddonParams[`MADDON_FILTER_ALIAS_NAME_${seq}`] = alias;
+        maddonParams[`MADDON_FILTER_OPERATOR_${seq}`] = rule.operator;
+        maddonParams[`MADDON_FILTER_VALUE_${seq}`] = rule.value;
+        maddonParams[`MADDON_FILTER_SEQNUM_${seq}`] = seq.toString();
+        maddonParams[`MADDON_FILTER_JOINER_${seq}`] = "AND";
+        maddonParams[`MADDON_LPAREN_${seq}`] = "false";
+        maddonParams[`MADDON_RPAREN_${seq}`] = "false";
         seq++;
       });
     }
@@ -2524,40 +2657,45 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
       init_storage();
       init_ajax_hooks();
       init_feature_flags();
+      init_dom_helpers();
       LaborBooker = (function() {
         const laborWin = apmGetGlobalWindow();
         let isRunning2 = false;
         let laborObservers = /* @__PURE__ */ new Map();
         let hoursPresets = ["0.1", "0.25", "0.5", "0.75", "1", "1.5", "2", "2.5", "3"];
         AjaxHooks.onBeforeRequest("labor-save", (win, conn, options) => {
-          if (!FeatureFlags.isEnabled("laborBooker")) return;
-          const url2 = options.url || "";
-          const params = options.params || {};
-          const isSave = url2.includes("pageaction=SAVE") && (url2.includes("WSJOBS.BOO") || params.GRID_NAME === "WSJOBS_BOO");
-          if (isSave) {
-            APMLogger.debug("LaborBooker", "Hijacking Save Request to ensure Rate parameters.");
-            const ensureParam = (key, val) => {
-              if (!params[key] || params[key] === "") params[key] = val;
-              if (typeof options.params === "string") {
-                const regex = new RegExp(`([&?]|^)${key}=([^&]*)`);
-                const match = options.params.match(regex);
-                if (match) {
-                  if (match[2] === "") {
-                    options.params = options.params.replace(regex, `$1${key}=${encodeURIComponent(val)}`);
+          try {
+            if (!FeatureFlags.isEnabled("laborBooker")) return;
+            const url2 = options.url || "";
+            const params = options.params || {};
+            const isSave = url2.includes("pageaction=SAVE") && (url2.includes("WSJOBS.BOO") || params.GRID_NAME === "WSJOBS_BOO");
+            if (isSave) {
+              APMLogger.debug("LaborBooker", "Hijacking Save Request to ensure Rate parameters.");
+              const ensureParam = (key, val) => {
+                if (!params[key] || params[key] === "") params[key] = val;
+                if (typeof options.params === "string") {
+                  const regex = new RegExp(`([&?]|^)${key}=([^&]*)`);
+                  const match = options.params.match(regex);
+                  if (match) {
+                    if (match[2] === "") {
+                      options.params = options.params.replace(regex, `$1${key}=${encodeURIComponent(val)}`);
+                    }
+                  } else {
+                    const sep = options.params.includes("?") ? "&" : options.params.length > 0 ? "&" : "";
+                    options.params += `${sep}${key}=${encodeURIComponent(val)}`;
                   }
-                } else {
-                  const sep = options.params.includes("?") ? "&" : options.params.length > 0 ? "&" : "";
-                  options.params += `${sep}${key}=${encodeURIComponent(val)}`;
                 }
-              }
-            };
-            const emp = params.employee || extractEmployee();
-            ensureParam("employee", emp);
-            ensureParam("octype", "N");
-            ensureParam("ocrtype", "N");
-            ensureParam("traderate", "0.00");
-            ensureParam("ratedate", "0.|01/01/2020|01/01/2035");
-            ensureParam("isdetailfieldchanged", "true");
+              };
+              const emp = params.employee || extractEmployee();
+              ensureParam("employee", emp);
+              ensureParam("octype", "N");
+              ensureParam("ocrtype", "N");
+              ensureParam("traderate", "0.00");
+              ensureParam("ratedate", "0.|01/01/2020|01/01/2035");
+              ensureParam("isdetailfieldchanged", "true");
+            }
+          } catch (e) {
+            APMLogger.error("LaborBooker", "labor-save hook error:", e);
           }
         });
         function detectActivityCode(fAct) {
@@ -2607,6 +2745,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
               zIndex: 10
             });
           } catch (e) {
+            APMLogger.debug("LaborBooker", "checkTabAndInject error:", e);
           }
         }
         async function showQuickBookPopup(win, anchorBtn) {
@@ -2845,18 +2984,29 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
             const datesToDisplay = showYesterday ? [todayStr, yestStr] : [todayStr];
             datesToDisplay.forEach((d) => {
               const val = breakdown[d] || 0;
-              content.innerHTML += `<div class="apm-lb-summary-row">
-                    <span class="apm-lb-summary-day">${d === todayStr ? "Today" : "Yesterday"}</span> <strong class="apm-lb-summary-hours">${val.toFixed(2)}h</strong>
-                </div>`;
+              const row = el("div", { className: "apm-lb-summary-row" }, [
+                el("span", { className: "apm-lb-summary-day" }, d === todayStr ? "Today" : "Yesterday"),
+                document.createTextNode(" "),
+                el("strong", { className: "apm-lb-summary-hours" }, val.toFixed(2) + "h")
+              ]);
+              content.appendChild(row);
             });
-            content.innerHTML += `<div class="apm-lb-summary-total">
-                <span>TOTAL</span> <span>${total.toFixed(2)}h</span>
-            </div>`;
+            const totalRow = el("div", { className: "apm-lb-summary-total" }, [
+              el("span", {}, "TOTAL"),
+              document.createTextNode(" "),
+              el("span", {}, total.toFixed(2) + "h")
+            ]);
+            content.appendChild(totalRow);
           } catch (err) {
+            content.innerHTML = "";
             if (err.message === "SESSION_EXPIRED") {
-              content.innerHTML = '<div class="apm-lb-summary-error">Session Expired!<br/>Please refresh EAM.</div>';
+              const errDiv = el("div", { className: "apm-lb-summary-error" });
+              errDiv.appendChild(document.createTextNode("Session Expired!"));
+              errDiv.appendChild(document.createElement("br"));
+              errDiv.appendChild(document.createTextNode("Please refresh EAM."));
+              content.appendChild(errDiv);
             } else {
-              content.innerHTML = '<div class="apm-lb-summary-empty">No hours booked yet.</div>';
+              content.appendChild(el("div", { className: "apm-lb-summary-empty" }, "No hours booked yet."));
             }
           }
         }
@@ -3269,7 +3419,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
         }
       }
     }
-    if (document.cookie.includes("apm_transition_active")) {
+    if (targetDoc.cookie.includes("apm_transition_active")) {
       targetDoc.cookie = "apm_transition_active=0; path=/; domain=.hxgnsmartcloud.com; max-age=0; SameSite=Lax";
     }
   }
@@ -3305,6 +3455,19 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
         } catch (e) {
         }
       }
+      if (state._sentinel) {
+        try {
+          state._sentinel.disconnect();
+        } catch (e) {
+        }
+        state._sentinel = null;
+        state.sentinelActive = false;
+      }
+      if (state._broadcastInterval) {
+        clearInterval(state._broadcastInterval);
+        state._broadcastInterval = null;
+      }
+      state.hooksApplied = false;
       return;
     }
     state.activeTheme = themeName;
@@ -3435,9 +3598,15 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
       }
     };
     if (!state.sentinelActive) {
+      if (state._sentinel) {
+        try {
+          state._sentinel.disconnect();
+        } catch (e) {
+        }
+      }
       const docLinks = targetDoc.querySelectorAll('link[rel="stylesheet"]');
       docLinks.forEach(flipLink);
-      const sentinel = new MutationObserver((mutations) => {
+      state._sentinel = new MutationObserver((mutations) => {
         if (!isWindowAccessible(targetWin)) return;
         for (const m of mutations) {
           for (const node of m.addedNodes || []) {
@@ -3445,7 +3614,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
           }
         }
       });
-      sentinel.observe(targetDoc.documentElement, { childList: true, subtree: true });
+      state._sentinel.observe(targetDoc.documentElement, { childList: true, subtree: true });
       state.sentinelActive = true;
     }
     const poll = () => {
@@ -3491,10 +3660,17 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
       };
       broadcast();
       if (targetWin === targetWin.top) {
+        if (state._broadcastInterval) {
+          clearInterval(state._broadcastInterval);
+          state._broadcastInterval = null;
+        }
         let count = 0;
-        const iv = setInterval(() => {
+        state._broadcastInterval = setInterval(() => {
           broadcast();
-          if (++count > 10) clearInterval(iv);
+          if (++count > 10) {
+            clearInterval(state._broadcastInterval);
+            state._broadcastInterval = null;
+          }
         }, 1e3);
       }
       setTimeout(() => {
@@ -3528,26 +3704,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
 
   // src/core/theme-broadcast.js
   init_constants();
-
-  // src/core/origin-guard.js
-  var TRUSTED_PATTERNS = [
-    /\.hxgnsmartcloud\.com$/,
-    /\.hexagon\.com$/,
-    /\.amazon\.dev$/,
-    /\.ptp\.amazon\.dev$/
-  ];
-  function isTrustedOrigin(origin) {
-    if (!origin || origin === "null") return false;
-    if (origin === window.location.origin) return true;
-    try {
-      const hostname2 = new URL(origin).hostname;
-      return TRUSTED_PATTERNS.some((p) => p.test(hostname2));
-    } catch {
-      return false;
-    }
-  }
-
-  // src/core/theme-broadcast.js
+  init_origin_guard();
   init_context();
   init_theme_resolver();
   init_utils();
@@ -3692,7 +3849,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
         { id: "labor_v1", fn: () => this.migrateLabor() },
         { id: "promote_v1", fn: () => this.promoteToGlobal() }
       ];
-      if (completedIds.length >= migrations2.length) {
+      if (migrations2.every((m) => completedIds.includes(m.id))) {
         APMLogger.info("Migration", "All migrations previously completed. Skipping.");
         return;
       }
@@ -3952,8 +4109,10 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
       };
       if (document.hidden) {
         APMLogger.info("BootManager", "Tab hidden at boot \u2014 deferring ExtJS poll until visible.");
+        let pollingStarted = false;
         const onVisible = () => {
-          if (!document.hidden) {
+          if (!document.hidden && !pollingStarted) {
+            pollingStarted = true;
             document.removeEventListener("visibilitychange", onVisible);
             APMLogger.info("BootManager", "Tab became visible. Starting ExtJS poll.");
             startPolling();
@@ -3961,7 +4120,8 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
         };
         document.addEventListener("visibilitychange", onVisible);
         setTimeout(() => {
-          if (document.hidden) {
+          if (document.hidden && !pollingStarted) {
+            pollingStarted = true;
             document.removeEventListener("visibilitychange", onVisible);
             APMLogger.warn("BootManager", "Tab still hidden after 30s \u2014 starting ExtJS poll anyway.");
             startPolling();
@@ -4142,38 +4302,8 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
   init_utils();
   init_forecast_prefs();
 
-  // src/ui/dom-helpers.js
-  function el(tag, props = {}, children = []) {
-    const element = document.createElement(tag);
-    for (const [key, value] of Object.entries(props)) {
-      if (key === "style" && typeof value === "object") {
-        Object.assign(element.style, value);
-      } else if (key === "dataset" && typeof value === "object") {
-        Object.assign(element.dataset, value);
-      } else if (key.startsWith("on") && typeof value === "function") {
-        element[key] = value;
-      } else if (key === "className") {
-        element.className = value;
-      } else if (key === "innerHTML" || key === "unsafeHTML") {
-        element.innerHTML = value;
-      } else if (["checked", "value", "disabled", "readOnly", "title"].includes(key)) {
-        element[key] = value;
-      } else {
-        element.setAttribute(key, value);
-      }
-    }
-    const childrenArray = Array.isArray(children) ? children : children !== null && children !== void 0 ? [children] : [];
-    for (const child of childrenArray) {
-      if (typeof child === "string" || typeof child === "number") {
-        element.appendChild(document.createTextNode(child));
-      } else if (child && (child.nodeType && (child.nodeType === 1 || child.nodeType === 3 || child.nodeType === 11) || child instanceof SVGElement)) {
-        element.appendChild(child);
-      }
-    }
-    return element;
-  }
-
   // src/modules/forecast/components/forecast-profile-manager.js
+  init_dom_helpers();
   init_forecast_prefs();
   init_logger();
   function createProfileManager(callbacks = {}) {
@@ -4429,6 +4559,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
   }
 
   // src/modules/forecast/components/filter-builder.js
+  init_dom_helpers();
   init_forecast_prefs();
   init_toast();
   init_logger();
@@ -5103,7 +5234,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
             position: fixed; top: 15px; left: 50%; transform: translateX(-50%);
             z-index: 999999; padding: 8px 24px; border-radius: 30px;
             font-family: sans-serif; font-weight: bold; font-size: 14px;
-            background-color: #2c3e50; box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+            background-color: var(--apm-surface-sunken); box-shadow: 0 4px 15px rgba(0,0,0,0.5);
             display: none; text-align: center; pointer-events: none;
             transition: opacity 0.2s ease-in-out;
         `;
@@ -5115,11 +5246,11 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
       return;
     }
     banner.textContent = msg;
-    banner.style.color = color || "#ffffff";
-    banner.style.border = `2px solid ${color || "#34495e"}`;
+    banner.style.color = color || "var(--apm-text-primary)";
+    banner.style.border = `2px solid ${color || "var(--apm-border)"}`;
     banner.style.display = "block";
     if (_statusTimeout) clearTimeout(_statusTimeout);
-    if (color === "#e74c3c") {
+    if (color === "#e74c3c" || color === "var(--apm-danger)") {
       _statusTimeout = setTimeout(() => {
         banner.style.display = "none";
       }, 4e3);
@@ -5130,7 +5261,8 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
     overlay.className = "thunder-overlay";
     const bolt = document.createElement("div");
     bolt.className = "center-lightning";
-    bolt.innerHTML = `<svg viewBox="0 0 24 24" width="250" height="250"><path d="M18,3 L5,16 L11,16 L7,26 L20,11 L13,11 Z" fill="#f1c40f"/></svg>`;
+    bolt.style.color = "var(--apm-warning)";
+    bolt.innerHTML = `<svg viewBox="0 0 24 24" width="250" height="250"><path d="M18,3 L5,16 L11,16 L7,26 L20,11 L13,11 Z" fill="currentColor"/></svg>`;
     document.body.appendChild(overlay);
     document.body.appendChild(bolt);
     setTimeout(() => {
@@ -5244,121 +5376,125 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
     }
   }
   AjaxHooks.onBeforeRequest("forecast-maddon", (win, conn, options) => {
-    if (!FeatureFlags.isEnabled("forecast")) return;
-    if (!isRunning) {
-      APMLogger.debug("Forecast-MADDON", "Skipped: isRunning=false");
-      return;
-    }
-    const url2 = options.url || "";
-    const params = options.params || {};
-    const isGridData = url2.includes("GRIDDATA") || url2.includes(".xmlhttp") || params.GRID_NAME;
-    if (!isGridData) return;
-    const topDoc = window.top.document;
-    const profSelect = topDoc.getElementById("eam-profile-select");
-    const profId = profSelect?.value;
-    const isWorkOrderSearch = url2.includes("WSJOBS.xmlhttp") || params.GRID_NAME === "WSJOBS";
-    const isCacheRequest = url2.includes("GETCACHE") || typeof params === "string" && params.includes("COMPONENT_INFO_TYPE_MODE=CACHE") || params.COMPONENT_INFO_TYPE_MODE === "CACHE";
-    APMLogger.debug("Forecast-MADDON", `Hook fired: isRunning=${isRunning}, profId=${profId}, isWO=${isWorkOrderSearch}, isCache=${isCacheRequest}, savedProfiles=${savedProfiles.length}, url=${url2.substring(0, 80)}`);
-    if (isWorkOrderSearch && !isCacheRequest) {
-      const winUserFunc = getWinUserFunc(win);
-      if (winUserFunc) {
-        if (currentTarget === "CTJOBS" && winUserFunc !== "CTJOBS") return;
-        if (currentTarget === "WSJOBS" && winUserFunc === "CTJOBS") return;
+    try {
+      if (!FeatureFlags.isEnabled("forecast")) return;
+      if (!isRunning) {
+        APMLogger.debug("Forecast-MADDON", "Skipped: isRunning=false");
+        return;
       }
-      let maddonParams = null;
-      const skipManual = ["today", "quick", "clear"].includes(currentMode);
-      APMLogger.debug("Forecast-MADDON", `Decision: profId=${profId}, skipManual=${skipManual}, currentMode=${currentMode}, profiles=[${savedProfiles.map((p) => p.id).join(",")}]`);
-      if (profId && profId !== "manual") {
-        const activeProfile = savedProfiles.find((p) => p.id === profId);
-        APMLogger.debug("Forecast-MADDON", `Profile lookup: ${activeProfile ? activeProfile.name : "NOT FOUND"}`);
-        if (activeProfile) {
-          APMLogger.debug("Forecast", `Injecting MADDON filters for profile: ${activeProfile.name}`);
-          maddonParams = buildMaddonFilters(activeProfile);
-          if (activeProfile.dateOverride && activeProfile.arbitraryDays) {
-            const dateInclusions = computeDateInclusions(activeProfile);
-            if (dateInclusions.length > 0) {
-              let maxSeq = 0;
-              for (const k of Object.keys(maddonParams)) {
-                const m = k.match(/MADDON_FILTER_SEQNUM_(\d+)/);
-                if (m) maxSeq = Math.max(maxSeq, parseInt(m[1], 10));
+      const url2 = options.url || "";
+      const params = options.params || {};
+      const isGridData = url2.includes("GRIDDATA") || url2.includes(".xmlhttp") || params.GRID_NAME;
+      if (!isGridData) return;
+      const topDoc = window.top.document;
+      const profSelect = topDoc.getElementById("eam-profile-select");
+      const profId = profSelect?.value;
+      const isWorkOrderSearch = url2.includes("WSJOBS.xmlhttp") || params.GRID_NAME === "WSJOBS";
+      const isCacheRequest = url2.includes("GETCACHE") || typeof params === "string" && params.includes("COMPONENT_INFO_TYPE_MODE=CACHE") || params.COMPONENT_INFO_TYPE_MODE === "CACHE";
+      APMLogger.debug("Forecast-MADDON", `Hook fired: isRunning=${isRunning}, profId=${profId}, isWO=${isWorkOrderSearch}, isCache=${isCacheRequest}, savedProfiles=${savedProfiles.length}, url=${url2.substring(0, 80)}`);
+      if (isWorkOrderSearch && !isCacheRequest) {
+        const winUserFunc = getWinUserFunc(win);
+        if (winUserFunc) {
+          if (currentTarget === "CTJOBS" && winUserFunc !== "CTJOBS") return;
+          if (currentTarget === "WSJOBS" && winUserFunc === "CTJOBS") return;
+        }
+        let maddonParams = null;
+        const skipManual = ["today", "quick", "clear"].includes(currentMode);
+        APMLogger.debug("Forecast-MADDON", `Decision: profId=${profId}, skipManual=${skipManual}, currentMode=${currentMode}, profiles=[${savedProfiles.map((p) => p.id).join(",")}]`);
+        if (profId && profId !== "manual") {
+          const activeProfile = savedProfiles.find((p) => p.id === profId);
+          APMLogger.debug("Forecast-MADDON", `Profile lookup: ${activeProfile ? activeProfile.name : "NOT FOUND"}`);
+          if (activeProfile) {
+            APMLogger.debug("Forecast", `Injecting MADDON filters for profile: ${activeProfile.name}`);
+            maddonParams = buildMaddonFilters(activeProfile);
+            if (activeProfile.dateOverride && activeProfile.arbitraryDays) {
+              const dateInclusions = computeDateInclusions(activeProfile);
+              if (dateInclusions.length > 0) {
+                let maxSeq = 0;
+                for (const k of Object.keys(maddonParams)) {
+                  const m = k.match(/MADDON_FILTER_SEQNUM_(\d+)/);
+                  if (m) maxSeq = Math.max(maxSeq, parseInt(m[1], 10));
+                }
+                const needParens = dateInclusions.length > 1;
+                dateInclusions.forEach((dateStr, idx) => {
+                  const s = maxSeq + idx + 1;
+                  const isLast = idx === dateInclusions.length - 1;
+                  maddonParams[`MADDON_FILTER_ALIAS_NAME_${s}`] = "schedstartdate";
+                  maddonParams[`MADDON_FILTER_OPERATOR_${s}`] = "=";
+                  maddonParams[`MADDON_FILTER_VALUE_${s}`] = dateStr;
+                  maddonParams[`MADDON_FILTER_SEQNUM_${s}`] = s.toString();
+                  maddonParams[`MADDON_FILTER_JOINER_${s}`] = isLast ? "AND" : "OR";
+                  maddonParams[`MADDON_LPAREN_${s}`] = needParens && idx === 0 ? "true" : "false";
+                  maddonParams[`MADDON_RPAREN_${s}`] = needParens && isLast ? "true" : "false";
+                });
+                APMLogger.debug("Forecast", `Appended ${dateInclusions.length} date inclusion filters (= OR)`);
               }
-              const needParens = dateInclusions.length > 1;
-              dateInclusions.forEach((dateStr, idx) => {
-                const s = maxSeq + idx + 1;
-                const isLast = idx === dateInclusions.length - 1;
-                maddonParams[`MADDON_FILTER_ALIAS_NAME_${s}`] = "schedstartdate";
-                maddonParams[`MADDON_FILTER_OPERATOR_${s}`] = "=";
-                maddonParams[`MADDON_FILTER_VALUE_${s}`] = dateStr;
-                maddonParams[`MADDON_FILTER_SEQNUM_${s}`] = s.toString();
-                maddonParams[`MADDON_FILTER_JOINER_${s}`] = isLast ? "AND" : "OR";
-                maddonParams[`MADDON_LPAREN_${s}`] = needParens && idx === 0 ? "true" : "false";
-                maddonParams[`MADDON_RPAREN_${s}`] = needParens && isLast ? "true" : "false";
-              });
-              APMLogger.debug("Forecast", `Appended ${dateInclusions.length} date inclusion filters (= OR)`);
             }
           }
-        }
-      } else if (!skipManual) {
-        const descVal = topDoc.getElementById("eam-desc-text")?.value?.trim();
-        const descOp = topDoc.getElementById("eam-desc-op")?.value;
-        let manualDesc = descVal;
-        if (descVal && descOp === "Does Not Contain") {
-          manualDesc = descVal.split(",").map((s) => s.trim()).filter((s) => s).map((s) => s.startsWith("!") ? s : "!" + s).join(", ");
-        }
-        const manualProf = {
-          desc: manualDesc
-        };
-        if (manualProf.desc) {
-          APMLogger.debug("Forecast", "Injecting manual MADDON filters");
-          maddonParams = buildMaddonFilters(manualProf);
-        }
-      }
-      if (maddonParams) {
-        const currentParams = typeof options.params === "object" ? options.params : typeof options.params === "string" ? Object.fromEntries(new URLSearchParams(options.params)) : {};
-        let maxSeq = 0;
-        Object.keys(currentParams).forEach((k) => {
-          const match = k.match(/MADDON_FILTER_SEQNUM_(\d+)/);
-          if (match) maxSeq = Math.max(maxSeq, parseInt(match[1], 10));
-        });
-        const shiftedMaddon = {};
-        let ourSeqOffset = maxSeq;
-        const filters = [];
-        let i = 1;
-        while (maddonParams[`MADDON_FILTER_ALIAS_NAME_${i}`]) {
-          filters.push({
-            ALIAS: maddonParams[`MADDON_FILTER_ALIAS_NAME_${i}`],
-            OPERATOR: maddonParams[`MADDON_FILTER_OPERATOR_${i}`],
-            VALUE: maddonParams[`MADDON_FILTER_VALUE_${i}`],
-            JOINER: maddonParams[`MADDON_FILTER_JOINER_${i}`],
-            LPAREN: maddonParams[`MADDON_LPAREN_${i}`],
-            RPAREN: maddonParams[`MADDON_RPAREN_${i}`]
-          });
-          i++;
-        }
-        filters.forEach((f, idx) => {
-          const s = ourSeqOffset + idx + 1;
-          shiftedMaddon[`MADDON_FILTER_ALIAS_NAME_${s}`] = f.ALIAS;
-          shiftedMaddon[`MADDON_FILTER_OPERATOR_${s}`] = f.OPERATOR;
-          shiftedMaddon[`MADDON_FILTER_VALUE_${s}`] = f.VALUE;
-          shiftedMaddon[`MADDON_FILTER_JOINER_${s}`] = f.JOINER;
-          shiftedMaddon[`MADDON_FILTER_SEQNUM_${s}`] = s.toString();
-          shiftedMaddon[`MADDON_LPAREN_${s}`] = f.LPAREN;
-          shiftedMaddon[`MADDON_RPAREN_${s}`] = f.RPAREN;
-        });
-        APMLogger.debug("Forecast-MADDON", `Injecting ${filters.length} MADDON filters, paramsType=${typeof options.params}`);
-        if (typeof options.params === "object") {
-          Object.assign(options.params, shiftedMaddon);
-        } else if (typeof options.params === "string") {
-          const searchParams = new URLSearchParams(options.params);
-          for (const [k, v] of Object.entries(shiftedMaddon)) {
-            searchParams.set(k, v);
+        } else if (!skipManual) {
+          const descVal = topDoc.getElementById("eam-desc-text")?.value?.trim();
+          const descOp = topDoc.getElementById("eam-desc-op")?.value;
+          let manualDesc = descVal;
+          if (descVal && descOp === "Does Not Contain") {
+            manualDesc = descVal.split(",").map((s) => s.trim()).filter((s) => s).map((s) => s.startsWith("!") ? s : "!" + s).join(", ");
           }
-          options.params = searchParams.toString();
+          const manualProf = {
+            desc: manualDesc
+          };
+          if (manualProf.desc) {
+            APMLogger.debug("Forecast", "Injecting manual MADDON filters");
+            maddonParams = buildMaddonFilters(manualProf);
+          }
         }
-        APMLogger.debug("Forecast-MADDON", "MADDON injection complete");
-      } else {
-        APMLogger.debug("Forecast-MADDON", "No maddonParams to inject");
+        if (maddonParams) {
+          const currentParams = typeof options.params === "object" ? options.params : typeof options.params === "string" ? Object.fromEntries(new URLSearchParams(options.params)) : {};
+          let maxSeq = 0;
+          Object.keys(currentParams).forEach((k) => {
+            const match = k.match(/MADDON_FILTER_SEQNUM_(\d+)/);
+            if (match) maxSeq = Math.max(maxSeq, parseInt(match[1], 10));
+          });
+          const shiftedMaddon = {};
+          let ourSeqOffset = maxSeq;
+          const filters = [];
+          let i = 1;
+          while (maddonParams[`MADDON_FILTER_ALIAS_NAME_${i}`]) {
+            filters.push({
+              ALIAS: maddonParams[`MADDON_FILTER_ALIAS_NAME_${i}`],
+              OPERATOR: maddonParams[`MADDON_FILTER_OPERATOR_${i}`],
+              VALUE: maddonParams[`MADDON_FILTER_VALUE_${i}`],
+              JOINER: maddonParams[`MADDON_FILTER_JOINER_${i}`],
+              LPAREN: maddonParams[`MADDON_LPAREN_${i}`],
+              RPAREN: maddonParams[`MADDON_RPAREN_${i}`]
+            });
+            i++;
+          }
+          filters.forEach((f, idx) => {
+            const s = ourSeqOffset + idx + 1;
+            shiftedMaddon[`MADDON_FILTER_ALIAS_NAME_${s}`] = f.ALIAS;
+            shiftedMaddon[`MADDON_FILTER_OPERATOR_${s}`] = f.OPERATOR;
+            shiftedMaddon[`MADDON_FILTER_VALUE_${s}`] = f.VALUE;
+            shiftedMaddon[`MADDON_FILTER_JOINER_${s}`] = f.JOINER;
+            shiftedMaddon[`MADDON_FILTER_SEQNUM_${s}`] = s.toString();
+            shiftedMaddon[`MADDON_LPAREN_${s}`] = f.LPAREN;
+            shiftedMaddon[`MADDON_RPAREN_${s}`] = f.RPAREN;
+          });
+          APMLogger.debug("Forecast-MADDON", `Injecting ${filters.length} MADDON filters, paramsType=${typeof options.params}`);
+          if (typeof options.params === "object") {
+            Object.assign(options.params, shiftedMaddon);
+          } else if (typeof options.params === "string") {
+            const searchParams = new URLSearchParams(options.params);
+            for (const [k, v] of Object.entries(shiftedMaddon)) {
+              searchParams.set(k, v);
+            }
+            options.params = searchParams.toString();
+          }
+          APMLogger.debug("Forecast-MADDON", "MADDON injection complete");
+        } else {
+          APMLogger.debug("Forecast-MADDON", "No maddonParams to inject");
+        }
       }
+    } catch (e) {
+      APMLogger.error("Forecast", "MADDON hook error:", e);
     }
   });
   function initAjaxInterceptors() {
@@ -5972,6 +6108,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
 
   // src/modules/forecast/forecast-ui.js
   init_forecast_prefs();
+  init_dom_helpers();
 
   // src/ui/styles.js
   var APM_STATIC_STYLES = `
@@ -5981,7 +6118,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
  * Surface: deep charcoal with slight warmth.
  * Accent: EAM blue. Semantic: green/red/amber.
  * ========================= */
-.apm-ui-panel, .apm-settings-container, .apm-labor-panel, .eam-fc-container {
+:root {
     --apm-surface-0: #35404a;
     --apm-surface-inset: #2b343c;
     --apm-surface-sunken: #22292f;
@@ -6130,26 +6267,26 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
  * ========================= */
 .eam-slider-switch { position: relative; display: inline-block; width: 32px; height: 18px; margin: 0; flex-shrink: 0; }
 .eam-slider-switch input { opacity: 0; width: 0; height: 0; }
-.eam-slider-track { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: var(--apm-control-muted, #505f6e); transition: .2s; border-radius: 18px; }
+.eam-slider-track { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: var(--apm-control-muted); transition: .2s; border-radius: 18px; }
 .eam-slider-track:before { position: absolute; content: ""; height: 12px; width: 12px; left: 3px; bottom: 3px; background-color: white; transition: .2s; border-radius: 50%; }
-.eam-slider-switch input:checked + .eam-slider-track { background-color: var(--apm-accent, #3498db); }
+.eam-slider-switch input:checked + .eam-slider-track { background-color: var(--apm-accent); }
 .eam-slider-switch input:checked + .eam-slider-track:before { transform: translateX(14px); }
 
 /* =========================
  * Tabs and Hidden Classes
  * ========================= */
 .apm-tab-hidden { display: none !important; }
-.apm-overflow-badge { font-size: 9px; background: var(--apm-warning, #f39c12); color: #fff; padding: 1px 4px; border-radius: 3px; margin-left: 6px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.3px; }
+.apm-overflow-badge { font-size: 9px; background: var(--apm-warning); color: #fff; padding: 1px 4px; border-radius: 3px; margin-left: 6px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.3px; }
 
 /* =========================
  * ColorCode Nametag & Links
  * ========================= */
-.apm-nametag { display: table; color: #ffffff; font-weight: bold; font-size: 11px; padding: 3px 6px; border-radius: 4px; margin-top: 5px; text-align: center; box-shadow: 0 1px 3px rgba(0,0,0,0.3); cursor: pointer; transition: transform 0.1s; }
+.apm-nametag { display: table; color: var(--apm-text-primary); font-weight: bold; font-size: 11px; padding: 3px 6px; border-radius: 4px; margin-top: 5px; text-align: center; box-shadow: 0 1px 3px rgba(0,0,0,0.3); cursor: pointer; transition: transform 0.1s; }
 .apm-nametag:hover { transform: scale(1.05); }
-#apm-filter-banner { position: fixed; top: 10px; left: 50%; transform: translateX(-50%); background: #e74c3c; color: white; padding: 6px 16px; border-radius: 20px; font-weight: bold; font-size: 13px; cursor: pointer; z-index: 2147483647; display: none; box-shadow: 0 4px 10px rgba(0,0,0,0.5); transition: filter 0.15s, transform 0.1s; }
+#apm-filter-banner { position: fixed; top: 10px; left: 50%; transform: translateX(-50%); background: var(--apm-danger); color: white; padding: 6px 16px; border-radius: 20px; font-weight: bold; font-size: 13px; cursor: pointer; z-index: 2147483647; display: none; box-shadow: 0 4px 10px rgba(0,0,0,0.5); transition: filter 0.15s, transform 0.1s; }
 #apm-filter-banner:hover { filter: brightness(1.1); }
 #apm-filter-banner:active { transform: translateX(-50%) scale(0.97); }
-.apm-wo-link { color: #007bff !important; text-decoration: underline !important; font-weight: bold !important; cursor: pointer; }
+.apm-wo-link { color: var(--apm-accent) !important; text-decoration: underline !important; font-weight: bold !important; cursor: pointer; }
 .apm-copy-icon { display: inline-block; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='13' height='13' viewBox='0 0 24 24' fill='none' stroke='%23007bff' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='9' y='9' width='13' height='13' rx='2' ry='2'%3E%3C/rect%3E%3Cpath d='M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1'%3E%3C/path%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: center; width: 14px; height: 14px; margin-left: 8px; vertical-align: middle; cursor: pointer; opacity: 0.4; }
 .apm-copy-icon:hover, .apm-copy-success { opacity: 1; }
 .apm-copy-success { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='13' height='13' viewBox='0 0 24 24' fill='none' stroke='%2328a745' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='20 6 9 17 4 12'%3E%3C/polyline%3E%3C/svg%3E") !important; }
@@ -6209,7 +6346,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
 .apm-checklist-box { background: rgba(62,180,137,0.06); border: 1px solid rgba(62,180,137,0.15); padding: 6px 8px; border-radius: var(--apm-radius); margin-bottom: 10px; flex-wrap: wrap; }
 .apm-checklist-title { width: 100%; font-size: var(--apm-text-xs); color: var(--apm-success); margin-bottom: 4px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.6px; }
 .apm-checklist-row { display: flex; gap: 8px; width: 100%; align-items: center; }
-.apm-textarea-input { height: 54px; padding: 6px 8px; font-size: var(--apm-text-sm); line-height: 1.3; resize: none; font-family: var(--apm-font, sans-serif); border: 1px solid var(--apm-input-border); background: var(--apm-input-bg); color: var(--apm-input-text); transition: all 0.15s; text-transform: none; }
+.apm-textarea-input { height: 54px; padding: 6px 8px; font-size: var(--apm-text-sm); line-height: 1.3; resize: none; font-family: var(--apm-font); border: 1px solid var(--apm-input-border); background: var(--apm-input-bg); color: var(--apm-input-text); transition: all 0.15s; text-transform: none; }
 .apm-textarea-input:focus { border-color: var(--apm-accent); background: #ffffff; box-shadow: 0 0 0 2px var(--apm-input-focus); }
 .apm-ui-settings-toggles { display:flex; margin-bottom:10px; background:var(--apm-surface-sunken); border-radius:var(--apm-radius-sm); overflow:hidden; border:1px solid var(--apm-border); }
 .apm-ui-settings-btn { flex:1; text-align:center; padding:8px; cursor:pointer; font-size:var(--apm-text-base); font-weight:bold; transition: all 0.15s; user-select: none; }
@@ -6219,10 +6356,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
 .apm-ui-settings-btn.inactive:hover { color:var(--apm-text-secondary); background: rgba(255,255,255,0.03); }
 .apm-ui-settings-list { background:var(--apm-surface-sunken); border:1px solid var(--apm-border); border-radius:var(--apm-radius-sm); padding:5px; min-height:60px; max-height: 45vh; overflow-y:auto; margin-bottom:10px; }
 
-.apm-ui-settings-save { width:100%; background:var(--apm-success-bright); color:white; border:none; padding:8px 12px; border-radius:var(--apm-radius); cursor:pointer; font-weight:bold; font-size:var(--apm-text-md); transition: filter 0.15s, transform 0.1s; }
-.apm-ui-settings-save:hover { filter:brightness(1.1); }
-.apm-ui-settings-save:active { transform: scale(0.98); }
-.apm-ui-settings-reset { width:100%; background:var(--apm-danger); color:white; border:none; padding:6px 12px; border-radius:var(--apm-radius); cursor:pointer; font-weight:bold; font-size:var(--apm-text-base); margin-top:6px; display:none; transition: filter 0.15s, transform 0.1s; }
+.apm-ui-settings-reset { width:100%; background:var(--apm-danger); color:white; border:none; padding:6px 12px; border-radius:var(--apm-radius); cursor:pointer; font-weight:bold; font-size:var(--apm-text-base); display:none; transition: filter 0.15s, transform 0.1s; }
 .apm-ui-settings-reset:hover { filter:brightness(1.1); }
 .apm-ui-settings-reset:active { transform: scale(0.98); }
 .apm-tab-action-footer { flex-shrink: 0; padding: 12px 15px 5px 0; border-top: 1px solid var(--apm-border); margin-top: 5px; }
@@ -6254,7 +6388,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
 .apm-help-section b { color: var(--apm-text-bright); }
 .apm-help-content ul { padding-left: 20px; margin: 10px 0; }
 .apm-help-content li { margin-bottom: 8px; }
-.apm-help-content kbd { background: var(--apm-surface-raised); padding: 2px 6px; border-radius: var(--apm-radius-sm); font-family: var(--apm-font-mono, monospace); font-size: 12px; color: var(--apm-accent); border: 1px solid var(--apm-border-emphasis); }
+.apm-help-content kbd { background: var(--apm-surface-raised); padding: 2px 6px; border-radius: var(--apm-radius-sm); font-family: var(--apm-font-mono); font-size: 12px; color: var(--apm-accent); border: 1px solid var(--apm-border-emphasis); }
 .apm-footer { margin-top: 10px; text-align: center; display: flex; flex-direction: column; gap: 8px; flex-shrink: 0; border-top: 1px solid var(--apm-border); padding-top: 10px; }
 .apm-footer-help-btn { cursor: pointer; color: var(--apm-accent); font-size: 11px; text-decoration: underline; font-weight: bold; }
 .apm-footer-help-btn-box { background: var(--apm-control-bg); color: var(--apm-text-primary); border: none; padding: 6px 12px; border-radius: var(--apm-radius-sm); cursor: pointer; font-size: 11px; font-weight: bold; transition: background 0.15s; box-shadow: var(--apm-shadow-sm); }
@@ -6266,12 +6400,12 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
 .apm-footer-version { font-size: var(--apm-text-xs); color: var(--apm-text-disabled); }
 
 .apm-qs-container { position: fixed; top: 3px; left: 110px; z-index: 20; display: flex; align-items: center; gap: 8px; background: transparent; padding: 0 10px; height: 42px; }
-.apm-qs-label { color: #d1d1d1; font-family: var(--apm-font, sans-serif); font-weight: bold; font-size: 13px; cursor: default; user-select: none; margin-right: 2px; }
-.apm-qs-input { width: 140px; font-family: var(--apm-font-mono, monospace); font-weight: bold; height: 24px; padding: 0 6px; box-sizing: border-box; outline: none; background: rgba(255,255,255,0.9); color: #1e272e; border: 1px solid rgba(255,255,255,0.3); border-radius: 3px; }
-.apm-qs-input:focus { border-color: var(--apm-accent, #3498db); box-shadow: 0 0 0 2px var(--apm-input-focus, rgba(52,152,219,0.4)); }
-.apm-qs-btn { cursor: pointer; display: flex; align-items: center; justify-content: center; padding: 0 8px; height: 24px; border-radius: 3px; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); color: #d1d1d1; transition: background 0.15s; }
+.apm-qs-label { color: var(--apm-text-secondary); font-family: var(--apm-font); font-weight: bold; font-size: 13px; cursor: default; user-select: none; margin-right: 2px; }
+.apm-qs-input { width: 140px; font-family: var(--apm-font-mono); font-weight: bold; height: 24px; padding: 0 6px; box-sizing: border-box; outline: none; background: rgba(255,255,255,0.9); color: var(--apm-input-text); border: 1px solid rgba(255,255,255,0.3); border-radius: 3px; }
+.apm-qs-input:focus { border-color: var(--apm-accent); box-shadow: 0 0 0 2px var(--apm-input-focus)); }
+.apm-qs-btn { cursor: pointer; display: flex; align-items: center; justify-content: center; padding: 0 8px; height: 24px; border-radius: 3px; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); color: var(--apm-text-secondary); transition: background 0.15s; }
 .apm-qs-btn:hover { background: rgba(255,255,255,0.15); }
-.apm-qs-status { color: #d1d1d1; font-family: var(--apm-font, sans-serif); font-size: 11px; opacity: 0.7; width: 80px; margin-left: 5px; white-space: nowrap; user-select: none; }
+.apm-qs-status { color: var(--apm-text-secondary); font-family: var(--apm-font); font-size: 11px; opacity: 0.7; width: 80px; margin-left: 5px; white-space: nowrap; user-select: none; }
 .eam-fc-date-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:5px; }
 .eam-fc-date-label { font-size:var(--apm-text-base); color:var(--apm-text-secondary); font-weight:bold; }
 .eam-fc-date-mode-toggle { display:inline-flex; border:1px solid var(--apm-border); border-radius:var(--apm-radius-sm); overflow:hidden; }
@@ -6312,35 +6446,35 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
 /* =========================
  * Labor Tracker UI
  * ========================= */
-.apm-labor-trigger { position: fixed; background: var(--apm-accent, #3498db); color: white; padding: 10px; cursor: pointer; font-weight: bold; font-size: 12px; z-index: 2147483647; box-shadow: var(--apm-shadow-sm, 0 1px 3px rgba(0,0,0,0.2)); transition: filter 0.15s; user-select: none; display: flex; align-items: center; justify-content: center; white-space: nowrap; letter-spacing: 0.5px; }
+.apm-labor-trigger { position: fixed; background: var(--apm-accent); color: white; padding: 10px; cursor: pointer; font-weight: bold; font-size: 12px; z-index: 2147483647; box-shadow: var(--apm-shadow-sm)); transition: filter 0.15s; user-select: none; display: flex; align-items: center; justify-content: center; white-space: nowrap; letter-spacing: 0.5px; }
 .apm-labor-trigger:hover { filter: brightness(1.1); }
-.apm-labor-panel { position: fixed; width: min(280px, 80vw); background: var(--apm-surface-0, #35404a); border: 1px solid var(--apm-border-strong, #4a5a6a); border-radius: var(--apm-radius-lg, 10px); padding: 15px; z-index: 2147483646; transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1); display: none; visibility: hidden; flex-direction: column; box-shadow: var(--apm-shadow, 0 8px 25px rgba(0,0,0,0.6)); }
+.apm-labor-panel { position: fixed; width: min(280px, 80vw); background: var(--apm-surface-0, #35404a); border: 1px solid var(--apm-border-strong); border-radius: var(--apm-radius-lg); padding: 15px; z-index: 2147483646; transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1); display: none; visibility: hidden; flex-direction: column; box-shadow: var(--apm-shadow)); }
 
-.labor-tabs { display: flex; gap: 2px; background: var(--apm-surface-sunken, #22292f); border-radius: var(--apm-radius-sm, 4px); overflow: hidden; margin-bottom: 15px; border: 1px solid var(--apm-border, #45535e); }
-.labor-tab { flex: 1; padding: 8px; text-align: center; font-size: 11px; cursor: pointer; color: var(--apm-text-secondary, #b0bec5); font-weight: bold; transition: 0.15s; user-select: none; }
-.labor-tab.active { background: var(--apm-accent, #3498db); color: white; }
-.labor-total { font-size: var(--apm-text-hero, 32px); font-weight: 700; text-align: center; margin: 10px 0; color: var(--apm-text-bright, #ecf0f1); }
-.labor-total-unit { font-size: 14px; color: var(--apm-text-disabled, #7f8c8d); font-weight: 600; }
-.labor-status-error { font-size: 16px; color: var(--apm-danger, #e74c3c); }
-.labor-status-loading { font-size: 16px; color: var(--apm-warning, #f39c12); }
-.labor-empty { text-align: center; padding: 10px; color: var(--apm-text-disabled, #7f8c8d); font-size: var(--apm-text-base, 12px); }
-.labor-row { display: flex; justify-content: space-between; padding: 6px 10px; border-bottom: 1px solid var(--apm-border, #45535e); font-size: 12px; color: var(--apm-text-tertiary, #bdc3c7); }
+.labor-tabs { display: flex; gap: 2px; background: var(--apm-surface-sunken); border-radius: var(--apm-radius-sm); overflow: hidden; margin-bottom: 15px; border: 1px solid var(--apm-border); }
+.labor-tab { flex: 1; padding: 8px; text-align: center; font-size: 11px; cursor: pointer; color: var(--apm-text-secondary); font-weight: bold; transition: 0.15s; user-select: none; }
+.labor-tab.active { background: var(--apm-accent); color: white; }
+.labor-total { font-size: var(--apm-text-hero); font-weight: 700; text-align: center; margin: 10px 0; color: var(--apm-text-bright); }
+.labor-total-unit { font-size: 14px; color: var(--apm-text-disabled); font-weight: 600; }
+.labor-status-error { font-size: 16px; color: var(--apm-danger); }
+.labor-status-loading { font-size: 16px; color: var(--apm-warning); }
+.labor-empty { text-align: center; padding: 10px; color: var(--apm-text-disabled); font-size: var(--apm-text-base); }
+.labor-row { display: flex; justify-content: space-between; padding: 6px 10px; border-bottom: 1px solid var(--apm-border); font-size: 12px; color: var(--apm-text-tertiary); }
 .apm-labor-header { display:flex; justify-content:space-between; align-items:center; margin-bottom: 8px; }
-.apm-labor-target-lbl { font-size:11px; color:var(--apm-text-tertiary, #bdc3c7); font-weight:bold; }
-.apm-labor-mgr-toggle { background:transparent; color:var(--apm-accent, #3498db); border:none; padding:0; cursor:pointer; font-size:10px; text-decoration:underline; }
-.apm-labor-mgr-panel { display:none; background:var(--apm-surface-inset, #2b343c); padding:8px; border-radius:var(--apm-radius-sm, 4px); margin-bottom:10px; gap:6px; flex-direction:column; }
+.apm-labor-target-lbl { font-size:11px; color:var(--apm-text-tertiary); font-weight:bold; }
+.apm-labor-mgr-toggle { background:transparent; color:var(--apm-accent); border:none; padding:0; cursor:pointer; font-size:10px; text-decoration:underline; }
+.apm-labor-mgr-panel { display:none; background:var(--apm-surface-inset); padding:8px; border-radius:var(--apm-radius-sm); margin-bottom:10px; gap:6px; flex-direction:column; }
 .apm-labor-mgr-row { display:flex; gap:6px; }
-.apm-labor-emp-select { flex-grow:1; padding:4px; border-radius:3px; border:1px solid var(--apm-input-border, transparent); background:var(--apm-input-bg, #ecf0f1); color:var(--apm-input-text, #2c3e50); font-size:11px; font-weight:bold; cursor:pointer; text-transform:uppercase; }
-.apm-labor-btn-add { background:var(--apm-accent, #3498db); color:white; border:none; padding:4px 8px; border-radius:3px; cursor:pointer; font-weight:bold; transition:filter 0.15s; }
+.apm-labor-emp-select { flex-grow:1; padding:4px; border-radius:3px; border:1px solid var(--apm-input-border); background:var(--apm-input-bg); color:var(--apm-input-text); font-size:11px; font-weight:bold; cursor:pointer; text-transform:uppercase; }
+.apm-labor-btn-add { background:var(--apm-accent); color:white; border:none; padding:4px 8px; border-radius:3px; cursor:pointer; font-weight:bold; transition:filter 0.15s; }
 .apm-labor-btn-add:hover { filter:brightness(1.1); }
-.apm-labor-btn-rem { background:var(--apm-danger, #e74c3c); color:white; border:none; padding:4px 8px; border-radius:3px; cursor:pointer; font-weight:bold; transition:filter 0.15s; }
+.apm-labor-btn-rem { background:var(--apm-danger); color:white; border:none; padding:4px 8px; border-radius:3px; cursor:pointer; font-weight:bold; transition:filter 0.15s; }
 .apm-labor-btn-rem:hover { filter:brightness(1.1); }
 .apm-labor-breakdown-box { max-height: 200px; overflow-y: auto; }
-.apm-labor-force-refresh { margin-top:15px; background:var(--apm-control-bg, #4a5a6a); color:var(--apm-text-primary, #ffffff); border:none; padding:8px; border-radius:var(--apm-radius-sm, 4px); cursor:pointer; font-size:11px; transition: background 0.15s; }
-.apm-labor-force-refresh:hover { background: var(--apm-control-bg-hover, #5c6d7e); }
+.apm-labor-force-refresh { margin-top:15px; background:var(--apm-control-bg); color:var(--apm-text-primary); border:none; padding:8px; border-radius:var(--apm-radius-sm); cursor:pointer; font-size:11px; transition: background 0.15s; }
+.apm-labor-force-refresh:hover { background: var(--apm-control-bg-hover); }
 
 #apm-creator-panel select, #apm-creator-panel input, #apm-creator-panel textarea { outline: none !important; box-sizing: border-box; }
-.creator-btn { cursor: pointer; transition: filter 0.15s; font-weight: bold; border-radius: var(--apm-radius-sm, 4px); border: none; padding: 6px 12px; font-size: 12px; }
+.creator-btn { cursor: pointer; transition: filter 0.15s; font-weight: bold; border-radius: var(--apm-radius-sm); border: none; padding: 6px 12px; font-size: 12px; }
 .creator-btn:hover { filter:brightness(1.1); }
 .field-row { display: flex; gap: 10px; margin-bottom: 10px; align-items: center; min-width: 0; }
 .field-label { font-size: 12px; color: var(--apm-text-secondary); white-space: nowrap; width: 100px; text-align: right; }
@@ -6356,7 +6490,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
 .apm-col-item:hover { background: var(--apm-control-bg); border-color: var(--apm-border-strong); }
 .apm-col-item:active { cursor: grabbing; box-shadow: 0 2px 8px rgba(0,0,0,0.3); }
 .apm-col-item.dragging { opacity: 0.5; background: var(--apm-warning); border-color: var(--apm-warning); }
-#apm-global-toast { position: fixed; top: 15px; left: 50%; transform: translateX(-50%); z-index: 9999999; padding: 8px 20px; border-radius: 30px; font-weight: bold; font-family: var(--apm-font, sans-serif); font-size: 13px; color: white; opacity: 0; pointer-events: none; transition: opacity 0.3s ease; box-shadow: 0px 4px 15px rgba(0,0,0,0.4); display: none; }
+#apm-global-toast { position: fixed; top: 15px; left: 50%; transform: translateX(-50%); z-index: 9999999; padding: 8px 20px; border-radius: 30px; font-weight: bold; font-family: var(--apm-font); font-size: 13px; color: white; opacity: 0; pointer-events: none; transition: opacity 0.3s ease; box-shadow: 0px 4px 15px rgba(0,0,0,0.4); display: none; }
 
 /* Filter Buttons & Extras */
 .apm-filter-btn { position: absolute; left: 270px; top: 9px; z-index: 1000; padding: 4px 10px; color: white; border: none; border-radius: 4px; font-weight: bold; cursor: pointer; font-size: 11px; box-shadow: 0 1px 3px rgba(0,0,0,0.3); transition: background 0.2s; }
@@ -6369,63 +6503,63 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
  * Modals & Premium UI elements
  * ========================= */
 .apm-modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); backdrop-filter: blur(4px); z-index: 2147483647; display: flex; align-items: center; justify-content: center; padding: 20px; box-sizing: border-box; }
-.apm-modal-content { background: #35404a; border: 1px solid #4a5a6a; border-radius: 12px; box-shadow: 0 15px 40px rgba(0,0,0,0.5); display: flex; flex-direction: column; overflow: hidden; animation: apm-modal-appear 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275); max-height: 100%; }
-.apm-modal-header { padding: 14px 18px; background: rgba(255,255,255,0.03); border-bottom: 1px solid #4a5a6a; display: flex; justify-content: space-between; align-items: center; }
+.apm-modal-content { background: var(--apm-surface-0, #35404a); border: 1px solid var(--apm-border-strong); border-radius: 12px; box-shadow: 0 15px 40px rgba(0,0,0,0.5); display: flex; flex-direction: column; overflow: hidden; animation: apm-modal-appear 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275); max-height: 100%; }
+.apm-modal-header { padding: 14px 18px; background: rgba(255,255,255,0.03); border-bottom: 1px solid var(--apm-border-strong); display: flex; justify-content: space-between; align-items: center; }
 .apm-modal-body { padding: 18px; overflow-y: auto; flex: 1; min-height: 0; scrollbar-gutter: stable; }
 .apm-modal-body::-webkit-scrollbar { width: 6px; }
 .apm-modal-body::-webkit-scrollbar-track { background: transparent; }
 .apm-modal-body::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 3px; }
 .apm-modal-body::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.35); }
-.apm-modal-footer { padding: 12px 15px; border-top: 1px solid var(--apm-border, #45535e); background: rgba(0,0,0,0.1); }
+.apm-modal-footer { padding: 12px 15px; border-top: 1px solid var(--apm-border); background: rgba(0,0,0,0.1); }
 @keyframes apm-modal-appear { from { opacity: 0; transform: scale(0.95) translateY(10px); } to { opacity: 1; transform: scale(1) translateY(0); } }
 
-.apm-profile-badge { display: inline-block; padding: 2px 6px; border-radius: 10px; background: var(--apm-accent-subtle, rgba(52,152,219,0.1)); color: var(--apm-accent, #3498db); font-size: var(--apm-text-xs, 10px); font-weight: 600; text-transform: uppercase; letter-spacing: 0.3px; margin-left: 8px; border: 1px solid rgba(74,158,222,0.3); }
+.apm-profile-badge { display: inline-block; padding: 2px 6px; border-radius: 10px; background: var(--apm-accent-subtle)); color: var(--apm-accent); font-size: var(--apm-text-xs); font-weight: 600; text-transform: uppercase; letter-spacing: 0.3px; margin-left: 8px; border: 1px solid rgba(74,158,222,0.3); }
 
 /* =========================
  * Filter Builder (Dataspy)
  * ========================= */
 .fb-modal { }
-.fb-mode-toggle { display: inline-flex; border: 1px solid var(--apm-border, #45535e); border-radius: var(--apm-radius-sm, 4px); overflow: hidden; margin-left: auto; }
-.fb-mode-btn { background: transparent; border: none; color: var(--apm-text-disabled, #7f8c8d); padding: 4px 12px; font-size: var(--apm-text-base, 12px); cursor: pointer; transition: all 0.15s; }
-.fb-mode-btn.fb-mode-active { background: var(--apm-accent, #3498db); color: white; }
-.fb-mode-btn:hover:not(.fb-mode-active) { color: var(--apm-text-secondary, #b0bec5); }
+.fb-mode-toggle { display: inline-flex; border: 1px solid var(--apm-border); border-radius: var(--apm-radius-sm); overflow: hidden; margin-left: auto; }
+.fb-mode-btn { background: transparent; border: none; color: var(--apm-text-disabled); padding: 4px 12px; font-size: var(--apm-text-base); cursor: pointer; transition: all 0.15s; }
+.fb-mode-btn.fb-mode-active { background: var(--apm-accent); color: white; }
+.fb-mode-btn:hover:not(.fb-mode-active) { color: var(--apm-text-secondary); }
 .fb-add-row { display: flex; gap: 5px; align-items: center; margin-bottom: 5px; overflow: hidden; }
 .fb-add-row select, .fb-add-row input { min-width: 0; }
-.fb-field-select { width: 130px; height: 32px; padding: 0 6px; border-radius: 5px; border: 1px solid var(--apm-input-border, transparent); background: var(--apm-input-bg, #ecf0f1); color: var(--apm-input-text, #2c3e50); font-size: var(--apm-text-md, 13px); cursor: pointer; box-sizing: border-box; }
-.fb-op-select { width: 150px; height: 32px; padding: 0 6px; border-radius: 5px; border: 1px solid var(--apm-input-border, transparent); background: var(--apm-input-bg, #ecf0f1); color: var(--apm-input-text, #2c3e50); font-size: var(--apm-text-md, 13px); cursor: pointer; box-sizing: border-box; }
-.fb-keyword-input { flex: 1; height: 32px; padding: 0 10px; border-radius: 5px; border: 2px solid transparent; background: var(--apm-input-bg, #ecf0f1); color: var(--apm-input-text, #2c3e50); font-size: var(--apm-text-md, 13px); box-sizing: border-box; transition: border-color 0.15s; }
-.fb-keyword-input:focus { outline: none; border-color: var(--apm-accent, #3498db); background: #ffffff; box-shadow: 0 0 0 2px var(--apm-input-focus, rgba(52,152,219,0.3)); }
-.fb-add-btn { background: var(--apm-accent, #3498db); color: white; border: none; border-radius: 5px; padding: 6px 10px; font-size: var(--apm-text-sm, 11px); font-weight: bold; cursor: pointer; transition: filter 0.15s; white-space: nowrap; height: 32px; flex-shrink: 0; box-sizing: border-box; }
+.fb-field-select { width: 130px; height: 32px; padding: 0 6px; border-radius: 5px; border: 1px solid var(--apm-input-border); background: var(--apm-input-bg); color: var(--apm-input-text); font-size: var(--apm-text-md); cursor: pointer; box-sizing: border-box; }
+.fb-op-select { width: 150px; height: 32px; padding: 0 6px; border-radius: 5px; border: 1px solid var(--apm-input-border); background: var(--apm-input-bg); color: var(--apm-input-text); font-size: var(--apm-text-md); cursor: pointer; box-sizing: border-box; }
+.fb-keyword-input { flex: 1; height: 32px; padding: 0 10px; border-radius: 5px; border: 2px solid transparent; background: var(--apm-input-bg); color: var(--apm-input-text); font-size: var(--apm-text-md); box-sizing: border-box; transition: border-color 0.15s; }
+.fb-keyword-input:focus { outline: none; border-color: var(--apm-accent); background: #ffffff; box-shadow: 0 0 0 2px var(--apm-input-focus)); }
+.fb-add-btn { background: var(--apm-accent); color: white; border: none; border-radius: 5px; padding: 6px 10px; font-size: var(--apm-text-sm); font-weight: bold; cursor: pointer; transition: filter 0.15s; white-space: nowrap; height: 32px; flex-shrink: 0; box-sizing: border-box; }
 .fb-add-btn:hover { filter: brightness(1.1); }
-.fb-hint { font-size: var(--apm-text-md, 13px); color: var(--apm-text-muted, #95a5a6); font-style: italic; margin-bottom: 10px; min-height: 18px; }
-.fb-chip-list { min-height: 44px; max-height: 220px; overflow-y: auto; padding: 8px; background: var(--apm-surface-sunken, #22292f); border: 1px solid var(--apm-border, #45535e); border-radius: var(--apm-radius, 6px); }
-.fb-chip-group-label { font-size: var(--apm-text-sm, 11px); font-weight: 600; text-transform: uppercase; letter-spacing: 0.6px; margin: 6px 0 3px 0; padding-top: 4px; }
+.fb-hint { font-size: var(--apm-text-md); color: var(--apm-text-muted); font-style: italic; margin-bottom: 10px; min-height: 18px; }
+.fb-chip-list { min-height: 44px; max-height: 220px; overflow-y: auto; padding: 8px; background: var(--apm-surface-sunken); border: 1px solid var(--apm-border); border-radius: var(--apm-radius); }
+.fb-chip-group-label { font-size: var(--apm-text-sm); font-weight: 600; text-transform: uppercase; letter-spacing: 0.6px; margin: 6px 0 3px 0; padding-top: 4px; }
 .fb-chip-group-label:first-child { margin-top: 0; padding-top: 0; }
-.fb-chip { display: inline-flex; align-items: center; gap: 5px; background: var(--apm-surface-inset, #2b343c); border-radius: 5px; padding: 4px 8px 4px 10px; border-left: 3px solid var(--apm-accent, #3498db); font-size: var(--apm-text-md, 13px); margin: 2px; animation: apm-modal-appear 0.15s ease-out; }
-.fb-chip-op { font-size: var(--apm-text-sm, 11px); font-weight: 600; opacity: 0.8; }
-.fb-chip-text { color: var(--apm-text-bright, #ecf0f1); max-width: 170px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.fb-chip-x { background: none; border: none; color: var(--apm-text-disabled, #7f8c8d); cursor: pointer; font-size: 16px; padding: 0 2px; line-height: 1; transition: color 0.15s; }
-.fb-chip-x:hover { color: var(--apm-danger, #e74c3c); }
-.fb-preview { background: var(--apm-accent-subtle, rgba(52,152,219,0.1)); border: 1px dashed var(--apm-accent, #3498db); border-radius: var(--apm-radius, 6px); padding: 12px; font-size: var(--apm-text-md, 13px); line-height: 1.6; }
-.fb-preview-label { color: var(--apm-accent, #3498db); font-weight: 600; font-size: var(--apm-text-base, 12px); margin-bottom: 5px; }
-.fb-preview-field { color: var(--apm-accent, #3498db); font-weight: 600; }
-.fb-preview-keyword { color: var(--apm-success, #1abc9c); font-weight: 600; }
-.fb-preview-joiner { color: var(--apm-warning, #f39c12); font-style: italic; }
-.fb-preview-empty { color: var(--apm-text-disabled, #7f8c8d); font-style: italic; font-size: var(--apm-text-base, 12px); }
-.fb-preview-text { color: var(--apm-text-tertiary, #bdc3c7); }
-.fb-action-bar { display: flex; gap: 10px; padding: 14px 16px; border-top: 1px solid var(--apm-border, #45535e); background: rgba(0,0,0,0.1); }
-.fb-btn { border: none; border-radius: 5px; padding: 9px 18px; font-size: var(--apm-text-md, 13px); font-weight: bold; cursor: pointer; transition: filter 0.15s; }
+.fb-chip { display: inline-flex; align-items: center; gap: 5px; background: var(--apm-surface-inset); border-radius: 5px; padding: 4px 8px 4px 10px; border-left: 3px solid var(--apm-accent); font-size: var(--apm-text-md); margin: 2px; animation: apm-modal-appear 0.15s ease-out; }
+.fb-chip-op { font-size: var(--apm-text-sm); font-weight: 600; opacity: 0.8; }
+.fb-chip-text { color: var(--apm-text-bright); max-width: 170px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.fb-chip-x { background: none; border: none; color: var(--apm-text-disabled); cursor: pointer; font-size: 16px; padding: 0 2px; line-height: 1; transition: color 0.15s; }
+.fb-chip-x:hover { color: var(--apm-danger); }
+.fb-preview { background: var(--apm-accent-subtle)); border: 1px dashed var(--apm-accent); border-radius: var(--apm-radius); padding: 12px; font-size: var(--apm-text-md); line-height: 1.6; }
+.fb-preview-label { color: var(--apm-accent); font-weight: 600; font-size: var(--apm-text-base); margin-bottom: 5px; }
+.fb-preview-field { color: var(--apm-accent); font-weight: 600; }
+.fb-preview-keyword { color: var(--apm-success); font-weight: 600; }
+.fb-preview-joiner { color: var(--apm-warning); font-style: italic; }
+.fb-preview-empty { color: var(--apm-text-disabled); font-style: italic; font-size: var(--apm-text-base); }
+.fb-preview-text { color: var(--apm-text-tertiary); }
+.fb-action-bar { display: flex; gap: 10px; padding: 14px 16px; border-top: 1px solid var(--apm-border); background: rgba(0,0,0,0.1); }
+.fb-btn { border: none; border-radius: 5px; padding: 9px 18px; font-size: var(--apm-text-md); font-weight: bold; cursor: pointer; transition: filter 0.15s; }
 .fb-btn:hover { filter: brightness(1.1); }
-.fb-btn-save { background: var(--apm-success, #1abc9c); color: white; flex: 1; }
-.fb-btn-delete { background: var(--apm-danger, #e74c3c); color: white; }
-.fb-btn-cancel { background: var(--apm-control-bg, #4a5a6a); color: var(--apm-text-tertiary, #bdc3c7); }
+.fb-btn-save { background: var(--apm-success); color: white; flex: 1; }
+.fb-btn-delete { background: var(--apm-danger); color: white; }
+.fb-btn-cancel { background: var(--apm-control-bg); color: var(--apm-text-tertiary); }
 .fb-date-section { margin-top: 8px; padding-left: 4px; }
 .fb-day-checkboxes { display: flex; gap: 7px; justify-content: center; padding: 8px 0; }
-.fb-day-btn { display: flex; flex-direction: column; align-items: center; gap: 3px; background: var(--apm-surface-inset, #2b343c); border: 1px solid var(--apm-border-strong, #4a5a6a); border-radius: var(--apm-radius, 6px); padding: 7px 10px; cursor: pointer; font-size: var(--apm-text-base, 12px); font-weight: bold; transition: all 0.15s; position: relative; min-width: 40px; }
-.fb-day-btn.fb-day-on { color: var(--apm-success, #1abc9c); border-color: var(--apm-success, #1abc9c); background: rgba(62,180,137,0.08); }
-.fb-day-btn.fb-day-off { color: var(--apm-danger, #e74c3c); border-color: var(--apm-danger, #e74c3c); background: var(--apm-danger-subtle, rgba(231,76,60,0.1)); opacity: 0.7; }
-.fb-day-btn:hover { opacity: 1; border-color: var(--apm-accent, #3498db); }
-.fb-day-x { color: #e74c3c; font-size: 11px; line-height: 1; }
+.fb-day-btn { display: flex; flex-direction: column; align-items: center; gap: 3px; background: var(--apm-surface-inset); border: 1px solid var(--apm-border-strong); border-radius: var(--apm-radius); padding: 7px 10px; cursor: pointer; font-size: var(--apm-text-base); font-weight: bold; transition: all 0.15s; position: relative; min-width: 40px; }
+.fb-day-btn.fb-day-on { color: var(--apm-success); border-color: var(--apm-success); background: rgba(62,180,137,0.08); }
+.fb-day-btn.fb-day-off { color: var(--apm-danger); border-color: var(--apm-danger); background: var(--apm-danger-subtle)); opacity: 0.7; }
+.fb-day-btn:hover { opacity: 1; border-color: var(--apm-accent); }
+.fb-day-x { color: var(--apm-danger); font-size: 11px; line-height: 1; }
 .fb-day-label { line-height: 1; }
 .fb-text-mode { padding: 4px 0; }
 .fb-modal .eam-fc-select { height: 32px; font-size: 13px; padding: 0 8px; border-radius: 5px; }
@@ -6540,11 +6674,11 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
 .apm-lb-summary-empty { font-size: var(--apm-text-sm); color: var(--apm-text-disabled); text-align: center; padding-top: 20px; }
 
 /* Quick Book trigger button */
-.apm-lb-trigger { padding: 4px 12px; background: linear-gradient(135deg, #e67e22, #d35400); color: white; border: none; border-radius: 12px; font-weight: bold; cursor: pointer; font-size: var(--apm-text-sm); transition: filter 0.15s, transform 0.1s; box-shadow: 0 2px 8px rgba(230, 126, 34, 0.4); }
+.apm-lb-trigger { padding: 4px 12px; background: linear-gradient(135deg, var(--apm-warning), #d35400); color: white; border: none; border-radius: 12px; font-weight: bold; cursor: pointer; font-size: var(--apm-text-sm); transition: filter 0.15s, transform 0.1s; box-shadow: 0 2px 8px rgba(230, 126, 34, 0.4); }
 .apm-lb-trigger:hover { filter: brightness(1.15); transform: translateY(-1px); box-shadow: 0 3px 12px rgba(230, 126, 34, 0.5); }
 
 /* AutoFill trigger button */
-.apm-af-trigger { padding: 4px 12px; background: linear-gradient(135deg, #1abc9c, #16a085); color: white; border: none; border-radius: 12px; font-weight: bold; cursor: pointer; font-size: var(--apm-text-sm); z-index: 10; line-height: 1; transition: filter 0.15s, transform 0.1s; box-shadow: 0 2px 8px rgba(26, 188, 156, 0.25); }
+.apm-af-trigger { padding: 4px 12px; background: linear-gradient(135deg, var(--apm-success), #16a085); color: white; border: none; border-radius: 12px; font-weight: bold; cursor: pointer; font-size: var(--apm-text-sm); z-index: 10; line-height: 1; transition: filter 0.15s, transform 0.1s; box-shadow: 0 2px 8px rgba(26, 188, 156, 0.25); }
 .apm-af-trigger:hover { filter: brightness(1.15); transform: translateY(-1px); box-shadow: 0 3px 12px rgba(26, 188, 156, 0.4); }
 `;
   function injectStaticStyles() {
@@ -6556,6 +6690,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
   }
   var SVG_CLOUD = `
 <svg viewBox="0 0 24 24" width="22" height="22" style="vertical-align: text-bottom; margin-bottom: 2px; overflow: visible;">
+    <!-- SVG fill attributes don't support var() \u2014 keeping raw hex -->
     <path class="lightning-bolt" d="M18,3 L5,16 L11,16 L7,26 L20,11 L13,11 Z" fill="#f1c40f"/>
     <path d="M17.5,18 C20,18 22,16 22,13.5 C22,11.2 20.3,9.3 18,9 C17.5,6.2 15,4 12,4 C8.7,4 6,6.7 6,10 C6,10.1 6,10.1 6,10.1 C3.8,10.3 2,12.2 2,14.5 C2,17 4,19 6.5,19 L17.5,18 Z" fill="currentColor"/>
     <path class="raindrop drop-1" d="M8,19 L7,23" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
@@ -6590,9 +6725,26 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
   init_logger();
   init_storage();
   var updateListeners = [];
+  function isNewerVersion(oldVer, newVer) {
+    if (oldVer === newVer) return false;
+    const oldParts = oldVer.split(".").map(Number);
+    const newParts = newVer.split(".").map(Number);
+    for (let i = 0; i < Math.max(oldParts.length, newParts.length); i++) {
+      const o = oldParts[i] || 0;
+      const n = newParts[i] || 0;
+      if (n > o) return true;
+      if (n < o) return false;
+    }
+    return false;
+  }
   function subscribeToUpdates(callback) {
-    updateListeners.push(callback);
+    if (!updateListeners.includes(callback)) {
+      updateListeners.push(callback);
+    }
     if (window._apmUpdateAvailable) callback();
+    return () => {
+      updateListeners = updateListeners.filter((cb) => cb !== callback);
+    };
   }
   function getUpdateUrls() {
     const isBeta = apmGeneralSettings.updateTrack === "beta";
@@ -6622,7 +6774,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
       const match = text.match(/\/\/\s*@version\s+([0-9\.]+)/);
       if (match && match[1]) {
         const remoteVersion = match[1];
-        if (remoteVersion !== CURRENT_VERSION) {
+        if (isNewerVersion(CURRENT_VERSION, remoteVersion)) {
           window._apmUpdateAvailable = true;
           window._apmRemoteVersion = remoteVersion;
           window._apmUpdateUrl = download;
@@ -6643,6 +6795,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
   }
 
   // src/modules/forecast/components/forecast-search-form.js
+  init_dom_helpers();
   init_forecast_prefs();
   function createSearchForm(callbacks = {}) {
     const { onToggleGuide, onToggleMode } = callbacks;
@@ -7014,6 +7167,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
   }
 
   // src/modules/forecast/components/forecast-quick-search.js
+  init_dom_helpers();
   function createQuickSearch() {
     if (window.self !== window.top) return null;
     let ui = document.getElementById("apm-quick-search-container");
@@ -7128,14 +7282,14 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
     const advSite = panel.querySelector("#eam-adv-site");
     const contextStatus = panel.querySelector("#eam-context-status");
     if (isSimple) {
-      advSite.style.display = "none";
+      if (advSite) advSite.style.display = "none";
       if (contextStatus) contextStatus.style.display = "flex";
       modeBtn.innerHTML = "Simple \u{1F343}";
       modeBtn.style.color = "var(--apm-success)";
       modeBtn.style.borderColor = "var(--apm-success)";
       modeBtn.style.background = "var(--apm-surface-inset)";
     } else {
-      advSite.style.display = "flex";
+      if (advSite) advSite.style.display = "flex";
       if (contextStatus) contextStatus.style.display = "none";
       modeBtn.innerHTML = "Advanced \u2699\uFE0F";
       modeBtn.style.color = "var(--apm-warning)";
@@ -7148,17 +7302,44 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
   function syncPreferences(panel) {
     const prefs = loadPreferences();
     if (!prefs) return;
-    if (prefs.descOp) panel.querySelector("#eam-desc-op").value = prefs.descOp;
-    if (prefs.descText !== void 0) panel.querySelector("#eam-desc-text").value = prefs.descText;
-    if (prefs.todayOnly !== void 0) panel.querySelector("#eam-today-only-toggle").checked = prefs.todayOnly;
+    if (prefs.descOp) {
+      const el2 = panel.querySelector("#eam-desc-op");
+      if (el2) el2.value = prefs.descOp;
+    }
+    if (prefs.descText !== void 0) {
+      const el2 = panel.querySelector("#eam-desc-text");
+      if (el2) el2.value = prefs.descText;
+    }
+    if (prefs.todayOnly !== void 0) {
+      const el2 = panel.querySelector("#eam-today-only-toggle");
+      if (el2) el2.checked = prefs.todayOnly;
+    }
     setModeUI(panel, prefs.isSimpleMode !== false);
     const isCustomDateMode = prefs.isCustomDateMode === true;
-    panel.querySelector("#eam-relative-dates").style.display = isCustomDateMode ? "none" : "block";
-    panel.querySelector("#eam-custom-dates").style.display = isCustomDateMode ? "flex" : "none";
-    panel.querySelector("#eam-date-mode-rel").classList.toggle("active", !isCustomDateMode);
-    panel.querySelector("#eam-date-mode-cust").classList.toggle("active", isCustomDateMode);
-    if (prefs.customStart) panel.querySelector("#eam-custom-start").value = prefs.customStart;
-    if (prefs.customEnd) panel.querySelector("#eam-custom-end").value = prefs.customEnd;
+    {
+      const el2 = panel.querySelector("#eam-relative-dates");
+      if (el2) el2.style.display = isCustomDateMode ? "none" : "block";
+    }
+    {
+      const el2 = panel.querySelector("#eam-custom-dates");
+      if (el2) el2.style.display = isCustomDateMode ? "flex" : "none";
+    }
+    {
+      const el2 = panel.querySelector("#eam-date-mode-rel");
+      if (el2) el2.classList.toggle("active", !isCustomDateMode);
+    }
+    {
+      const el2 = panel.querySelector("#eam-date-mode-cust");
+      if (el2) el2.classList.toggle("active", isCustomDateMode);
+    }
+    if (prefs.customStart) {
+      const el2 = panel.querySelector("#eam-custom-start");
+      if (el2) el2.value = prefs.customStart;
+    }
+    if (prefs.customEnd) {
+      const el2 = panel.querySelector("#eam-custom-end");
+      if (el2) el2.value = prefs.customEnd;
+    }
     const checkboxes = Array.from(panel.querySelectorAll('#eam-day-checkboxes input[type="checkbox"]'));
     if (prefs.days && Array.isArray(prefs.days)) {
       checkboxes.forEach((cb, i) => {
@@ -7172,7 +7353,10 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
     renderProfiles_Global();
     updateCheckboxVisuals(panel);
     updateProfileUI_Global();
-    if (prefs.week) panel.querySelector("#eam-week-select").value = prefs.week;
+    if (prefs.week) {
+      const el2 = panel.querySelector("#eam-week-select");
+      if (el2) el2.value = prefs.week;
+    }
   }
   var styles = `
 .eam-fc-btn-small {
@@ -7290,9 +7474,9 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
     let lastKnownStoreId = null;
     const TARGET_DATA_INDEX = "duedate";
     const STATES = [
-      { label: "Filter: Show All", bg: "#7f8c8d", tooltip: "Currently showing all records.\nClick to filter: PMs Only \u2192 Non-PMs \u2192 Show All.\nFilters the currently loaded list \u2014 does not perform a new search." },
-      { label: "Filter: PMs Only", bg: "#1abc9c", tooltip: "Showing PMs only (records with a due date).\nClick to switch to Non-PMs.\nFilters the currently loaded list \u2014 does not perform a new search." },
-      { label: "Filter: Non-PMs", bg: "#3498db", tooltip: "Showing Non-PMs only (records without a due date).\nClick to switch to Show All.\nFilters the currently loaded list \u2014 does not perform a new search." }
+      { label: "Filter: Show All", bg: "var(--apm-text-disabled)", tooltip: "Currently showing all records.\nClick to filter: PMs Only \u2192 Non-PMs \u2192 Show All.\nFilters the currently loaded list \u2014 does not perform a new search." },
+      { label: "Filter: PMs Only", bg: "var(--apm-success)", tooltip: "Showing PMs only (records with a due date).\nClick to switch to Non-PMs.\nFilters the currently loaded list \u2014 does not perform a new search." },
+      { label: "Filter: Non-PMs", bg: "var(--apm-accent)", tooltip: "Showing Non-PMs only (records without a due date).\nClick to switch to Show All.\nFilters the currently loaded list \u2014 does not perform a new search." }
     ];
     function getTargetContext() {
       return findMainGrid();
@@ -7490,7 +7674,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
     let history = {};
     if (!apmGeneralSettings || !apmGeneralSettings.ptpTrackingEnabled) return history;
     try {
-      history = JSON.parse(localStorage.getItem("apm_ptp_history")) || {};
+      history = APMStorage.get(PTP_HISTORY_KEY) || {};
     } catch (e) {
     }
     if (!_ptpHistoryCleaned) {
@@ -8283,14 +8467,17 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
         return result;
       }
       let settings = { ...data.settings };
+      let currentVersion = exportSchemaVersion;
       for (const migration of migrations) {
-        if (migration.fromVersion >= exportSchemaVersion && migration.fromVersion < EXPORT_SCHEMA_VERSION) {
+        if (migration.fromVersion === currentVersion && migration.fromVersion < EXPORT_SCHEMA_VERSION) {
           try {
             settings = migration.transform(settings) || settings;
-            APMLogger.info("SettingsIO", `Applied migration ${migration.fromVersion} \u2192 ${migration.toVersion}`);
+            currentVersion = migration.toVersion;
+            APMLogger.info("SettingsIO", `Applied migration ${migration.fromVersion} -> ${migration.toVersion}`);
           } catch (e) {
             result.errors.push(`Migration ${migration.fromVersion} failed: ${e.message}`);
             APMLogger.error("SettingsIO", `Migration error:`, e);
+            break;
           }
         }
       }
@@ -8341,10 +8528,14 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
   // src/modules/colorcode/colorcode-ui.js
   init_toast();
   init_utils();
+  init_dom_helpers();
   init_logger();
   var _setupInitialized = false;
   var _previewDebounceTimer = null;
   var _editingId = null;
+  var isPreviewActive = false;
+  var currentPreviewRule = null;
+  var originalRulesSnapshot = null;
   function buildTempRuleFromFormState() {
     const search = document.getElementById("cc-search")?.value || "";
     const color = document.getElementById("cc-color")?.value || "#e74c3c";
@@ -8398,7 +8589,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
         previewRow.style.borderLeft = `5px solid ${color}`;
       } else {
         previewRow.style.background = "transparent";
-        previewRow.style.borderLeft = "1px solid #45535e";
+        previewRow.style.borderLeft = "1px solid var(--apm-border)";
       }
       if (tagActive && tagText) {
         previewTag.style.display = "block";
@@ -8413,35 +8604,35 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
       rContainer.innerHTML = "";
       rules = rules.filter((r) => !r._isPreview && r.id !== "__preview__");
       if (!rules.length) {
-        rContainer.appendChild(el("div", { style: { textAlign: "center", fontSize: "12px", color: "#7f8c8d", margin: "10px" } }, ["No rules found."]));
+        rContainer.appendChild(el("div", { style: { textAlign: "center", fontSize: "12px", color: "var(--apm-text-disabled)", margin: "10px" } }, ["No rules found."]));
         return;
       }
       rules.forEach((rule) => {
-        const upBtn = el("button", { className: "rule-up-btn", dataset: { id: rule.id }, style: { background: "transparent", border: "none", color: "#b0bec5", cursor: "pointer", fontSize: "12px", padding: "0 4px" } }, ["\u25B2"]);
-        const downBtn = el("button", { className: "rule-down-btn", dataset: { id: rule.id }, style: { background: "transparent", border: "none", color: "#b0bec5", cursor: "pointer", fontSize: "12px", padding: "0 4px" } }, ["\u25BC"]);
+        const upBtn = el("button", { className: "rule-up-btn", dataset: { id: rule.id }, style: { background: "transparent", border: "none", color: "var(--apm-text-secondary)", cursor: "pointer", fontSize: "12px", padding: "0 4px" } }, ["\u25B2"]);
+        const downBtn = el("button", { className: "rule-down-btn", dataset: { id: rule.id }, style: { background: "transparent", border: "none", color: "var(--apm-text-secondary)", cursor: "pointer", fontSize: "12px", padding: "0 4px" } }, ["\u25BC"]);
         const ctrlCol = el("div", { style: { display: "flex", flexDirection: "column", gap: "2px", marginRight: "6px" } }, [upBtn, downBtn]);
-        const searchSpan = el("span", { style: { fontSize: "13px", fontWeight: "bold", color: "#ecf0f1", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" } }, [rule.search]);
-        let tagDisplaySpan = el("span", { style: { fontSize: "10px", color: "#1abc9c", fontWeight: "bold", background: "rgba(26, 188, 156, 0.1)", padding: "2px 6px", borderRadius: "10px", display: "inline-block", marginTop: "2px", width: "max-content" } }, [rule.tag || "Keywords as Tag"]);
+        const searchSpan = el("span", { style: { fontSize: "13px", fontWeight: "bold", color: "var(--apm-text-bright)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" } }, [rule.search]);
+        let tagDisplaySpan = el("span", { style: { fontSize: "10px", color: "var(--apm-success)", fontWeight: "bold", background: "rgba(26, 188, 156, 0.1)", padding: "2px 6px", borderRadius: "10px", display: "inline-block", marginTop: "2px", width: "max-content" } }, [rule.tag || "Keywords as Tag"]);
         if (rule.fill && rule.showTag && rule.tag) {
           tagDisplaySpan.textContent = `Fill & Tag: ${rule.tag}`;
-          tagDisplaySpan.style.color = "#1abc9c";
+          tagDisplaySpan.style.color = "var(--apm-success)";
           tagDisplaySpan.style.background = "rgba(26, 188, 156, 0.1)";
         } else if (rule.fill) {
           tagDisplaySpan.textContent = "Fill Row Only";
-          tagDisplaySpan.style.color = "#f39c12";
+          tagDisplaySpan.style.color = "var(--apm-warning)";
           tagDisplaySpan.style.background = "rgba(243, 156, 18, 0.1)";
         } else if (rule.showTag && rule.tag) {
           tagDisplaySpan.textContent = `Tag Only: ${rule.tag}`;
-          tagDisplaySpan.style.color = "#3498db";
+          tagDisplaySpan.style.color = "var(--apm-accent)";
           tagDisplaySpan.style.background = "rgba(52, 152, 219, 0.1)";
         } else {
           tagDisplaySpan.textContent = "Formatting Disabled";
-          tagDisplaySpan.style.color = "#7f8c8d";
+          tagDisplaySpan.style.color = "var(--apm-text-disabled)";
           tagDisplaySpan.style.background = "rgba(127, 140, 141, 0.1)";
         }
         const textCol = el("div", { style: { display: "flex", flexDirection: "column", flexGrow: "1", overflow: "hidden", padding: "0 5px" } }, [searchSpan, tagDisplaySpan]);
-        const editBtn = el("button", { className: "rule-edit-btn", dataset: { id: rule.id }, style: { background: "#4a5a6a", color: "white", border: "none", borderRadius: "4px", padding: "4px 6px", cursor: "pointer", fontSize: "11px", transition: "background 0.2s" } }, ["\u270F\uFE0F"]);
-        const delBtn = el("button", { className: "rule-delete-btn", dataset: { id: rule.id }, style: { background: "transparent", color: "#e74c3c", border: "none", borderRadius: "4px", padding: "4px 6px", cursor: "pointer", fontSize: "12px" } }, ["\u274C"]);
+        const editBtn = el("button", { className: "rule-edit-btn", dataset: { id: rule.id }, style: { background: "var(--apm-border-strong)", color: "white", border: "none", borderRadius: "4px", padding: "4px 6px", cursor: "pointer", fontSize: "11px", transition: "background 0.2s" } }, ["\u270F\uFE0F"]);
+        const delBtn = el("button", { className: "rule-delete-btn", dataset: { id: rule.id }, style: { background: "transparent", color: "var(--apm-danger)", border: "none", borderRadius: "4px", padding: "4px 6px", cursor: "pointer", fontSize: "12px" } }, ["\u274C"]);
         const actionCol = el("div", { style: { display: "flex", alignItems: "center", gap: "6px" } }, [editBtn, delBtn]);
         const itemEl = el("div", { className: "rule-item", style: { borderLeftColor: rule.color, borderLeftWidth: "5px" } }, [ctrlCol, textCol, actionCol]);
         rContainer.appendChild(itemEl);
@@ -8460,27 +8651,32 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
         _editingId = Number(btn.dataset.id);
         const r = getRules().find((x) => x.id === _editingId);
         if (r) {
-          document.getElementById("cc-search").value = r.search;
-          document.getElementById("cc-tag").value = r.tag || "";
-          document.getElementById("cc-color").value = r.color;
+          const ccSearchEl = document.getElementById("cc-search");
+          if (ccSearchEl) ccSearchEl.value = r.search;
+          const ccTagEl = document.getElementById("cc-tag");
+          if (ccTagEl) ccTagEl.value = r.tag || "";
+          const ccColorEl = document.getElementById("cc-color");
+          if (ccColorEl) ccColorEl.value = r.color;
           const fillBtn = document.getElementById("cc-btn-fill");
           const tagBtn = document.getElementById("cc-btn-tag");
           if (fillBtn) {
             if (!!r.fill) fillBtn.classList.add("active");
             else fillBtn.classList.remove("active");
-            fillBtn.style.background = fillBtn.classList.contains("active") ? "#34495e" : "transparent";
+            fillBtn.style.background = fillBtn.classList.contains("active") ? "var(--apm-surface-0)" : "transparent";
           }
           if (tagBtn) {
             if (!!r.showTag) tagBtn.classList.add("active");
             else tagBtn.classList.remove("active");
-            tagBtn.style.background = tagBtn.classList.contains("active") ? "#34495e" : "transparent";
+            tagBtn.style.background = tagBtn.classList.contains("active") ? "var(--apm-surface-0)" : "transparent";
           }
           updatePreview();
           const btnText = document.getElementById("cc-add-btn-text");
+          const addBtn = document.getElementById("cc-add-btn");
           if (btnText) btnText.textContent = "Update Rule";
-          else document.getElementById("cc-add-btn").textContent = "Update Rule";
-          document.getElementById("cc-add-btn").style.background = "#f39c12";
-          document.getElementById("cc-cancel-btn").style.display = "inline-block";
+          else if (addBtn) addBtn.textContent = "Update Rule";
+          if (addBtn) addBtn.style.background = "var(--apm-warning)";
+          const cancelBtn = document.getElementById("cc-cancel-btn");
+          if (cancelBtn) cancelBtn.style.display = "inline-block";
         }
       });
       rContainer.querySelectorAll(".rule-up-btn").forEach((b) => b.onclick = (e) => {
@@ -8510,25 +8706,29 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
     };
     const resetForm = () => {
       _editingId = null;
-      document.getElementById("cc-search").value = "";
-      document.getElementById("cc-tag").value = "";
-      document.getElementById("cc-color").value = "#e74c3c";
+      const ccSearchEl = document.getElementById("cc-search");
+      if (ccSearchEl) ccSearchEl.value = "";
+      const ccTagEl = document.getElementById("cc-tag");
+      if (ccTagEl) ccTagEl.value = "";
+      const ccColorEl = document.getElementById("cc-color");
+      if (ccColorEl) ccColorEl.value = "#e74c3c";
       const fillBtn = document.getElementById("cc-btn-fill");
       const tagBtn = document.getElementById("cc-btn-tag");
       if (fillBtn) {
         fillBtn.classList.add("active");
-        fillBtn.style.background = "#34495e";
+        fillBtn.style.background = "var(--apm-surface-0)";
       }
       if (tagBtn) {
         tagBtn.classList.add("active");
-        tagBtn.style.background = "#34495e";
+        tagBtn.style.background = "var(--apm-surface-0)";
       }
       clearPreview();
       updatePreview();
       const btnText = document.getElementById("cc-add-btn-text");
+      const addBtn = document.getElementById("cc-add-btn");
       if (btnText) btnText.textContent = "Save Rule";
-      else document.getElementById("cc-add-btn").textContent = "Save Rule";
-      document.getElementById("cc-add-btn").style.background = "#3498db";
+      else if (addBtn) addBtn.textContent = "Save Rule";
+      if (addBtn) addBtn.style.background = "var(--apm-accent)";
     };
     const saveSync = () => {
       renderRules();
@@ -8556,7 +8756,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
     if (elFillBtn) elFillBtn.onclick = (e) => {
       e.stopPropagation();
       elFillBtn.classList.toggle("active");
-      elFillBtn.style.background = elFillBtn.classList.contains("active") ? "#34495e" : "rgba(74, 90, 106, 0.4)";
+      elFillBtn.style.background = elFillBtn.classList.contains("active") ? "var(--apm-surface-0)" : "rgba(74, 90, 106, 0.4)";
       updatePreview();
       updateGridPreview();
     };
@@ -8564,7 +8764,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
     if (elTagBtn) elTagBtn.onclick = (e) => {
       e.stopPropagation();
       elTagBtn.classList.toggle("active");
-      elTagBtn.style.background = elTagBtn.classList.contains("active") ? "#34495e" : "rgba(74, 90, 106, 0.4)";
+      elTagBtn.style.background = elTagBtn.classList.contains("active") ? "var(--apm-surface-0)" : "rgba(74, 90, 106, 0.4)";
       updatePreview();
       updateGridPreview();
     };
@@ -8617,6 +8817,11 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
         });
       });
       ccSearch.addEventListener("keydown", handleEnter);
+      ccSearch.addEventListener("input", () => {
+        const pos = ccSearch.selectionStart;
+        ccSearch.value = ccSearch.value.replace(/(^|[, ]+)([a-z])/g, (m, sep, ch) => sep + ch.toUpperCase());
+        ccSearch.selectionStart = ccSearch.selectionEnd = pos;
+      });
       ccSearch._apmListenersAttached = true;
     }
     if (ccTag && !ccTag._apmListenersAttached) {
@@ -8635,7 +8840,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
           if (!e.shiftKey) {
             const rulesJson = JSON.stringify(getRules());
             const encoded = encodeSettingsAsBase64(rulesJson);
-            navigator.clipboard.writeText(encoded).then(() => showToast("Rules copied as Base64", "#27ae60")).catch(() => showToast("Failed to copy to clipboard", "#e74c3c"));
+            navigator.clipboard.writeText(encoded).then(() => showToast("Rules copied as Base64", "var(--apm-success-bright)")).catch(() => showToast("Failed to copy to clipboard", "var(--apm-danger)"));
           } else {
             const rules = getRules();
             const jsonStr = JSON.stringify(rules, null, 2);
@@ -8648,10 +8853,10 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
             link.download = `apm-colorcode-rules-${dateStr}.json`;
             link.click();
             URL.revokeObjectURL(url2);
-            showToast(`Downloaded ${rules.length} rules`, "#27ae60");
+            showToast(`Downloaded ${rules.length} rules`, "var(--apm-success-bright)");
           }
         } catch (e2) {
-          showToast("Export error: " + e2.message, "#e74c3c");
+          showToast("Export error: " + e2.message, "var(--apm-danger)");
         }
       };
     }
@@ -8675,7 +8880,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
     const ccImportFileInput = document.getElementById("cc-import-file-input");
     const performImport = (input) => {
       if (!input || !input.trim()) {
-        showToast("No rules provided", "#f39c12");
+        showToast("No rules provided", "var(--apm-warning)");
         return;
       }
       try {
@@ -8684,18 +8889,18 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
         if (trimmed.startsWith("APM:")) {
           const decoded = decodeSettingsFromBase64(trimmed);
           if (!decoded) {
-            showToast("Invalid Base64 format", "#e74c3c");
+            showToast("Invalid Base64 format", "var(--apm-danger)");
             return;
           }
           importedRules = JSON.parse(decoded);
         } else if (trimmed.startsWith("[") || trimmed.startsWith("{")) {
           importedRules = JSON.parse(trimmed);
         } else {
-          showToast("Expected Base64 (APM:...) or JSON array", "#e74c3c");
+          showToast("Expected Base64 (APM:...) or JSON array", "var(--apm-danger)");
           return;
         }
         if (!Array.isArray(importedRules) || importedRules.length === 0) {
-          showToast("No valid rules found", "#f39c12");
+          showToast("No valid rules found", "var(--apm-warning)");
           return;
         }
         let rs = getRules();
@@ -8709,11 +8914,11 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
           setRules(rs);
         }
         saveSync();
-        showToast(`Imported ${importedRules.length} rules`, "#27ae60");
+        showToast(`Imported ${importedRules.length} rules`, "var(--apm-success-bright)");
         if (ccImportPanel) ccImportPanel.style.display = "none";
         if (ccImportTextarea) ccImportTextarea.value = "";
       } catch (e) {
-        showToast("Invalid format: " + e.message, "#e74c3c");
+        showToast("Invalid format: " + e.message, "var(--apm-danger)");
       }
     };
     if (ccImportTextarea) {
@@ -8735,7 +8940,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
             performImport(content);
           }
         };
-        reader.onerror = () => showToast("Failed to read file", "#e74c3c");
+        reader.onerror = () => showToast("Failed to read file", "var(--apm-danger)");
         reader.readAsText(file);
       });
     }
@@ -8818,24 +9023,24 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
     if (ccColor) ccColor.value = "#e74c3c";
     if (ccBtnFill) {
       ccBtnFill.classList.add("active");
-      ccBtnFill.style.background = "#34495e";
+      ccBtnFill.style.background = "var(--apm-surface-0)";
     }
     if (ccBtnTag) {
       ccBtnTag.classList.add("active");
-      ccBtnTag.style.background = "#34495e";
+      ccBtnTag.style.background = "var(--apm-surface-0)";
     }
     const previewRow = document.getElementById("cc-preview-row");
     const previewTag = document.getElementById("cc-preview-tag");
     if (previewRow) {
       previewRow.style.background = "transparent";
-      previewRow.style.borderLeft = "1px solid #45535e";
+      previewRow.style.borderLeft = "1px solid var(--apm-border)";
     }
     if (previewTag) previewTag.style.display = "none";
     const ccAddBtn = document.getElementById("cc-add-btn");
     const ccAddBtnText = document.getElementById("cc-add-btn-text");
     if (ccAddBtnText) ccAddBtnText.textContent = "Save Rule";
     else if (ccAddBtn) ccAddBtn.textContent = "Save Rule";
-    if (ccAddBtn) ccAddBtn.style.background = "#3498db";
+    if (ccAddBtn) ccAddBtn.style.background = "var(--apm-accent)";
     setPreviewRuleOverride(null);
     const appRules = AppState.colorCode.rules;
     if (Array.isArray(appRules) && appRules.some((r) => r.id === "__preview__")) {
@@ -8891,6 +9096,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
   }
   var _cachedColumns = null;
   var _cachedColumnsTime = 0;
+  var _systemDefaults = { tabs: {}, columns: {} };
   var _tabNameCache = /* @__PURE__ */ new Map();
   function normalizeTabName(rawName) {
     if (!rawName) return "";
@@ -8948,8 +9154,12 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
             const tabRect = tabEl.getBoundingClientRect();
             isOverflow = tabRect.right > barRect.right + 2 || tabRect.left < barRect.left - 2;
           }
-          if (!tabsMap.has(cleanText) || tabsMap.get(cleanText).systemHidden && !systemHidden) {
-            tabsMap.set(cleanText, { index: cleanText, text: cleanText, isOverflow, systemHidden });
+          const existing = tabsMap.get(cleanText);
+          if (!existing || existing.systemHidden && !systemHidden) {
+            tabsMap.set(cleanText, { index: cleanText, text: cleanText, isOverflow, systemHidden, itemId: t.itemId || null });
+          } else if (existing && t.itemId && existing.itemId && t.itemId !== existing.itemId) {
+            const suffixed = `${cleanText} (${t.itemId})`;
+            tabsMap.set(suffixed, { index: suffixed, text: cleanText, isOverflow, systemHidden, itemId: t.itemId });
           }
         }
       });
@@ -9047,8 +9257,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
             }
           });
         }
-        const state = getPresets();
-        const merged = { ...state.config.columnOrders || {}, [funcName]: orderArray };
+        const merged = { ...presets.config.columnOrders || {}, [funcName]: orderArray };
         AppState.autofill.presets.config.columnOrders = merged;
         savePresets();
         APMLogger.debug("TabGridOrder", `Auto-saved column width: ${col.dataIndex} = ${width}px (${funcName})`);
@@ -9077,7 +9286,6 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
   async function applyGridConsistency() {
     if (!FeatureFlags.isEnabled("tabGridOrder")) return;
     const start = performance.now();
-    _suppressResizeUntil = Date.now() + 1e3;
     try {
       const result = findMainGrid();
       if (!result || !result.grid.headerCt || result.grid.headerCt.isDestroyed) return;
@@ -9094,6 +9302,11 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
         setTimeout(applyGridConsistency, 500);
         return;
       }
+      if (!_systemDefaults.columns[funcName]) {
+        const defaultCols = mainGrid.headerCt.getVisibleGridColumns().filter((c) => !c.isCheckerHd && !c.locked && c.xtype !== "rownumberer" && c.dataIndex).map((c) => c.dataIndex);
+        if (defaultCols.length > 0) _systemDefaults.columns[funcName] = defaultCols;
+      }
+      _suppressResizeUntil = Date.now() + 5e3;
       const didMove = reorderColumns(mainGrid.headerCt, preferredOrder, win);
       if (Array.isArray(rawOrder) && rawOrder.some((e) => e.width)) {
         applyColumnWidths(mainGrid.headerCt, rawOrder);
@@ -9172,8 +9385,14 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
     if (!tabMenuPlugin?.tabsMenu?.items) return;
     const menuItems = tabMenuPlugin.tabsMenu.items.items;
     let restorationHappened = false;
+    let restorationCount = 0;
+    const MAX_RESTORATIONS = 5;
     for (const mi of menuItems) {
       if (mi.isDestroyed || !mi.text) continue;
+      if (restorationCount >= MAX_RESTORATIONS) {
+        APMLogger.warn("TabGridOrder", `Circuit breaker: hit max ${MAX_RESTORATIONS} restorations. Stopping.`);
+        break;
+      }
       const tabName = normalizeTabName(mi.text);
       const isHiddenInPresets = hiddenTabs.includes(tabName);
       const isUserOrdered = preferredOrder.includes(tabName);
@@ -9188,6 +9407,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
             _allowActiveTabChange = false;
             mi.handler.call(mi.scope || mi, mi);
             restorationHappened = true;
+            restorationCount++;
             const win = mainTabPanel.el?.dom?.ownerDocument?.defaultView || window;
             await waitForCondition(() => !win.Ext?.Ajax?.isLoading(), RESTORATION_TIMEOUT_MS);
           } catch (e) {
@@ -9206,6 +9426,10 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
   function reorderTabs(mainTabPanel, preferredOrder, win) {
     if (!preferredOrder.length || mainTabPanel.isDestroyed) return;
     const currentItems = mainTabPanel.items;
+    const nameAt = (idx) => {
+      const item = currentItems.getAt(idx);
+      return item && !item.isDestroyed ? normalizeTabName(item.title || item.text || item.tab?.getText?.() || "") : null;
+    };
     const currentNames = /* @__PURE__ */ new Set();
     currentItems.each((item) => {
       if (!item || item.isDestroyed) return;
@@ -9214,9 +9438,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
     const filteredPreferred = preferredOrder.filter((name) => currentNames.has(name));
     let needsSorting = false;
     for (let i = 0; i < filteredPreferred.length; i++) {
-      const item = currentItems.getAt(i);
-      const itemName = item ? normalizeTabName(item.title || item.text || item.tab && item.tab.getText?.()) : null;
-      if (itemName !== filteredPreferred[i]) {
+      if (nameAt(i) !== filteredPreferred[i]) {
         needsSorting = true;
         break;
       }
@@ -9227,28 +9449,24 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
       win.Ext.suspendLayouts();
       layoutsSuspended = true;
       if (typeof mainTabPanel.suspendEvents === "function") mainTabPanel.suspendEvents(true);
-      const buildNameToIdx = () => {
-        const map = /* @__PURE__ */ new Map();
-        currentItems.each((item, idx) => {
-          if (!item || item.isDestroyed) return;
-          const name = normalizeTabName(item.title || item.text || item.tab?.getText?.() || "");
-          map.set(name, idx);
-        });
-        return map;
-      };
-      let nameToIdx = buildNameToIdx();
-      filteredPreferred.forEach((tabName, targetIdx) => {
-        if (mainTabPanel.isDestroyed) return;
-        const currentIdx = nameToIdx.get(tabName) ?? -1;
+      for (let targetIdx = 0; targetIdx < filteredPreferred.length; targetIdx++) {
+        if (mainTabPanel.isDestroyed) break;
+        const tabName = filteredPreferred[targetIdx];
+        let currentIdx = -1;
+        for (let j = targetIdx; j < currentItems.getCount(); j++) {
+          if (nameAt(j) === tabName) {
+            currentIdx = j;
+            break;
+          }
+        }
         if (currentIdx !== -1 && currentIdx !== targetIdx) {
           const itemToMove = currentItems.getAt(currentIdx);
           if (itemToMove && !itemToMove.isDestroyed) {
             APMLogger.debug("TabGridOrder", `Moving tab "${tabName}" from ${currentIdx} to ${targetIdx}`);
             mainTabPanel.move(itemToMove, targetIdx);
-            nameToIdx = buildNameToIdx();
           }
         }
-      });
+      }
     } catch (e) {
       APMLogger.warn("TabGridOrder", "Tab reorder failed:", e);
     } finally {
@@ -9336,7 +9554,8 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
         return;
       }
       _ignoreNativeEvents = true;
-      const funcName = resolveScreenContext(win);
+      const gridResult = findMainGrid();
+      const funcName = resolveScreenContext(win, gridResult?.grid);
       const presets = getPresets();
       const rawHidden = presets.config.hiddenTabs;
       const hiddenTabs = Array.isArray(rawHidden) ? rawHidden : rawHidden?.[funcName] || [];
@@ -9354,6 +9573,15 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
         if (!isReady) {
           APMLogger.warn("TabGridOrder", `TabPanel ${mainTabPanel.id} not stable after ${STABILITY_TIMEOUT_MS}ms. Best-effort.`);
         }
+      }
+      if (!_systemDefaults.tabs[funcName]) {
+        const defaultTabs = [];
+        mainTabPanel.items.each((item) => {
+          if (!item || item.isDestroyed) return;
+          const name = normalizeTabName(item.title || item.text || item.tab?.getText?.() || "");
+          if (name) defaultTabs.push(name);
+        });
+        if (defaultTabs.length > 0) _systemDefaults.tabs[funcName] = defaultTabs;
       }
       if (hasOrder && retryCount === 0) {
         APMLogger.info("TabGridOrder", `[Silo: ${funcName}] Preferred Order:`, preferredOrder);
@@ -9382,6 +9610,92 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
       }
     }
   }
+  function resetTabDefaults() {
+    const result = findMainTabPanel();
+    if (!result) {
+      APMLogger.warn("TabGridOrder", "resetTabDefaults: no tab panel found");
+      return false;
+    }
+    const { tabPanel: mainTabPanel, win } = result;
+    const funcName = resolveScreenContext(win, findMainGrid()?.grid);
+    const defaultOrder = _systemDefaults.tabs[funcName] || window._apmSystemDefaultTabOrder;
+    _isApplyingTabConsistency = true;
+    _ignoreNativeEvents = true;
+    try {
+      mainTabPanel.items.items.forEach((item) => {
+        if (item.isDestroyed || !item.tab) return;
+        try {
+          if (!item.tab.isVisible()) {
+            item.tab.show();
+            item.show();
+          }
+        } catch (e) {
+        }
+      });
+      const tabMenuPlugin = mainTabPanel.plugins?.find?.((p) => p.ptype === "uxtabmenu");
+      if (tabMenuPlugin?.tabsMenu?.items) {
+        let restored = 0;
+        tabMenuPlugin.tabsMenu.items.items.forEach((mi) => {
+          if (mi.isDestroyed || !mi.handler || restored >= 5) return;
+          const tabName = normalizeTabName(mi.text);
+          const alreadyOpen = mainTabPanel.items.items.some(
+            (t) => !t.isDestroyed && normalizeTabName(t.title || t.text || t.tab?.getText?.()) === tabName
+          );
+          if (!alreadyOpen) {
+            try {
+              mi.handler.call(mi.scope || mi, mi);
+              restored++;
+            } catch (e) {
+            }
+          }
+        });
+      }
+      if (defaultOrder && defaultOrder.length > 0) {
+        reorderTabs(mainTabPanel, defaultOrder, win);
+      }
+      if (!mainTabPanel.isDestroyed) {
+        if (typeof mainTabPanel.updateLayout === "function") mainTabPanel.updateLayout();
+        if (mainTabPanel.getTabBar?.()?.updateLayout) mainTabPanel.getTabBar().updateLayout();
+      }
+      APMLogger.info("TabGridOrder", `Tabs reset to system defaults for ${funcName}`);
+      return true;
+    } catch (e) {
+      APMLogger.warn("TabGridOrder", "resetTabDefaults failed:", e);
+      return false;
+    } finally {
+      _isApplyingTabConsistency = false;
+      setTimeout(() => {
+        _ignoreNativeEvents = false;
+      }, SUPPRESSION_HOLD_MS);
+    }
+  }
+  function resetColumnDefaults() {
+    const result = findMainGrid();
+    if (!result || !result.grid.headerCt || result.grid.headerCt.isDestroyed) {
+      APMLogger.warn("TabGridOrder", "resetColumnDefaults: no grid found");
+      return false;
+    }
+    const { grid: mainGrid, win } = result;
+    const funcName = resolveScreenContext(win, mainGrid);
+    const defaultOrder = _systemDefaults.columns[funcName];
+    if (!defaultOrder || defaultOrder.length === 0) {
+      APMLogger.info("TabGridOrder", `No captured column defaults for ${funcName}. Will take effect on next page load.`);
+      return false;
+    }
+    _suppressResizeUntil = Date.now() + 5e3;
+    try {
+      const didMove = reorderColumns(mainGrid.headerCt, defaultOrder, win);
+      if (didMove && !mainGrid.isDestroyed && mainGrid.getView?.() && !mainGrid.getView().isDestroyed) {
+        mainGrid.getView().refresh();
+        debouncedProcessColorCodeGrid(win.document);
+      }
+      APMLogger.info("TabGridOrder", `Columns reset to system defaults for ${funcName}`);
+      return true;
+    } catch (e) {
+      APMLogger.warn("TabGridOrder", "resetColumnDefaults failed:", e);
+      return false;
+    }
+  }
   function invalidateTabCache() {
     _cachedColumns = null;
     _cachedColumnsTime = 0;
@@ -9393,8 +9707,17 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
     APMApi.register("applyGridConsistency", applyGridConsistency);
     APMApi.register("applyTabConsistency", applyTabConsistency);
     window.addEventListener("APM_PRESETS_SYNC_REQUIRED", () => {
-      applyTabConsistency();
-      applyGridConsistency();
+      if (!FeatureFlags.isEnabled("tabGridOrder")) return;
+      try {
+        applyTabConsistency();
+      } catch (e) {
+        APMLogger.warn("TabGridOrder", "applyTabConsistency failed during sync:", e);
+      }
+      try {
+        applyGridConsistency();
+      } catch (e) {
+        APMLogger.warn("TabGridOrder", "applyGridConsistency failed during sync:", e);
+      }
     });
   }
 
@@ -9402,6 +9725,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
   init_utils();
   init_state();
   init_constants();
+  init_dom_helpers();
   init_api();
   init_storage();
   init_diagnostics();
@@ -9423,7 +9747,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
     return el("div", { id: "apm-tab-container", className: "apm-tab-container" }, [
       el("div", { id: "tab-autofill", className: "apm-tab-btn apm-tab-active-autofill" }, "Auto Fill Profiles"),
       el("div", { id: "tab-settings", className: "apm-tab-btn apm-tab-inactive" }, "Tab Order"),
-      el("div", { id: "tab-colorcode", className: "apm-tab-btn apm-tab-inactive" }, "ColorCode & Theme"),
+      el("div", { id: "tab-colorcode", className: "apm-tab-btn apm-tab-inactive" }, "ColorCode & Nametag"),
       el("div", { id: "tab-general", className: "apm-tab-btn apm-tab-inactive" }, "General"),
       el("div", { id: "tab-diagnostics", className: "apm-tab-btn apm-tab-inactive" }, "Diagnostics")
     ]);
@@ -9459,9 +9783,9 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
               el("li", {}, [el("b", {}, "Shortcuts: "), "Press ", el("kbd", {}, "Alt+T"), " to instantly search today's work orders. Press ", el("kbd", {}, "Alt+C"), " to clear all filters."])
             ])
           ]),
-          // ── ColorCode & Themes ──
+          // ── ColorCode & Nametag ──
           el("div", { className: "apm-help-section" }, [
-            el("div", { className: "apm-help-section-title" }, "ColorCode & Themes"),
+            el("div", { className: "apm-help-section-title" }, "ColorCode & Nametag"),
             el("p", {}, "Highlight work orders in the grid based on keywords. Rules are matched top-to-bottom against the description column."),
             el("ul", {}, [
               el("li", {}, [el("b", {}, "Creating Rules: "), "Open the ", el("b", {}, "ColorCode & Theme"), " tab, type a keyword, pick a color, and click Add. The rule is applied immediately."]),
@@ -9568,7 +9892,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
       },
       {
         icon: "\u{1F3A8}",
-        title: "ColorCode & Themes",
+        title: "ColorCode & Nametag",
         desc: "Highlight work orders in the grid based on <b>keywords</b>. Add colored nametag badges, click them to filter instantly. Color the <b>entire row, just the badge, or both</b> \u2014 it's up to you."
       }
     ];
@@ -9602,6 +9926,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
             (p, i) => el("div", { className: "apm-welcome-page", "data-page": String(i + 1) }, [
               el("div", { className: "apm-welcome-icon" }, p.icon),
               el("h3", { className: "apm-welcome-title" }, p.title),
+              // CON6: innerHTML used here is safe — p.desc is static author-controlled content (no user input)
               el("p", { className: "apm-welcome-desc", innerHTML: p.desc })
             ])
           )
@@ -9930,7 +10255,6 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
         el("div", { id: "apm-s-col-list", className: "apm-ui-settings-list" })
       ]),
       el("div", { className: "apm-tab-action-footer" }, [
-        el("button", { id: "apm-s-btn-save-settings", className: "apm-ui-settings-save" }, "Save Layout Order"),
         el("button", { id: "apm-s-btn-reset", className: "apm-ui-settings-reset" }, "Reset to Default")
       ])
     ]);
@@ -9942,7 +10266,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
           el("div", { style: { display: "flex", gap: "10px", marginBottom: "12px" } }, [
             el("div", { style: { flex: "1" } }, [
               el("div", { style: { fontSize: "11px", color: "var(--apm-text-muted)", marginBottom: "4px", fontWeight: "bold" } }, "Keyword (Search)"),
-              el("input", { type: "text", id: "cc-search", className: "field-input", placeholder: "Match multiple keywords separated by, comma,", style: { height: "28px", fontSize: "12px", width: "100%", boxSizing: "border-box" } })
+              el("input", { type: "text", id: "cc-search", className: "field-input", placeholder: "Match multiple keywords separated by, comma,", style: { height: "28px", fontSize: "12px", width: "100%", boxSizing: "border-box", textTransform: "none" } })
             ]),
             el("div", { style: { width: "50px" } }, [
               el("div", { style: { fontSize: "11px", color: "var(--apm-text-muted)", marginBottom: "4px", fontWeight: "bold", textAlign: "center" } }, "Color"),
@@ -9952,7 +10276,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
           el("div", { style: { display: "flex", gap: "10px", alignItems: "flex-end", marginBottom: "15px" } }, [
             el("div", { style: { flex: "1" } }, [
               el("div", { style: { fontSize: "11px", color: "var(--apm-text-muted)", marginBottom: "4px", fontWeight: "bold" } }, "Badge Text (Nametag)"),
-              el("input", { type: "text", id: "cc-tag", className: "field-input", placeholder: "(Leave blank for no nametag)", style: { height: "28px", fontSize: "12px", width: "100%", boxSizing: "border-box" } })
+              el("input", { type: "text", id: "cc-tag", className: "field-input", placeholder: "(Leave blank for no nametag)", style: { height: "28px", fontSize: "12px", width: "100%", boxSizing: "border-box", textTransform: "none" } })
             ])
           ]),
           el("div", { style: { display: "flex", gap: "8px", width: "100%", marginBottom: "15px" } }, [
@@ -10243,7 +10567,16 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
         renderDragList(state, colListContainer, tabs, "No record tabs found. Open a Work Order.");
       }
     };
-    const loadSettingsView = () => {
+    const loadSettingsView = (explicitMode) => {
+      if (!explicitMode) {
+        const tpResult = findMainTabPanel();
+        let hasRecordTabs = false;
+        if (tpResult && isFrameVisible(tpResult.win)) {
+          const hdrTab = tpResult.tabPanel.items?.items?.find((t) => t.itemId === "HDR");
+          hasRecordTabs = hdrTab && hdrTab.rendered && !!hdrTab.getEl?.()?.dom?.innerHTML?.trim();
+        }
+        state.settingsMode = hasRecordTabs ? "tabs" : "cols";
+      }
       const resetBtn = document.getElementById("apm-s-btn-reset");
       const titleEl = document.getElementById("apm-s-title");
       const screenLabel = detectScreenFunction() || "Unknown";
@@ -10253,7 +10586,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
         togCols.style.color = "var(--apm-text-primary)";
         togTabs.style.background = "transparent";
         togTabs.style.color = "var(--apm-text-disabled)";
-        if (resetBtn) resetBtn.style.display = "none";
+        if (resetBtn) resetBtn.style.display = "block";
         if (titleEl) titleEl.textContent = `Column Order (${screenLabel}):`;
         if (!hintEl && titleEl) {
           hintEl = document.createElement("div");
@@ -10546,12 +10879,12 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
     function bindTabSwitching() {
       togCols.onclick = () => {
         state.settingsMode = "cols";
-        loadSettingsView();
+        loadSettingsView("cols");
       };
       togTabs.onclick = () => {
         state.settingsMode = "tabs";
         invalidateTabCache();
-        loadSettingsView();
+        loadSettingsView("tabs");
       };
       tabAutofill.onclick = () => {
         state.activeTab = "autofill";
@@ -10727,37 +11060,9 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
       };
     }
     function bindTabOrderActions() {
-      document.getElementById("apm-s-btn-save-settings").onclick = () => {
-        const items = [...colListContainer.querySelectorAll(".apm-col-item")];
-        if (items.length > 0) {
-          const visibleItems = items.filter((el2) => el2.dataset.hidden !== "true");
-          const funcName = detectScreenFunction();
-          const presets = getPresets();
-          if (state.settingsMode === "cols") {
-            invalidateTabCache();
-            const currentCols = probeExtGridColumns();
-            const orderArray = visibleItems.map((el2) => {
-              const idx = el2.dataset.index;
-              const probed = currentCols.find((c) => c.index === idx);
-              return { index: idx, width: probed?.width || null };
-            }).filter((e) => e.index);
-            const columnOrders = { ...presets.config.columnOrders || {}, [funcName]: orderArray };
-            updatePresetConfig({ columnOrders });
-            showToast(`Grid Column order saved for ${funcName}!`, "var(--apm-success-bright)");
-          } else {
-            const orderArray = visibleItems.map((el2) => el2.dataset.index).filter(Boolean);
-            const tabOrders = { ...presets.config.tabOrders || {}, [funcName]: orderArray };
-            updatePresetConfig({ tabOrders });
-            const allHidden = presets.config.hiddenTabs || {};
-            const hiddenCount = Array.isArray(allHidden) ? allHidden.length : (allHidden[funcName] || []).length;
-            showToast(`Tab layout saved for ${funcName}! (${hiddenCount} hidden)`, "var(--apm-success-bright)");
-          }
-        } else {
-          showToast("No items to save.", "var(--apm-danger)");
-        }
-      };
       document.getElementById("apm-s-btn-reset").onclick = () => {
-        if (!confirm("Reset layout to system defaults?")) return;
+        const mode = state.settingsMode === "tabs" ? "tab" : "column";
+        if (!confirm(`Reset ${mode} layout to system defaults?`)) return;
         const presets = getPresets();
         const funcName = detectScreenFunction();
         if (state.settingsMode === "tabs") {
@@ -10767,67 +11072,20 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
           delete allHidden[funcName];
           updatePresetConfig({ tabOrders, hiddenTabs: allHidden });
           invalidateTabCache();
-          const allWins = getExtWindows();
-          for (const win of allWins) {
-            try {
-              if (!win.Ext || !win.Ext.ComponentQuery) continue;
-              const tabPanels = win.Ext.ComponentQuery.query("tabpanel, uxtabpanel");
-              const mainTP = tabPanels.find((tp) => tp.rendered && !tp.isDestroyed && tp.items && tp.items.items.some((t) => (t.title || t.text || "").includes("Activities")));
-              if (mainTP) {
-                mainTP.items.items.forEach((item) => {
-                  if (!item.isDestroyed && item.tab) {
-                    if (!item.tab.isVisible()) item.tab.show();
-                  }
-                });
-                const tabMenuPlugin = mainTP.plugins?.find?.((p) => p.ptype === "uxtabmenu");
-                if (tabMenuPlugin && tabMenuPlugin.tabsMenu && tabMenuPlugin.tabsMenu.items) {
-                  tabMenuPlugin.tabsMenu.items.items.forEach((mi) => {
-                    if (!mi.isDestroyed && mi.handler) {
-                      try {
-                        mi.handler.call(mi.scope || mi, mi);
-                      } catch (e) {
-                      }
-                    }
-                  });
-                }
-                const defaultOrder = window._apmSystemDefaultTabOrder;
-                if (defaultOrder && defaultOrder.length > 0) {
-                  let layoutsSuspended = false;
-                  try {
-                    win.Ext.suspendLayouts();
-                    layoutsSuspended = true;
-                    defaultOrder.forEach((tabName, targetIdx) => {
-                      if (mainTP.isDestroyed) return;
-                      const currentIdx = mainTP.items.findIndexBy((item) => {
-                        if (item.isDestroyed) return false;
-                        let name = (item.title || item.text || item.tab && item.tab.getText?.() || "").replace(/<[^>]*>?/gm, "").trim();
-                        return name === tabName;
-                      });
-                      if (currentIdx !== -1 && currentIdx !== targetIdx) {
-                        const itemToMove = mainTP.items.getAt(currentIdx);
-                        if (itemToMove) mainTP.move(itemToMove, targetIdx);
-                      }
-                    });
-                  } catch (e) {
-                  } finally {
-                    if (layoutsSuspended) win.Ext.resumeLayouts(true);
-                  }
-                }
-                if (!mainTP.isDestroyed && typeof mainTP.updateLayout === "function") mainTP.updateLayout();
-                if (mainTP.getTabBar && mainTP.getTabBar().updateLayout) mainTP.getTabBar().updateLayout();
-              }
-            } catch (e) {
-            }
-          }
+          resetTabDefaults();
           showToast(`Tab layout reset for ${funcName}!`, "var(--apm-accent)");
-          performAutoFetch();
         } else {
           const columnOrders = { ...presets.config.columnOrders || {} };
           delete columnOrders[funcName];
           updatePresetConfig({ columnOrders });
-          showToast(`Column layout reset for ${funcName}!`, "var(--apm-accent)");
-          performAutoFetch();
+          const restored = resetColumnDefaults();
+          if (restored) {
+            showToast(`Column layout reset for ${funcName}!`, "var(--apm-accent)");
+          } else {
+            showToast(`Column order cleared for ${funcName}. Reload page for full reset.`, "var(--apm-accent)");
+          }
         }
+        performAutoFetch();
       };
     }
     function sparkline(arr) {
@@ -11036,6 +11294,27 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
     let visibleItems = itemsArray;
     let hiddenItems = [];
     const funcName = detectScreenFunction();
+    const autoSaveOrder = () => {
+      const items = [...colListContainer.querySelectorAll(".apm-col-item")];
+      const visItems = items.filter((el2) => el2.dataset.hidden !== "true");
+      if (visItems.length === 0) return;
+      const p = getPresets();
+      if (isTabsMode) {
+        const orderArray = visItems.map((el2) => el2.dataset.index).filter(Boolean);
+        const tabOrders = { ...p.config.tabOrders || {}, [funcName]: orderArray };
+        updatePresetConfig({ tabOrders });
+      } else {
+        invalidateTabCache();
+        const currentCols = probeExtGridColumns();
+        const orderArray = visItems.map((el2) => {
+          const idx = el2.dataset.index;
+          const probed = currentCols.find((c) => c.index === idx);
+          return { index: idx, width: probed?.width || null };
+        }).filter((e) => e.index);
+        const columnOrders = { ...p.config.columnOrders || {}, [funcName]: orderArray };
+        updatePresetConfig({ columnOrders });
+      }
+    };
     if (isTabsMode) {
       const siloOrder = presets.config.tabOrders?.[funcName] || "";
       const preferredOrder = typeof siloOrder === "string" ? siloOrder.split(",").map((s) => s.trim()).filter(Boolean) : Array.isArray(siloOrder) ? siloOrder : [];
@@ -11050,7 +11329,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
       hiddenItems = itemsArray.filter((c) => screenHidden.includes(c.index));
     }
     const resetBtn = document.getElementById("apm-s-btn-reset");
-    if (resetBtn) resetBtn.style.display = isTabsMode ? "block" : "none";
+    if (resetBtn) resetBtn.style.display = "block";
     const createDragItem = (c, isHidden) => {
       const item = document.createElement("div");
       item.dataset.index = c.index;
@@ -11061,19 +11340,43 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
         item.style.cursor = "default";
         item.style.borderLeftColor = "var(--apm-danger)";
         const badges = [];
-        if (c.isOverflow) badges.push(el("span", { className: "apm-overflow-badge", title: 'This tab is in the "More" overflow menu' }, "More Menu"));
-        if (c.isPluginMenu) badges.push(el("span", { className: "apm-overflow-badge", style: { background: "var(--apm-purple)" }, title: "This tab is managed by the EAM Menu plugin" }, "Framework Menu"));
-        if (c.systemHidden && !c.isPluginMenu) badges.push(el("span", { className: "apm-overflow-badge", style: { background: "var(--apm-accent)" }, title: "This tab is hidden by EAM by default" }, "Hidden by EAM"));
+        if (c.isPluginMenu) badges.push(el("span", { className: "apm-overflow-badge", style: { background: "var(--apm-purple)" }, title: "This tab is managed by the EAM tab menu plugin (More menu)" }, "More Menu"));
         const badgeHtml = badges.map((b) => b.outerHTML).join("");
-        item.innerHTML = `<span style="opacity:0.5; flex:1; display:flex; align-items:center;"><span style="text-decoration: line-through;"><b style="color:var(--apm-text-disabled);">\u2630</b> &nbsp; ${escapeHtml(c.text)}</span>${badgeHtml}</span> <button class="apm-tab-restore-btn" data-tab-name="${escapeHtml(c.index)}" style="background:var(--apm-success-bright); color:white; border:none; border-radius:4px; padding:4px 10px; cursor:pointer; font-size:14px; font-weight:bold; box-shadow: 0 2px 4px rgba(0,0,0,0.2); transition: transform 0.1s; position:relative; z-index:10;" title="Restore tab">\uFF0B</button>`;
+        const labelSpan = el("span", { style: { opacity: "0.5", flex: "1", display: "flex", alignItems: "center" } }, [
+          el("span", { style: { textDecoration: "line-through" } }, [
+            el("b", { style: { color: "var(--apm-text-disabled)" } }, "\u2630"),
+            document.createTextNode(" \xA0 " + c.text)
+          ]),
+          ...badges
+        ]);
+        const restoreBtn = el("button", {
+          className: "apm-tab-restore-btn",
+          "data-tab-name": c.index,
+          style: { background: "var(--apm-success-bright)", color: "white", border: "none", borderRadius: "4px", padding: "4px 10px", cursor: "pointer", fontSize: "14px", fontWeight: "bold", boxShadow: "0 2px 4px rgba(0,0,0,0.2)", transition: "transform 0.1s", position: "relative", zIndex: "10" },
+          title: "Restore tab"
+        }, "\uFF0B");
+        item.appendChild(labelSpan);
+        item.appendChild(restoreBtn);
       } else {
         item.draggable = true;
-        const actionBtn = isTabsMode ? `<button class="apm-tab-hide-btn" data-tab-name="${escapeHtml(c.index)}" style="background:transparent; color:var(--apm-danger); border:none; border-radius:4px; padding:2px 6px; cursor:pointer; font-size:13px; font-weight:bold;" title="Hide tab">\u2716</button>` : `<span style="color:var(--apm-text-disabled); font-size:10px;">[${c.index}]</span>`;
+        const actionEl = isTabsMode ? el("button", {
+          className: "apm-tab-hide-btn",
+          "data-tab-name": c.index,
+          style: { background: "transparent", color: "var(--apm-danger)", border: "none", borderRadius: "4px", padding: "2px 6px", cursor: "pointer", fontSize: "13px", fontWeight: "bold" },
+          title: "Hide tab"
+        }, "\u2716") : el("span", { style: { color: "var(--apm-text-disabled)", fontSize: "10px" } }, "[" + c.index + "]");
         const badges = [];
-        if (isTabsMode && c.isOverflow) badges.push(el("span", { className: "apm-overflow-badge", title: 'This tab is in the "More" overflow menu' }, "More Menu"));
-        if (isTabsMode && c.isPluginMenu) badges.push(el("span", { className: "apm-overflow-badge", style: { background: "var(--apm-purple)" }, title: "This tab is managed by the EAM Menu plugin" }, "Framework Menu"));
-        const badgeHtml = badges.map((b) => b.outerHTML).join("");
-        item.innerHTML = `<span><span><b style="color:var(--apm-accent);">\u2630</b> &nbsp; ${escapeHtml(c.text)}</span>${badgeHtml}</span> ${actionBtn}`;
+        if (isTabsMode && c.isPluginMenu) badges.push(el("span", { className: "apm-overflow-badge", style: { background: "var(--apm-purple)" }, title: "This tab is managed by the EAM tab menu plugin (More menu)" }, "More Menu"));
+        const labelSpan = el("span", {}, [
+          el("span", {}, [
+            el("b", { style: { color: "var(--apm-accent)" } }, "\u2630"),
+            document.createTextNode(" \xA0 " + c.text)
+          ]),
+          ...badges
+        ]);
+        item.appendChild(labelSpan);
+        item.appendChild(document.createTextNode(" "));
+        item.appendChild(actionEl);
         item.ondragstart = (e) => {
           e.dataTransfer.setData("text/plain", "");
           item.classList.add("dragging");
@@ -11082,6 +11385,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
         item.ondragend = () => {
           item.classList.remove("dragging");
           _draggingEl = null;
+          autoSaveOrder();
         };
       }
       return item;
@@ -11182,6 +11486,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
   init_utils();
   init_logger();
   init_ui_manager();
+  init_dom_helpers();
   init_api();
   init_context();
   var tbWin = apmGetGlobalWindow();
@@ -11279,11 +11584,11 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
       }, true);
       document.addEventListener("mouseover", (e) => {
         const btn = e.target.closest("#apm-forecast-ext-btn, #apm-settings-ext-btn");
-        if (btn) btn.style.color = "#ffffff";
+        if (btn) btn.style.color = "var(--apm-text-primary)";
       }, true);
       document.addEventListener("mouseout", (e) => {
         const btn = e.target.closest("#apm-forecast-ext-btn, #apm-settings-ext-btn");
-        if (btn) btn.style.color = "#d1d1d1";
+        if (btn) btn.style.color = "var(--apm-text-secondary)";
       }, true);
       let lastPulse = 0;
       const tryInjectButtons = () => {
@@ -11329,14 +11634,14 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
               el("div", {
                 id: "apm-forecast-ext-btn",
                 className: "rain-cloud-hover apm-btn-inner apm-fc-btn",
-                style: "display:flex; align-items:center; font-family:sans-serif; font-size:13px; font-weight:600; color:#d1d1d1; transition:color 0.15s; cursor:pointer;"
+                style: "display:flex; align-items:center; font-family:sans-serif; font-size:13px; font-weight:600; color:var(--apm-text-secondary); transition:color 0.15s; cursor:pointer;"
               }, [
                 el("span", { style: "margin-right:6px;" }, "Forecast"),
                 el("span", { style: "display: inline-flex; align-items: center;", innerHTML: SVG_CLOUD.trim() })
               ]),
               el("div", {
                 id: "apm-settings-ext-btn",
-                style: "display:flex; align-items:center; font-family:sans-serif; font-size:13px; font-weight:600; color:#d1d1d1; transition:color 0.15s; cursor:pointer;"
+                style: "display:flex; align-items:center; font-family:sans-serif; font-size:13px; font-weight:600; color:var(--apm-text-secondary); transition:color 0.15s; cursor:pointer;"
               }, [
                 el("span", {}, "APM Master"),
                 el("span", {
@@ -11371,10 +11676,10 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
       timerUI.id = "apm-ptp-timer";
       timerUI.style.cssText = `
             position: fixed; top: 85px; right: 30px;
-            background: #34495e; color: white; padding: 6px 12px 6px 16px; border-radius: 30px;
+            background: var(--apm-surface-0); color: white; padding: 6px 12px 6px 16px; border-radius: 30px;
             font-family: sans-serif; font-size: 16px; font-weight: bold;
             z-index: 100000; box-shadow: 0 4px 15px rgba(0,0,0,0.3);
-            display: flex; align-items: center; gap: 10px; border: 2px solid #2c3e50;
+            display: flex; align-items: center; gap: 10px; border: 2px solid var(--apm-surface-sunken);
             user-select: none; pointer-events: auto; transition: all 0.2s;
         `;
       document.body.appendChild(timerUI);
@@ -11382,13 +11687,13 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
     if (!window._ptpTimerRunning) {
       timerUI.innerHTML = `
             <div id="apm-ptp-start-btn" style="display:flex; align-items:baseline; gap:8px; cursor:pointer;">
-                <span style="font-size:12px; text-transform:uppercase; opacity:0.9; letter-spacing:0.5px; color:#f1c40f;">\u25B6 Start PTP Timer</span>
+                <span style="font-size:12px; text-transform:uppercase; opacity:0.9; letter-spacing:0.5px; color:var(--apm-warning);">\u25B6 Start PTP Timer</span>
                 <span id="apm-ptp-time" style="font-family:monospace; font-size:20px; opacity:0.5;">02:00</span>
             </div>
             <div id="apm-ptp-close" style="cursor:pointer; font-size:14px; opacity:0.5; padding-left:4px; transition:opacity 0.2s;" title="Dismiss Timer">\u2716</div>
         `;
-      timerUI.style.background = "#34495e";
-      timerUI.style.borderColor = "#2c3e50";
+      timerUI.style.background = "var(--apm-surface-0)";
+      timerUI.style.borderColor = "var(--apm-surface-sunken)";
       document.getElementById("apm-ptp-start-btn").onclick = startPtpCountdown;
     }
     const closeBtn = document.getElementById("apm-ptp-close");
@@ -11410,8 +11715,8 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
     window._ptpTimerRunning = true;
     ptpSeconds = 120;
     const timerUI = document.getElementById("apm-ptp-timer");
-    timerUI.style.background = "#e74c3c";
-    timerUI.style.borderColor = "#c0392b";
+    timerUI.style.background = "var(--apm-danger)";
+    timerUI.style.borderColor = "var(--apm-danger)";
     timerUI.innerHTML = `
         <div style="display:flex; align-items:baseline; gap:8px;">
             <span style="font-size:12px; text-transform:uppercase; opacity:0.9; letter-spacing:0.5px;">PTP Timer:</span>
@@ -11439,8 +11744,8 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
       if (ptpSeconds <= 0) {
         APMScheduler.removeTask("ptp-countdown");
         timeEl.textContent = "READY";
-        timerUI.style.background = "#2ecc71";
-        timerUI.style.borderColor = "#27ae60";
+        timerUI.style.background = "var(--apm-success-bright)";
+        timerUI.style.borderColor = "var(--apm-success-bright)";
       } else {
         const mins = Math.floor(ptpSeconds / 60);
         const secs = ptpSeconds % 60;
@@ -11500,6 +11805,8 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
       if (record) {
         record.set(fieldName, value);
       }
+      field.fireEvent("change", field, value);
+      field.fireEvent("blur", field);
       return true;
     }
     return false;
@@ -12482,6 +12789,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
   }
 
   // src/modules/labor-tracker.js
+  init_dom_helpers();
   init_utils();
   init_state();
   init_labor_service();
@@ -12789,12 +13097,14 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
       list.innerHTML = "";
       const sortedDates = Object.keys(breakdown).sort((a, b) => new Date(b) - new Date(a));
       if (sortedDates.length === 0) {
-        list.innerHTML = '<div class="labor-empty">No labor records found.</div>';
+        list.appendChild(el("div", { className: "labor-empty" }, "No labor records found."));
       } else {
         sortedDates.forEach((d) => {
-          const row = document.createElement("div");
-          row.className = "labor-row";
-          row.innerHTML = `<span>${d}</span> <strong>${breakdown[d].toFixed(2)}</strong>`;
+          const row = el("div", { className: "labor-row" }, [
+            el("span", {}, d),
+            document.createTextNode(" "),
+            el("strong", {}, String(breakdown[d].toFixed(2)))
+          ]);
           list.appendChild(row);
         });
       }
@@ -12850,7 +13160,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
     const applyOverride = () => {
       if (typeof Ext !== "undefined" && Ext.form && Ext.form.field && Ext.form.field.Date) {
         if (!apmGeneralSettings.dateOverrideEnabled) return;
-        const fmt = apmGeneralSettings.dateFormat === "eu" ? "d/m/Y" : "m/d/Y";
+        const fmt = apmGeneralSettings.dateFormat === "eu" ? "d/m/Y" : apmGeneralSettings.dateFormat === "mon" ? "d-M-Y" : "m/d/Y";
         Ext.override(Ext.form.field.Date, {
           format: fmt,
           altFormats: "m/d/Y|n/j/Y|n/j/y|m/j/y|n/d/y|m/j/Y|n/d/Y|m-d-y|m-d-Y|m/d|m-d|md|mdy|mdY|d|Y-m-d|n-j|n/j|d/m/Y|j/n/Y|j/n/y"
@@ -12864,6 +13174,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
   }
 
   // src/ui/conflict-notice.js
+  init_dom_helpers();
   init_storage();
   init_constants();
   function checkLegacyConflicts() {
@@ -12881,11 +13192,11 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
       const icon = isBetterApmDetected ? "\u{1F6AB}" : "\u26A1";
       const mainMsg = isBetterApmDetected ? "We've detected that 'Better APM' is also running. This tool is known to conflict with APM Master, causing UI elements to disappear or hotkeys to fail." : "I've integrated everything into this single script. To prevent any possible conflicts, please ensure you have disabled the older, standalone versions of:";
       const listContent = isBetterApmDetected ? [
-        el("p", { style: { color: "#e74c3c", fontWeight: "bold", margin: "5px 0" } }, "\u2022 Better APM (Userscript)"),
+        el("p", { style: { color: "var(--apm-danger)", fontWeight: "bold", margin: "5px 0" } }, "\u2022 Better APM (Userscript)"),
         el("p", { style: { fontSize: "12px", marginTop: "10px" } }, "APM Master now includes its own self-healing mode to fight these conflicts, but disabling the other tool is recommended for full stability.")
       ] : [
-        el("p", { style: { color: "#f1c40f", fontWeight: "bold", margin: "5px 0" } }, "\u2022 APM Master (Legacy Autofill)"),
-        el("p", { style: { color: "#f1c40f", fontWeight: "bold", margin: "5px 0" } }, "\u2022 ColorCode & Nametags")
+        el("p", { style: { color: "var(--apm-warning)", fontWeight: "bold", margin: "5px 0" } }, "\u2022 APM Master (Legacy Autofill)"),
+        el("p", { style: { color: "var(--apm-warning)", fontWeight: "bold", margin: "5px 0" } }, "\u2022 ColorCode & Nametags")
       ];
       const overlay = el("div", {
         id: "apm-conflict-overlay",
@@ -12897,7 +13208,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
           style: { maxWidth: "450px", height: "auto", maxHeight: "80vh", padding: "25px", textAlign: "center" }
         }, [
           el("div", { style: { marginBottom: "20px" } }, [
-            el("h3", { style: { color: isBetterApmDetected ? "#e74c3c" : "#3498db", margin: "0 0 10px 0", fontSize: "20px" } }, title),
+            el("h3", { style: { color: isBetterApmDetected ? "var(--apm-danger)" : "var(--apm-accent)", margin: "0 0 10px 0", fontSize: "20px" } }, title),
             el("div", {
               style: {
                 width: "60px",
@@ -12911,7 +13222,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
               }
             }, [el("span", { style: { fontSize: "30px" } }, icon)])
           ]),
-          el("div", { className: "apm-help-content", style: { padding: "0", fontSize: "14px", lineHeight: "1.6", color: "#ecf0f1" } }, [
+          el("div", { className: "apm-help-content", style: { padding: "0", fontSize: "14px", lineHeight: "1.6", color: "var(--apm-text-bright)" } }, [
             el("p", {}, mainMsg),
             el("div", { style: { margin: "15px 0", padding: "10px", background: "rgba(0,0,0,0.2)", borderRadius: "8px" } }, listContent),
             !isBetterApmDetected ? el("p", {}, "running in your browser extension (e.g. Tampermonkey).") : null,
@@ -12962,7 +13273,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
         case PRESET_STORAGE_KEY:
           handleAutoFillPresetsSync(e.newValue);
           break;
-        case "ApmSession":
+        case SESSION_STORAGE_KEY:
           handleSessionSync(e.newValue);
           break;
       }
@@ -12982,7 +13293,12 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
     try {
       const session = JSON.parse(data);
       const wasInit = AppState.session.isInitialized;
-      Object.assign(AppState.session, session);
+      const ALLOWED_KEYS = ["eamid", "tenant", "user", "isInitialized", "isFresh"];
+      for (const key of ALLOWED_KEYS) {
+        if (session.hasOwnProperty(key)) {
+          AppState.session[key] = session[key];
+        }
+      }
       if (AppState.session.isInitialized) {
         window.dispatchEvent(new CustomEvent("APM_SESSION_UPDATED", {
           detail: { ...AppState.session, firstInit: !wasInit }
@@ -13066,6 +13382,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
             APMLogger.info("APM Session", "Restored from storage:", AppState.session);
           }
         } catch (e) {
+          APMLogger.debug("Session", "Failed to restore session:", e);
         }
       }
     },
@@ -13122,14 +13439,14 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
       if (url2) {
         const eamMatch = url2.match(/[?&]eamid=([^&]+)/);
         const tenantMatch = url2.match(/[?&]tenant=([^&]+)/);
-        if (eamMatch) this.updateState("eamid", eamMatch[1]);
-        if (tenantMatch) this.updateState("tenant", tenantMatch[1]);
+        if (eamMatch) this.updateState("eamid", decodeURIComponent(eamMatch[1]));
+        if (tenantMatch) this.updateState("tenant", decodeURIComponent(tenantMatch[1]));
       }
       if (payload) {
         const eamMatch = payload.match(/[?&]eamid=([^&]+)/) || payload.match(/eamid=([^&]+)/);
         const tenantMatch = payload.match(/[?&]tenant=([^&]+)/) || payload.match(/tenant=([^&]+)/);
-        if (eamMatch) this.updateState("eamid", eamMatch[1]);
-        if (tenantMatch) this.updateState("tenant", tenantMatch[1]);
+        if (eamMatch) this.updateState("eamid", decodeURIComponent(eamMatch[1]));
+        if (tenantMatch) this.updateState("tenant", decodeURIComponent(tenantMatch[1]));
       }
     },
     processResponse(url2, text) {
@@ -13477,9 +13794,9 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
         syncNativeState(item, "remove");
         trigger();
       });
-      tp.on("move", (tp2, item, fromIdx, toIdx) => {
+      tp.on("childmove", (container, item, fromIdx, toIdx) => {
         if (isSuppressingNativeEvents() || !item) return;
-        APMLogger.debug("ExtConsistency", `Native MOVE detected for ${item.id || "item"} from ${fromIdx} to ${toIdx}. Triggering re-sync.`);
+        APMLogger.debug("ExtConsistency", `Native CHILDMOVE detected for ${item.id || "item"} from ${fromIdx} to ${toIdx}. Triggering re-sync.`);
         trigger();
       });
       tp.on("activate", trigger);
@@ -13525,6 +13842,63 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
   init_context();
   init_feature_flags();
   init_diagnostics();
+
+  // src/modules/tab-title.js
+  init_logger();
+  init_utils();
+  init_constants();
+  function getRecordDescription() {
+    const wins = getExtWindows();
+    for (const win of wins) {
+      try {
+        if (!win.Ext?.ComponentQuery) continue;
+        const rvForms = win.Ext.ComponentQuery.query("form[id*=recordview]");
+        const rvForm = rvForms.find((f) => f.rendered && !f.isDestroyed && f.isVisible?.());
+        if (!rvForm) continue;
+        const record = rvForm.getRecord?.();
+        if (record) {
+          const desc = (record.get("description") || "").trim();
+          if (desc) return desc;
+        }
+        const descField = rvForm.getForm?.().findField?.("description");
+        if (descField) {
+          const val = (descField.getValue() || "").trim();
+          if (val) return val;
+        }
+      } catch (e) {
+      }
+    }
+    return null;
+  }
+  function updateTabTitle() {
+    try {
+      const userFunc = detectScreenFunction();
+      if (!userFunc || userFunc === "GLOBAL") return;
+      const entity = ENTITY_REGISTRY[userFunc];
+      const screenTitle = entity?.screenTitle || SCREEN_TITLES[userFunc];
+      if (entity) {
+        const desc = getRecordDescription();
+        if (desc) {
+          if (document.title !== desc) {
+            document.title = desc;
+            APMLogger.debug("TabTitle", `Set title to record description: "${desc}"`);
+          }
+          return;
+        }
+      }
+      if (screenTitle) {
+        if (document.title !== screenTitle) {
+          document.title = screenTitle;
+          APMLogger.debug("TabTitle", `Set title to screen: "${screenTitle}"`);
+        }
+        return;
+      }
+    } catch (e) {
+      APMLogger.error("TabTitle", "Failed to update tab title:", e);
+    }
+  }
+
+  // src/boot.js
   function initBootSequence(win = window) {
     const isTop = win === win.top;
     FeatureFlags.register("colorCode", { label: "ColorCode Engine", description: "Real-time grid highlighting and nametags" });
@@ -13533,6 +13907,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
     FeatureFlags.register("laborBooker", { label: "Labor Booker", description: "Quick labor entry for WOs" });
     FeatureFlags.register("ptpTimer", { label: "PTP Take-2 Timer", description: "Safety countdown on PTP screen" });
     FeatureFlags.register("tabGridOrder", { label: "UI Customization", description: "Drag & drop reordering of grids/tabs" });
+    FeatureFlags.register("tabTitle", { label: "Tab Title", description: "Show current screen name in browser tab" });
     initGlobalSync();
     if (isTop) {
       try {
@@ -13629,6 +14004,9 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
           }
         }
       });
+      if (isTop && FeatureFlags.isEnabled("tabTitle")) {
+        APMScheduler.registerTask("tab-title-update", 3e3, updateTabTitle);
+      }
       APMScheduler.registerTask("scheduler-investigator", 1e4, () => {
         const schedulerTasks = APMScheduler.getTasks();
         const instanceId = APMScheduler.instanceId;
@@ -13644,7 +14022,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
   var STYLE_ID = "apm-ptp-dark-patch";
   var DARK_THEMES = /* @__PURE__ */ new Set(["theme-hex-dark", "theme-dark", "theme-darkblue", "theme-orange", "dark"]);
   var currentMemTheme = "default";
-  var _parentOrigin = "*";
+  var _parentOrigin = null;
   var AWSUI_DARK_CSS = `
     /* === Theme tokens === */
     #root {
@@ -14100,9 +14478,11 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
         return;
       }
       APMLogger.info("APM Master", `PTP Sandbox: Assessment completed via API for WO ${woNumber}. Broadcasting...`);
-      try {
-        window.top.postMessage({ type: "APM_PTP_COMPLETED", wo: woNumber }, _parentOrigin);
-      } catch (e) {
+      if (_parentOrigin) {
+        try {
+          window.top.postMessage({ type: "APM_PTP_COMPLETED", wo: woNumber }, _parentOrigin);
+        } catch (e) {
+        }
       }
       lastCompletedWo = woNumber;
     };
@@ -14110,24 +14490,30 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
       if (!woNumber) return;
       lastCompletedWo = null;
       APMLogger.info("APM Master", `PTP Sandbox: Assessment started for WO ${woNumber}. Broadcasting...`);
-      try {
-        window.top.postMessage({ type: "APM_PTP_START", wo: woNumber }, _parentOrigin);
-      } catch (e) {
+      if (_parentOrigin) {
+        try {
+          window.top.postMessage({ type: "APM_PTP_START", wo: woNumber }, _parentOrigin);
+        } catch (e) {
+        }
       }
     };
     const triggerCancel = (woNumber) => {
       if (!woNumber) return;
       APMLogger.info("APM Master", `PTP Sandbox: Assessment cancelled for WO ${woNumber}. Broadcasting...`);
-      try {
-        window.top.postMessage({ type: "APM_PTP_CANCELLED", wo: woNumber }, _parentOrigin);
-      } catch (e) {
+      if (_parentOrigin) {
+        try {
+          window.top.postMessage({ type: "APM_PTP_CANCELLED", wo: woNumber }, _parentOrigin);
+        } catch (e) {
+        }
       }
     };
     const triggerStopTimer = () => {
       APMLogger.info("APM Master", "PTP Sandbox: Assessment list hit. Requesting timer stop...");
-      try {
-        window.top.postMessage({ type: "APM_PTP_STOP_TIMER" }, _parentOrigin);
-      } catch (e) {
+      if (_parentOrigin) {
+        try {
+          window.top.postMessage({ type: "APM_PTP_STOP_TIMER" }, _parentOrigin);
+        } catch (e) {
+        }
       }
     };
     const handleAssessmentResponse = (url2, text, status, requestBody) => {
@@ -14226,13 +14612,23 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
         const hasPtpHeader = !!document.querySelector('.ptp-header, .permit-details, #ptp-main-content, [class*="awsui_root_"]');
         const hasWorkOrder = window.location.href.includes("workOrder");
         if (hasPtpHeader || hasWorkOrder) {
-          window.top.postMessage({ type: "APM_PTP_HEARTBEAT", visible: true, url: window.location.href }, _parentOrigin);
+          if (_parentOrigin) {
+            try {
+              window.top.postMessage({ type: "APM_PTP_HEARTBEAT", visible: true, url: window.location.href }, _parentOrigin);
+            } catch (e) {
+            }
+          }
         }
       };
       setInterval(checkVisibility, 8e3);
       checkVisibility();
       window.addEventListener("mousedown", (e) => {
-        window.top.postMessage({ type: "APM_PTP_CLICK_AWAY" }, _parentOrigin);
+        if (_parentOrigin) {
+          try {
+            window.top.postMessage({ type: "APM_PTP_CLICK_AWAY" }, _parentOrigin);
+          } catch (e2) {
+          }
+        }
       }, true);
       new MutationObserver(() => {
         if (!document.getElementById(STYLE_ID) && DARK_THEMES.has(currentMemTheme)) {
@@ -14243,14 +14639,17 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
     window.addEventListener("message", (e) => {
       const d = e.data;
       if (!d) return;
-      if (e.origin && e.origin !== "null" && _parentOrigin === "*") {
-        const TRUSTED = [/\.hxgnsmartcloud\.com$/, /\.hexagon\.com$/, /\.amazon\.dev$/];
+      const TRUSTED = [/\.hxgnsmartcloud\.com$/, /\.hexagon\.com$/, /\.ptp\.amazon\.dev$/];
+      let originTrusted = false;
+      if (e.origin && e.origin !== "null") {
         try {
           const hostname2 = new URL(e.origin).hostname;
-          if (TRUSTED.some((p) => p.test(hostname2))) _parentOrigin = e.origin;
+          originTrusted = TRUSTED.some((p) => p.test(hostname2));
         } catch (err) {
         }
       }
+      if (!originTrusted) return;
+      if (!_parentOrigin) _parentOrigin = e.origin;
       const isBetterApmMatch = d.__betterApm === "theme" || d.__betterApm === "setTheme";
       const isNativeMatch = d.type === "APM_SET_THEME" || d.apmMaster === "theme";
       if (isBetterApmMatch || isNativeMatch) {
@@ -14280,7 +14679,12 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
       }
       APMLogger.debug("APM Master", "PTP Sandbox: Requesting Theme Handshake...");
       try {
-        window.top.postMessage({ type: "APM_GET_THEME", apmMaster: "getTheme", __betterApm: "getTheme" }, _parentOrigin);
+        if (_parentOrigin) {
+          try {
+            window.top.postMessage({ type: "APM_GET_THEME", apmMaster: "getTheme", __betterApm: "getTheme" }, _parentOrigin);
+          } catch (e) {
+          }
+        }
       } catch (e) {
       }
     };
@@ -14329,10 +14733,21 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
     const ctx = findMainGrid();
     if (!ctx) return;
     const store = ctx.grid.getStore();
-    const gridDom = ctx.grid.getEl().dom;
+    const gridEl = ctx.grid.getEl();
+    if (!gridEl) return;
+    const gridDom = gridEl.dom;
     const view = ctx.grid.getView();
     if (!store._nativeGetTotalCount) {
       store._nativeGetTotalCount = store.getTotalCount;
+    }
+    if (store._nativeGetTotalCount && !store._apmCleanupBound) {
+      store._apmCleanupBound = true;
+      ctx.grid.on("destroy", () => {
+        if (store._nativeGetTotalCount) {
+          store.getTotalCount = store._nativeGetTotalCount;
+          delete store._nativeGetTotalCount;
+        }
+      });
     }
     store.clearFilter();
     const activeFilter = kw || "";
@@ -14408,6 +14823,8 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
   init_theme_resolver();
   init_api();
   init_logger();
+  init_origin_guard();
+  init_utils();
   function initMessageRouter() {
     window.addEventListener("message", (e) => {
       const d = e.data;
@@ -14422,13 +14839,12 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
       if (d.type === "APM_GET_THEME" || d.apmMaster === "getTheme") {
         const activeTheme = ThemeResolver.getPreferredTheme();
         if (activeTheme && activeTheme !== "default") {
-          const target = e.origin && e.origin !== "null" ? e.origin : "*";
           try {
             e.source?.postMessage({
               type: "APM_SET_THEME",
               apmMaster: "theme",
               value: activeTheme
-            }, target);
+            }, e.origin);
           } catch (err) {
           }
         }
@@ -14489,16 +14905,26 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
       }
     });
     history[wo] = { status, time: Date.now() };
+    const thirtyDaysAgo = Date.now() - 30 * 24 * 60 * 60 * 1e3;
+    for (const key of Object.keys(history)) {
+      if (history[key].time < thirtyDaysAgo) {
+        delete history[key];
+      }
+    }
     APMStorage.set(PTP_HISTORY_KEY, history);
     const eventDetail = { wo, data: history[wo] };
     window.dispatchEvent(new CustomEvent("APM_PTP_UPDATED_EVENT", { detail: eventDetail }));
     const broadcast = (win) => {
       try {
         if (win !== window) {
+          if (!isWindowAccessible(win)) return;
           win.dispatchEvent(new CustomEvent("APM_PTP_UPDATED_EVENT", { detail: eventDetail }));
         }
         for (let i = 0; i < win.frames.length; i++) {
-          broadcast(win.frames[i]);
+          try {
+            broadcast(win.frames[i]);
+          } catch (e) {
+          }
         }
       } catch (e) {
       }
@@ -14627,6 +15053,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
                 fd.hasApmEventsBound = true;
                 fw.__apmEventsBound = true;
               } catch (err) {
+                APMLogger.debug("FrameManager", "Failed to bind events:", err);
               }
             };
             if (fw.Ext && fw.Ext.onReady) fw.Ext.onReady(bindHooks);
@@ -14716,12 +15143,12 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
         APMLogger.debug("Core", `Nametag Click Logic: currentGlobal="${currentGlobal}", targetKw="${kw}", isAlreadyActive=${isAlreadyActive}, newFilter="${newFilter}"`);
         topWin.activeNametagFilter = newFilter;
         if (newFilter) {
-          showToast(`Filter: ${newFilter} (Click to Clear)`, "#27ae60", true, () => {
+          showToast(`Filter: ${newFilter} (Click to Clear)`, "var(--apm-success-bright)", true, () => {
             window.dispatchEvent(new CustomEvent("APM_CLEAR_FILTER"));
           });
         } else {
           clearPersistentToast();
-          showToast("Filter Cleared", "#7f8c8d");
+          showToast("Filter Cleared", "var(--apm-text-disabled)");
         }
         const applyNametagFilterFn = APMApi.get("applyNametagFilter");
         if (typeof applyNametagFilterFn === "function") {
@@ -14804,7 +15231,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
       const applyNametagFilterFn = APMApi.get("applyNametagFilter");
       if (typeof applyNametagFilterFn === "function") applyNametagFilterFn("");
       clearPersistentToast();
-      showToast("Filter Cleared", "#7f8c8d");
+      showToast("Filter Cleared", "var(--apm-text-disabled)");
       const msg = { type: "APM_SET_FILTER", kw: "" };
       window.postMessage(msg, window.location.origin);
       document.querySelectorAll("iframe").forEach((f) => {
