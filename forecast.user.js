@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         APM Master: Unified Tools
 // @namespace    https://w.amazon.com/bin/view/Users/rosendah/APM-Master/
-// @version      14.6.0
+// @version      14.6.1
 // @description  Quality of life and automation tool that uses native EAM ExtJS Framework functions for high reliability and capability. This is actively supported tool so Slack me or submit bug report/feature request through the bug report button in the menu.
 // @author       Jacob Rosendahl
 // @icon         https://media.licdn.com/dms/image/v2/D5603AQGdCV0_LQKRfQ/profile-displayphoto-scale_100_100/B56ZyZLvQ5HgAg-/0/1772096519061?e=1773878400&v=beta&t=eWO1Jiy0-WbzG_yBv-SBrmmsVOPMexF57-q1Xh_VXCk
@@ -28,6 +28,13 @@
 // @connect      github.com
 // @connect      *.hxgnsmartcloud.com
 // ==/UserScript==
+
+if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dark') {
+    var _dc = document.getElementById('apm-dark-canvas') || document.createElement('style');
+    _dc.id = 'apm-dark-canvas';
+    _dc.textContent = 'html { background-color: #121212 !important; color-scheme: dark !important; }';
+    (document.head || document.documentElement).appendChild(_dc);
+}
 
 (() => {
   var __defProp = Object.defineProperty;
@@ -61,6 +68,7 @@
         isSSO: hostname.includes("sso."),
         isSAML: url.includes("saml"),
         isSubmit: document.title === "Submit Form",
+        isEAMAuth: hostname.includes("hxgnsmartcloud.com") && (url.includes("/sso/") || url.includes("/sp/") || url.includes("ssoservlet")),
         // Frame Context
         isTop: window === window.top,
         // Logic Aggregates
@@ -91,7 +99,7 @@
   });
 
   // src/core/constants.js
-  var KEY_THEME, CC_STORAGE_RULES, CC_STORAGE_SET, PRESET_STORAGE_KEY, STORAGE_KEY, APM_GENERAL_STORAGE, CURRENT_VERSION, VERSION_CHECK_URL, UPDATE_URL, LABOR_EMPS_STORAGE, LABOR_ACTIVE_STORAGE, LABOR_DOCK_STORAGE, LABOR_PREFS_STORAGE, LABOR_NIGHT_SHIFT_KEY, LABOR_LAST_EMP_KEY, SESSION_STORAGE_KEY, PTP_HISTORY_KEY, UPDATE_CHECK_KEY, CONFLICT_WARNED_KEY, MIGRATIONS_DONE_KEY, BETA_VERSION_CHECK_URL, BETA_UPDATE_URL, LOG_LEVELS, DEFAULT_TENANT, SESSION_TIMEOUT_URL, LINK_CONFIG, MIN_GRID_COLUMNS, MIN_TAB_ITEMS, ENTITY_REGISTRY;
+  var KEY_THEME, CC_STORAGE_RULES, CC_STORAGE_SET, PRESET_STORAGE_KEY, STORAGE_KEY, APM_GENERAL_STORAGE, CURRENT_VERSION, VERSION_CHECK_URL, UPDATE_URL, LABOR_EMPS_STORAGE, LABOR_ACTIVE_STORAGE, LABOR_DOCK_STORAGE, LABOR_PREFS_STORAGE, LABOR_NIGHT_SHIFT_KEY, LABOR_LAST_EMP_KEY, SESSION_STORAGE_KEY, PTP_HISTORY_KEY, UPDATE_CHECK_KEY, CONFLICT_WARNED_KEY, MIGRATIONS_DONE_KEY, WELCOME_SEEN_KEY, BETA_VERSION_CHECK_URL, BETA_UPDATE_URL, LOG_LEVELS, DEFAULT_TENANT, SESSION_TIMEOUT_URL, LINK_CONFIG, MIN_GRID_COLUMNS, MIN_TAB_ITEMS, ENTITY_REGISTRY;
   var init_constants = __esm({
     "src/core/constants.js"() {
       KEY_THEME = "apm_v1_ui_theme";
@@ -100,7 +108,7 @@
       PRESET_STORAGE_KEY = "apm_v1_autofill_presets";
       STORAGE_KEY = "apm_v1_forecast_prefs";
       APM_GENERAL_STORAGE = "apm_v1_general_settings";
-      CURRENT_VERSION = "14.6.0";
+      CURRENT_VERSION = "14.6.1";
       VERSION_CHECK_URL = "https://raw.githubusercontent.com/jaker788-create/APM-Master/Automation/forecast.user.js";
       UPDATE_URL = "https://github.com/jaker788-create/APM-Master/releases/download/Automation/forecast.user.js";
       LABOR_EMPS_STORAGE = "apm_v1_labor_employees";
@@ -114,6 +122,7 @@
       UPDATE_CHECK_KEY = "apm_last_update_check";
       CONFLICT_WARNED_KEY = "apm_better_apm_warned";
       MIGRATIONS_DONE_KEY = "apm_v1_migrations_done";
+      WELCOME_SEEN_KEY = "apm_v1_welcome_seen";
       BETA_VERSION_CHECK_URL = "https://raw.githubusercontent.com/jaker788-create/APM-Master/Beta/forecast.user.js";
       BETA_UPDATE_URL = "https://github.com/jaker788-create/APM-Master/releases/download/Beta/forecast.user.js";
       LOG_LEVELS = {
@@ -311,6 +320,14 @@
   function apmGetGlobalWindow() {
     return typeof unsafeWindow !== "undefined" ? unsafeWindow : window;
   }
+  function safePostMessage(targetWin, data) {
+    try {
+      const origin = targetWin.location.origin;
+      targetWin.postMessage(data, origin);
+    } catch (e) {
+      targetWin.postMessage(data, "*");
+    }
+  }
   function isFrameVisible(win) {
     try {
       if (win === window || win === window.top) return true;
@@ -365,6 +382,8 @@
     };
   }
   function getExtWindows() {
+    const now = performance.now();
+    if (_extWinsCache && now - _extWinsCacheTime < EXT_WINS_CACHE_TTL) return _extWinsCache;
     const root = apmGetGlobalWindow();
     const wins = /* @__PURE__ */ new Set();
     const gather = (win) => {
@@ -380,7 +399,9 @@
     const rootTop = root.top;
     if (isWindowAccessible(rootTop)) gather(rootTop);
     gather(root);
-    return [...wins];
+    _extWinsCache = [...wins];
+    _extWinsCacheTime = now;
+    return _extWinsCache;
   }
   function getAccessibleDocs() {
     const root = apmGetGlobalWindow();
@@ -773,13 +794,16 @@
     };
     return checkAndDoFetch();
   }
-  var delay, _mainGridCache, _lastGridCheck, GRID_CACHE_TTL, _xhrUserFunc, _xhrSystemFunc, _GENERIC_FUNCS, ExtUtils;
+  var delay, _extWinsCache, _extWinsCacheTime, EXT_WINS_CACHE_TTL, _mainGridCache, _lastGridCheck, GRID_CACHE_TTL, _xhrUserFunc, _xhrSystemFunc, _GENERIC_FUNCS, ExtUtils;
   var init_utils = __esm({
     "src/core/utils.js"() {
       init_state();
       init_logger();
       init_constants();
       delay = (ms) => new Promise((res) => setTimeout(res, ms));
+      _extWinsCache = null;
+      _extWinsCacheTime = 0;
+      EXT_WINS_CACHE_TTL = 500;
       _mainGridCache = null;
       _lastGridCheck = 0;
       GRID_CACHE_TTL = 5e3;
@@ -1086,6 +1110,7 @@
     "src/core/diagnostics.js"() {
       init_api();
       init_context();
+      init_constants();
       MAX_ERRORS = 50;
       Diagnostics = {
         bootTimings: {},
@@ -1252,7 +1277,7 @@
          */
         toJSON() {
           return {
-            version: "16.0.0",
+            version: CURRENT_VERSION,
             timestamp: (/* @__PURE__ */ new Date()).toISOString(),
             uptime: Math.floor((Date.now() - this.startTime) / 1e3),
             bootTimings: this.bootTimings,
@@ -1380,7 +1405,7 @@
       return;
     }
     t.textContent = msg;
-    t.style.background = color || "#3498db";
+    t.style.background = color || "var(--apm-accent)";
     t.style.display = "block";
     document.body.appendChild(t);
     animateIn(t);
@@ -1407,7 +1432,7 @@
       return;
     }
     t.textContent = _persistentMsg;
-    t.style.background = _persistentColor || "#1abc9c";
+    t.style.background = _persistentColor || "var(--apm-success)";
     t.style.display = "block";
     document.body.appendChild(t);
     if (_persistentOnClick) {
@@ -1647,6 +1672,7 @@
   var init_ui_manager = __esm({
     "src/core/ui-manager.js"() {
       init_logger();
+      init_utils();
       UIManager = /* @__PURE__ */ (function() {
         const localPanels = /* @__PURE__ */ new Set();
         let isInitialized = false;
@@ -1750,7 +1776,6 @@
               });
               const isSystem = target.closest(".swal2-container") || target.closest(".x-mask") || target.closest(".x-datepicker") || target.closest(".x-menu") || target.closest(".x-layer") || target.closest(".x-combo-list") || target.closest(".x-tip");
               const isFormElement = ["INPUT", "TEXTAREA", "SELECT", "OPTION"].includes(target.tagName) || target.closest("form");
-              const className = typeof target.className === "string" ? target.className : target.className?.baseVal || "";
               if (APMLogger.isLevel("verbose")) {
                 APMLogger.verbose("UIManager", `Click: inside=${!!isInsidePanel}, system=${!!isSystem} | target=${target.tagName}${target.id ? "#" + target.id : ""}`);
               }
@@ -1804,7 +1829,7 @@
             }
             allWins.forEach((w) => {
               try {
-                w.postMessage(detail, "*");
+                safePostMessage(w, detail);
               } catch (err) {
               }
             });
@@ -1815,7 +1840,7 @@
           localPanels.forEach((id) => {
             if (exemptId && id === exemptId) return;
             const el2 = document.getElementById(id);
-            if (el2 && (el2.style.display !== "none" || el2.style.visibility !== "hidden")) {
+            if (el2 && (el2.style.display !== "none" && el2.style.visibility !== "hidden")) {
               APMLogger.debug("UIManager", `Hiding local panel: ${id}`);
               el2.style.display = "none";
               el2.style.visibility = "hidden";
@@ -2092,7 +2117,6 @@
                 task.lastRun = performance.now();
               };
               if (task.isIdle && typeof window.requestIdleCallback === "function") {
-                task.lastRun = performance.now();
                 window.requestIdleCallback(runTask, { timeout: 2e3 });
               } else {
                 runTask();
@@ -2343,7 +2367,19 @@
       let metadata = dataObj?.pageData?.grid?.GRIDRESULT?.GRID?.METADATA || {};
       const pos0 = parseInt(metadata.CURRENTCURSORPOSITION);
       let nextCursor = (isNaN(pos0) ? allRecords.length : pos0) + 1;
+      const MAX_PAGES = Math.ceil(maxRows / pageSize) + 5;
+      let pageCount = 0;
+      const seenCursors = /* @__PURE__ */ new Set();
       while (metadata.MORERECORDPRESENT === "+" && allRecords.length < maxRows) {
+        if (++pageCount > MAX_PAGES) {
+          APMLogger.warn("eamQuery", `Hit MAX_PAGES (${MAX_PAGES}), stopping pagination.`);
+          break;
+        }
+        if (seenCursors.has(nextCursor)) {
+          APMLogger.warn("eamQuery", `Duplicate cursor ${nextCursor}, stopping pagination.`);
+          break;
+        }
+        seenCursors.add(nextCursor);
         const cacheUrl = baseUrl + "GETCACHE";
         const cachePayload = new URLSearchParams({
           COMPONENT_INFO_TYPE: "DATA_ONLY",
@@ -2551,21 +2587,9 @@
             if (!btn) {
               btn = win.document.createElement("button");
               btn.id = "apm-quick-book-btn";
-              btn.innerHTML = "Quick Book \u26A1";
-              btn.className = "apm-autofill-btn";
-              Object.assign(btn.style, {
-                padding: "4px 12px",
-                background: "#e67e22",
-                color: "white",
-                border: "none",
-                borderRadius: "4px",
-                fontWeight: "bold",
-                cursor: "pointer",
-                fontSize: "11px",
-                height: "24px",
-                transition: "background 0.2s",
-                boxShadow: "0 1px 3px rgba(0,0,0,0.2)"
-              });
+              btn.innerHTML = "Quick Book";
+              btn.className = "apm-lb-trigger";
+              btn.style.height = "24px";
               btn.onclick = (e) => {
                 e.preventDefault();
                 e.stopPropagation();
@@ -2591,82 +2615,58 @@
           if (!popup) {
             popup = win.document.createElement("div");
             popup.id = "apm-labor-popup";
-            popup.className = "eam-fc-container apm-ui-panel";
-            Object.assign(popup.style, {
-              position: "fixed",
-              zIndex: 1e6,
-              width: "500px",
-              padding: "15px",
-              background: "#2c3e50",
-              border: "2px solid #34495e",
-              borderRadius: "10px",
-              boxShadow: "0 8px 25px rgba(0,0,0,0.8)",
-              display: "none",
-              gap: "15px",
-              color: "#ecf0f1",
-              visibility: "hidden",
-              userSelect: "none"
-            });
+            popup.className = "apm-ui-panel apm-lb-popup";
             const formSide = win.document.createElement("div");
-            formSide.style.cssText = "flex: 1; display: flex; flex-direction: column; gap: 10px;";
+            formSide.className = "apm-lb-form";
             const header = win.document.createElement("div");
-            header.style.cssText = "display:flex; justify-content:space-between; align-items:center; margin-bottom: 2px;";
-            header.innerHTML = `<h3 style="margin: 0; font-size: 16px; color: #1abc9c">Quick Book Labor</h3>`;
+            header.className = "apm-lb-header";
+            header.innerHTML = `<h3 class="apm-lb-title">Quick Book Labor</h3>`;
             const closeBtn = win.document.createElement("button");
             closeBtn.id = "apm-lb-close-x";
             closeBtn.innerHTML = "\u2716";
-            closeBtn.style.cssText = "background:none; border:none; color:#7f8c8d; cursor:pointer; font-size:14px; padding: 4px;";
+            closeBtn.className = "apm-lb-close";
             closeBtn.onclick = () => UIManager.closeAll(true);
             header.appendChild(closeBtn);
             formSide.appendChild(header);
             const dateRow = win.document.createElement("div");
-            dateRow.className = "eam-fc-row";
-            dateRow.style.cssText += "; cursor: pointer; padding: 6px 10px; border: 1px solid #34495e; border-radius: 4px; transition: all 0.2s; background: rgba(0,0,0,0.1);";
-            dateRow.innerHTML = `<label style="width: 50px; cursor: pointer; color: #bdc3c7; font-size: 11px;">Date:</label>`;
+            dateRow.className = "apm-lb-date-row";
+            dateRow.innerHTML = `<label class="apm-lb-date-label">Date:</label>`;
             const dateInput2 = win.document.createElement("input");
             dateInput2.id = "apm-lb-date";
             dateInput2.type = "date";
-            dateInput2.style.cssText = "flex: 1; background: transparent; border: none; color: white; cursor: pointer; font-size: 12px; font-family: inherit;";
+            dateInput2.className = "apm-lb-date-input";
             dateRow.appendChild(dateInput2);
-            dateRow.onclick = (e) => {
-              if (e.target !== dateInput2) {
-                if (dateInput2.showPicker) dateInput2.showPicker();
-                else dateInput2.focus();
-              }
-            };
-            dateRow.onmouseenter = () => {
-              dateRow.style.borderColor = "#1abc9c";
-              dateRow.style.background = "rgba(26, 188, 156, 0.05)";
-            };
-            dateRow.onmouseleave = () => {
-              dateRow.style.borderColor = "#34495e";
-              dateRow.style.background = "rgba(0,0,0,0.1)";
+            dateRow.onclick = () => {
+              if (dateInput2.showPicker) dateInput2.showPicker();
+              else dateInput2.focus();
             };
             formSide.appendChild(dateRow);
             const hint = win.document.createElement("div");
-            hint.style.cssText = "font-size: 10px; color: #95a5a6; margin: -4px 0 2px 0; font-style: italic; opacity: 0.8;";
-            hint.innerHTML = "\u{1F4A1} Double-click a preset to book instantly";
+            hint.className = "apm-lb-hint";
+            hint.textContent = "Double-click a preset to book instantly";
             formSide.appendChild(hint);
             const presetBox = win.document.createElement("div");
-            presetBox.style.cssText = "display:flex; flex-wrap:wrap; gap:4px; max-width: 250px;";
+            presetBox.className = "apm-lb-presets";
             hoursPresets.forEach((h) => {
               const b = win.document.createElement("button");
               b.innerHTML = h;
-              b.style.cssText = "padding:5px 10px; background:#34495e; border:1px solid #45535e; color:white; border-radius:4px; cursor:pointer; font-size:11px; transition: all 0.2s;";
-              b.onmouseenter = () => b.style.borderColor = "#1abc9c";
-              b.onmouseleave = () => b.style.borderColor = "#45535e";
+              b.className = "apm-lb-preset";
               b.onclick = () => {
                 const input = win.document.getElementById("apm-lb-hours");
                 const isCorr = win.document.getElementById("apm-lb-correction").checked;
                 input.value = isCorr ? `-${h}` : h;
+                presetBox.querySelectorAll(".apm-lb-preset").forEach((p) => p.classList.remove("active"));
+                b.classList.add("active");
               };
               b.ondblclick = () => {
                 const input = win.document.getElementById("apm-lb-hours");
                 const isCorr = win.document.getElementById("apm-lb-correction").checked;
                 const val = isCorr ? `-${h}` : h;
                 input.value = val;
+                presetBox.querySelectorAll(".apm-lb-preset").forEach((p) => p.classList.remove("active"));
+                b.classList.add("active");
                 const dInput = win.document.getElementById("apm-lb-date").value;
-                const type = win.document.querySelector('input[name="lb-type"]:checked').value;
+                const type = win.document.querySelector('input[name="lb-type"]').value;
                 UIManager.closeAll(true);
                 setTimeout(() => {
                   showToast(`Booking ${val}h... \u23F3`, "#3498db");
@@ -2677,22 +2677,22 @@
             });
             formSide.appendChild(presetBox);
             const hoursRow = win.document.createElement("div");
-            hoursRow.className = "eam-fc-row";
-            hoursRow.style.gap = "8px";
+            hoursRow.className = "apm-lb-hours-row";
             const hoursInput2 = win.document.createElement("input");
             hoursInput2.id = "apm-lb-hours";
             hoursInput2.type = "text";
             hoursInput2.placeholder = "Hours...";
-            hoursInput2.style.cssText = "flex: 1; height: 32px; background: #1c2833; border: 1px solid #34495e; border-radius: 4px; color: white; padding: 0 10px; font-size: 13px; outline: none; transition: border-color 0.2s;";
-            hoursInput2.onfocus = () => hoursInput2.style.borderColor = "#1abc9c";
-            hoursInput2.onblur = () => hoursInput2.style.borderColor = "#34495e";
+            hoursInput2.className = "apm-lb-hours-input";
+            hoursInput2.addEventListener("input", () => {
+              presetBox.querySelectorAll(".apm-lb-preset").forEach((p) => p.classList.remove("active"));
+            });
             hoursRow.appendChild(hoursInput2);
             const corrLabel = win.document.createElement("label");
             corrLabel.id = "apm-lb-corr-label";
-            corrLabel.style.cssText = "display:flex; align-items:center; gap:8px; padding: 6px 10px; background: rgba(231, 76, 60, 0.1); border: 1px solid #e74c3c; border-radius: 4px; cursor: pointer; transition: all 0.2s;";
+            corrLabel.className = "apm-lb-correction";
             corrLabel.innerHTML = `
-                <input id="apm-lb-correction" type="checkbox" style="cursor: pointer; width: 14px; height: 14px; margin: 0;">
-                <span style="font-size:11px; color:#e74c3c; font-weight: bold; white-space: nowrap;">Subtract (-)</span>
+                <input id="apm-lb-correction" type="checkbox">
+                <span class="apm-lb-correction-text">Subtract (-)</span>
             `;
             const corrCheck2 = corrLabel.querySelector("input");
             corrCheck2.onchange = (e) => {
@@ -2703,34 +2703,51 @@
               } else {
                 if (hVal.startsWith("-")) hoursInput2.value = hVal.replace("-", "");
               }
+              presetBox.classList.toggle("correction-mode", e.target.checked);
             };
             hoursRow.appendChild(corrLabel);
             formSide.appendChild(hoursRow);
             const typeRow = win.document.createElement("div");
-            typeRow.className = "eam-fc-row";
-            typeRow.style.cssText = "justify-content:center; gap:15px; margin-top:2px;";
-            typeRow.innerHTML = `
-                <label style="display:flex; align-items:center; gap:6px; cursor:pointer; font-size:12px; color: #bdc3c7;"><input type="radio" name="lb-type" value="N" style="margin:0; cursor:pointer;" checked>Normal</label>
-                <label style="display:flex; align-items:center; gap:6px; cursor:pointer; font-size:12px; color: #bdc3c7;"><input type="radio" name="lb-type" value="O" style="margin:0; cursor:pointer;">Overtime</label>
-            `;
+            typeRow.className = "apm-lb-type-row";
+            const normalBtn = win.document.createElement("button");
+            normalBtn.className = "apm-lb-type-btn active";
+            normalBtn.textContent = "Normal";
+            const overtimeBtn = win.document.createElement("button");
+            overtimeBtn.className = "apm-lb-type-btn";
+            overtimeBtn.textContent = "Overtime";
+            const typeHidden = win.document.createElement("input");
+            typeHidden.type = "hidden";
+            typeHidden.name = "lb-type";
+            typeHidden.value = "N";
+            normalBtn.onclick = () => {
+              normalBtn.classList.add("active");
+              overtimeBtn.classList.remove("active");
+              typeHidden.value = "N";
+            };
+            overtimeBtn.onclick = () => {
+              overtimeBtn.classList.add("active");
+              normalBtn.classList.remove("active");
+              typeHidden.value = "O";
+            };
+            typeRow.append(normalBtn, overtimeBtn, typeHidden);
             formSide.appendChild(typeRow);
             const bookBtn2 = win.document.createElement("button");
             bookBtn2.id = "apm-lb-book-btn";
-            bookBtn2.innerHTML = "Book Labor \u26A1";
-            bookBtn2.style.cssText = "padding:10px; background:#1abc9c; border:none; color:white; border-radius:6px; font-weight:bold; cursor:pointer; margin-top:5px; font-size:13px; transition: background 0.2s;";
+            bookBtn2.innerHTML = "Book Labor";
+            bookBtn2.className = "apm-lb-book-btn";
             formSide.appendChild(bookBtn2);
             popup.appendChild(formSide);
             const sumSide = win.document.createElement("div");
-            sumSide.style.cssText = "width: 170px; border-left: 1px solid #34495e; padding-left: 15px; display: flex; flex-direction: column; min-height: 230px;";
+            sumSide.className = "apm-lb-summary";
             sumSide.innerHTML = `
-                <h4 style="margin: 0 0 10px 0; font-size: 13px; color: #95a5a6; text-transform: uppercase; letter-spacing: 1px;">Shift Summary</h4>
-                <div id="apm-lb-sum-content" style="flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 8px;">
-                    <div style="font-size: 12px; color: #7f8c8d; text-align: center; margin-top: 20px;">Fetching...</div>
+                <h4 class="apm-lb-summary-title">Shift Summary</h4>
+                <div id="apm-lb-sum-content" class="apm-lb-summary-content">
+                    <div class="apm-lb-summary-loading">Fetching...</div>
                 </div>
-                <div style="border-top: 1px solid #34495e; padding-top: 10px; margin-top: 10px;">
-                    <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 11px; color: #f1c40f;">
+                <div class="apm-lb-summary-footer">
+                    <label class="apm-lb-night-label">
                         <input id="apm-lb-night-toggle" type="checkbox" ${APMStorage.get("apmNightShiftOn") === true ? "checked" : ""}>
-                        Night Shift Mode \u{1F319}
+                        Night Shift Mode
                     </label>
                 </div>
             `;
@@ -2747,6 +2764,15 @@
           const corrCheck = win.document.getElementById("apm-lb-correction");
           if (hoursInput) hoursInput.value = "";
           if (corrCheck) corrCheck.checked = false;
+          popup.querySelectorAll(".apm-lb-preset").forEach((p) => p.classList.remove("active"));
+          popup.querySelector(".apm-lb-presets")?.classList.remove("correction-mode");
+          const typeBtns = popup.querySelectorAll(".apm-lb-type-btn");
+          if (typeBtns.length === 2) {
+            typeBtns[0].classList.add("active");
+            typeBtns[1].classList.remove("active");
+          }
+          const typeHiddenEl = popup.querySelector('input[name="lb-type"]');
+          if (typeHiddenEl) typeHiddenEl.value = "N";
           const compDate = extractCompletionDate(win);
           if (compDate) {
             const now = /* @__PURE__ */ new Date();
@@ -2759,16 +2785,16 @@
           } else if (dateInput) dateInput.value = getLocalIsoDate();
           const titleEl = popup.querySelector("h3");
           const bookBtn = win.document.getElementById("apm-lb-book-btn");
-          if (titleEl) titleEl.innerHTML = `Quick Book Labor`;
+          if (titleEl) titleEl.textContent = "Quick Book Labor";
           if (bookBtn) {
-            bookBtn.innerHTML = "Book Labor \u26A1";
+            bookBtn.textContent = "Book Labor";
             bookBtn.onclick = () => {
               const hRaw = hoursInput.value;
               if (!hRaw || hRaw === "-") return showToast("Enter hours!", "#e74c3c");
               const isCorrection = win.document.getElementById("apm-lb-correction").checked;
               const hours = isCorrection ? `-${Math.abs(hRaw)}` : Math.abs(hRaw).toString();
               const date = dateInput.value;
-              const type = win.document.querySelector('input[name="lb-type"]:checked').value;
+              const type = win.document.querySelector('input[name="lb-type"]').value;
               UIManager.closeAll(true);
               setTimeout(() => {
                 showToast(`Booking ${hours}h... \u23F3`, "#3498db");
@@ -2820,18 +2846,18 @@
             const datesToDisplay = showYesterday ? [todayStr, yestStr] : [todayStr];
             datesToDisplay.forEach((d) => {
               const val = breakdown[d] || 0;
-              content.innerHTML += `<div style="display:flex; justify-content:space-between; font-size:13px; padding:4px 0; border-bottom:1px solid #34495e;">
-                    <span style="color:#bdc3c7">${d === todayStr ? "Today" : "Yesterday"}</span> <strong style="color:#1abc9c">${val.toFixed(2)}h</strong>
+              content.innerHTML += `<div class="apm-lb-summary-row">
+                    <span class="apm-lb-summary-day">${d === todayStr ? "Today" : "Yesterday"}</span> <strong class="apm-lb-summary-hours">${val.toFixed(2)}h</strong>
                 </div>`;
             });
-            content.innerHTML += `<div style="margin-top:auto; padding-top:10px; font-weight:bold; font-size:15px; display:flex; justify-content:space-between; color:#ecf0f1;">
+            content.innerHTML += `<div class="apm-lb-summary-total">
                 <span>TOTAL</span> <span>${total.toFixed(2)}h</span>
             </div>`;
           } catch (err) {
             if (err.message === "SESSION_EXPIRED") {
-              content.innerHTML = '<div style="font-size: 11px; color: #e74c3c; text-align: center; margin-top: 15px; padding: 0 10px;">Session Expired! \u{1F510}<br/>Please refresh EAM.</div>';
+              content.innerHTML = '<div class="apm-lb-summary-error">Session Expired!<br/>Please refresh EAM.</div>';
             } else {
-              content.innerHTML = '<div style="font-size:11px; color:#7f8c8d; text-align:center; padding-top:20px;">No hours booked yet.</div>';
+              content.innerHTML = '<div class="apm-lb-summary-empty">No hours booked yet.</div>';
             }
           }
         }
@@ -3122,7 +3148,7 @@
             });
           },
           quickBookHours: async function(hours, win) {
-            return executeBookingFlow({ hours, date: /* @__PURE__ */ new Date(), type: "N" }, win);
+            return executeBookingFlow({ hours, date: getLocalIsoDate(/* @__PURE__ */ new Date()), type: "N" }, win);
           }
         };
       })();
@@ -3146,20 +3172,24 @@
   init_context();
   init_logger();
   function applyTransitionShield(targetWin, targetDoc, isDarkHint, context) {
-    const { isTransition, isSSO, isSAML, isIDP } = context;
-    if (isDarkHint && (isTransition || isSSO || isSAML || targetDoc.cookie.includes("apm_transition_active=1"))) {
+    const { isTransition, isSSO, isSAML, isIDP, isEAMAuth } = context;
+    if (isDarkHint && (isTransition || isSSO || isSAML || isEAMAuth || targetDoc.cookie.includes("apm_transition_active=1"))) {
       try {
-        if (typeof GM_addStyle !== "undefined") {
-          GM_addStyle(`
-                    html, body { background-color: #000 !important; color-scheme: dark !important; color: #eee !important; transition: none !important; }
-                    #apm-nuclear-shield, #apm-unload-blackout { 
-                        position: fixed !important; top: 0 !important; left: 0 !important; 
-                        width: 100vw !important; height: 100vh !important; 
-                        background: #000 !important; z-index: 2147483647 !important; 
-                        pointer-events: none !important; transition: opacity 0.2s ease !important; 
-                    }
-                `);
-        }
+        const shieldCSS = targetDoc.getElementById("apm-shield-css") || targetDoc.createElement("style");
+        shieldCSS.id = "apm-shield-css";
+        shieldCSS.textContent = `
+                html, body { background-color: #121212 !important; color-scheme: dark !important; color: #eee !important; transition: none !important; }
+                html.apm-shield-active body { visibility: hidden !important; }
+                #apm-nuclear-shield, #apm-unload-blackout {
+                    position: fixed !important; top: 0 !important; left: 0 !important;
+                    width: 100vw !important; height: 100vh !important;
+                    background: #121212 !important; z-index: 2147483647 !important;
+                    pointer-events: none !important; transition: opacity 0.2s ease !important;
+                    visibility: visible !important;
+                }
+            `;
+        (targetDoc.head || targetDoc.documentElement).appendChild(shieldCSS);
+        targetDoc.documentElement.classList.add("apm-shield-active");
         if (!targetDoc.querySelector('meta[name="color-scheme"]')) {
           if (typeof GM_addElement !== "undefined") {
             GM_addElement(targetDoc.head || targetDoc.documentElement, "meta", { name: "color-scheme", content: "dark" });
@@ -3167,25 +3197,23 @@
         }
         if (targetWin === targetWin.top && !targetDoc.getElementById("apm-nuclear-shield")) {
           if (typeof GM_addElement !== "undefined") {
-            GM_addElement(targetDoc.documentElement, "div", { id: "apm-nuclear-shield" });
+            const shield = GM_addElement(targetDoc.documentElement, "div", { id: "apm-nuclear-shield" });
+            if (shield) {
+              shield.style.cssText = "position:fixed;top:0;left:0;width:100vw;height:100vh;background:#121212;z-index:2147483647;pointer-events:none;";
+            }
           }
         }
-        const locker = new MutationObserver(() => {
-          if (typeof GM_addStyle !== "undefined") {
-            GM_addStyle("html { background-color: #000 !important; }");
-          }
-        });
-        locker.observe(targetDoc.documentElement, { attributes: true, attributeFilter: ["style"] });
         if (isIDP) {
           setTimeout(() => {
             const shield = targetDoc.getElementById("apm-nuclear-shield");
             if (shield && !targetDoc.getElementById("apm-sso-rescue")) {
               const rescue = targetDoc.createElement("div");
               rescue.id = "apm-sso-rescue";
-              rescue.innerHTML = `<a href="https://us1.eam.hxgnsmartcloud.com/web/base/logindisp?tenant=${DEFAULT_TENANT}" 
-                            style="color:#3498db; text-decoration:underline; font-family:sans-serif; font-size:14px; pointer-events:auto; cursor:pointer; font-weight:bold;">
-                            Stuck? Click here to return to EAM
-                        </a>`;
+              const rescueLink = targetDoc.createElement("a");
+              rescueLink.href = `https://us1.eam.hxgnsmartcloud.com/web/base/logindisp?tenant=${DEFAULT_TENANT}`;
+              rescueLink.style.cssText = "color:#3498db;text-decoration:underline;font-family:sans-serif;font-size:14px;pointer-events:auto;cursor:pointer;font-weight:bold;";
+              rescueLink.textContent = "Stuck? Click here to return to EAM";
+              rescue.appendChild(rescueLink);
               rescue.style.cssText = "position:fixed; bottom:20px; left:50%; transform:translateX(-50%); z-index:2147483647; text-align:center; padding:10px; background:rgba(0,0,0,0.7); border-radius:8px;";
               shield.appendChild(rescue);
               if (targetWin === targetWin.top) {
@@ -3199,6 +3227,7 @@
     }
     if (!isIDP) {
       setTimeout(() => {
+        targetDoc.documentElement.classList.remove("apm-shield-active");
         const shield = targetDoc.getElementById("apm-nuclear-shield");
         if (shield) {
           APMLogger.warn("APM Master", "Nuclear Shield safety timeout triggered.");
@@ -3214,7 +3243,7 @@
         if (isDarkHint) {
           if (targetWin === targetWin.top) {
             const baseDomain = targetWin.location.hostname.split(".").slice(-2).join(".");
-            targetDoc.cookie = `apm_transition_active=1; path=/; domain=.${baseDomain}; max-age=5; SameSite=Lax`;
+            targetDoc.cookie = `apm_transition_active=1; path=/; domain=.${baseDomain}; max-age=15; SameSite=Lax`;
           }
           try {
             if (typeof GM_addElement !== "undefined") {
@@ -3228,7 +3257,8 @@
     }
   }
   function clearGuards(targetDoc) {
-    const guards = ["apm-global-flash-guard", "apm-total-blackout-shield", "apm-nuclear-shield", "apm-unload-blackout", "apm-flash-prevent"];
+    targetDoc.documentElement.classList.remove("apm-shield-active");
+    const guards = ["apm-global-flash-guard", "apm-total-blackout-shield", "apm-nuclear-shield", "apm-unload-blackout", "apm-flash-prevent", "apm-dark-canvas", "apm-shield-css"];
     for (const id of guards) {
       const el2 = targetDoc.getElementById(id);
       if (el2) {
@@ -3258,19 +3288,18 @@
       clearInterval(state._pollInterval);
       state._pollInterval = null;
     }
+    targetDoc.documentElement.dataset.apmTheme = themeName || "default";
     if (!themeName || themeName === "default") {
       state.activeTheme = themeName || "default";
-      const flashStyle = targetDoc.getElementById("apm-flash-prevent");
-      if (flashStyle) {
-        flashStyle.remove();
-        APMLogger.debug("APM Master", "Removed stale flash-prevent for default theme");
+      for (const id of ["apm-flash-prevent", "apm-dark-canvas", "apm-theme-root-vars"]) {
+        const el2 = targetDoc.getElementById(id);
+        if (el2) el2.remove();
       }
       const csMeta = targetDoc.querySelector('meta[name="color-scheme"][content="dark"]');
       if (csMeta) csMeta.remove();
-      const themeVars = targetDoc.getElementById("apm-theme-root-vars");
-      if (themeVars) themeVars.remove();
       if (targetWin === targetWin.top) {
         try {
+          if (typeof GM_setValue !== "undefined") GM_setValue("apm_theme_hint", "default");
           const baseDomain = targetWin.location.hostname.split(".").slice(-2).join(".");
           const cookieDomain = baseDomain.includes("hxgnsmartcloud") || baseDomain.includes("hexagon") || baseDomain.includes("amazon") ? `domain=.${baseDomain};` : "";
           targetDoc.cookie = `apm_theme_hint=default; path=/; ${cookieDomain} max-age=31536000; SameSite=Lax`;
@@ -3281,12 +3310,23 @@
     }
     state.activeTheme = themeName;
     const manifestPath = "eam/" + themeName + ".json";
-    const isDark = themeName.includes("dark") || themeName.includes("hex");
+    const isDark = themeName.includes("dark");
     const internal = {
       pollCount: 0,
       origBeforeLoad: null,
       wrapper: null
     };
+    if (!isDark) {
+      for (const id of ["apm-flash-prevent", "apm-dark-canvas"]) {
+        const el2 = targetDoc.getElementById(id);
+        if (el2) {
+          el2.remove();
+          APMLogger.debug("APM Master", `Removed stale ${id} for light theme`);
+        }
+      }
+      const staleMeta = targetDoc.querySelector('meta[name="color-scheme"][content="dark"]');
+      if (staleMeta) staleMeta.remove();
+    }
     if (isDark) {
       const flashStyle = targetDoc.getElementById("apm-flash-prevent") || targetDoc.createElement("style");
       flashStyle.id = "apm-flash-prevent";
@@ -3412,9 +3452,14 @@
     const poll = () => {
       if (!isWindowAccessible(targetWin)) return;
       internal.pollCount++;
+      if (state.hooksApplied) return;
       try {
         if (targetWin.Ext) hookExt(targetWin.Ext);
         if (targetWin.EAM) hookEam(targetWin.EAM);
+        if (targetWin.Ext?.__apmManifestHooked && targetWin.EAM) {
+          state.hooksApplied = true;
+          return;
+        }
       } catch (e) {
       }
       if (internal.pollCount < 200) {
@@ -3440,7 +3485,7 @@
       const broadcast = () => {
         for (let i = 0; i < targetWin.frames.length; i++) {
           try {
-            targetWin.frames[i].postMessage({ type: "APM_SET_THEME", value: themeName }, "*");
+            safePostMessage(targetWin.frames[i], { type: "APM_SET_THEME", value: themeName });
           } catch (err) {
           }
         }
@@ -3468,6 +3513,7 @@
       try {
         const baseDomain = targetWin.location.hostname.split(".").slice(-2).join(".");
         const cookieDomain = baseDomain.includes("hxgnsmartcloud") || baseDomain.includes("hexagon") || baseDomain.includes("amazon") ? `domain=.${baseDomain};` : "";
+        if (typeof GM_setValue !== "undefined") GM_setValue("apm_theme_hint", isDark ? "dark" : "default");
         if (isDark) {
           targetDoc.cookie = `apm_theme_hint=dark; path=/; ${cookieDomain} max-age=31536000; SameSite=Lax`;
         } else {
@@ -3519,7 +3565,7 @@
           const cur = state.activeTheme || "default";
           if (cur !== "default") {
             try {
-              e.source?.postMessage({ type: "APM_SET_THEME", value: cur }, "*");
+              if (e.source) safePostMessage(e.source, { type: "APM_SET_THEME", value: cur });
             } catch (err) {
             }
           }
@@ -3540,7 +3586,7 @@
                 if (isWindowAccessible(targetWin)) {
                   for (let i = 0; i < targetWin.frames.length; i++) {
                     try {
-                      targetWin.frames[i].postMessage({ type: "APM_SET_THEME", value: next }, "*");
+                      safePostMessage(targetWin.frames[i], { type: "APM_SET_THEME", value: next });
                     } catch (err) {
                     }
                   }
@@ -3550,7 +3596,7 @@
                 if (isWindowAccessible(targetWin)) {
                   for (let i = 0; i < targetWin.frames.length; i++) {
                     try {
-                      targetWin.frames[i].postMessage({ type: "APM_SET_THEME", value: "default" }, "*");
+                      safePostMessage(targetWin.frames[i], { type: "APM_SET_THEME", value: "default" });
                     } catch (err) {
                     }
                   }
@@ -3569,11 +3615,17 @@
   // src/core/theme-enforcer.js
   function enforceTheme(targetWin = window, targetDoc = document) {
     if (!isWindowAccessible(targetWin)) return;
-    const isDarkHint = targetDoc.cookie.includes("apm_theme_hint=dark");
-    const { isEAM: isEAM2, isPTP: isPTP2, isIDP, isSubmit, isTop } = AppContext;
+    const isDarkHint = typeof GM_getValue !== "undefined" && GM_getValue("apm_theme_hint") === "dark" || targetDoc.cookie.includes("apm_theme_hint=dark");
+    const { isEAM: isEAM2, isPTP: isPTP2, isIDP, isSubmit, isTop, isEAMAuth } = AppContext;
+    if (isDarkHint) {
+      const darkCanvas = targetDoc.getElementById("apm-dark-canvas") || targetDoc.createElement("style");
+      darkCanvas.id = "apm-dark-canvas";
+      darkCanvas.textContent = "html { background-color: #121212 !important; color-scheme: dark !important; }";
+      (targetDoc.head || targetDoc.documentElement).appendChild(darkCanvas);
+    }
     applyTransitionShield(targetWin, targetDoc, isDarkHint, AppContext);
     applyUnloadBlackout(targetWin, targetDoc, isDarkHint);
-    if (isIDP || isSubmit && !isEAM2) {
+    if (isIDP || isEAMAuth || isSubmit && !isEAM2) {
       return;
     }
     if (!isEAM2 && !isPTP2) return;
@@ -3598,7 +3650,7 @@
         const requestTheme = () => {
           if (state.activeTheme && state.activeTheme !== "default") return;
           try {
-            targetWin.top.postMessage({ type: "APM_GET_THEME" }, "*");
+            safePostMessage(targetWin.top, { type: "APM_GET_THEME" });
           } catch (e) {
           }
           if (++tries < 15) setTimeout(requestTheme, 1e3);
@@ -3909,6 +3961,13 @@
           }
         };
         document.addEventListener("visibilitychange", onVisible);
+        setTimeout(() => {
+          if (document.hidden) {
+            document.removeEventListener("visibilitychange", onVisible);
+            APMLogger.warn("BootManager", "Tab still hidden after 30s \u2014 starting ExtJS poll anyway.");
+            startPolling();
+          }
+        }, 3e4);
       } else {
         startPolling();
       }
@@ -4068,74 +4127,16 @@
     savePresets();
     window.dispatchEvent(new CustomEvent("APM_PRESETS_SYNC_REQUIRED"));
   }
+  function getDefaultProfiles() {
+    const presets = getPresets();
+    if (!presets?.autofill) return [];
+    return Object.entries(presets.autofill).filter(([, data]) => data.isDefault).map(([name, data]) => ({ name, ...data }));
+  }
   function getIsAutoFillRunning() {
     return AppState.autofill.isAutoFillRunning;
   }
   function setIsAutoFillRunning(val) {
     AppState.autofill.isAutoFillRunning = val;
-  }
-
-  // src/modules/colorcode/colorcode-prefs.js
-  init_state();
-  init_constants();
-  init_logger();
-  init_storage();
-  function loadColorCodePrefs() {
-    try {
-      const storedRules = APMStorage.get(CC_STORAGE_RULES);
-      if (storedRules) {
-        if (storedRules._v !== void 0) {
-          AppState.colorCode.rules = storedRules.rules || [];
-        } else {
-          AppState.colorCode.rules = storedRules;
-        }
-      }
-      const storedSet = APMStorage.get(CC_STORAGE_SET);
-      if (storedSet) {
-        if (storedSet._v === void 0) {
-          storedSet._v = 0;
-          APMLogger.debug("ColorCode", "Settings loaded as legacy v0");
-        }
-        AppState.colorCode.settings = { ...AppState.colorCode.settings, ...storedSet };
-      }
-      Promise.resolve().then(() => (init_theme_resolver(), theme_resolver_exports)).then(({ ThemeResolver: ThemeResolver2 }) => {
-        AppState.colorCode.settings.theme = ThemeResolver2.getPreferredTheme();
-      });
-    } catch (e) {
-      APMLogger.warn("ColorCode", "Failed to load preferences", e);
-    }
-  }
-  function saveColorCodeRules() {
-    const wrapped = { _v: 1, rules: AppState.colorCode.rules };
-    APMStorage.set(CC_STORAGE_RULES, wrapped);
-  }
-  function saveColorCodeSettings() {
-    AppState.colorCode.settings._v = 1;
-    APMStorage.set(CC_STORAGE_SET, AppState.colorCode.settings);
-  }
-  function getRules() {
-    const stored = AppState.colorCode.rules;
-    if (stored && typeof stored === "object" && !Array.isArray(stored) && stored._v !== void 0) {
-      return stored.rules ? JSON.parse(JSON.stringify(stored.rules)) : [];
-    }
-    return JSON.parse(JSON.stringify(AppState.colorCode.rules));
-  }
-  function setRules(newRules) {
-    AppState.colorCode.rules = newRules;
-    saveColorCodeRules();
-    window.dispatchEvent(new CustomEvent("APM_CC_SYNC_REQUIRED"));
-  }
-  function getSettings() {
-    if (AppState.colorCode.settings._v === void 0) {
-      AppState.colorCode.settings._v = 0;
-      APMLogger.debug("ColorCode", "Settings accessed as legacy v0");
-    }
-    return { ...AppState.colorCode.settings };
-  }
-  function setSettings(updates) {
-    AppState.colorCode.settings = { ...AppState.colorCode.settings, ...updates };
-    saveColorCodeSettings();
-    window.dispatchEvent(new CustomEvent("APM_CC_SYNC_REQUIRED"));
   }
 
   // src/modules/forecast/forecast-engine.js
@@ -4154,7 +4155,7 @@
         element[key] = value;
       } else if (key === "className") {
         element.className = value;
-      } else if (key === "innerHTML") {
+      } else if (key === "innerHTML" || key === "unsafeHTML") {
         element.innerHTML = value;
       } else if (["checked", "value", "disabled", "readOnly", "title"].includes(key)) {
         element[key] = value;
@@ -4397,19 +4398,14 @@
     const summaryText = document.getElementById("eam-profile-summary-text");
     const manualInputs = document.getElementById("eam-manual-inputs");
     const descBox = document.querySelector(".eam-fc-desc-box");
-    const dateHeader = document.querySelector(".eam-fc-date-header");
-    const relativeDates = document.getElementById("eam-relative-dates");
-    const customDates = document.getElementById("eam-custom-dates");
+    const scheduleSection = document.getElementById("eam-schedule-section");
     if (!profSelect) return;
     const selectedId = profSelect.value;
     if (selectedId === "manual") {
       if (summary) summary.style.display = "none";
       if (manualInputs) manualInputs.style.display = "block";
       if (descBox) descBox.style.display = "flex";
-      if (dateHeader) dateHeader.style.display = "";
-      const isCustomMode = document.getElementById("eam-date-mode-toggle")?.textContent?.includes("Relative");
-      if (relativeDates) relativeDates.style.display = isCustomMode ? "none" : "block";
-      if (customDates) customDates.style.display = isCustomMode ? "flex" : "none";
+      if (scheduleSection) scheduleSection.style.display = "";
     } else {
       const prof = savedProfiles.find((p) => p.id === selectedId);
       if (prof) {
@@ -4428,15 +4424,7 @@
         const dateSummary = buildDateSummary(prof);
         if (dateSummary) details.push(`Dates: ${dateSummary}`);
         summaryText.textContent = details.length > 0 ? details.join(" | ") : "No specific filters set (All Records)";
-        if (prof.dateOverride) {
-          if (dateHeader) dateHeader.style.display = "none";
-          if (relativeDates) relativeDates.style.display = "none";
-          if (customDates) customDates.style.display = "none";
-        } else {
-          if (dateHeader) dateHeader.style.display = "";
-          if (relativeDates) relativeDates.style.display = "";
-          if (customDates) customDates.style.display = "";
-        }
+        if (scheduleSection) scheduleSection.style.display = prof.dateOverride ? "none" : "";
       }
     }
   }
@@ -4647,7 +4635,7 @@
     let state = createEmptyState();
     let isVisualMode = true;
     let chipListEl, previewEl, hintEl, keywordInput, fieldSelect, opSelect;
-    let dateSection, dayContainer, weekSelect, arbitraryToggle, dateToggle;
+    let dateSection, dayContainer, weekSelect, dateToggle;
     let profileSelect, nameInput, targetSelect, deleteBtn;
     let visualContainer, textContainer;
     function refreshChipList() {
@@ -4753,11 +4741,9 @@
       targetSelect.value = state.target;
       deleteBtn.style.display = state.profileId ? "inline-block" : "none";
       dateToggle.checked = state.dateOverride;
+      state.arbitraryDays = state.dateOverride;
       dateSection.style.display = state.dateOverride ? "block" : "none";
-      weekSelect.value = state.weeks;
-      arbitraryToggle.checked = state.arbitraryDays;
-      dayContainer.style.display = state.arbitraryDays ? "flex" : "none";
-      if (state.arbitraryDays) updateDayVisuals(dayContainer, state);
+      if (state.dateOverride) updateDayVisuals(dayContainer, state);
       if (isVisualMode) {
         refreshChipList();
       } else {
@@ -4906,10 +4892,9 @@
       { className: "eam-fc-select", style: { flex: "1" } },
       WEEK_OPTIONS.map((w) => el("option", { value: w.value }, w.label))
     );
-    arbitraryToggle = el("input", { type: "checkbox" });
     dayContainer = el(
       "div",
-      { className: "fb-day-checkboxes", style: { display: "none" } },
+      { className: "fb-day-checkboxes" },
       DAY_LABELS.map((day, i) => {
         const xMark = el("span", { className: "fb-day-x", style: { display: "none" } }, "\u2716");
         const btn = el("button", {
@@ -4932,15 +4917,6 @@
         el("label", { className: "eam-fc-label", style: { width: "80px" } }, "Weeks:"),
         weekSelect
       ]),
-      el("div", { className: "eam-fc-row", style: { marginBottom: "8px" } }, [
-        el("label", { style: { display: "flex", alignItems: "center", gap: "6px", cursor: "pointer", fontSize: "13px", color: "#b0bec5" } }, [
-          el("div", { className: "eam-slider-switch" }, [
-            arbitraryToggle,
-            el("span", { className: "eam-slider-track" })
-          ]),
-          "Select specific days"
-        ])
-      ]),
       dayContainer,
       el(
         "div",
@@ -4950,13 +4926,9 @@
     ]);
     dateToggle.addEventListener("change", () => {
       state.dateOverride = dateToggle.checked;
+      state.arbitraryDays = state.dateOverride;
       dateSection.style.display = state.dateOverride ? "block" : "none";
-      refreshPreview();
-    });
-    arbitraryToggle.addEventListener("change", () => {
-      state.arbitraryDays = arbitraryToggle.checked;
-      dayContainer.style.display = state.arbitraryDays ? "flex" : "none";
-      if (state.arbitraryDays) updateDayVisuals(dayContainer, state);
+      if (state.dateOverride) updateDayVisuals(dayContainer, state);
       refreshPreview();
     });
     weekSelect.addEventListener("change", () => {
@@ -5083,10 +5055,10 @@
         if (!isVisualMode) syncToTextMode();
       }
       dateToggle.checked = state.dateOverride;
+      state.arbitraryDays = state.dateOverride;
       dateSection.style.display = state.dateOverride ? "block" : "none";
       weekSelect.value = state.weeks;
-      arbitraryToggle.checked = state.arbitraryDays;
-      dayContainer.style.display = state.arbitraryDays ? "flex" : "none";
+      if (state.dateOverride) updateDayVisuals(dayContainer, state);
       modal.style.display = "flex";
       keywordInput.focus();
     };
@@ -6035,6 +6007,7 @@
     --apm-danger: #e74c3c;
     --apm-danger-subtle: rgba(231, 76, 60, 0.15);
     --apm-warning: #f39c12;
+    --apm-purple: #9b59b6;
     --apm-input-bg: #ecf0f1;
     --apm-input-border: transparent;
     --apm-input-text: #2c3e50;
@@ -6160,7 +6133,7 @@
 .eam-slider-switch input { opacity: 0; width: 0; height: 0; }
 .eam-slider-track { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: var(--apm-control-muted, #505f6e); transition: .2s; border-radius: 18px; }
 .eam-slider-track:before { position: absolute; content: ""; height: 12px; width: 12px; left: 3px; bottom: 3px; background-color: white; transition: .2s; border-radius: 50%; }
-.eam-slider-switch input:checked + .eam-slider-track { background-color: var(--apm-success, #1abc9c); }
+.eam-slider-switch input:checked + .eam-slider-track { background-color: var(--apm-accent, #3498db); }
 .eam-slider-switch input:checked + .eam-slider-track:before { transform: translateX(14px); }
 
 /* =========================
@@ -6340,14 +6313,18 @@
 /* =========================
  * Labor Tracker UI
  * ========================= */
-.apm-labor-trigger { position: fixed; background: var(--apm-accent, #3498db); color: white; padding: 10px; cursor: pointer; font-weight: bold; font-size: 12px; z-index: 2147483647; box-shadow: var(--apm-shadow-sm, 0 1px 3px rgba(0,0,0,0.2)); transition: background 0.15s; user-select: none; display: flex; align-items: center; justify-content: center; white-space: nowrap; }
-.apm-labor-trigger:hover { filter:brightness(0.9); }
+.apm-labor-trigger { position: fixed; background: var(--apm-accent, #3498db); color: white; padding: 10px; cursor: pointer; font-weight: bold; font-size: 12px; z-index: 2147483647; box-shadow: var(--apm-shadow-sm, 0 1px 3px rgba(0,0,0,0.2)); transition: filter 0.15s; user-select: none; display: flex; align-items: center; justify-content: center; white-space: nowrap; letter-spacing: 0.5px; }
+.apm-labor-trigger:hover { filter: brightness(1.1); }
 .apm-labor-panel { position: fixed; width: min(280px, 80vw); background: var(--apm-surface-0, #35404a); border: 1px solid var(--apm-border-strong, #4a5a6a); border-radius: var(--apm-radius-lg, 10px); padding: 15px; z-index: 2147483646; transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1); display: none; visibility: hidden; flex-direction: column; box-shadow: var(--apm-shadow, 0 8px 25px rgba(0,0,0,0.6)); }
 
 .labor-tabs { display: flex; gap: 2px; background: var(--apm-surface-sunken, #22292f); border-radius: var(--apm-radius-sm, 4px); overflow: hidden; margin-bottom: 15px; border: 1px solid var(--apm-border, #45535e); }
 .labor-tab { flex: 1; padding: 8px; text-align: center; font-size: 11px; cursor: pointer; color: var(--apm-text-secondary, #b0bec5); font-weight: bold; transition: 0.15s; user-select: none; }
 .labor-tab.active { background: var(--apm-accent, #3498db); color: white; }
 .labor-total { font-size: var(--apm-text-hero, 32px); font-weight: 700; text-align: center; margin: 10px 0; color: var(--apm-text-bright, #ecf0f1); }
+.labor-total-unit { font-size: 14px; color: var(--apm-text-disabled, #7f8c8d); font-weight: 600; }
+.labor-status-error { font-size: 16px; color: var(--apm-danger, #e74c3c); }
+.labor-status-loading { font-size: 16px; color: var(--apm-warning, #f39c12); }
+.labor-empty { text-align: center; padding: 10px; color: var(--apm-text-disabled, #7f8c8d); font-size: var(--apm-text-base, 12px); }
 .labor-row { display: flex; justify-content: space-between; padding: 6px 10px; border-bottom: 1px solid var(--apm-border, #45535e); font-size: 12px; color: var(--apm-text-tertiary, #bdc3c7); }
 .apm-labor-header { display:flex; justify-content:space-between; align-items:center; margin-bottom: 8px; }
 .apm-labor-target-lbl { font-size:11px; color:var(--apm-text-tertiary, #bdc3c7); font-weight:bold; }
@@ -6454,6 +6431,122 @@
 .fb-text-mode { padding: 4px 0; }
 .fb-modal .eam-fc-select { height: 32px; font-size: 13px; padding: 0 8px; border-radius: 5px; }
 .fb-modal .eam-fc-input-text { height: 32px; font-size: 13px; padding: 0 8px; border-radius: 5px; }
+
+/* =========================
+ * Welcome Overlay (First-Run)
+ * ========================= */
+.apm-welcome-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.75); z-index: 2147483647; display: none; align-items: center; justify-content: center; backdrop-filter: blur(4px); }
+.apm-welcome-modal { background: var(--apm-surface-0); width: 420px; max-width: 90vw; border-radius: var(--apm-radius-lg); border: 1px solid var(--apm-border-strong); box-shadow: 0 20px 60px rgba(0,0,0,0.6); display: flex; flex-direction: column; overflow: hidden; animation: apm-modal-appear 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+.apm-welcome-body { padding: 28px 28px 20px; min-height: 200px; display: flex; flex-direction: column; }
+.apm-welcome-icon { font-size: 36px; margin-bottom: 14px; line-height: 1; }
+.apm-welcome-title { margin: 0 0 8px; font-size: var(--apm-text-xl); font-weight: 700; color: var(--apm-text-bright); letter-spacing: -0.2px; }
+.apm-welcome-desc { margin: 0; font-size: var(--apm-text-md); color: var(--apm-text-secondary); line-height: 1.6; flex: 1; }
+.apm-welcome-desc b { color: var(--apm-text-bright); font-weight: 600; }
+.apm-welcome-footer { padding: 14px 28px 20px; display: flex; align-items: center; justify-content: space-between; }
+.apm-welcome-dots { display: flex; gap: 6px; }
+.apm-welcome-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--apm-control-muted); transition: all 0.2s; }
+.apm-welcome-dot.active { background: var(--apm-accent); width: 20px; border-radius: 4px; }
+.apm-welcome-nav { display: flex; gap: 8px; align-items: center; }
+.apm-welcome-skip { background: none; border: none; color: var(--apm-text-disabled); cursor: pointer; font-size: var(--apm-text-sm); padding: 6px 10px; transition: color 0.15s; }
+.apm-welcome-skip:hover { color: var(--apm-text-secondary); }
+.apm-welcome-next { background: var(--apm-accent); color: white; border: none; border-radius: var(--apm-radius); padding: 8px 20px; font-weight: bold; font-size: var(--apm-text-md); cursor: pointer; transition: filter 0.15s; }
+.apm-welcome-next:hover { filter: brightness(1.1); }
+.apm-welcome-page { display: none; flex-direction: column; }
+.apm-welcome-page.active { display: flex; }
+
+/* Welcome landing page (page 0) */
+.apm-welcome-landing { text-align: center; align-items: center; }
+.apm-welcome-landing .apm-welcome-icon { font-size: 44px; margin-bottom: 10px; }
+.apm-welcome-landing .apm-welcome-title { font-size: 22px; }
+.apm-welcome-subtitle { margin: 0 0 20px; font-size: var(--apm-text-md); color: var(--apm-text-muted); line-height: 1.5; }
+.apm-welcome-theme-row { display: flex; align-items: center; justify-content: center; gap: 12px; margin-top: 4px; }
+.apm-welcome-theme-label { font-size: var(--apm-text-sm); color: var(--apm-text-secondary); font-weight: 600; }
+.apm-welcome-theme-select { height: 32px; padding: 0 10px; border-radius: var(--apm-radius); border: 1px solid var(--apm-border-strong); background: var(--apm-surface-inset); color: var(--apm-text-primary); font-size: var(--apm-text-md); font-weight: bold; cursor: pointer; }
+.apm-welcome-landing-btns { display: flex; flex-direction: column; gap: 8px; align-items: center; width: 100%; margin-top: 20px; }
+.apm-welcome-start-btn { background: var(--apm-accent); color: white; border: none; border-radius: var(--apm-radius); padding: 10px 28px; font-weight: bold; font-size: var(--apm-text-md); cursor: pointer; transition: filter 0.15s; width: 100%; }
+.apm-welcome-start-btn:hover { filter: brightness(1.1); }
+.apm-welcome-theme-tip { margin: 6px 0 0; font-size: var(--apm-text-sm); color: var(--apm-text-muted); font-style: italic; }
+.apm-welcome-skip-link { background: none; border: none; color: var(--apm-text-disabled); cursor: pointer; font-size: var(--apm-text-sm); padding: 4px; transition: color 0.15s; text-decoration: underline; }
+.apm-welcome-skip-link:hover { color: var(--apm-text-secondary); }
+.apm-welcome-tour-nav { display: none; }
+
+/* =========================
+ * Quick Book Labor Panel
+ * ========================= */
+.apm-lb-popup { position: fixed; z-index: 1000000; width: 500px; padding: 15px; background: var(--apm-surface-0); border: 1px solid var(--apm-border-strong); border-radius: var(--apm-radius-lg); box-shadow: var(--apm-shadow); display: none; gap: 15px; color: var(--apm-text-primary); visibility: hidden; user-select: none; font-family: var(--apm-font); font-size: var(--apm-text-base); }
+.apm-lb-form { flex: 1; display: flex; flex-direction: column; gap: 10px; }
+.apm-lb-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 2px; }
+.apm-lb-title { margin: 0; font-size: var(--apm-text-lg); color: var(--apm-accent); font-weight: 600; }
+.apm-lb-close { background: none; border: none; color: var(--apm-text-disabled); cursor: pointer; font-size: 14px; padding: 4px; transition: color 0.15s; }
+.apm-lb-close:hover { color: var(--apm-text-primary); }
+
+/* Date section */
+.apm-lb-date-row { cursor: pointer; padding: 6px 10px; border: 1px solid var(--apm-border); border-radius: var(--apm-radius-sm); transition: all 0.2s; background: var(--apm-surface-inset); display: flex; gap: 5px; align-items: center; }
+.apm-lb-date-row:hover { border-color: var(--apm-accent); background: var(--apm-accent-subtle); }
+.apm-lb-date-label { width: 50px; cursor: pointer; color: var(--apm-text-secondary); font-size: var(--apm-text-sm); font-weight: 600; }
+.apm-lb-date-input { flex: 1; background: transparent; border: none; color: var(--apm-text-primary); cursor: pointer; font-size: var(--apm-text-base); font-family: inherit; }
+.apm-lb-date-input::-webkit-calendar-picker-indicator { cursor: pointer !important; filter: invert(0.7); opacity: 0.7; transition: opacity 0.15s; }
+.apm-lb-date-row:hover .apm-lb-date-input::-webkit-calendar-picker-indicator { opacity: 1; }
+
+/* Hint text */
+.apm-lb-hint { font-size: var(--apm-text-xs); color: var(--apm-text-muted); margin: -4px 0 2px 0; font-style: italic; opacity: 0.8; }
+
+/* Preset buttons */
+.apm-lb-presets { display: flex; flex-wrap: wrap; gap: 4px; max-width: 250px; }
+.apm-lb-preset { padding: 5px 10px; background: var(--apm-surface-raised); border: 1px solid var(--apm-border); color: var(--apm-text-primary); border-radius: var(--apm-radius-sm); cursor: pointer; font-size: var(--apm-text-sm); font-weight: 600; transition: all 0.15s; }
+.apm-lb-preset:hover { border-color: var(--apm-accent); background: var(--apm-accent-subtle); color: var(--apm-accent); }
+.apm-lb-preset.active { border-color: var(--apm-accent); background: var(--apm-accent); color: #fff; }
+.apm-lb-presets.correction-mode .apm-lb-preset { border-color: var(--apm-danger); color: var(--apm-danger); }
+.apm-lb-presets.correction-mode .apm-lb-preset:hover { background: var(--apm-danger-subtle); border-color: var(--apm-danger); color: var(--apm-danger); }
+.apm-lb-presets.correction-mode .apm-lb-preset.active { background: var(--apm-danger); border-color: var(--apm-danger); color: #fff; }
+
+/* Hours input row */
+.apm-lb-hours-row { display: flex; gap: 8px; align-items: center; }
+.apm-lb-hours-input { flex: 1; height: 32px; background: var(--apm-surface-sunken); border: 1px solid var(--apm-border); border-radius: var(--apm-radius-sm); color: var(--apm-text-primary); padding: 0 10px; font-size: var(--apm-text-md); outline: none; transition: border-color 0.2s; font-family: var(--apm-font-mono); }
+.apm-lb-hours-input:focus { border-color: var(--apm-accent); }
+.apm-lb-hours-input::placeholder { color: var(--apm-text-disabled); }
+
+/* Correction toggle */
+.apm-lb-correction { display: flex; align-items: center; gap: 8px; padding: 6px 10px; background: var(--apm-danger-subtle); border: 1px solid var(--apm-danger); border-radius: var(--apm-radius-sm); cursor: pointer; transition: all 0.2s; }
+.apm-lb-correction:hover { background: rgba(231, 76, 60, 0.2); }
+.apm-lb-correction-text { font-size: var(--apm-text-sm); color: var(--apm-danger); font-weight: bold; white-space: nowrap; }
+.apm-lb-correction input[type="checkbox"] { cursor: pointer; width: 14px; height: 14px; margin: 0; accent-color: var(--apm-danger); }
+
+/* Type toggle */
+.apm-lb-type-row { display: inline-flex; border: 1px solid var(--apm-border); border-radius: var(--apm-radius-sm); overflow: hidden; align-self: stretch; }
+.apm-lb-type-btn { flex: 1; background: transparent; border: none; color: var(--apm-text-disabled); padding: 6px 16px; font-size: var(--apm-text-sm); font-weight: 600; cursor: pointer; transition: all 0.15s; text-align: center; }
+.apm-lb-type-btn.active { background: var(--apm-accent); color: #fff; }
+.apm-lb-type-btn:not(.active):hover { color: var(--apm-text-secondary); background: rgba(255,255,255,0.03); }
+
+/* Book button */
+.apm-lb-book-btn { padding: 10px; background: var(--apm-success); border: none; color: white; border-radius: var(--apm-radius); font-weight: bold; cursor: pointer; margin-top: 5px; font-size: var(--apm-text-md); transition: filter 0.15s, transform 0.1s; }
+.apm-lb-book-btn:hover { filter: brightness(1.1); }
+.apm-lb-book-btn:active { transform: scale(0.98); }
+
+/* Summary sidebar */
+.apm-lb-summary { width: 170px; border-left: 1px solid var(--apm-border); padding-left: 15px; display: flex; flex-direction: column; min-height: 230px; }
+.apm-lb-summary-title { margin: 0 0 10px 0; font-size: var(--apm-text-md); color: var(--apm-text-muted); text-transform: uppercase; letter-spacing: 1px; font-weight: 600; }
+.apm-lb-summary-content { flex: 1; overflow-y: hidden; display: flex; flex-direction: column; gap: 8px; }
+.apm-lb-summary-row { display: flex; justify-content: space-between; font-size: var(--apm-text-md); padding: 4px 0; border-bottom: 1px solid var(--apm-border); }
+.apm-lb-summary-day { color: var(--apm-text-tertiary); }
+.apm-lb-summary-hours { color: var(--apm-success); font-weight: bold; }
+.apm-lb-summary-total { margin-top: auto; padding-top: 10px; font-weight: bold; font-size: var(--apm-text-lg); display: flex; justify-content: space-between; color: var(--apm-text-bright); }
+.apm-lb-summary-footer { border-top: 1px solid var(--apm-border); padding-top: 10px; margin-top: 10px; }
+.apm-lb-night-label { display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: var(--apm-text-sm); color: var(--apm-warning); }
+.apm-lb-night-label input[type="checkbox"] { accent-color: var(--apm-warning); }
+
+/* Summary states */
+.apm-lb-summary-loading { font-size: var(--apm-text-base); color: var(--apm-text-disabled); text-align: center; margin-top: 20px; }
+.apm-lb-summary-error { font-size: var(--apm-text-sm); color: var(--apm-danger); text-align: center; margin-top: 15px; padding: 0 10px; }
+.apm-lb-summary-empty { font-size: var(--apm-text-sm); color: var(--apm-text-disabled); text-align: center; padding-top: 20px; }
+
+/* Quick Book trigger button */
+.apm-lb-trigger { padding: 4px 12px; background: linear-gradient(135deg, #e67e22, #d35400); color: white; border: none; border-radius: 12px; font-weight: bold; cursor: pointer; font-size: var(--apm-text-sm); transition: filter 0.15s, transform 0.1s; box-shadow: 0 2px 8px rgba(230, 126, 34, 0.4); }
+.apm-lb-trigger:hover { filter: brightness(1.15); transform: translateY(-1px); box-shadow: 0 3px 12px rgba(230, 126, 34, 0.5); }
+
+/* AutoFill trigger button */
+.apm-af-trigger { padding: 4px 12px; background: linear-gradient(135deg, #1abc9c, #16a085); color: white; border: none; border-radius: 12px; font-weight: bold; cursor: pointer; font-size: var(--apm-text-sm); z-index: 10; line-height: 1; transition: filter 0.15s, transform 0.1s; box-shadow: 0 2px 8px rgba(26, 188, 156, 0.25); }
+.apm-af-trigger:hover { filter: brightness(1.15); transform: translateY(-1px); box-shadow: 0 3px 12px rgba(26, 188, 156, 0.4); }
 `;
   function injectStaticStyles() {
     if (document.getElementById("apm-static-styles")) return;
@@ -6593,7 +6686,7 @@
         ])
       ]),
       // ── Schedule ──
-      el("div", { className: "apm-section-group", style: { marginBottom: "10px" } }, [
+      el("div", { id: "eam-schedule-section", className: "apm-section-group", style: { marginBottom: "10px" } }, [
         el("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "6px" } }, [
           el("div", { className: "apm-section-label", style: { margin: "0" } }, "Schedule"),
           el("div", { className: "eam-fc-date-mode-toggle" }, [
@@ -6705,7 +6798,10 @@
     btnToday.onclick = () => {
       if (!getIsRunning()) executeForecast("today");
     };
-    btnHelp.onclick = () => onToggleGuide?.();
+    btnHelp.onclick = () => {
+      const helpOverlay = document.getElementById("apm-help-overlay");
+      if (helpOverlay) helpOverlay.style.display = "flex";
+    };
     todayToggle.addEventListener("change", () => {
       const checked = todayToggle.checked;
       todayToggleText.textContent = checked ? "Today Only" : "Includes Past Due";
@@ -6918,39 +7014,6 @@
     });
   }
 
-  // src/modules/forecast/components/forecast-guidance.js
-  function createGuidance(callbacks = {}) {
-    const { onBack } = callbacks;
-    const guide = el("div", { id: "eam-guide-container", className: "eam-fc-guide-box" }, [
-      el("p", { className: "eam-fc-guide-text" }, 'The Forecast Tool eliminates the manual "click-and-wait" fatigue of filtering Work Orders. It automates navigation, grid expansion, and multi-field filtering into a single, lightning-fast action.'),
-      el("h4", { className: "eam-fc-guide-hdr" }, "1. Setting Your Parameters"),
-      el("ul", { className: "eam-fc-guide-list" }, [
-        el("li", { innerHTML: "<strong>Site Code (Org):</strong> Available in Advanced Mode. Select your site or leave blank to search all." }),
-        el("li", { innerHTML: "<strong>Target Week & Days:</strong> Choose your week and click the days you want to filter, or swap to Custom Dates \u{1F4C5} for absolute calendar picking." }),
-        el("li", { innerHTML: `<strong>Today Modifier:</strong> Use the slider next to the 'Today' button to switch between "Today Only" (strict exact match) or "Includes Past Due" (pulls everything up to today).` })
-      ]),
-      el("h4", { className: "eam-fc-guide-hdr" }, "2. Advanced Filters"),
-      el("ul", { className: "eam-fc-guide-list" }, [
-        el("li", { innerHTML: "Use the <strong>Description</strong> field to narrow your results." }),
-        el("li", { innerHTML: '<em>Tip:</em> The Description dropdown lets you choose whether a keyword should be Included (e.g., only show "13 Week") or Excluded (e.g., hide all "Daily").' })
-      ]),
-      el("h4", { className: "eam-fc-guide-hdr" }, "3. Power User Shortcuts"),
-      el("ul", { className: "eam-fc-guide-list" }, [
-        el("li", { innerHTML: `<strong>Alt + T (Quick Today):</strong> The "Thunderbolt" shortcut. Press this anywhere in EAM to instantly run a search for Today's Work Orders.` }),
-        el("li", { innerHTML: "<strong>Alt + C (Quick Clear):</strong>This will instantly clear all search fields if you need to manually search something" })
-      ]),
-      el("h4", { className: "eam-fc-guide-hdr" }, "4. Fast Booked Labor Check"),
-      el("ul", { className: "eam-fc-guide-list" }, [
-        el("li", { innerHTML: 'Use the floating "LABOR TALLY \u23F1\uFE0F" tab on the edge of your screen to instantly check your hours from anywhere in EAM. You can drag and snap it to any edge of your browser.' })
-      ]),
-      el("div", { className: "eam-fc-guide-back" }, [
-        el("button", { id: "eam-guide-back-btn", className: "eam-fc-help-link" }, "\u{1F519} Back to Tool")
-      ])
-    ]);
-    guide.querySelector("#eam-guide-back-btn").onclick = () => onBack?.();
-    return guide;
-  }
-
   // src/modules/forecast/components/forecast-quick-search.js
   function createQuickSearch() {
     if (window.self !== window.top) return null;
@@ -7016,28 +7079,15 @@
         ])
       ]);
       loadPreferences();
-      const searchForm = createSearchForm({
-        onToggleGuide: () => {
-          searchForm.style.display = "none";
-          guidance.style.display = "block";
-        }
-      });
+      const searchForm = createSearchForm({});
       const profileManager = createProfileManager();
       const filterBuilder = createFilterBuilder();
-      const guidance = createGuidance({
-        onBack: () => {
-          searchForm.style.display = "block";
-          guidance.style.display = "none";
-        }
-      });
-      guidance.style.display = "none";
       const statusLabel = el("div", { id: "eam-status", className: "eam-fc-status" });
       const updateContainer = el("div", { id: "eam-update-container", className: "eam-fc-update-box" }, [
         el("a", { href: "https://raw.githubusercontent.com/jaker788-create/APM-Master/main/forecast.user.js", target: "_blank", className: "apm-footer-update-btn" }, "\u2728 Update Available")
       ]);
       panel.appendChild(header);
       panel.appendChild(searchForm);
-      panel.appendChild(guidance);
       panel.appendChild(profileManager);
       panel.appendChild(statusLabel);
       panel.appendChild(updateContainer);
@@ -7068,7 +7118,6 @@
         saveAllPreferences();
         if (newVal === "manual") {
           clearPersistentToast();
-          executeForecast("clear");
         }
       };
       syncPreferences(panel);
@@ -7185,7 +7234,7 @@
   function initForecastShortcuts() {
     const handleHotkey = (action, isWO = false) => {
       if (window.self !== window.top) {
-        window.top.postMessage({ apmMaster: "hotkey", action, isWO }, "*");
+        safePostMessage(window.top, { apmMaster: "hotkey", action, isWO });
       } else {
         executeForecast(action);
       }
@@ -7242,9 +7291,9 @@
     let lastKnownStoreId = null;
     const TARGET_DATA_INDEX = "duedate";
     const STATES = [
-      { label: "Filter: Show All", bg: "#7f8c8d" },
-      { label: "Filter: PMs Only", bg: "#1abc9c" },
-      { label: "Filter: Non-PMs", bg: "#3498db" }
+      { label: "Filter: Show All", bg: "#7f8c8d", tooltip: "Currently showing all records.\nClick to filter: PMs Only \u2192 Non-PMs \u2192 Show All.\nFilters the currently loaded list \u2014 does not perform a new search." },
+      { label: "Filter: PMs Only", bg: "#1abc9c", tooltip: "Showing PMs only (records with a due date).\nClick to switch to Non-PMs.\nFilters the currently loaded list \u2014 does not perform a new search." },
+      { label: "Filter: Non-PMs", bg: "#3498db", tooltip: "Showing Non-PMs only (records without a due date).\nClick to switch to Show All.\nFilters the currently loaded list \u2014 does not perform a new search." }
     ];
     function getTargetContext() {
       return findMainGrid();
@@ -7297,6 +7346,7 @@
       filterState = (filterState + 1) % 3;
       btn.style.background = STATES[filterState].bg;
       btn.textContent = STATES[filterState].label;
+      btn.title = STATES[filterState].tooltip;
       applyStoreFilter();
     }
     function injectForecastFilter() {
@@ -7310,13 +7360,18 @@
       lastKnownStoreId = store.storeId;
       const dataspyInput = doc.querySelector('input[name="dataspylist"]');
       if (!dataspyInput || dataspyInput.offsetWidth === 0) return;
+      const dataspyWrapper = dataspyInput.closest(".x-form-trigger-wrap-default") || dataspyInput.parentElement;
       const toolbarContainer = dataspyInput.closest(".x-box-target");
       if (!toolbarContainer || doc.getElementById("apm-list-pm-btn")) return;
       const btn = doc.createElement("button");
       btn.id = "apm-list-pm-btn";
       btn.textContent = STATES[filterState].label;
+      btn.title = STATES[filterState].tooltip;
+      const wrapperRect = dataspyWrapper.getBoundingClientRect();
+      const containerRect = toolbarContainer.getBoundingClientRect();
+      const leftPos = wrapperRect.right - containerRect.left + 8;
       btn.style.cssText = `
-            position: absolute; left: 270px; top: 9px; z-index: 1000;
+            position: absolute; left: ${leftPos}px; top: 9px; z-index: 1000;
             padding: 4px 10px; background: ${STATES[filterState].bg};
             color: white; border: none; border-radius: 4px;
             font-weight: bold; cursor: pointer; font-size: 11px;
@@ -7342,6 +7397,81 @@
   // src/ui/settings-panel.js
   init_logger();
   init_toast();
+
+  // src/modules/colorcode/colorcode-prefs.js
+  init_state();
+  init_constants();
+  init_logger();
+  init_storage();
+  function loadColorCodePrefs() {
+    try {
+      const storedRules = APMStorage.get(CC_STORAGE_RULES);
+      if (storedRules) {
+        if (storedRules._v !== void 0) {
+          AppState.colorCode.rules = storedRules.rules || [];
+        } else {
+          AppState.colorCode.rules = storedRules;
+        }
+      }
+      const storedSet = APMStorage.get(CC_STORAGE_SET);
+      if (storedSet) {
+        if (storedSet._v === void 0) {
+          storedSet._v = 0;
+          APMLogger.debug("ColorCode", "Settings loaded as legacy v0");
+        }
+        AppState.colorCode.settings = { ...AppState.colorCode.settings, ...storedSet };
+      }
+      Promise.resolve().then(() => (init_theme_resolver(), theme_resolver_exports)).then(({ ThemeResolver: ThemeResolver2 }) => {
+        AppState.colorCode.settings.theme = ThemeResolver2.getPreferredTheme();
+      });
+    } catch (e) {
+      APMLogger.warn("ColorCode", "Failed to load preferences", e);
+    }
+  }
+  function saveColorCodeRules() {
+    const wrapped = { _v: 1, rules: AppState.colorCode.rules };
+    APMStorage.set(CC_STORAGE_RULES, wrapped);
+  }
+  function saveColorCodeSettings() {
+    AppState.colorCode.settings._v = 1;
+    APMStorage.set(CC_STORAGE_SET, AppState.colorCode.settings);
+  }
+  var _cachedRulesJson = null;
+  var _rulesGen = 0;
+  function getRules() {
+    const stored = AppState.colorCode.rules;
+    let rules;
+    if (stored && typeof stored === "object" && !Array.isArray(stored) && stored._v !== void 0) {
+      rules = stored.rules || [];
+    } else {
+      rules = AppState.colorCode.rules;
+    }
+    if (!_cachedRulesJson || _rulesGen !== _currentRulesGen) {
+      _cachedRulesJson = JSON.stringify(rules);
+      _rulesGen = _currentRulesGen;
+    }
+    return JSON.parse(_cachedRulesJson);
+  }
+  var _currentRulesGen = 0;
+  function setRules(newRules) {
+    AppState.colorCode.rules = newRules;
+    _currentRulesGen++;
+    _cachedRulesJson = null;
+    saveColorCodeRules();
+    window.dispatchEvent(new CustomEvent("APM_CC_SYNC_REQUIRED"));
+  }
+  function getSettings() {
+    if (AppState.colorCode.settings._v === void 0) {
+      AppState.colorCode.settings._v = 0;
+      APMLogger.debug("ColorCode", "Settings accessed as legacy v0");
+    }
+    return { ...AppState.colorCode.settings };
+  }
+  function setSettings(updates) {
+    AppState.colorCode.settings = { ...AppState.colorCode.settings, ...updates };
+    saveColorCodeSettings();
+    window.dispatchEvent(new CustomEvent("APM_CC_SYNC_REQUIRED"));
+  }
 
   // src/modules/colorcode/colorcode-engine.js
   init_state();
@@ -7438,9 +7568,9 @@
   function setPreviewRuleOverride(rule) {
     _getTopAPM()[_APM_PREVIEW_KEY] = rule || null;
     if (rule) {
-      console.log(`[Engine] Preview override SET (cross-frame):`, rule);
+      APMLogger.debug("ColorCode Engine", "Preview override SET (cross-frame):", rule);
     } else {
-      console.log(`[Engine] Preview override CLEARED (cross-frame)`);
+      APMLogger.debug("ColorCode Engine", "Preview override CLEARED (cross-frame)");
     }
   }
   function getPreviewRuleOverride() {
@@ -7812,7 +7942,11 @@
         if (entityId) {
           if (!el2.hasAttribute("data-wo-num")) {
             el2.setAttribute("data-wo-num", entityId);
-            el2.insertAdjacentHTML("beforeend", `<span class="apm-copy-icon" title="Copy link to clipboard" data-wo-copy-url="${buildEntityUrl(entityId, headerConfig, headerUserFunc)}"></span>`);
+            const copyIcon = doc.createElement("span");
+            copyIcon.className = "apm-copy-icon";
+            copyIcon.title = "Copy link to clipboard";
+            copyIcon.dataset.woCopyUrl = buildEntityUrl(entityId, headerConfig, headerUserFunc);
+            el2.appendChild(copyIcon);
           }
           if (apmGeneralSettings.ptpTrackingEnabled) {
             const ptpRecord = ptpHistory[entityId];
@@ -7830,7 +7964,19 @@
                 color = "#e74c3c";
               }
               const titleTxt = `${statusTxt} PTP on ${new Date(ptpRecord.time).toLocaleDateString()}`;
-              const newHtml = `<span class="apm-ptp-status-tag-header" title="${titleTxt}" style="font-size: 13px; margin-left: 8px; display: inline-flex; align-items: center; gap: 4px; color: ${color}; opacity: 1.0; cursor: help; white-space: nowrap;"><span style="font-size:14px;">${icon}</span> PTP</span>`;
+              const buildPtpTag = () => {
+                const tag = doc.createElement("span");
+                tag.className = "apm-ptp-status-tag-header";
+                tag.title = titleTxt;
+                tag.style.cssText = "font-size:13px;margin-left:8px;display:inline-flex;align-items:center;gap:4px;opacity:1.0;cursor:help;white-space:nowrap;";
+                tag.style.color = color;
+                const iconSpan = doc.createElement("span");
+                iconSpan.style.fontSize = "14px";
+                iconSpan.textContent = icon;
+                tag.appendChild(iconSpan);
+                tag.appendChild(doc.createTextNode(" PTP"));
+                return tag;
+              };
               const descField = doc.querySelector('input[name="description"]');
               const triggerWrap = descField ? descField.closest(".x-form-trigger-wrap") : null;
               if (triggerWrap) {
@@ -7842,9 +7988,9 @@
                   parentBody.style.setProperty("max-width", "none", "important");
                   const existingInDoc = parentBody.querySelector(".apm-ptp-status-tag-header");
                   if (!existingPtpTag && !existingInDoc) {
-                    triggerWrap.insertAdjacentHTML("afterend", newHtml);
+                    triggerWrap.after(buildPtpTag());
                   } else if (existingPtpTag && existingPtpTag.title !== titleTxt) {
-                    existingPtpTag.outerHTML = newHtml;
+                    existingPtpTag.replaceWith(buildPtpTag());
                   }
                 }
               }
@@ -8346,6 +8492,7 @@
         const idx = rs.findIndex((r) => r.id === id);
         if (idx > 0) {
           [rs[idx - 1], rs[idx]] = [rs[idx], rs[idx - 1]];
+          setRules(rs);
           saveSync();
         }
       });
@@ -8357,6 +8504,7 @@
         const idx = rs.findIndex((r) => r.id === id);
         if (idx < rs.length - 1) {
           [rs[idx + 1], rs[idx]] = [rs[idx], rs[idx + 1]];
+          setRules(rs);
           saveSync();
         }
       });
@@ -8598,9 +8746,6 @@
       };
     }
     const PREVIEW_DEBOUNCE_MS = 50;
-    let originalRulesSnapshot = null;
-    let isPreviewActive = false;
-    let currentPreviewRule = null;
     function updateGridPreview() {
       clearTimeout(_previewDebounceTimer);
       _previewDebounceTimer = setTimeout(() => {
@@ -9272,8 +9417,7 @@
   }
   function createHeader() {
     return el("div", { className: "apm-settings-header" }, [
-      el("h4", { className: "apm-settings-title" }, "APM Master"),
-      el("button", { id: "apm-c-btn-close", className: "apm-settings-close-btn" }, "\u2716")
+      el("h4", { className: "apm-settings-title" }, "APM Master")
     ]);
   }
   function createTabContainer() {
@@ -9293,56 +9437,241 @@
           el("button", { id: "apm-help-close", className: "apm-help-close" }, "\u2716")
         ]),
         el("div", { className: "apm-help-content" }, [
+          // ── Getting Started ──
           el("div", { className: "apm-help-section" }, [
-            el("div", { className: "apm-help-section-title" }, "\u{1F3A8} ColorCode & Themes"),
-            el("p", {}, "Highlight work orders based on custom keywords or status. Rules are processed from top-to-bottom:"),
+            el("div", { className: "apm-help-section-title" }, "Getting Started"),
+            el("p", {}, "APM Master adds productivity tools on top of EAM. General settings can be found in the APM Master toolbar button."),
             el("ul", {}, [
-              el("li", {}, [el("b", {}, "Multi-Keyword Matching: "), "Enter multiple terms separated by commas (e.g., ", el("code", {}, "13 week, quarterly, slider belt"), ") to apply one rule to all of them."]),
-              el("li", {}, [el("b", {}, "Nametags (Badge Text): "), "Show a colored pill badge on matching cells. Leave it empty to only highlight the row."]),
-              el("li", {}, [el("b", {}, "Tag Filtering: "), "Click any nametag in the grid to instantly filter for that tag. Click the nametag again to reset."]),
-              el("li", {}, [el("b", {}, "Fill Row: "), "Toggle row highlighting independently of nametags. The first matching rule sets the color."]),
-              el("li", {}, [el("b", {}, "Themes: "), "Choose between Classic Dark, Hex Dark, or Light themes. These apply globally on page reload."])
+              el("li", {}, [el("b", {}, "Theme: "), "Set your preferred theme in the ", el("b", {}, "General"), " tab. Dark Classic is recommended for dark mode users. Themes apply after a page reload."]),
+              el("li", {}, [el("b", {}, "Feature Flags: "), "Toggle individual modules on or off in the ", el("b", {}, "General"), " tab. Disabling a feature stops it from running entirely."]),
+              el("li", {}, [el("b", {}, "Export / Import: "), "Back up all your settings, rules, and profiles from the ", el("b", {}, "General"), " tab. Use this to transfer your setup to another machine or restore after a reinstall."])
             ])
           ]),
+          // ── Forecast & Filters ──
           el("div", { className: "apm-help-section" }, [
-            el("div", { className: "apm-help-section-title" }, "\u{1F4CB} AutoFill Profiles"),
-            el("p", {}, "Create saved templates to instantly fill Work Order forms:"),
+            el("div", { className: "apm-help-section-title" }, "Forecast & Filters"),
+            el("p", {}, "Automate MADDON filtering with date ranges, keywords, and custom dataspies. Access via the Forecast button in the toolbar."),
             el("ul", {}, [
-              el("li", {}, [el("b", {}, "Keyword Match: "), "Profiles are suggested automatically if a keyword is found in the WO description."]),
-              el("li", {}, [el("b", {}, "PM Checkbox: "), 'Set "1-Tech" or "10-Tech" counts for automated checklist completion.']),
-              el("li", {}, [el("b", {}, "Partial Fill: "), "Templates can fill just closing comments, trouble codes, assigned to, or the equipment closest match."])
+              el("li", {}, [el("b", {}, "Site / Org: "), "For multi-site users \u2014 select a site to narrow results. Single-site users can leave this on the default."]),
+              el("li", {}, [el("b", {}, "Date Range: "), "Pick a target week, select specific days, or switch to custom dates for absolute calendar picking. Use the Today modifier to include or exclude past-due orders."]),
+              el("li", {}, [el("b", {}, "Custom Dataspy: "), "Build advanced filters with multiple keywords using AND/OR logic. Exclude terms you don't need. Filters can target specific fields like description, status, or equipment."]),
+              el("li", {}, [el("b", {}, "Saved Profiles: "), "Save your filter combinations as named profiles to quickly switch between different views."]),
+              el("li", {}, [el("b", {}, "PM Filter Toggle: "), 'Instantly filter existing search results between "PMs Only", "Non-PMs", or "Show All" using the filter button in the grid toolbar.']),
+              el("li", {}, [el("b", {}, "Shortcuts: "), "Press ", el("kbd", {}, "Alt+T"), " to instantly search today's work orders. Press ", el("kbd", {}, "Alt+C"), " to clear all filters."])
             ])
           ]),
+          // ── ColorCode & Themes ──
           el("div", { className: "apm-help-section" }, [
-            el("div", { className: "apm-help-section-title" }, "\u{1F9E9} UI Customization"),
-            el("p", {}, "Optimize EAM to fit your workflow in the ", el("b", {}, "Tab Order"), " tab:"),
+            el("div", { className: "apm-help-section-title" }, "ColorCode & Themes"),
+            el("p", {}, "Highlight work orders in the grid based on keywords. Rules are matched top-to-bottom against the description column."),
             el("ul", {}, [
-              el("li", {}, [el("b", {}, "Drag & Drop: "), "Reorder columns or record tabs instantly. Your order is saved across sessions."]),
-              el("li", {}, [el("b", {}, "Hiding Tabs: "), 'Hide clutter with the \u2716 icon. Restore them from the "Hidden" list anytime.']),
-              el("li", {}, [el("b", {}, "Reset: "), 'Use the "Reset to Default" button to restore the original EAM layout.'])
+              el("li", {}, [el("b", {}, "Creating Rules: "), "Open the ", el("b", {}, "ColorCode & Theme"), " tab, type a keyword, pick a color, and click Add. The rule is applied immediately."]),
+              el("li", {}, [el("b", {}, "Multi-Keyword: "), "Enter multiple terms separated by commas (e.g., ", el("code", {}, "13 week, quarterly, slider belt"), ") to match any of them with one rule."]),
+              el("li", {}, [el("b", {}, "Nametags: "), "Add badge text to a rule to show a colored pill on matching cells. Leave it empty to only highlight the row background."]),
+              el("li", {}, [el("b", {}, "Tag Filtering: "), "Click any nametag in the grid to filter for that tag. Click it again to clear the filter."]),
+              el("li", {}, [el("b", {}, "Fill Row: "), "Controls whether the entire row gets a background color. The first matching rule wins."]),
+              el("li", {}, [el("b", {}, "Rule Order: "), "Drag rules to reorder priority. Rules higher in the list take precedence."])
             ])
           ]),
+          // ── AutoFill Profiles ──
           el("div", { className: "apm-help-section" }, [
-            el("div", { className: "apm-help-section-title" }, "\u23F1\uFE0F Utilities & Productivity"),
+            el("div", { className: "apm-help-section-title" }, "AutoFill Profiles"),
+            el("p", {}, "Create templates for recurring work orders. When APM detects a matching WO, a teal Auto Fill button appears on the record toolbar."),
             el("ul", {}, [
-              el("li", {}, [el("b", {}, "\u26A1 PM Filter Toggle: "), 'Use the button in the grid toolbar to cycle between "PMs Only", "Non-PMs", or "Show All".']),
-              el("li", {}, [el("b", {}, "\u2705 PTP Status Icons: "), "View assessment status directly in the grid or record header. \u2705 means you have previously completed an assessment for this WO. ", el("i", {}, "(Tracks your history only)")]),
-              el("li", {}, [el("b", {}, "\u23F1\uFE0F Labor Tally: "), "Drag the widget to see your hours worked for 1, 2, or 7 days. Use Manager Mode for other employees."]),
-              el("li", {}, [el("b", {}, "\u{1F50D} Quick Search: "), "Jump to any WO instantly. Use ", el("kbd", {}, "Alt+T"), " for today's orders and ", el("kbd", {}, "Alt+C"), " to clear filters."]),
-              el("li", {}, [el("b", {}, "\u{1F517} Work Order Links: "), "Work Order numbers in the grid are automatically hyperlinked. Click to open in EAM, or click the clipboard icon to copy the URL to clipboard."])
+              el("li", {}, [el("b", {}, "Setup: "), "Open the ", el("b", {}, "Auto Fill Profiles"), " tab, create a new profile, and set a keyword that matches the WO description."]),
+              el("li", {}, [el("b", {}, "Fields: "), "Templates can fill closing comments, trouble found/cause/action codes, assigned to, equipment closest match, and PM checklist counts."]),
+              el("li", {}, [el("b", {}, "PM Checkbox: "), 'Set "1-Tech" or "10-Tech" to automatically complete the PM checklist as part of the fill.']),
+              el("li", {}, [el("b", {}, "Partial Fill: "), "Leave fields blank in the template to skip them. Only the fields you define will be filled."]),
+              el("li", {}, [el("b", {}, "Multiple Profiles: "), "Create as many profiles as you need. The first one whose keyword matches the WO description is suggested."])
             ])
           ]),
+          // ── Labor Tools ──
           el("div", { className: "apm-help-section" }, [
-            el("div", { className: "apm-help-section-title" }, "\u2699\uFE0F General Settings"),
+            el("div", { className: "apm-help-section-title" }, "Labor Tools"),
+            el("p", {}, "Book labor and track your hours without navigating away from the work order."),
             el("ul", {}, [
-              el("li", {}, [el("b", {}, "PTP Timer: "), 'Shows a 2-minute countdown overlay on the PTP screen to encourage a "Take 2" safety pause.']),
-              el("li", {}, [el("b", {}, "Work Order Links: "), "Configure whether WO numbers open in the current window or a new tab."]),
-              el("li", {}, [el("b", {}, "Auto-Redirect: "), "Automatically returns to the APM home screen if your session expires."])
+              el("li", {}, [el("b", {}, "Quick Book: "), "Click the orange Quick Book button on the Book Labor tab. Pick a preset or type custom hours, choose Normal or Overtime, and book instantly. Double-click a preset to book in one step."]),
+              el("li", {}, [el("b", {}, "Correction Mode: "), "Check the Subtract box to book negative hours for corrections."]),
+              el("li", {}, [el("b", {}, "Shift Summary: "), "The sidebar shows hours booked today (and yesterday in Night Shift mode) so you always know your running total."]),
+              el("li", {}, [el("b", {}, "Labor Tally: "), "The dockable widget on the edge of your screen shows your hours for 1, 2, or 7 days. Drag it to any edge. Click to expand."]),
+              el("li", {}, [el("b", {}, "Manager Mode: "), "Add other employee IDs in the Labor Tally to view their hours. Select from the dropdown to switch between employees."])
             ])
+          ]),
+          // ── Tab & Grid Customization ──
+          el("div", { className: "apm-help-section" }, [
+            el("div", { className: "apm-help-section-title" }, "Tab & Grid Customization"),
+            el("p", {}, "Rearrange EAM's interface to match your workflow. Changes persist across sessions."),
+            el("ul", {}, [
+              el("li", {}, [el("b", {}, "Reorder Tabs: "), "Open the ", el("b", {}, "Tab Order"), " tab in settings. Drag record tabs into your preferred order."]),
+              el("li", {}, [el("b", {}, "Reorder Columns: "), 'Switch to "Columns" mode to drag grid columns into your preferred order.']),
+              el("li", {}, [el("b", {}, "Hide Tabs: "), 'Click the \u2716 on any tab to hide it. Restore hidden tabs from the "Hidden" list.']),
+              el("li", {}, [el("b", {}, "Reset: "), "Use Reset to Default to restore the original EAM layout for the current screen."])
+            ])
+          ]),
+          // ── Search & Navigation ──
+          el("div", { className: "apm-help-section" }, [
+            el("div", { className: "apm-help-section-title" }, "Search & Navigation"),
+            el("ul", {}, [
+              el("li", {}, [el("b", {}, "Quick Search: "), "Type a WO number in the search box in the top toolbar to jump directly to that work order."]),
+              el("li", {}, [el("b", {}, "Keyboard Shortcuts: "), "Press ", el("kbd", {}, "Alt+T"), " to load today's work orders. Press ", el("kbd", {}, "Alt+C"), " to clear all filters."]),
+              el("li", {}, [el("b", {}, "WO Links: "), "Work order numbers in the grid are automatically hyperlinked. Click to open in EAM. Use the clipboard icon to copy the direct URL."]),
+              el("li", {}, [el("b", {}, "Link Behavior: "), "Configure whether links open in the current window or a new tab in the ", el("b", {}, "General"), " tab."])
+            ])
+          ]),
+          // ── PTP & Safety ──
+          el("div", { className: "apm-help-section" }, [
+            el("div", { className: "apm-help-section-title" }, "PTP & Safety"),
+            el("ul", {}, [
+              el("li", {}, [el("b", {}, "Take-2 Timer: "), "When enabled, a 2-minute countdown appears on the PTP assessment screen as a reminder to pause and assess hazards before starting work."]),
+              el("li", {}, [el("b", {}, "PTP Status Icons: "), "A \u2705 icon appears in the grid and record header for work orders where you've already completed a PTP assessment. This tracks your personal history only."]),
+              el("li", {}, [el("b", {}, "Toggle: "), "Enable or disable the PTP Timer in the ", el("b", {}, "General"), " tab."])
+            ])
+          ]),
+          // ── General Settings ──
+          el("div", { className: "apm-help-section" }, [
+            el("div", { className: "apm-help-section-title" }, "General Settings"),
+            el("ul", {}, [
+              el("li", {}, [el("b", {}, "Auto-Redirect: "), "Automatically navigates back to the EAM home screen when your session expires, so you don't get stuck on an error page."]),
+              el("li", {}, [el("b", {}, "Date Format: "), "Override EAM's date display format and separator to match your regional preference."]),
+              el("li", {}, [el("b", {}, "Feature Flags: "), "Disable any module you don't use. Disabled modules are completely skipped at startup for better performance."]),
+              el("li", {}, [el("b", {}, "Diagnostics: "), "The Diagnostics tab shows boot timing, active tasks, and system health. Useful for troubleshooting if something isn't working."])
+            ])
+          ]),
+          // ── More Info ──
+          el("div", { className: "apm-help-section", style: { textAlign: "center", borderTop: "1px solid var(--apm-border)", paddingTop: "14px", marginTop: "8px" } }, [
+            el("a", { href: "https://w.amazon.com/bin/view/Users/rosendah/APM-Master/", target: "_blank", style: { color: "var(--apm-accent)", fontWeight: "bold", fontSize: "12px", textDecoration: "underline", textUnderlineOffset: "3px" } }, "\u{1F4D6} Full Wiki \u2014 in-depth guides, screenshots & videos")
           ])
         ])
       ])
     ]);
+  }
+  function createWelcomeOverlay() {
+    const tourPages = [
+      {
+        icon: "\u{1F50D}",
+        title: "Forecast & Custom Filters",
+        desc: "Filter your work order list by <b>date ranges, keywords, type</b>, and more. Multi-site users can narrow results by site. Use the <b>Dataspy Builder</b> for advanced AND/OR logic, exclude what you don't need, and save the filters you use every day."
+      },
+      {
+        icon: "\u{1F9E9}",
+        title: "Tab & Grid Customization",
+        desc: "Drag and drop to <b>reorder record tabs and grid columns</b> to match how you actually work. Hide the tabs you never use. Your layout is saved across sessions \u2014 EAM finally remembers your preferences."
+      },
+      {
+        icon: "\u26A1",
+        title: "Labor Booking & Tally",
+        desc: "Book labor directly from the work order with <b>Quick Book</b> \u2014 pick your hours, hit go. The <b>Labor Tally</b> widget docks to any edge of your screen and shows your booked hours at a glance, with multi-day and manager views."
+      },
+      {
+        icon: "\u{1F4CB}",
+        title: "AutoFill Profiles",
+        desc: "Create <b>templates for recurring work orders</b> \u2014 closing comments, trouble codes, checklists, equipment fields. When APM detects a matching WO description, it offers to fill the form for you in one click."
+      },
+      {
+        icon: "\u{1F3A8}",
+        title: "ColorCode & Themes",
+        desc: "Highlight work orders in the grid based on <b>keywords</b>. Add colored nametag badges, click them to filter instantly. Color the <b>entire row, just the badge, or both</b> \u2014 it's up to you."
+      }
+    ];
+    const overlay = el("div", { id: "apm-welcome-overlay", className: "apm-welcome-overlay apm-ui-panel", style: { display: "none" } }, [
+      el("div", { className: "apm-welcome-modal" }, [
+        el("div", { className: "apm-welcome-body" }, [
+          // Page 0: Landing
+          el("div", { className: "apm-welcome-page apm-welcome-landing active", "data-page": "0" }, [
+            el("div", { className: "apm-welcome-icon" }, "\u{1F6E0}\uFE0F"),
+            el("h3", { className: "apm-welcome-title" }, "Welcome to APM Master"),
+            el("p", { className: "apm-welcome-subtitle" }, "Tools to make EAM work the way you need it to."),
+            el("div", { className: "apm-welcome-theme-row" }, [
+              el("span", { className: "apm-welcome-theme-label" }, "EAM system theme:"),
+              el("select", { id: "apm-welcome-theme", className: "apm-welcome-theme-select" }, [
+                el("option", { value: "default" }, "System Default"),
+                el("option", { value: "theme-hex-dark" }, "Dark Hex"),
+                el("option", { value: "theme-dark" }, "Dark Classic"),
+                el("option", { value: "theme-darkblue" }, "Dark Blue"),
+                el("option", { value: "theme-hex" }, "Light Hex"),
+                el("option", { value: "theme-orange" }, "Orange")
+              ])
+            ]),
+            el("p", { className: "apm-welcome-theme-tip" }, "Tip: Want a dark theme? Dark Classic is recommended. You can change this later in General Settings."),
+            el("div", { className: "apm-welcome-landing-btns" }, [
+              el("button", { id: "apm-welcome-start", className: "apm-welcome-start-btn" }, "Continue"),
+              el("button", { id: "apm-welcome-skip-intro", className: "apm-welcome-skip-link" }, "Skip intro")
+            ])
+          ]),
+          // Pages 1-5: Feature tour
+          ...tourPages.map(
+            (p, i) => el("div", { className: "apm-welcome-page", "data-page": String(i + 1) }, [
+              el("div", { className: "apm-welcome-icon" }, p.icon),
+              el("h3", { className: "apm-welcome-title" }, p.title),
+              el("p", { className: "apm-welcome-desc", innerHTML: p.desc })
+            ])
+          )
+        ]),
+        el("div", { className: "apm-welcome-footer" }, [
+          el(
+            "div",
+            { id: "apm-welcome-dots", className: "apm-welcome-dots apm-welcome-tour-nav" },
+            tourPages.map((_, i) => el("div", { className: `apm-welcome-dot${i === 0 ? " active" : ""}`, "data-dot": String(i) }))
+          ),
+          el("div", { id: "apm-welcome-tour-btns", className: "apm-welcome-nav apm-welcome-tour-nav" }, [
+            el("button", { id: "apm-welcome-skip", className: "apm-welcome-skip" }, "Skip"),
+            el("button", { id: "apm-welcome-next", className: "apm-welcome-next" }, "1 / 5  Next")
+          ])
+        ])
+      ])
+    ]);
+    return overlay;
+  }
+  function bindWelcomeEvents() {
+    const overlay = document.getElementById("apm-welcome-overlay");
+    if (!overlay) return;
+    let current = 0;
+    let themeChanged = false;
+    const allPages = overlay.querySelectorAll(".apm-welcome-page");
+    const dots = overlay.querySelectorAll(".apm-welcome-dot");
+    const tourNav = overlay.querySelectorAll(".apm-welcome-tour-nav");
+    const nextBtn = document.getElementById("apm-welcome-next");
+    const skipBtn = document.getElementById("apm-welcome-skip");
+    const continueBtn = document.getElementById("apm-welcome-start");
+    const skipIntroBtn = document.getElementById("apm-welcome-skip-intro");
+    const themeSelect = document.getElementById("apm-welcome-theme");
+    const tourTotal = 5;
+    function goTo(idx) {
+      current = idx;
+      allPages.forEach((p) => p.classList.toggle("active", p.getAttribute("data-page") === String(idx)));
+      const inTour = idx > 0;
+      tourNav.forEach((el2) => el2.style.display = inTour ? "flex" : "none");
+      if (inTour) {
+        const tourIdx = idx - 1;
+        dots.forEach((d, i) => d.classList.toggle("active", i === tourIdx));
+        const isLast = tourIdx === tourTotal - 1;
+        nextBtn.textContent = isLast ? "Get Started" : `${tourIdx + 1} / ${tourTotal}  Next`;
+      }
+    }
+    function close() {
+      overlay.style.display = "none";
+      APMStorage.set(WELCOME_SEEN_KEY, true);
+      if (themeChanged) {
+        window.top.location.href = SESSION_TIMEOUT_URL;
+      }
+    }
+    themeSelect.onchange = () => {
+      const val = themeSelect.value;
+      themeChanged = true;
+      Promise.resolve().then(() => (init_theme_resolver(), theme_resolver_exports)).then(({ ThemeResolver: ThemeResolver2 }) => {
+        ThemeResolver2.setGlobalTheme(val);
+      });
+    };
+    continueBtn.onclick = () => goTo(1);
+    skipIntroBtn.onclick = close;
+    nextBtn.onclick = () => {
+      if (current < tourTotal) goTo(current + 1);
+      else close();
+    };
+    skipBtn.onclick = close;
+    overlay.onclick = (e) => {
+      if (e.target === overlay) close();
+    };
   }
   function createChangelogModal() {
     return el("div", { id: "apm-changelog-modal", className: "apm-help-overlay apm-ui-panel", style: { display: "none" } }, [
@@ -9352,33 +9681,42 @@
           el("button", { id: "apm-changelog-close", className: "apm-help-close" }, "\u2716")
         ]),
         el("div", { className: "apm-help-content", style: { fontSize: "12px", lineHeight: "1.6" } }, [
-          el("div", { style: { marginBottom: "15px", borderBottom: "1px solid #45535e", paddingBottom: "10px" } }, [
-            el("b", { style: { color: "#1abc9c", display: "block", marginBottom: "5px" } }, "Current Improvements (v14.5.x)"),
+          el("div", { style: { marginBottom: "15px", borderBottom: "1px solid var(--apm-border)", paddingBottom: "10px" } }, [
+            el("b", { style: { color: "var(--apm-success)", display: "block", marginBottom: "5px" } }, "Latest \u2014 UI & Quality of Life"),
             el("ul", { style: { paddingLeft: "20px", margin: "0" } }, [
-              el("li", {}, "Implemented performance & error diagnostics tab"),
-              el("li", {}, "Implemented early dataspy feature, supports multi keyword OR match AND exclusion Eg: Contains A OR B AND not C. Feedback on builder and layout is appreciated, some stuff is planned but not implemented like showing your search params on the grid and allowing you to clear them"),
-              el("li", {}, "Record tab re ordering now allows removal of tabs, now reads from the overflow menu and allows adding those too"),
-              el("li", {}, "Paid off tech debt, centralized many services and functions to share between modules, cleaned up legacy and duplicated code"),
-              el("li", {}, "Mitigated page load flash when using dark mode somewhat"),
-              el("li", {}, "Significantly improved efficiency & speed of ColorCode engine, rule creation will now show a live preview on the grid"),
-              el("li", {}, "Implemented Global configuration export/import")
+              el("li", {}, "UI overhaul \u2014 centralized theme tokens, consistent visual flow across all panels and popups"),
+              el("li", {}, "First-run welcome screen with theme selection and optional feature tour"),
+              el("li", {}, "Comprehensive Help & Tips guide covering all features, linked from both settings and forecast"),
+              el("li", {}, "Redesigned Quick Book and Auto Fill trigger buttons with distinct colors and hover states")
             ])
           ]),
-          el("div", { style: { marginBottom: "15px", borderBottom: "1px solid #45535e", paddingBottom: "10px" } }, [
-            el("b", { style: { color: "#3498db", display: "block", marginBottom: "5px" } }, "Planned Features"),
+          el("div", { style: { marginBottom: "15px", borderBottom: "1px solid var(--apm-border)", paddingBottom: "10px" } }, [
+            el("b", { style: { color: "var(--apm-text-secondary)", display: "block", marginBottom: "5px" } }, "Recent \u2014 Infrastructure & Dataspy"),
             el("ul", { style: { paddingLeft: "20px", margin: "0" } }, [
-              el("li", {}, "Some optional minor features, WO QR codes, booked labor per WO visible in grid view, etc"),
-              el("li", {}, "ColorCode rule pause button"),
+              el("li", {}, "Custom dataspy builder with multi-keyword OR/AND/exclusion filters"),
+              el("li", {}, "Performance & error diagnostics tab"),
+              el("li", {}, "Tab reordering with overflow menu support and tab hiding"),
+              el("li", {}, "ColorCode engine performance improvements with live rule preview"),
+              el("li", {}, "Global configuration export/import"),
+              el("li", {}, "Reduced dark mode page load flash"),
+              el("li", {}, "Service centralization and legacy code cleanup")
+            ])
+          ]),
+          el("div", { style: { marginBottom: "15px", borderBottom: "1px solid var(--apm-border)", paddingBottom: "10px" } }, [
+            el("b", { style: { color: "var(--apm-accent)", display: "block", marginBottom: "5px" } }, "Planned Features"),
+            el("ul", { style: { paddingLeft: "20px", margin: "0" } }, [
+              el("li", {}, "WO QR codes for quick mobile access"),
+              el("li", {}, "ColorCode rule pause/resume toggle"),
               el("li", {}, "Relative date filtering for ColorCode rules"),
               el("li", {}, "Expanded hyperlink support for non-work order records")
             ])
           ]),
           el("div", {}, [
-            el("b", { style: { color: "#3498db", display: "block", marginBottom: "5px" } }, "Planned Research"),
+            el("b", { style: { color: "var(--apm-accent)", display: "block", marginBottom: "5px" } }, "Planned Research"),
             el("ul", { style: { paddingLeft: "20px", margin: "0" } }, [
-              el("li", {}, "More applications to utilize Direct ExtJS modification of the APM Framework, or even direct AJAX server requests like we do with Labor Tally already and partially with Labor Booking, such as:"),
-              el("li", {}, "Possible personalized/custom shift snapshot/report depending on manager/smrt/mrt could be just WOs closed, assigned, multiple employees overview, etc but thats getting pretty advanced and far off I think"),
-              el("li", {}, "Session state snapshot to bring you back exactly where you were before session timeout")
+              el("li", {}, "Broader use of direct ExtJS/AJAX requests beyond Labor Tally and Labor Booking"),
+              el("li", {}, "Personalized shift snapshots and multi-employee overview reports"),
+              el("li", {}, "Session state snapshots to restore your exact position after timeout")
             ])
           ])
         ])
@@ -9390,6 +9728,7 @@
     const panel = createMainPanel();
     const helpOverlay = createHelpOverlay();
     const changelogModal = createChangelogModal();
+    const welcomeOverlay = createWelcomeOverlay();
     const header = createHeader();
     const tabContainer = createTabContainer();
     const autofillFields = buildAutoFillTab();
@@ -9409,6 +9748,7 @@
     document.body.appendChild(panel);
     document.body.appendChild(helpOverlay);
     document.body.appendChild(changelogModal);
+    document.body.appendChild(welcomeOverlay);
     const state = {
       settingsMode: "cols",
       activeTab: "autofill",
@@ -9421,6 +9761,13 @@
       footer
     };
     bindSettingsEvents(state);
+    bindWelcomeEvents();
+    if (!APMStorage.get(WELCOME_SEEN_KEY)) {
+      setTimeout(() => {
+        const overlay = document.getElementById("apm-welcome-overlay");
+        if (overlay) overlay.style.display = "flex";
+      }, 1500);
+    }
   }
   APMApi.register("buildSettingsPanel", buildSettingsPanel);
   function buildAutoFillTab() {
@@ -9437,13 +9784,23 @@
           ])
         ]),
         el("div", { className: "apm-fields-wrapper" }, [
-          // ── Trigger Keywords ──
+          // ── Trigger Keywords / New Record Default ──
           el("div", { className: "apm-section-group", style: { marginBottom: "8px" } }, [
-            el("div", { className: "apm-section-label", style: { color: "var(--apm-warning)" } }, "Auto-Match Keywords"),
-            el("div", { className: "field-row", style: { margin: "0" } }, [
+            el("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "center" } }, [
+              el("div", { id: "apm-c-keyword-label", className: "apm-section-label", style: { color: "var(--apm-warning)", margin: "0" } }, "Auto-Match Keywords"),
+              el("label", { style: { display: "flex", alignItems: "center", gap: "5px", cursor: "pointer" } }, [
+                el("input", { type: "checkbox", id: "apm-c-is-default", style: { cursor: "pointer" } }),
+                el("span", { style: { fontSize: "var(--apm-text-xs)", color: "var(--apm-text-muted)" } }, "New record template")
+              ])
+            ]),
+            el("div", { id: "apm-c-keyword-row", className: "field-row", style: { margin: "0" } }, [
               el("input", { type: "text", id: "apm-c-keyword", className: "field-input apm-field-highlight", title: "Keywords to match WO title \u2014 separate multiple with comma", placeholder: "e.g., pre-sort, repair, jam", style: { fontFamily: "var(--apm-font-mono)", height: "28px", padding: "0 8px" } })
             ]),
-            el("div", { style: { fontSize: "var(--apm-text-xs)", color: "var(--apm-text-muted)", marginTop: "3px" } }, "When a WO title contains these words, this template is suggested automatically.")
+            el("div", { id: "apm-c-wo-title-row", className: "field-row", style: { margin: "0", display: "none" } }, [
+              el("input", { type: "text", id: "apm-c-wo-title", className: "field-input", title: "Title to set on the new work order", placeholder: "e.g., 13 Week PM \u2014 Line 1", style: { height: "28px", padding: "0 8px" } })
+            ]),
+            el("div", { id: "apm-c-keyword-hint", style: { fontSize: "var(--apm-text-xs)", color: "var(--apm-text-muted)", marginTop: "3px" } }, "When a WO title contains these words, this template is suggested automatically."),
+            el("div", { id: "apm-c-wo-title-hint", style: { fontSize: "var(--apm-text-xs)", color: "var(--apm-text-muted)", marginTop: "3px", display: "none" } }, "This template appears on new blank records. The title above will fill the WO description.")
           ]),
           // ── Work Order Fields ──
           el("div", { className: "apm-section-group" }, [
@@ -9569,8 +9926,8 @@
           el("div", { id: "apm-s-tog-cols", className: "apm-ui-settings-btn active" }, "Grid Columns"),
           el("div", { id: "apm-s-tog-tabs", className: "apm-ui-settings-btn inactive" }, "Record Tabs")
         ]),
-        el("div", { id: "apm-s-title", style: { color: "#3498db", fontWeight: "bold", marginBottom: "5px" } }, "Visual Order:"),
-        el("div", { style: { fontSize: "11px", color: "#aaa", marginBottom: "10px" } }, "Drag and drop to reorder. Syncs automatically."),
+        el("div", { id: "apm-s-title", style: { color: "var(--apm-accent)", fontWeight: "bold", marginBottom: "5px" } }, "Visual Order:"),
+        el("div", { style: { fontSize: "11px", color: "var(--apm-text-secondary)", marginBottom: "10px" } }, "Drag and drop to reorder. Syncs automatically."),
         el("div", { id: "apm-s-col-list", className: "apm-ui-settings-list" })
       ]),
       el("div", { className: "apm-tab-action-footer" }, [
@@ -9582,35 +9939,35 @@
   function buildColorCodeTab() {
     return el("div", { id: "apm-colorcode-fields", style: { display: "none", paddingBottom: "5px" }, className: "apm-panel-section" }, [
       el("div", { className: "apm-tab-content-scroll" }, [
-        el("div", { className: "apm-cc-search-box", style: { background: "#22292f", padding: "12px", borderRadius: "6px", border: "1px solid #45535e", marginBottom: "15px" } }, [
+        el("div", { className: "apm-cc-search-box", style: { background: "var(--apm-surface-sunken)", padding: "12px", borderRadius: "6px", border: "1px solid var(--apm-border)", marginBottom: "15px" } }, [
           el("div", { style: { display: "flex", gap: "10px", marginBottom: "12px" } }, [
             el("div", { style: { flex: "1" } }, [
-              el("div", { style: { fontSize: "11px", color: "#95a5a6", marginBottom: "4px", fontWeight: "bold" } }, "Keyword (Search)"),
+              el("div", { style: { fontSize: "11px", color: "var(--apm-text-muted)", marginBottom: "4px", fontWeight: "bold" } }, "Keyword (Search)"),
               el("input", { type: "text", id: "cc-search", className: "field-input", placeholder: "Match multiple keywords separated by, comma,", style: { height: "28px", fontSize: "12px", width: "100%", boxSizing: "border-box" } })
             ]),
             el("div", { style: { width: "50px" } }, [
-              el("div", { style: { fontSize: "11px", color: "#95a5a6", marginBottom: "4px", fontWeight: "bold", textAlign: "center" } }, "Color"),
-              el("input", { type: "color", id: "cc-color", value: "#e74c3c", tabIndex: -1, style: { width: "100%", height: "28px", padding: "0", border: "1px solid #45535e", borderRadius: "4px", cursor: "pointer", background: "none" } })
+              el("div", { style: { fontSize: "11px", color: "var(--apm-text-muted)", marginBottom: "4px", fontWeight: "bold", textAlign: "center" } }, "Color"),
+              el("input", { type: "color", id: "cc-color", value: "#e74c3c", tabIndex: -1, style: { width: "100%", height: "28px", padding: "0", border: "1px solid var(--apm-border)", borderRadius: "4px", cursor: "pointer", background: "none" } })
             ])
           ]),
           el("div", { style: { display: "flex", gap: "10px", alignItems: "flex-end", marginBottom: "15px" } }, [
             el("div", { style: { flex: "1" } }, [
-              el("div", { style: { fontSize: "11px", color: "#95a5a6", marginBottom: "4px", fontWeight: "bold" } }, "Badge Text (Nametag)"),
+              el("div", { style: { fontSize: "11px", color: "var(--apm-text-muted)", marginBottom: "4px", fontWeight: "bold" } }, "Badge Text (Nametag)"),
               el("input", { type: "text", id: "cc-tag", className: "field-input", placeholder: "(Leave blank for no nametag)", style: { height: "28px", fontSize: "12px", width: "100%", boxSizing: "border-box" } })
             ])
           ]),
           el("div", { style: { display: "flex", gap: "8px", width: "100%", marginBottom: "15px" } }, [
-            el("button", { id: "cc-btn-fill", className: "apm-cc-style-btn active", title: "Fill Row Background", style: { flex: "1", height: "28px", display: "flex", alignItems: "center", justifyContent: "center", border: "1px solid #45535e", borderRadius: "4px", background: "#34495e", cursor: "pointer", color: "white", transition: "all 0.2s", fontSize: "11px", fontWeight: "bold" } }, "Fill Row"),
-            el("button", { id: "cc-btn-tag", className: "apm-cc-style-btn active", title: "Show Nametag", style: { flex: "1", height: "28px", display: "flex", alignItems: "center", justifyContent: "center", border: "1px solid #45535e", borderRadius: "4px", background: "#34495e", cursor: "pointer", color: "white", transition: "all 0.2s", fontSize: "11px", fontWeight: "bold" } }, "Name Tag")
+            el("button", { id: "cc-btn-fill", className: "apm-cc-style-btn active", title: "Fill Row Background", style: { flex: "1", height: "28px", display: "flex", alignItems: "center", justifyContent: "center", border: "1px solid var(--apm-border)", borderRadius: "4px", background: "var(--apm-surface-raised)", cursor: "pointer", color: "white", transition: "all 0.2s", fontSize: "11px", fontWeight: "bold" } }, "Fill Row"),
+            el("button", { id: "cc-btn-tag", className: "apm-cc-style-btn active", title: "Show Nametag", style: { flex: "1", height: "28px", display: "flex", alignItems: "center", justifyContent: "center", border: "1px solid var(--apm-border)", borderRadius: "4px", background: "var(--apm-surface-raised)", cursor: "pointer", color: "white", transition: "all 0.2s", fontSize: "11px", fontWeight: "bold" } }, "Name Tag")
           ]),
           el("div", { style: { display: "flex", gap: "8px", flex: "1", justifyContent: "space-between", alignItems: "center" } }, [
-            el("div", { style: { fontSize: "11px", color: "#1abc9c", fontStyle: "italic" } }, "\u2713 Live preview on grid"),
+            el("div", { style: { fontSize: "11px", color: "var(--apm-success)", fontStyle: "italic" } }, "\u2713 Live preview on grid"),
             el("div", { style: { display: "flex", gap: "8px" } }, [
-              el("button", { id: "cc-add-btn", style: { flex: "1", maxWidth: "120px", background: "#3498db", color: "white", border: "none", borderRadius: "4px", height: "28px", cursor: "pointer", fontWeight: "bold", fontSize: "12px", transition: "background 0.2s", display: "flex", alignItems: "center", justifyContent: "center", gap: "6px" } }, [
+              el("button", { id: "cc-add-btn", style: { flex: "1", maxWidth: "120px", background: "var(--apm-accent)", color: "white", border: "none", borderRadius: "4px", height: "28px", cursor: "pointer", fontWeight: "bold", fontSize: "12px", transition: "background 0.2s", display: "flex", alignItems: "center", justifyContent: "center", gap: "6px" } }, [
                 el("span", {}, "\u{1F4BE}"),
                 el("span", { id: "cc-add-btn-text" }, "Save Rule")
               ]),
-              el("button", { id: "cc-cancel-btn", style: { display: "inline-block", background: "#7f8c8d", color: "white", border: "none", borderRadius: "4px", height: "28px", padding: "0 12px", cursor: "pointer", fontWeight: "bold", fontSize: "12px", marginLeft: "8px" } }, "Cancel")
+              el("button", { id: "cc-cancel-btn", style: { display: "inline-block", background: "var(--apm-text-disabled)", color: "white", border: "none", borderRadius: "4px", height: "28px", padding: "0 12px", cursor: "pointer", fontWeight: "bold", fontSize: "12px", marginLeft: "8px" } }, "Cancel")
             ])
           ])
         ]),
@@ -9809,32 +10166,32 @@
           el("button", { id: "cc-export-download-btn", className: "cc-footer-btn", style: { flex: "1", minWidth: "0", overflow: "hidden", textOverflow: "ellipsis" }, title: "Download rules as JSON file" }, "\u{1F4BE} Download (.JSON)"),
           el("button", { id: "cc-import-btn", className: "cc-footer-btn", style: { flex: "1", minWidth: "0", overflow: "hidden", textOverflow: "ellipsis" }, title: "Toggle import panel" }, "\u{1F4E5} Import Rules")
         ]),
-        el("div", { id: "cc-import-panel", style: { display: "none", marginTop: "8px", padding: "10px", border: "1px solid #45535e", borderRadius: "4px", background: "rgba(52, 73, 94, 0.3)" } }, [
+        el("div", { id: "cc-import-panel", style: { display: "none", marginTop: "8px", padding: "10px", border: "1px solid var(--apm-border)", borderRadius: "4px", background: "rgba(52, 73, 94, 0.3)" } }, [
           el("div", { style: { marginBottom: "8px" } }, [
-            el("div", { style: { fontSize: "11px", color: "#95a5a6", marginBottom: "4px", fontWeight: "bold" } }, "Import from File or Paste:"),
+            el("div", { style: { fontSize: "11px", color: "var(--apm-text-muted)", marginBottom: "4px", fontWeight: "bold" } }, "Import from File or Paste:"),
             el("input", { type: "file", id: "cc-import-file-input", style: { display: "none" }, accept: ".json,application/json" }),
             el("button", { id: "cc-import-file-btn", className: "cc-footer-btn", style: { width: "100%", marginBottom: "6px" } }, "\u{1F4C1} Select JSON File")
           ]),
           el("div", { style: { display: "flex", alignItems: "center", gap: "6px", marginBottom: "6px" } }, [
-            el("div", { style: { flex: "1", height: "1px", background: "#45535e" } }),
-            el("span", { style: { color: "#7f8c8d", fontSize: "10px" } }, "OR"),
-            el("div", { style: { flex: "1", height: "1px", background: "#45535e" } })
+            el("div", { style: { flex: "1", height: "1px", background: "var(--apm-border)" } }),
+            el("span", { style: { color: "var(--apm-text-disabled)", fontSize: "10px" } }, "OR"),
+            el("div", { style: { flex: "1", height: "1px", background: "var(--apm-border)" } })
           ]),
           el("div", { style: { marginBottom: "6px" } }, [
-            el("textarea", { id: "cc-import-textarea", style: { width: "100%", height: "80px", padding: "6px", fontSize: "11px", fontFamily: "monospace", border: "1px solid #45535e", borderRadius: "4px", background: "#1a2332", color: "#ecf0f1", resize: "vertical", boxSizing: "border-box" }, placeholder: "Paste Base64 (APM:...) or JSON array here\\nCtrl+Enter to import" })
+            el("textarea", { id: "cc-import-textarea", style: { width: "100%", height: "80px", padding: "6px", fontSize: "11px", fontFamily: "monospace", border: "1px solid var(--apm-border)", borderRadius: "4px", background: "var(--apm-surface-sunken)", color: "var(--apm-text-bright)", resize: "vertical", boxSizing: "border-box" }, placeholder: "Paste Base64 (APM:...) or JSON array here\\nCtrl+Enter to import" })
           ]),
-          el("div", { style: { fontSize: "10px", color: "#7f8c8d", marginTop: "4px" } }, "Press Ctrl+Enter to import pasted data")
+          el("div", { style: { fontSize: "10px", color: "var(--apm-text-disabled)", marginTop: "4px" } }, "Press Ctrl+Enter to import pasted data")
         ])
       ]),
       el("div", { id: "apm-settings-update-container", style: { display: "none", marginBottom: "8px" } }, [
         el("a", { id: "apm-footer-update-link", href: UPDATE_URL, target: "_blank", className: "apm-footer-update-btn" }, "\u2728 Update Available")
       ]),
       el("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "center", width: "100%", padding: "0 8px" } }, [
-        el("a", { href: "https://github.com/jaker788-create/APM-Master/issues", target: "_blank", style: { flex: "1", color: "#3498db", fontSize: "11px", textDecoration: "none", fontWeight: "bold", textAlign: "left" } }, "\u{1F41B} Bug Report"),
+        el("a", { href: "https://github.com/jaker788-create/APM-Master/issues", target: "_blank", style: { flex: "1", color: "var(--apm-accent)", fontSize: "11px", textDecoration: "none", fontWeight: "bold", textAlign: "left" } }, "\u{1F41B} Bug Report"),
         el("div", { style: { flex: "1", display: "flex", justifyContent: "center" } }, [
           el("button", { id: "apm-c-btn-help", className: "apm-footer-help-btn-box", style: { padding: "6px 14px", fontSize: "12px", minWidth: "80px" } }, "\u2139\uFE0F Help & Tips")
         ]),
-        el("span", { id: "apm-v-changelog", style: { flex: "1", color: "#1abc9c", fontSize: "11px", textAlign: "right", paddingRight: "5px", cursor: "pointer", fontWeight: "bold" } }, `v${CURRENT_VERSION}`)
+        el("span", { id: "apm-v-changelog", style: { flex: "1", color: "var(--apm-success)", fontSize: "11px", textAlign: "right", paddingRight: "5px", cursor: "pointer", fontWeight: "bold", textDecoration: "underline", textDecorationStyle: "dotted", textUnderlineOffset: "3px" } }, `v${CURRENT_VERSION} \u2014 What's New`)
       ])
     ]);
   }
@@ -9867,7 +10224,7 @@
       link.click();
       document.body.removeChild(link);
       URL.revokeObjectURL(url2);
-      showToast("Settings downloaded!", "#1abc9c");
+      showToast("Settings downloaded!", "var(--apm-success)");
     }
     const resetTabs = () => {
       [tabAutofill, tabSettings, tabColorcode, tabGeneral, tabDiagnostics].forEach((t) => {
@@ -9893,25 +10250,25 @@
       const screenLabel = detectScreenFunction() || "Unknown";
       let hintEl = document.getElementById("apm-s-width-hint");
       if (state.settingsMode === "cols") {
-        togCols.style.background = "#3498db";
-        togCols.style.color = "#fff";
+        togCols.style.background = "var(--apm-accent)";
+        togCols.style.color = "var(--apm-text-primary)";
         togTabs.style.background = "transparent";
-        togTabs.style.color = "#7f8c8d";
+        togTabs.style.color = "var(--apm-text-disabled)";
         if (resetBtn) resetBtn.style.display = "none";
         if (titleEl) titleEl.textContent = `Column Order (${screenLabel}):`;
         if (!hintEl && titleEl) {
           hintEl = document.createElement("div");
           hintEl.id = "apm-s-width-hint";
-          hintEl.style.cssText = "font-size:11px;color:#999;margin:2px 0 6px 0;";
+          hintEl.style.cssText = "font-size:11px;color:var(--apm-text-muted);margin:2px 0 6px 0;";
           hintEl.textContent = "Tip: Column widths are saved automatically when you resize them in the grid.";
           titleEl.parentNode.insertBefore(hintEl, titleEl.nextSibling);
         }
         if (hintEl) hintEl.style.display = "block";
       } else {
-        togTabs.style.background = "#3498db";
-        togTabs.style.color = "#fff";
+        togTabs.style.background = "var(--apm-accent)";
+        togTabs.style.color = "var(--apm-text-primary)";
         togCols.style.background = "transparent";
-        togCols.style.color = "#7f8c8d";
+        togCols.style.color = "var(--apm-text-disabled)";
         if (resetBtn) resetBtn.style.display = "block";
         if (titleEl) titleEl.textContent = `Tab Layout (${screenLabel}):`;
         if (hintEl) hintEl.style.display = "none";
@@ -9951,10 +10308,6 @@
       }, true);
     }
     function bindCloseButton() {
-      document.getElementById("apm-c-btn-close").onclick = () => {
-        cleanupColorCodeOnPanelClose();
-        panel.style.display = "none";
-      };
       watchSettingsPanelClose();
     }
     function bindGeneralSettings() {
@@ -10053,7 +10406,7 @@
               downloadSettings(jsonData);
             } catch (e) {
               APMLogger.error("Settings", "Error exporting settings:", e);
-              showToast("Error exporting settings", "#e74c3c");
+              showToast("Error exporting settings", "var(--apm-danger)");
             }
           };
         }
@@ -10065,20 +10418,20 @@
               const b64Data = encodeSettingsAsBase64(jsonData);
               if (navigator.clipboard && navigator.clipboard.writeText) {
                 navigator.clipboard.writeText(b64Data).then(() => {
-                  showToast("Base64 backup copied to clipboard!", "#1abc9c");
+                  showToast("Base64 backup copied to clipboard!", "var(--apm-success)");
                   copyB64Btn.textContent = "\u2713 Copied!";
                   setTimeout(() => {
                     if (copyB64Btn) copyB64Btn.textContent = "\u{1F4CB} Copy To Clipboard (Base64)";
                   }, 2e3);
                 }).catch(() => {
-                  showToast("Error copying to clipboard", "#e74c3c");
+                  showToast("Error copying to clipboard", "var(--apm-danger)");
                 });
               } else {
-                showToast("Clipboard not available in this browser", "#e74c3c");
+                showToast("Clipboard not available in this browser", "var(--apm-danger)");
               }
             } catch (e) {
               APMLogger.error("Settings", "Error encoding settings:", e);
-              showToast("Error preparing safe format", "#e74c3c");
+              showToast("Error preparing safe format", "var(--apm-danger)");
             }
           };
         }
@@ -10092,27 +10445,27 @@
               if (result.ok) {
                 const formatStr = result.format === "base64" ? "safe format" : "JSON";
                 const msg = `Settings imported from schema v${result.migratedFrom} (${formatStr})!`;
-                showToast(msg, "#1abc9c");
+                showToast(msg, "var(--apm-success)");
                 APMLogger.info("Settings", msg);
                 importPasteInput.value = "";
-                importPasteInput.style.borderColor = "#45535e";
+                importPasteInput.style.borderColor = "var(--apm-border)";
                 setTimeout(() => {
                   location.reload();
                 }, 1500);
               } else {
                 const errorMsg = result.errors.length > 0 ? result.errors.slice(0, 3).join("; ") : "Import failed";
-                showToast(errorMsg, "#e74c3c");
+                showToast(errorMsg, "var(--apm-danger)");
                 APMLogger.error("Settings", "Import errors:", result.errors);
               }
             } catch (e) {
               APMLogger.error("Settings", "Error during import:", e);
-              showToast("Error processing import data", "#e74c3c");
+              showToast("Error processing import data", "var(--apm-danger)");
             }
           };
           const performPasteImport = () => {
             const content = importPasteInput.value.trim();
             if (!content) {
-              showToast("Please paste backup data first", "#f39c12");
+              showToast("Please paste backup data first", "var(--apm-warning)");
               return;
             }
             processImport(content);
@@ -10135,7 +10488,7 @@
                 processImport(content);
               } catch (e2) {
                 APMLogger.error("Settings", "Error importing settings:", e2);
-                showToast("Error reading import file", "#e74c3c");
+                showToast("Error reading import file", "var(--apm-danger)");
               }
             };
             reader.readAsText(file);
@@ -10149,9 +10502,9 @@
           });
           importPasteInput.addEventListener("input", () => {
             if (importPasteInput.value.trim()) {
-              importPasteInput.style.borderColor = "#3498db";
+              importPasteInput.style.borderColor = "var(--apm-accent)";
             } else {
-              importPasteInput.style.borderColor = "#45535e";
+              importPasteInput.style.borderColor = "var(--apm-border)";
             }
           });
         }
@@ -10179,11 +10532,11 @@
               const csMeta = document.querySelector('meta[name="color-scheme"]');
               if (csMeta) csMeta.remove();
               APMLogger.info("Settings", `Wiped ${count} storage entries + ${cookieNames.length} cookies.`);
-              showToast(`All data wiped (${count} entries). Reloading...`, "#e74c3c");
+              showToast(`All data wiped (${count} entries). Reloading...`, "var(--apm-danger)");
               setTimeout(() => location.reload(), 1500);
             } catch (e) {
               APMLogger.error("Settings", "Error wiping data:", e);
-              showToast("Error wiping data \u2014 check console", "#e74c3c");
+              showToast("Error wiping data \u2014 check console", "var(--apm-danger)");
             }
           };
         }
@@ -10255,7 +10608,7 @@
         generalFields.style.display = "none";
         diagnosticsFields.style.display = "flex";
         refreshDiagnosticsUI();
-        APMScheduler.registerTask("diag-ui-poll", 2e3, refreshDiagnosticsUI);
+        APMScheduler.registerTask("diag-ui-poll", 5e3, refreshDiagnosticsUI);
       };
     }
     function bindDiagnosticsTab() {
@@ -10264,8 +10617,8 @@
         copyBtn.onclick = () => {
           const data = JSON.stringify(Diagnostics.toJSON(), null, 2);
           navigator.clipboard.writeText(data).then(() => {
-            showToast("Report copied to clipboard!", "#1abc9c");
-          });
+            showToast("Report copied to clipboard!", "var(--apm-success)");
+          }).catch(() => showToast("Failed to copy to clipboard", "var(--apm-danger)"));
         };
       }
       const downloadBtn = document.getElementById("cc-export-download-btn");
@@ -10283,9 +10636,9 @@
             link.download = `apm-colorcode-rules-${dateStr}.json`;
             link.click();
             URL.revokeObjectURL(url2);
-            showToast(`Downloaded ${rules.length} rules`, "#27ae60");
+            showToast(`Downloaded ${rules.length} rules`, "var(--apm-success-bright)");
           } catch (e) {
-            showToast("Download error: " + e.message, "#e74c3c");
+            showToast("Download error: " + e.message, "var(--apm-danger)");
           }
         };
       }
@@ -10316,6 +10669,8 @@
       };
     }
     function bindPresetActions() {
+      const defaultCb = document.getElementById("apm-c-is-default");
+      if (defaultCb) defaultCb.addEventListener("change", syncDefaultToggle);
       selectEl.addEventListener("change", () => {
         const presets = getPresets();
         const selected = selectEl.value;
@@ -10326,9 +10681,9 @@
       document.getElementById("apm-c-btn-save").onclick = () => {
         if (selectEl.value) {
           updatePresetAutofill(selectEl.value, getCurrentFormData());
-          showToast(`Template "${selectEl.value}" Updated!`, "#2ecc71");
+          showToast(`Template "${selectEl.value}" Updated!`, "var(--apm-success-bright)");
         } else {
-          showToast("No template selected to update.", "#e74c3c");
+          showToast("No template selected to update.", "var(--apm-danger)");
         }
       };
       document.getElementById("apm-c-btn-new").onclick = () => {
@@ -10352,13 +10707,15 @@
             start: "",
             end: "",
             close: "",
-            laborHours: ""
+            laborHours: "",
+            isDefault: false,
+            woTitle: ""
           };
           updatePresetAutofill(safeName, emptyData);
           renderPresetOptions(selectEl);
           selectEl.value = safeName;
           applyPresetData(emptyData);
-          showToast(`Template "${safeName}" Created!`, "#3498db");
+          showToast(`Template "${safeName}" Created!`, "var(--apm-accent)");
         }
       };
       document.getElementById("apm-c-btn-del").onclick = () => {
@@ -10366,7 +10723,7 @@
           const deletedName = selectEl.value;
           updatePresetAutofill(deletedName, null);
           renderPresetOptions(selectEl);
-          showToast(`Template "${deletedName}" Deleted.`, "#e74c3c");
+          showToast(`Template "${deletedName}" Deleted.`, "var(--apm-danger)");
         }
       };
     }
@@ -10387,17 +10744,17 @@
             }).filter((e) => e.index);
             const columnOrders = { ...presets.config.columnOrders || {}, [funcName]: orderArray };
             updatePresetConfig({ columnOrders });
-            showToast(`Grid Column order saved for ${funcName}!`, "#2ecc71");
+            showToast(`Grid Column order saved for ${funcName}!`, "var(--apm-success-bright)");
           } else {
             const orderArray = visibleItems.map((el2) => el2.dataset.index).filter(Boolean);
             const tabOrders = { ...presets.config.tabOrders || {}, [funcName]: orderArray };
             updatePresetConfig({ tabOrders });
             const allHidden = presets.config.hiddenTabs || {};
             const hiddenCount = Array.isArray(allHidden) ? allHidden.length : (allHidden[funcName] || []).length;
-            showToast(`Tab layout saved for ${funcName}! (${hiddenCount} hidden)`, "#2ecc71");
+            showToast(`Tab layout saved for ${funcName}! (${hiddenCount} hidden)`, "var(--apm-success-bright)");
           }
         } else {
-          showToast("No items to save.", "#e74c3c");
+          showToast("No items to save.", "var(--apm-danger)");
         }
       };
       document.getElementById("apm-s-btn-reset").onclick = () => {
@@ -10463,13 +10820,13 @@
             } catch (e) {
             }
           }
-          showToast(`Tab layout reset for ${funcName}!`, "#3498db");
+          showToast(`Tab layout reset for ${funcName}!`, "var(--apm-accent)");
           performAutoFetch();
         } else {
           const columnOrders = { ...presets.config.columnOrders || {} };
           delete columnOrders[funcName];
           updatePresetConfig({ columnOrders });
-          showToast(`Column layout reset for ${funcName}!`, "#3498db");
+          showToast(`Column layout reset for ${funcName}!`, "var(--apm-accent)");
           performAutoFetch();
         }
       };
@@ -10510,13 +10867,13 @@
       const totalBoot = data.bootTimings.total || 1;
       const getPerfColor = (ms, type = "boot") => {
         if (type === "boot") {
-          if (ms < 500) return "#2ecc71";
-          if (ms < 1500) return "#f1c40f";
-          return "#e74c3c";
+          if (ms < 500) return "var(--apm-success-bright)";
+          if (ms < 1500) return "var(--apm-warning)";
+          return "var(--apm-danger)";
         }
-        if (ms < 25) return "#2ecc71";
-        if (ms < 100) return "#f1c40f";
-        return "#e74c3c";
+        if (ms < 25) return "var(--apm-success-bright)";
+        if (ms < 100) return "var(--apm-warning)";
+        return "var(--apm-danger)";
       };
       const renderBootBar = (label, ms) => {
         const ratio = ms / totalBoot * 100;
@@ -10525,7 +10882,7 @@
         return el("div", { style: { marginBottom: "8px" } }, [
           el("div", { style: { display: "flex", justifyContent: "space-between", fontSize: "var(--apm-text-xs)", color: "var(--apm-text-muted)", marginBottom: "2px" } }, [
             el("span", {}, label),
-            el("span", { style: { color: isTotal ? "#f1c40f" : "var(--apm-text-bright)" } }, `T+ ${ms}ms`)
+            el("span", { style: { color: isTotal ? "var(--apm-warning)" : "var(--apm-text-bright)" } }, `T+ ${ms}ms`)
           ]),
           el("div", { style: { height: "4px", background: "rgba(255,255,255,0.05)", borderRadius: "2px", overflow: "hidden" } }, [
             el("div", { style: { height: "100%", width: `${Math.max(2, Math.min(100, ratio))}%`, background: color, transition: "width 0.5s ease" } })
@@ -10553,8 +10910,8 @@
       const renderEngineStat = (label, stat, history) => {
         let pill = "\u{1F7E2}";
         const color = getPerfColor(stat.avg, "boot");
-        if (color === "#f1c40f") pill = "\u{1F7E1}";
-        if (color === "#e74c3c") pill = "\u{1F534}";
+        if (color === "var(--apm-warning)") pill = "\u{1F7E1}";
+        if (color === "var(--apm-danger)") pill = "\u{1F534}";
         return el("div", { style: { background: "var(--apm-surface-raised)", padding: "8px", borderRadius: "var(--apm-radius-sm)", marginBottom: "8px" } }, [
           el("div", { style: { display: "flex", justifyContent: "space-between", marginBottom: "4px" } }, [
             el("span", { style: { color: "var(--apm-text-bright)", fontSize: "var(--apm-text-sm)", fontWeight: "600" } }, `${pill} ${label}`),
@@ -10601,6 +10958,19 @@
     if (state.activeTab === "autofill") tabAutofill.onclick();
     else tabSettings.onclick();
   }
+  function syncDefaultToggle() {
+    const checked = document.getElementById("apm-c-is-default")?.checked;
+    const kwRow = document.getElementById("apm-c-keyword-row");
+    const kwHint = document.getElementById("apm-c-keyword-hint");
+    const kwLabel = document.getElementById("apm-c-keyword-label");
+    const titleRow = document.getElementById("apm-c-wo-title-row");
+    const titleHint = document.getElementById("apm-c-wo-title-hint");
+    if (kwRow) kwRow.style.display = checked ? "none" : "";
+    if (kwHint) kwHint.style.display = checked ? "none" : "";
+    if (kwLabel) kwLabel.textContent = checked ? "WO Description" : "Auto-Match Keywords";
+    if (titleRow) titleRow.style.display = checked ? "" : "none";
+    if (titleHint) titleHint.style.display = checked ? "" : "none";
+  }
   function applyPresetData(data) {
     if (!data) data = {};
     const fields = [
@@ -10629,6 +10999,11 @@
         el2.value = data[key] || (f === "loto-mode" ? "none" : "");
       }
     });
+    const defaultCb = document.getElementById("apm-c-is-default");
+    if (defaultCb) defaultCb.checked = !!data.isDefault;
+    const woTitleEl = document.getElementById("apm-c-wo-title");
+    if (woTitleEl) woTitleEl.value = data.woTitle || "";
+    syncDefaultToggle();
   }
   function renderPresetOptions(selectEl) {
     const presets = getPresets();
@@ -10651,7 +11026,7 @@
     colListContainer.innerHTML = "";
     if (itemsArray.length === 0) {
       const emptyDiv = document.createElement("div");
-      emptyDiv.style.cssText = "color:#7f8c8d; text-align:center; padding:10px;";
+      emptyDiv.style.cssText = "color:var(--apm-text-disabled); text-align:center; padding:10px;";
       emptyDiv.textContent = emptyMsg;
       colListContainer.appendChild(emptyDiv);
       return;
@@ -10685,21 +11060,21 @@
         item.draggable = false;
         item.dataset.hidden = "true";
         item.style.cursor = "default";
-        item.style.borderLeftColor = "#e74c3c";
+        item.style.borderLeftColor = "var(--apm-danger)";
         const badges = [];
         if (c.isOverflow) badges.push(el("span", { className: "apm-overflow-badge", title: 'This tab is in the "More" overflow menu' }, "More Menu"));
-        if (c.isPluginMenu) badges.push(el("span", { className: "apm-overflow-badge", style: { background: "#9b59b6" }, title: "This tab is managed by the EAM Menu plugin" }, "Framework Menu"));
-        if (c.systemHidden && !c.isPluginMenu) badges.push(el("span", { className: "apm-overflow-badge", style: { background: "#3498db" }, title: "This tab is hidden by EAM by default" }, "Hidden by EAM"));
+        if (c.isPluginMenu) badges.push(el("span", { className: "apm-overflow-badge", style: { background: "var(--apm-purple)" }, title: "This tab is managed by the EAM Menu plugin" }, "Framework Menu"));
+        if (c.systemHidden && !c.isPluginMenu) badges.push(el("span", { className: "apm-overflow-badge", style: { background: "var(--apm-accent)" }, title: "This tab is hidden by EAM by default" }, "Hidden by EAM"));
         const badgeHtml = badges.map((b) => b.outerHTML).join("");
-        item.innerHTML = `<span style="opacity:0.5; flex:1; display:flex; align-items:center;"><span style="text-decoration: line-through;"><b style="color:#7f8c8d;">\u2630</b> &nbsp; ${escapeHtml(c.text)}</span>${badgeHtml}</span> <button class="apm-tab-restore-btn" data-tab-name="${c.index}" style="background:#2ecc71; color:white; border:none; border-radius:4px; padding:4px 10px; cursor:pointer; font-size:14px; font-weight:bold; box-shadow: 0 2px 4px rgba(0,0,0,0.2); transition: transform 0.1s; position:relative; z-index:10;" title="Restore tab">\uFF0B</button>`;
+        item.innerHTML = `<span style="opacity:0.5; flex:1; display:flex; align-items:center;"><span style="text-decoration: line-through;"><b style="color:var(--apm-text-disabled);">\u2630</b> &nbsp; ${escapeHtml(c.text)}</span>${badgeHtml}</span> <button class="apm-tab-restore-btn" data-tab-name="${escapeHtml(c.index)}" style="background:var(--apm-success-bright); color:white; border:none; border-radius:4px; padding:4px 10px; cursor:pointer; font-size:14px; font-weight:bold; box-shadow: 0 2px 4px rgba(0,0,0,0.2); transition: transform 0.1s; position:relative; z-index:10;" title="Restore tab">\uFF0B</button>`;
       } else {
         item.draggable = true;
-        const actionBtn = isTabsMode ? `<button class="apm-tab-hide-btn" data-tab-name="${c.index}" style="background:transparent; color:#e74c3c; border:none; border-radius:4px; padding:2px 6px; cursor:pointer; font-size:13px; font-weight:bold;" title="Hide tab">\u2716</button>` : `<span style="color:#7f8c8d; font-size:10px;">[${c.index}]</span>`;
+        const actionBtn = isTabsMode ? `<button class="apm-tab-hide-btn" data-tab-name="${escapeHtml(c.index)}" style="background:transparent; color:var(--apm-danger); border:none; border-radius:4px; padding:2px 6px; cursor:pointer; font-size:13px; font-weight:bold;" title="Hide tab">\u2716</button>` : `<span style="color:var(--apm-text-disabled); font-size:10px;">[${c.index}]</span>`;
         const badges = [];
         if (isTabsMode && c.isOverflow) badges.push(el("span", { className: "apm-overflow-badge", title: 'This tab is in the "More" overflow menu' }, "More Menu"));
-        if (isTabsMode && c.isPluginMenu) badges.push(el("span", { className: "apm-overflow-badge", style: { background: "#9b59b6" }, title: "This tab is managed by the EAM Menu plugin" }, "Framework Menu"));
+        if (isTabsMode && c.isPluginMenu) badges.push(el("span", { className: "apm-overflow-badge", style: { background: "var(--apm-purple)" }, title: "This tab is managed by the EAM Menu plugin" }, "Framework Menu"));
         const badgeHtml = badges.map((b) => b.outerHTML).join("");
-        item.innerHTML = `<span><span><b style="color:#3498db;">\u2630</b> &nbsp; ${escapeHtml(c.text)}</span>${badgeHtml}</span> ${actionBtn}`;
+        item.innerHTML = `<span><span><b style="color:var(--apm-accent);">\u2630</b> &nbsp; ${escapeHtml(c.text)}</span>${badgeHtml}</span> ${actionBtn}`;
         item.ondragstart = (e) => {
           e.dataTransfer.setData("text/plain", "");
           item.classList.add("dragging");
@@ -10715,7 +11090,7 @@
     visibleItems.forEach((c) => colListContainer.appendChild(createDragItem(c, false)));
     if (isTabsMode && hiddenItems.length > 0) {
       const divider = document.createElement("div");
-      divider.style.cssText = "text-align:center; color:#7f8c8d; font-size:11px; padding:6px 0; margin:4px 0; border-top:1px dashed #4a5a6a; user-select:none;";
+      divider.style.cssText = "text-align:center; color:var(--apm-text-disabled); font-size:11px; padding:6px 0; margin:4px 0; border-top:1px dashed var(--apm-border-strong); user-select:none;";
       divider.textContent = "\u2500\u2500 Hidden \u2500\u2500";
       colListContainer.appendChild(divider);
       hiddenItems.forEach((c) => colListContainer.appendChild(createDragItem(c, true)));
@@ -10797,7 +11172,9 @@
       start: document.getElementById("apm-c-start").value,
       end: document.getElementById("apm-c-end").value,
       close: document.getElementById("apm-c-close").value,
-      laborHours: document.getElementById("apm-c-labor-hours").value
+      laborHours: document.getElementById("apm-c-labor-hours").value,
+      isDefault: document.getElementById("apm-c-is-default")?.checked || false,
+      woTitle: document.getElementById("apm-c-wo-title")?.value || ""
     };
   }
 
@@ -10831,7 +11208,7 @@
           const btnBottom = e.detail.bottom;
           const btnLeft = e.detail.left;
           const btnWidth = e.detail.width;
-          const panelWidth = 460;
+          const panelWidth = 500;
           const bottomMargin = 20;
           const top = (btnBottom + 6) / zf;
           let targetLeft = (btnLeft + btnWidth / 2 - panelWidth * zf / 2) / zf;
@@ -10970,7 +11347,6 @@
               ])
             ]).outerHTML
           });
-          UIManager.registerPanel("apm-settings-panel", ["#apm-settings-ext-btn"]);
         } catch (e) {
           APMLogger.error("Toolbar", "Native Button Injection Error:", e);
         }
@@ -11287,6 +11663,9 @@
         await handleEamPopups(activeWin);
         await waitForAjax(activeWin);
         await delay(150);
+      }
+      if (data.woTitle) {
+        await setEamLovFieldDirect(activeExt, mainForm, "description", data.woTitle);
       }
       if (data.type) {
         showToast("Setting Work Order Type...", "#f1c40f", true);
@@ -11627,7 +12006,48 @@
     }
     return { tab: detectedTab || "UNKNOWN", activity: null, win: ctxWin, tabPanel };
   }
-  async function executeAutoFillFlow(fallbackTitle) {
+  function showDefaultProfilePicker(profiles) {
+    const existing = document.getElementById("apm-autofill-picker");
+    if (existing) existing.remove();
+    const overlay = document.createElement("div");
+    overlay.id = "apm-autofill-picker";
+    overlay.style.cssText = "position:fixed;inset:0;z-index:1000001;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.4);";
+    const menu = document.createElement("div");
+    menu.className = "apm-ui-panel";
+    menu.style.cssText = "background:var(--apm-surface-0);border:1px solid var(--apm-border-strong);border-radius:var(--apm-radius-lg);padding:12px;min-width:220px;max-width:320px;box-shadow:var(--apm-shadow);";
+    const title = document.createElement("div");
+    title.textContent = "Select Template";
+    title.style.cssText = "font-size:var(--apm-text-md);font-weight:600;color:var(--apm-accent);margin-bottom:10px;";
+    menu.appendChild(title);
+    profiles.forEach((prof) => {
+      const btn = document.createElement("button");
+      btn.textContent = prof.name + (prof.woTitle ? ` \u2014 ${prof.woTitle}` : "");
+      btn.style.cssText = "display:block;width:100%;padding:8px 12px;margin-bottom:4px;background:var(--apm-surface-raised);border:1px solid var(--apm-border);border-radius:var(--apm-radius-sm);color:var(--apm-text-primary);cursor:pointer;font-size:var(--apm-text-sm);text-align:left;transition:all 0.15s;";
+      btn.onmouseenter = () => {
+        btn.style.borderColor = "var(--apm-accent)";
+        btn.style.background = "var(--apm-accent-subtle)";
+      };
+      btn.onmouseleave = () => {
+        btn.style.borderColor = "var(--apm-border)";
+        btn.style.background = "var(--apm-surface-raised)";
+      };
+      btn.onclick = () => {
+        overlay.remove();
+        executeAutoFillFlow("", prof);
+      };
+      menu.appendChild(btn);
+    });
+    overlay.onclick = (e) => {
+      if (e.target === overlay) overlay.remove();
+    };
+    overlay.addEventListener("keydown", (e) => {
+      if (e.key === "Escape") overlay.remove();
+    });
+    overlay.appendChild(menu);
+    document.body.appendChild(overlay);
+    overlay.focus();
+  }
+  async function executeAutoFillFlow(fallbackTitle, preselectedProfile) {
     if (getIsAutoFillRunning()) return;
     setIsAutoFillRunning(true);
     try {
@@ -11707,21 +12127,35 @@
       if (!activeTitle && fallbackTitle) {
         activeTitle = fallbackTitle;
       }
-      if (!activeTitle) {
+      const titleLower = activeTitle.toLowerCase();
+      let matchedData = preselectedProfile || null;
+      if (!matchedData && !activeTitle && getDefaultProfiles().length === 0) {
         showToast("Error: Could not read WO Title.", "#e74c3c");
         setIsAutoFillRunning(false);
         return;
       }
-      const titleLower = activeTitle.toLowerCase();
-      let matchedData = null;
       const presets = getPresets();
-      for (const key in presets.autofill) {
-        const kwString = presets.autofill[key].keyword;
-        if (!kwString) continue;
-        const keywords = kwString.split(",").map((k) => k.trim().toLowerCase()).filter((k) => k.length > 0);
-        if (keywords.some((k) => titleLower.includes(k))) {
-          matchedData = presets.autofill[key];
-          break;
+      if (!matchedData) {
+        for (const key in presets.autofill) {
+          const kwString = presets.autofill[key].keyword;
+          if (!kwString) continue;
+          const keywords = kwString.split(",").map((k) => k.trim().toLowerCase()).filter((k) => k.length > 0);
+          if (keywords.some((k) => titleLower.includes(k))) {
+            matchedData = presets.autofill[key];
+            break;
+          }
+        }
+      }
+      if (!matchedData && !titleLower) {
+        const defaults = getDefaultProfiles();
+        if (defaults.length === 1) {
+          matchedData = defaults[0];
+          APMLogger.info("AutoFill", `Using default profile "${defaults[0].name}" for blank record`);
+        } else if (defaults.length > 1) {
+          APMLogger.info("AutoFill", `${defaults.length} default profiles \u2014 showing picker`);
+          setIsAutoFillRunning(false);
+          showDefaultProfilePicker(defaults);
+          return;
         }
       }
       if (!matchedData) {
@@ -11730,9 +12164,10 @@
         setIsAutoFillRunning(false);
         return;
       }
-      showToast(`Auto-Filling Template: ${matchedData.keyword}`, "#f1c40f", true);
+      showToast(`Auto-Filling Template: ${matchedData.keyword || matchedData.woTitle || matchedData.name}`, "#f1c40f", true);
       const needsRecordFill = !!(matchedData.org || matchedData.type || matchedData.eq || matchedData.exec || matchedData.safety || matchedData.close || matchedData.prob || matchedData.fail || matchedData.cause || matchedData.assign || matchedData.status || matchedData.start || matchedData.end || matchedData.laborHours && parseFloat(matchedData.laborHours) > 0);
       const needsChecklist = matchedData.lotoMode && matchedData.lotoMode !== "none" || matchedData.pmChecks > 0;
+      const hasLaborHours = matchedData.laborHours && parseFloat(matchedData.laborHours) > 0;
       if (context.tab === "ACK") {
         APMLogger.info("APM AutoFill", `Starting from checklist tab, activity=${context.activity} (context-aware)`);
         if (needsChecklist) {
@@ -11744,10 +12179,27 @@
           await delay(300);
           await injectExtJSFieldsNative(matchedData);
         }
+      } else if (context.tab === "LABOR" && hasLaborHours) {
+        APMLogger.info("APM AutoFill", "Starting from Book Labor tab \u2014 booking labor first");
+        showToast(`Auto-Booking ${matchedData.laborHours}h Labor...`, "#1abc9c", true);
+        await executeLaborBookingNative(parseFloat(matchedData.laborHours), context.win);
+        const dataWithoutLabor = { ...matchedData, laborHours: 0 };
+        if (needsRecordFill) {
+          APMLogger.info("APM AutoFill", "Switching to HDR for record fill after labor");
+          await ensureHDRTab();
+          await delay(300);
+          await injectExtJSFieldsNative(dataWithoutLabor);
+        }
+        if (needsChecklist) {
+          await executeChecklistsNative(matchedData);
+        }
       } else {
         APMLogger.info("APM AutoFill", `Starting from ${context.tab} tab`);
         if (needsRecordFill) {
-          await ensureHDRTab();
+          if (context.tab !== "HDR") {
+            await ensureHDRTab();
+            await delay(300);
+          }
           await injectExtJSFieldsNative(matchedData);
         }
         if (needsChecklist) {
@@ -11857,26 +12309,28 @@
           if (existingDomBtn && d.body.contains(existingDomBtn)) return true;
           return false;
         };
-        if (!foundTitleLocal) {
-          if (existingCmp || existingDomBtn) {
-            APMLogger.debug("AutoFill", `Cleaning up button \u2014 no WO title found (${d.location?.pathname})`);
-            removeExisting();
-          }
-          return;
-        }
         let hasMatch = false;
-        for (const key in presets.autofill) {
-          const kwString = presets.autofill[key].keyword;
-          if (!kwString) continue;
-          const keywords = kwString.split(",").map((k) => k.trim().toLowerCase()).filter(Boolean);
-          if (keywords.some((k) => foundTitleLocal === k || foundTitleLocal.includes(k))) {
+        if (foundTitleLocal) {
+          for (const key in presets.autofill) {
+            const kwString = presets.autofill[key].keyword;
+            if (!kwString) continue;
+            const keywords = kwString.split(",").map((k) => k.trim().toLowerCase()).filter(Boolean);
+            if (keywords.some((k) => foundTitleLocal === k || foundTitleLocal.includes(k))) {
+              hasMatch = true;
+              break;
+            }
+          }
+        }
+        if (!hasMatch && !foundTitleLocal && rvForm) {
+          const defaults = getDefaultProfiles();
+          if (defaults.length > 0) {
             hasMatch = true;
-            break;
+            APMLogger.debug("AutoFill", `Blank record detected \u2014 ${defaults.length} default profile(s) available`);
           }
         }
         if (!hasMatch) {
           if (existingCmp || existingDomBtn) {
-            APMLogger.debug("AutoFill", `Removing button: no keyword match for "${foundTitleLocal}"`);
+            APMLogger.debug("AutoFill", `Removing button: no match for "${foundTitleLocal}"`);
             removeExisting();
           }
           return;
@@ -11916,14 +12370,12 @@
           APMLogger.info("AutoFill", `Injecting AutoFill button (tab bar fallback) for: "${foundTitleLocal}" in ${d.location?.pathname}`);
           const btn = d.createElement("button");
           btn.id = "apm-btn-do-autofill";
-          btn.innerHTML = "Auto Fill \u26A1";
-          btn.style.cssText = "position:absolute; right:10px; top:50%; transform:translateY(-50%); padding:3px 10px; background:#3498db; color:white; border:none; border-radius:4px; font-weight:bold; cursor:pointer; font-size:11px; z-index:10; height:22px; line-height:1; box-shadow:0 1px 3px rgba(0,0,0,0.2);";
-          btn.addEventListener("mouseenter", () => {
-            btn.style.background = "#2980b9";
-          });
-          btn.addEventListener("mouseleave", () => {
-            btn.style.background = "#3498db";
-          });
+          btn.innerHTML = "Auto Fill";
+          btn.className = "apm-af-trigger";
+          btn.style.position = "absolute";
+          btn.style.right = "10px";
+          btn.style.top = "50%";
+          btn.style.transform = "translateY(-50%)";
           btn.addEventListener("click", (e) => {
             e.preventDefault();
             executeAutoFillFlow(foundTitleLocal);
@@ -11937,17 +12389,11 @@
           xtype: "component",
           id: "apm-btn-do-autofill",
           margin: "0 4px",
-          html: '<button style="padding:3px 10px;background:#3498db;color:white;border:none;border-radius:4px;font-weight:bold;cursor:pointer;font-size:11px;height:22px;line-height:1;box-shadow:0 1px 3px rgba(0,0,0,0.2);vertical-align:middle;">Auto Fill \u26A1</button>',
+          html: '<button class="apm-af-trigger" style="vertical-align:middle;">Auto Fill</button>',
           listeners: {
             afterrender(cmp) {
               const btn = cmp.el.dom.querySelector("button");
               if (!btn) return;
-              btn.addEventListener("mouseenter", () => {
-                btn.style.background = "#2980b9";
-              });
-              btn.addEventListener("mouseleave", () => {
-                btn.style.background = "#3498db";
-              });
               btn.addEventListener("click", (e) => {
                 e.preventDefault();
                 executeAutoFillFlow(foundTitleLocal);
@@ -12181,7 +12627,7 @@
       trigger = document.createElement("div");
       trigger.id = "apm-labor-trigger";
       trigger.className = "apm-labor-trigger";
-      trigger.innerHTML = "LABOR TALLY \u23F1\uFE0F";
+      trigger.textContent = "LABOR TALLY";
       panel = el("div", { id: "apm-labor-panel", className: "apm-labor-panel apm-ui-panel" }, [
         el("div", { className: "apm-labor-header" }, [
           el("span", { className: "apm-labor-target-lbl", id: "apm-labor-target-label" }, "Target: Self"),
@@ -12201,7 +12647,7 @@
         ]),
         el("div", { id: "labor-sum-box", className: "labor-total" }, [
           "0.00 ",
-          el("span", { style: { fontSize: "14px", color: "#7f8c8d" } }, "hrs")
+          el("span", { className: "labor-total-unit" }, "hrs")
         ]),
         el("div", { id: "labor-breakdown-box", className: "apm-labor-breakdown-box" }),
         el("button", { id: "labor-force-refresh", className: "apm-labor-force-refresh" }, "Refresh from Server")
@@ -12334,17 +12780,17 @@
       const list = document.getElementById("labor-breakdown-box");
       if (!sumBox || !list) return;
       if (errorMsg) {
-        sumBox.innerHTML = `<span style="font-size:16px; color:#e74c3c;">${errorMsg}</span>`;
-        if (errorMsg === "Loading...") sumBox.innerHTML = `<span style="font-size:16px; color:#f39c12;">${errorMsg}</span>`;
+        const cls = errorMsg === "Loading..." ? "labor-status-loading" : "labor-status-error";
+        sumBox.innerHTML = `<span class="${cls}">${errorMsg}</span>`;
         list.innerHTML = "";
         return;
       }
       const { total, breakdown } = calculateLabor(activeTab);
-      sumBox.innerHTML = `${total.toFixed(2)} <span style="font-size:14px; color:#7f8c8d;">hrs</span>`;
+      sumBox.innerHTML = `${total.toFixed(2)} <span class="labor-total-unit">hrs</span>`;
       list.innerHTML = "";
       const sortedDates = Object.keys(breakdown).sort((a, b) => new Date(b) - new Date(a));
       if (sortedDates.length === 0) {
-        list.innerHTML = '<div style="text-align:center; padding:10px; color:#7f8c8d; font-size:12px;">No labor records found.</div>';
+        list.innerHTML = '<div class="labor-empty">No labor records found.</div>';
       } else {
         sortedDates.forEach((d) => {
           const row = document.createElement("div");
@@ -12401,6 +12847,7 @@
   init_utils();
   function initDateOverride() {
     if (!isTopFrame()) return;
+    let retries = 0;
     const applyOverride = () => {
       if (typeof Ext !== "undefined" && Ext.form && Ext.form.field && Ext.form.field.Date) {
         if (!apmGeneralSettings.dateOverrideEnabled) return;
@@ -12410,7 +12857,7 @@
           altFormats: "m/d/Y|n/j/Y|n/j/y|m/j/y|n/d/y|m/j/Y|n/d/Y|m-d-y|m-d-Y|m/d|m-d|md|mdy|mdY|d|Y-m-d|n-j|n/j|d/m/Y|j/n/Y|j/n/y"
         });
         APMLogger.info("APM Master", "Date format override applied.");
-      } else {
+      } else if (++retries < 50) {
         setTimeout(applyOverride, 100);
       }
     };
@@ -13116,7 +13563,7 @@
         { name: "ForecastUI", flag: "forecast", onlyTop: true, fn: buildForecastUI },
         { name: "SearchUI", flag: "forecast", onlyTop: true, fn: buildSearchUI },
         { name: "Shortcuts", flag: "forecast", fn: initForecastShortcuts },
-        { name: "ForecastFilter", flag: "forecast", noShell: true, fn: () => ForecastFilter && ForecastFilter.init && ForecastFilter.init() },
+        { name: "ForecastFilter", flag: "forecast", fn: () => ForecastFilter && ForecastFilter.init && ForecastFilter.init() },
         { name: "LaborTracker", flag: "laborBooker", onlyTop: true, fn: () => LaborTracker && LaborTracker.init && LaborTracker.init() },
         { name: "SettingsPanel", onlyTop: true, fn: buildSettingsPanel },
         { name: "ColorCodeLogic", flag: "colorCode", noShell: true, fn: setupColorCodeLogic },
@@ -13798,7 +14245,12 @@
       const d = e.data;
       if (!d) return;
       if (e.origin && e.origin !== "null" && _parentOrigin === "*") {
-        _parentOrigin = e.origin;
+        const TRUSTED = [/\.hxgnsmartcloud\.com$/, /\.hexagon\.com$/, /\.amazon\.dev$/];
+        try {
+          const hostname2 = new URL(e.origin).hostname;
+          if (TRUSTED.some((p) => p.test(hostname2))) _parentOrigin = e.origin;
+        } catch (err) {
+        }
       }
       const isBetterApmMatch = d.__betterApm === "theme" || d.__betterApm === "setTheme";
       const isNativeMatch = d.type === "APM_SET_THEME" || d.apmMaster === "theme";
@@ -13873,7 +14325,7 @@
       while (node = walk.nextNode()) node.nodeValue = text;
     }
   }
-  function applyNametagFilter(kw) {
+  function applyNametagFilter(kw = "") {
     APMLogger.debug("Nametag", `applyNametagFilter called with kw: "${kw}"`);
     const ctx = findMainGrid();
     if (!ctx) return;
@@ -13891,6 +14343,9 @@
       const keywords = kw.split(",").map((s) => s.trim().toLowerCase()).filter((s) => s);
       if (keywords.length === 0) {
         store.clearFilter();
+        if (store._nativeGetTotalCount) {
+          store.getTotalCount = store._nativeGetTotalCount;
+        }
       } else {
         store.filterBy((record) => {
           if (!record._apmSearchText) {
@@ -13935,6 +14390,7 @@
                 forceFooterText(el2.dom, ctx.grid.getStore().getCount());
               }
             } catch (e) {
+              APMLogger.debug("Nametag", "Footer hook error:", e);
             }
           }
         });
@@ -14297,6 +14753,7 @@
         navigator.clipboard.writeText(url2).then(() => {
           icon.classList.add("apm-copy-success");
           setTimeout(() => icon.classList.remove("apm-copy-success"), 1500);
+        }).catch(() => {
         });
       }
       return;
