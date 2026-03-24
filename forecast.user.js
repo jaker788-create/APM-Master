@@ -10867,7 +10867,10 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
         const filterBuilder = createFilterBuilder();
         const statusLabel = el("div", { id: "eam-status", className: "eam-fc-status" });
         const updateContainer = el("div", { id: "eam-update-container", className: "eam-fc-update-box" }, [
-          el("a", { href: "https://raw.githubusercontent.com/jaker788-create/APM-Master/main/forecast.user.js", target: "_blank", className: "apm-footer-update-btn" }, "\u2728 Update Available")
+          el("a", { href: getUpdateUrls().download, target: "_blank", className: "apm-footer-update-btn", onclick: (e) => {
+            e.preventDefault();
+            window.open(getUpdateUrls().download, "_blank");
+          } }, "\u2728 Update Available")
         ]);
         panel.appendChild(header);
         panel.appendChild(searchForm);
@@ -13333,8 +13336,14 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
               if (updateInfo?.url?.startsWith("https://")) {
                 try {
                   const updateHost = new URL(updateInfo.url).hostname;
-                  if (!updateHost.endsWith("github.com") && !updateHost.endsWith("greasyfork.org")) updateLink.href = "#";
-                  else updateLink.href = updateInfo.url;
+                  if (!updateHost.endsWith("github.com") && !updateHost.endsWith("githubusercontent.com") && !updateHost.endsWith("greasyfork.org")) updateLink.href = "#";
+                  else {
+                    updateLink.href = updateInfo.url;
+                    updateLink.onclick = (e) => {
+                      e.preventDefault();
+                      window.open(updateInfo.url, "_blank");
+                    };
+                  }
                 } catch (_) {
                   updateLink.href = "#";
                 }
