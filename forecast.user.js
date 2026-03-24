@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         APM Master: Unified Tools
 // @namespace    https://w.amazon.com/bin/view/Users/rosendah/APM-Master/
-// @version      14.6.5
+// @version      14.6.6
 // @description  Quality of life and automation tool that uses native EAM ExtJS Framework functions for high reliability and capability. This is actively supported tool so Slack me or submit bug report/feature request through the bug report button in the menu.
 // @author       Jacob Rosendahl
 // @icon         https://media.licdn.com/dms/image/v2/D5603AQGdCV0_LQKRfQ/profile-displayphoto-scale_100_100/B56ZyZLvQ5HgAg-/0/1772096519061?e=1773878400&v=beta&t=eWO1Jiy0-WbzG_yBv-SBrmmsVOPMexF57-q1Xh_VXCk
@@ -115,7 +115,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
   });
 
   // src/core/constants.js
-  var KEY_THEME, CC_STORAGE_RULES, CC_STORAGE_SET, PRESET_STORAGE_KEY, STORAGE_KEY, APM_GENERAL_STORAGE, CURRENT_VERSION, VERSION_CHECK_URL, UPDATE_URL, LABOR_EMPS_STORAGE, LABOR_ACTIVE_STORAGE, LABOR_DOCK_STORAGE, LABOR_PREFS_STORAGE, LABOR_NIGHT_SHIFT_KEY, LABOR_LAST_EMP_KEY, SESSION_STORAGE_KEY, PTP_HISTORY_KEY, UPDATE_CHECK_KEY, CONFLICT_WARNED_KEY, MIGRATIONS_DONE_KEY, WELCOME_SEEN_KEY, BETA_VERSION_CHECK_URL, BETA_UPDATE_URL, LOG_LEVELS, DEFAULT_TENANT, SESSION_TIMEOUT_URL, LINK_CONFIG, MIN_GRID_COLUMNS, MIN_TAB_ITEMS, ENTITY_REGISTRY, SCREEN_TITLES;
+  var KEY_THEME, CC_STORAGE_RULES, CC_STORAGE_SET, PRESET_STORAGE_KEY, STORAGE_KEY, APM_GENERAL_STORAGE, CURRENT_VERSION, VERSION_CHECK_URL, UPDATE_URL, LABOR_EMPS_STORAGE, LABOR_ACTIVE_STORAGE, LABOR_DOCK_STORAGE, LABOR_PREFS_STORAGE, LABOR_NIGHT_SHIFT_KEY, LABOR_LAST_EMP_KEY, SESSION_STORAGE_KEY, PTP_HISTORY_KEY, UPDATE_CHECK_KEY, MIGRATIONS_DONE_KEY, WELCOME_SEEN_KEY, BETA_VERSION_CHECK_URL, BETA_UPDATE_URL, LOG_LEVELS, DEFAULT_TENANT, SESSION_TIMEOUT_URL, LINK_CONFIG, MIN_GRID_COLUMNS, MIN_TAB_ITEMS, ENTITY_REGISTRY, SCREEN_TITLES;
   var init_constants = __esm({
     "src/core/constants.js"() {
       KEY_THEME = "apm_v1_ui_theme";
@@ -124,7 +124,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
       PRESET_STORAGE_KEY = "apm_v1_autofill_presets";
       STORAGE_KEY = "apm_v1_forecast_prefs";
       APM_GENERAL_STORAGE = "apm_v1_general_settings";
-      CURRENT_VERSION = "14.6.5";
+      CURRENT_VERSION = "14.6.6";
       VERSION_CHECK_URL = "https://raw.githubusercontent.com/jaker788-create/APM-Master/main/forecast.user.js";
       UPDATE_URL = "https://raw.githubusercontent.com/jaker788-create/APM-Master/main/forecast.user.js";
       LABOR_EMPS_STORAGE = "apm_v1_labor_employees";
@@ -136,7 +136,6 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
       SESSION_STORAGE_KEY = "ApmSession";
       PTP_HISTORY_KEY = "apm_ptp_history";
       UPDATE_CHECK_KEY = "apm_last_update_check";
-      CONFLICT_WARNED_KEY = "apm_better_apm_warned";
       MIGRATIONS_DONE_KEY = "apm_v1_migrations_done";
       WELCOME_SEEN_KEY = "apm_v1_welcome_seen";
       BETA_VERSION_CHECK_URL = "https://raw.githubusercontent.com/jaker788-create/APM-Master/Beta/forecast.user.js";
@@ -11259,8 +11258,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
     SESSION_STORAGE_KEY,
     LABOR_LAST_EMP_KEY,
     PTP_HISTORY_KEY,
-    UPDATE_CHECK_KEY,
-    CONFLICT_WARNED_KEY
+    UPDATE_CHECK_KEY
   ];
   var migrations = [
     // { fromVersion: 1, toVersion: 2, transform(settings) { ... } },
@@ -13000,10 +12998,17 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
             ])
           ]),
           el("div", { style: { display: "flex", gap: "6px", flexWrap: "wrap" } }, [
-            el("button", { id: "apm-btn-export-settings", className: "apm-footer-help-btn-box", style: { flex: "1", padding: "5px 10px", fontSize: "var(--apm-text-xs)", minWidth: "0" } }, "Export"),
-            el("button", { id: "apm-btn-import-settings", className: "apm-footer-help-btn-box", style: { flex: "1", padding: "5px 10px", fontSize: "var(--apm-text-xs)", minWidth: "0" } }, "Import"),
-            el("button", { id: "apm-btn-copy-b64", className: "apm-footer-help-btn-box", style: { flex: "1", padding: "5px 10px", fontSize: "var(--apm-text-xs)", minWidth: "0" } }, "Copy B64"),
             el("button", { id: "apm-btn-check-updates", className: "apm-footer-help-btn-box", style: { flex: "1", padding: "5px 10px", fontSize: "var(--apm-text-xs)", minWidth: "0" } }, "Check Updates")
+          ])
+        ]),
+        // ── Full System Backup ──
+        el("div", { className: "apm-section-group", style: { marginBottom: "12px", borderColor: "var(--apm-border)" } }, [
+          el("div", { className: "apm-section-label", style: { color: "var(--apm-accent)" } }, "Full System Backup"),
+          el("div", { style: { fontSize: "var(--apm-text-xs)", color: "var(--apm-text-muted)", marginBottom: "8px" } }, "Export or import all APM settings, ColorCode rules, AutoFill profiles, dataspys, and preferences."),
+          el("div", { style: { display: "flex", gap: "6px", flexWrap: "wrap" } }, [
+            el("button", { id: "apm-btn-export-settings", className: "apm-footer-help-btn-box", title: "Download a full backup of all APM data as JSON", style: { flex: "1", padding: "5px 10px", fontSize: "var(--apm-text-xs)", minWidth: "0" } }, "Export All"),
+            el("button", { id: "apm-btn-import-settings", className: "apm-footer-help-btn-box", title: "Restore from a full APM backup file", style: { flex: "1", padding: "5px 10px", fontSize: "var(--apm-text-xs)", minWidth: "0" } }, "Import All"),
+            el("button", { id: "apm-btn-copy-b64", className: "apm-footer-help-btn-box", title: "Copy full backup as Base64 to clipboard", style: { flex: "1", padding: "5px 10px", fontSize: "var(--apm-text-xs)", minWidth: "0" } }, "Copy B64")
           ]),
           el("input", { type: "file", id: "apm-import-file-input", accept: ".json", style: { display: "none" } }),
           el("textarea", { id: "apm-import-paste-input", placeholder: "Paste backup (JSON or Base64) here, then Ctrl+Enter...", style: { display: "none", width: "100%", height: "60px", fontSize: "var(--apm-text-sm)", fontFamily: "var(--apm-font-mono)", padding: "6px", border: "1px solid var(--apm-border)", borderRadius: "var(--apm-radius-sm)", background: "var(--apm-surface-sunken)", color: "var(--apm-text-bright)", boxSizing: "border-box", resize: "vertical", marginTop: "6px" } })
@@ -14288,78 +14293,6 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
     }
   }
 
-  // src/ui/conflict-notice.js
-  init_dom_helpers();
-  init_storage();
-  init_constants();
-  function checkLegacyConflicts() {
-    if (window.self !== window.top) return;
-    const STORAGE_KEY2 = "apm_conflict_notice_shown";
-    const isShown = APMStorage.get(STORAGE_KEY2);
-    const isBetterApmDetected = !!document.getElementById("better-apm-styles") || !!document.querySelector(".better-apm-btn");
-    if (isBetterApmDetected && isShown === true && !APMStorage.get(CONFLICT_WARNED_KEY)) {
-      APMStorage.remove(STORAGE_KEY2);
-    }
-    if (APMStorage.get(STORAGE_KEY2) === true && !isBetterApmDetected) return;
-    setTimeout(() => {
-      if (!document.body) return;
-      const title = isBetterApmDetected ? "\u26A0\uFE0F Conflict Detected: Better APM" : "\u{1F4E6} APM Suite Integration";
-      const icon = isBetterApmDetected ? "\u{1F6AB}" : "\u26A1";
-      const mainMsg = isBetterApmDetected ? "We've detected that 'Better APM' is also running. This tool is known to conflict with APM Master, causing UI elements to disappear or hotkeys to fail." : "I've integrated everything into this single script. To prevent any possible conflicts, please ensure you have disabled the older, standalone versions of:";
-      const listContent = isBetterApmDetected ? [
-        el("p", { style: { color: "var(--apm-danger)", fontWeight: "bold", margin: "5px 0" } }, "\u2022 Better APM (Userscript)"),
-        el("p", { style: { fontSize: "12px", marginTop: "10px" } }, "APM Master now includes its own self-healing mode to fight these conflicts, but disabling the other tool is recommended for full stability.")
-      ] : [
-        el("p", { style: { color: "var(--apm-warning)", fontWeight: "bold", margin: "5px 0" } }, "\u2022 APM Master (Legacy Autofill)"),
-        el("p", { style: { color: "var(--apm-warning)", fontWeight: "bold", margin: "5px 0" } }, "\u2022 ColorCode & Nametags")
-      ];
-      const overlay = el("div", {
-        id: "apm-conflict-overlay",
-        className: "apm-help-overlay",
-        style: { display: "flex", justifyContent: "center", alignItems: "center", zIndex: "2147483647" }
-      }, [
-        el("div", {
-          className: "apm-help-modal",
-          style: { maxWidth: "450px", height: "auto", maxHeight: "80vh", padding: "25px", textAlign: "center" }
-        }, [
-          el("div", { style: { marginBottom: "20px" } }, [
-            el("h3", { style: { color: isBetterApmDetected ? "var(--apm-danger)" : "var(--apm-accent)", margin: "0 0 10px 0", fontSize: "20px" } }, title),
-            el("div", {
-              style: {
-                width: "60px",
-                height: "60px",
-                background: "var(--apm-accent-subtle)",
-                borderRadius: "50%",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                margin: "15px auto"
-              }
-            }, [el("span", { style: { fontSize: "30px" } }, icon)])
-          ]),
-          el("div", { className: "apm-help-content", style: { padding: "0", fontSize: "14px", lineHeight: "1.6", color: "var(--apm-text-bright)" } }, [
-            el("p", {}, mainMsg),
-            el("div", { style: { margin: "15px 0", padding: "10px", background: "rgba(0,0,0,0.2)", borderRadius: "8px" } }, listContent),
-            !isBetterApmDetected ? el("p", {}, "running in your browser extension (e.g. Tampermonkey).") : null,
-            el("p", { style: { fontSize: "12px", opacity: "0.7", marginTop: "15px" } }, "Having multiple APM tools active at once can cause UI glitches or slower performance.")
-          ]),
-          el("div", { style: { marginTop: "30px" } }, [
-            el("button", {
-              className: "apm-tab-btn apm-tab-active-autofill",
-              style: { width: "100%", padding: "12px", borderRadius: "8px", cursor: "pointer", fontWeight: "bold", border: "none" },
-              onclick: () => {
-                APMStorage.set(STORAGE_KEY2, true);
-                if (isBetterApmDetected) APMStorage.set(CONFLICT_WARNED_KEY, true);
-                overlay.remove();
-              }
-            }, "Got it, I'll check my settings!")
-          ])
-        ])
-      ]);
-      document.body.appendChild(overlay);
-    }, 1500);
-  }
-
   // src/boot.js
   function initBootSequence(win = window) {
     const isTop = win === win.top;
@@ -14395,7 +14328,6 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
       const tasks = [
         { name: "Styles", fn: injectStaticStyles },
         { name: "DateOverride", fn: initDateOverride },
-        { name: "ConflictCheck", onlyTop: true, noShell: true, fn: checkLegacyConflicts },
         { name: "ForecastUI", flag: "forecast", onlyTop: true, fn: buildForecastUI },
         { name: "SearchUI", flag: "forecast", onlyTop: true, fn: buildSearchUI },
         { name: "Shortcuts", flag: "forecast", fn: initForecastShortcuts },
