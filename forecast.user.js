@@ -8026,6 +8026,18 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
 .apm-modal-body::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 3px; }
 .apm-modal-body::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.35); }
 .apm-modal-footer { padding: 12px 15px; border-top: 1px solid var(--apm-border); background: rgba(0,0,0,0.1); }
+.apm-modal-btn { padding: 6px 16px; font-size: 12px; border-radius: 6px; cursor: pointer; transition: filter 0.15s, background 0.15s, border-color 0.15s, color 0.15s; }
+.apm-modal-btn:active { transform: scale(0.98); }
+.apm-modal-btn-ghost { border: 1px solid var(--apm-border); background: var(--apm-surface-inset); color: var(--apm-text-secondary); }
+.apm-modal-btn-ghost:hover { background: var(--apm-surface-raised); border-color: var(--apm-border-strong); color: var(--apm-text-bright); }
+.apm-modal-btn-accent { border: none; background: var(--apm-accent); color: #fff; font-weight: 600; }
+.apm-modal-btn-accent:hover { filter: brightness(1.15); }
+.apm-modal-btn-success { border: none; background: var(--apm-success); color: #fff; font-weight: 600; }
+.apm-modal-btn-success:hover { filter: brightness(1.15); }
+.apm-modal-btn-warning { border: none; background: var(--apm-warning); color: #fff; font-weight: 600; }
+.apm-modal-btn-warning:hover { filter: brightness(1.15); }
+.apm-modal-btn-pill { font-size: 10px; padding: 2px 8px; border-radius: 10px; border: 1px solid var(--apm-border); background: transparent; color: var(--apm-text-secondary); cursor: pointer; transition: background 0.15s, border-color 0.15s, color 0.15s; }
+.apm-modal-btn-pill:hover { background: rgba(255,255,255,0.08); border-color: var(--apm-border-strong); color: var(--apm-text-bright); }
 @keyframes apm-modal-appear { from { opacity: 0; transform: scale(0.95) translateY(10px); } to { opacity: 1; transform: scale(1) translateY(0); } }
 
 .apm-profile-badge { display: inline-block; padding: 2px 6px; border-radius: 10px; background: var(--apm-accent-subtle); color: var(--apm-accent); font-size: var(--apm-text-xs); font-weight: 600; text-transform: uppercase; letter-spacing: 0.3px; margin-left: 8px; border: 1px solid rgba(74,158,222,0.3); }
@@ -11250,6 +11262,14 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
   init_constants();
   init_logger();
   var EXPORT_SCHEMA_VERSION = 1;
+  var IMPORT_MODULES = [
+    { id: "nametags", label: "Nametags (ColorCode)", keys: [CC_STORAGE_RULES, CC_STORAGE_SET] },
+    { id: "autofill", label: "AutoFill Profiles", keys: [PRESET_STORAGE_KEY] },
+    { id: "taborder", label: "Tab & Grid Order", keys: [APM_GENERAL_STORAGE] },
+    { id: "dataspys", label: "Dataspys & Forecast", keys: [STORAGE_KEY] },
+    { id: "theme", label: "System Theme", keys: [APM_GENERAL_STORAGE] },
+    { id: "labor", label: "Labor Settings", keys: [LABOR_PREFS_STORAGE, LABOR_DOCK_STORAGE, LABOR_EMPS_STORAGE, LABOR_NIGHT_SHIFT_KEY] }
+  ];
   function encodeSettingsAsBase64(jsonString) {
     try {
       const encoded = btoa(unescape(encodeURIComponent(jsonString)));
@@ -11313,7 +11333,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
       throw e;
     }
   }
-  function importSettings(input) {
+  function importSettings(input, options = {}) {
     const result = { ok: false, errors: [], migratedFrom: null, format: null };
     try {
       let jsonString = input;
@@ -11380,6 +11400,10 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
           APMLogger.warn("SettingsIO", `Import skipped unknown key: ${key}`);
           continue;
         }
+        if (options.onlyKeys && !options.onlyKeys.includes(key)) {
+          APMLogger.debug("SettingsIO", `Skipping unselected key: ${key}`);
+          continue;
+        }
         if (value === null || value === void 0) {
           APMLogger.debug("SettingsIO", `Skipping null/undefined key: ${key}`);
           continue;
@@ -11444,7 +11468,8 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
   function buildTempRuleFromFormState() {
     const search = document.getElementById("cc-search")?.value || "";
     const color = document.getElementById("cc-color")?.value || DEFAULT_RULE_COLOR;
-    const tag = document.getElementById("cc-tag")?.value || "";
+    const rawTag = document.getElementById("cc-tag")?.value || "";
+    const tag = rawTag.replace(/\n/g, "\\n");
     const fill = document.getElementById("cc-btn-fill")?.classList.contains("active") ?? true;
     const showTag = document.getElementById("cc-btn-tag")?.classList.contains("active") ?? true;
     const rule = {
@@ -11556,7 +11581,11 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
               const ccSearchEl = document.getElementById("cc-search");
               if (ccSearchEl) ccSearchEl.value = r.search;
               const ccTagEl = document.getElementById("cc-tag");
-              if (ccTagEl) ccTagEl.value = r.tag || "";
+              if (ccTagEl) {
+                ccTagEl.value = (r.tag || "").replace(/\\n/g, "\n");
+                ccTagEl.style.height = "auto";
+                ccTagEl.style.height = Math.min(ccTagEl.scrollHeight, 72) + "px";
+              }
               const ccColorEl = document.getElementById("cc-color");
               if (ccColorEl) ccColorEl.value = r.color;
               const fillBtn = document.getElementById("cc-btn-fill");
@@ -11629,9 +11658,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
       Promise.resolve().then(() => (init_theme_resolver(), theme_resolver_exports)).then(({ ThemeResolver: ThemeResolver2 }) => {
         ThemeResolver2.setGlobalTheme(val);
       });
-      if (confirm("Reload to apply theme?")) {
-        window.top.location.href = SESSION_TIMEOUT_URL;
-      }
+      showThemeReloadDialog();
     };
     const elCancelBtn = document.getElementById("cc-cancel-btn");
     if (elCancelBtn) elCancelBtn.onclick = resetForm;
@@ -11657,7 +11684,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
       const s = searchInput?.value.trim();
       if (!s) return;
       const tagInput = document.getElementById("cc-tag");
-      const tag = tagInput?.value.trim() || "";
+      const tag = (tagInput?.value.trim() || "").replace(/\n/g, "\\n");
       const fillActive = document.getElementById("cc-btn-fill")?.classList.contains("active") ?? false;
       const tagActive = document.getElementById("cc-btn-tag")?.classList.contains("active") ?? false;
       const nr = {
@@ -11706,12 +11733,19 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
       ccSearch._apmListenersAttached = true;
     }
     if (ccTag && !ccTag._apmListenersAttached) {
-      ["keydown", "keyup", "keypress"].forEach((evt) => {
+      ["keyup", "keypress"].forEach((evt) => {
         ccTag.addEventListener(evt, (e) => {
           if (e.key !== "Tab") e.stopPropagation();
         });
       });
-      ccTag.addEventListener("keydown", handleEnter);
+      const autoResizeTag = () => {
+        ccTag.style.height = "auto";
+        ccTag.style.height = Math.min(ccTag.scrollHeight, 72) + "px";
+      };
+      ccTag.addEventListener("input", autoResizeTag);
+      ccTag.addEventListener("keydown", (e) => {
+        if (e.key !== "Tab") e.stopPropagation();
+      });
       ccTag._apmListenersAttached = true;
     }
     const elExportBtn = document.getElementById("cc-export-btn");
@@ -11759,7 +11793,105 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
     const ccImportTextarea = document.getElementById("cc-import-textarea");
     const ccImportFileBtn = document.getElementById("cc-import-file-btn");
     const ccImportFileInput = document.getElementById("cc-import-file-input");
-    const performImport = (input) => {
+    const NEUTRAL_TAG_COLOR = "#d5d5d5";
+    function normalizeExternalTags(arr) {
+      const isExternal = arr.some((r) => r.searchText !== void 0);
+      if (!isExternal) return null;
+      return arr.map((r) => ({
+        id: Date.now() + Math.random(),
+        search: String(r.searchText || ""),
+        tag: String(r.appendText || "").replace(/\n/g, "\\n"),
+        color: String(r.color || NEUTRAL_TAG_COLOR),
+        fill: false,
+        showTag: !!r.appendText
+      }));
+    }
+    function showThemeReloadDialog() {
+      const overlay = el("div", { className: "apm-modal-overlay", style: { zIndex: "2147483647" } }, [
+        el("div", { className: "apm-modal-content", style: { width: "360px", maxWidth: "90vw" } }, [
+          el("div", { className: "apm-modal-header" }, [
+            el("span", { style: { fontWeight: "600", fontSize: "14px", color: "var(--apm-text-bright)" } }, "Theme Changed")
+          ]),
+          el("div", { className: "apm-modal-body" }, [
+            el(
+              "p",
+              { style: { fontSize: "12px", color: "var(--apm-text-secondary)", margin: "0 0 10px", lineHeight: "1.5" } },
+              "Your theme has been saved. A page refresh is required for the new theme to take full effect."
+            ),
+            el(
+              "p",
+              { style: { fontSize: "11px", color: "var(--apm-text-muted)", margin: "0", lineHeight: "1.5" } },
+              "Refreshing now will reload your session back to the start center with the updated theme. You can also continue working and the theme will take effect in the next session."
+            )
+          ]),
+          el("div", { className: "apm-modal-footer", style: { display: "flex", gap: "8px", justifyContent: "flex-end" } }, [
+            el("button", {
+              className: "apm-modal-btn apm-modal-btn-ghost",
+              onclick: () => overlay.remove()
+            }, "Later"),
+            el("button", {
+              className: "apm-modal-btn apm-modal-btn-accent",
+              onclick: () => {
+                window.top.location.href = SESSION_TIMEOUT_URL;
+              }
+            }, "Refresh Now")
+          ])
+        ])
+      ]);
+      document.body.appendChild(overlay);
+    }
+    function showImportChoiceDialog(ruleCount) {
+      return new Promise((resolve) => {
+        const overlay = el("div", { className: "apm-modal-overlay", style: { zIndex: "2147483647" } }, [
+          el("div", { className: "apm-modal-content", style: { width: "380px", maxWidth: "90vw" } }, [
+            el("div", { className: "apm-modal-header" }, [
+              el("span", { style: { fontWeight: "600", fontSize: "14px", color: "var(--apm-text-bright)" } }, `Import ${ruleCount} Rule${ruleCount !== 1 ? "s" : ""}`)
+            ]),
+            el("div", { className: "apm-modal-body" }, [
+              el(
+                "p",
+                { style: { fontSize: "12px", color: "var(--apm-text-secondary)", margin: "0 0 12px", lineHeight: "1.5" } },
+                "Choose how to handle the imported rules:"
+              ),
+              el("div", { style: { display: "flex", flexDirection: "column", gap: "8px" } }, [
+                el("div", { style: { fontSize: "11px", color: "var(--apm-text-muted)", padding: "8px 10px", background: "var(--apm-surface-inset)", borderRadius: "6px", lineHeight: "1.5" } }, [
+                  el("span", { style: { fontWeight: "bold", color: "var(--apm-warning)" } }, "Replace"),
+                  " \u2014 Remove all existing rules and use only the imported ones.",
+                  el("br"),
+                  el("span", { style: { fontWeight: "bold", color: "var(--apm-success)" } }, "Merge"),
+                  " \u2014 Keep your existing rules and add the imported ones after them."
+                ])
+              ])
+            ]),
+            el("div", { className: "apm-modal-footer", style: { display: "flex", gap: "8px", justifyContent: "flex-end" } }, [
+              el("button", {
+                className: "apm-modal-btn apm-modal-btn-ghost",
+                onclick: () => {
+                  overlay.remove();
+                  resolve("cancel");
+                }
+              }, "Cancel"),
+              el("button", {
+                className: "apm-modal-btn apm-modal-btn-success",
+                onclick: () => {
+                  overlay.remove();
+                  resolve("merge");
+                }
+              }, "Merge"),
+              el("button", {
+                className: "apm-modal-btn apm-modal-btn-warning",
+                onclick: () => {
+                  overlay.remove();
+                  resolve("replace");
+                }
+              }, "Replace")
+            ])
+          ])
+        ]);
+        document.body.appendChild(overlay);
+      });
+    }
+    const performImport = async (input) => {
       if (!input || !input.trim()) {
         showToast("No rules provided", "var(--apm-warning)");
         return;
@@ -11784,18 +11916,25 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
           showToast("No valid rules found", "var(--apm-warning)");
           return;
         }
-        importedRules = importedRules.map((r) => ({
-          id: Date.now() + Math.random(),
-          search: String(r.search || ""),
-          tag: String(r.tag || ""),
-          color: String(r.color || DEFAULT_RULE_COLOR),
-          fill: !!r.fill,
-          showTag: r.showTag !== false
-        }));
-        let rs = getRules();
-        if (confirm("Click OK to REPLACE all rules, or Cancel to MERGE with existing.")) {
+        const converted = normalizeExternalTags(importedRules);
+        if (converted) {
+          importedRules = converted;
+        } else {
+          importedRules = importedRules.map((r) => ({
+            id: Date.now() + Math.random(),
+            search: String(r.search || ""),
+            tag: String(r.tag || ""),
+            color: String(r.color || DEFAULT_RULE_COLOR),
+            fill: !!r.fill,
+            showTag: r.showTag !== false
+          }));
+        }
+        const choice = await showImportChoiceDialog(importedRules.length);
+        if (choice === "cancel") return;
+        if (choice === "replace") {
           setRules(importedRules);
         } else {
+          let rs = getRules();
           importedRules.forEach((r) => {
             r.id = Date.now() + Math.random();
             rs.push(r);
@@ -11803,7 +11942,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
           setRules(rs);
         }
         saveSync();
-        showToast(`Imported ${importedRules.length} rules`, "var(--apm-success-bright)");
+        showToast(`${choice === "replace" ? "Replaced" : "Merged"} ${importedRules.length} rules`, "var(--apm-success-bright)");
         if (ccImportPanel) ccImportPanel.style.display = "none";
         if (ccImportTextarea) ccImportTextarea.value = "";
       } catch (err) {
@@ -12674,6 +12813,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
               el("li", {}, "Grid Column resizing, record tab reordering with overflow menu support and tab hiding"),
               el("li", {}, "ColorCode engine performance improvements with live rule preview"),
               el("li", {}, "Global configuration export/import"),
+              el("li", {}, "Compatability with BetterAPM tags export into ColorCode tags"),
               el("li", {}, "Reduced dark mode page load flash"),
               el("li", {}, "Expanded hyperlink support for non-work order records"),
               el("li", {}, "Service centralization and legacy code cleanup")
@@ -12684,14 +12824,13 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
             el("ul", { style: { paddingLeft: "20px", margin: "0" } }, [
               el("li", {}, "WO QR codes for quick mobile access"),
               el("li", {}, "ColorCode rule pause/resume toggle"),
-              el("li", {}, "Relative date filtering for ColorCode rules"),
-              el("li", {}, "Compatability with BetterAPM nametag export into ColorCode")
+              el("li", {}, "Relative date filtering for ColorCode rules")
             ])
           ]),
           el("div", {}, [
             el("b", { style: { color: "var(--apm-accent)", display: "block", marginBottom: "5px" } }, "Planned Research"),
             el("ul", { style: { paddingLeft: "20px", margin: "0" } }, [
-              el("li", {}, "Broader use of direct ExtJS/AJAX requests beyond Labor Tally and Labor Booking"),
+              el("li", {}, "Broader use of direct EXTJS API interaction and AJAX requests beyond Labor Tally/booking, dataspy, etc."),
               el("li", {}, "Personalized shift snapshots and multi-employee overview reports"),
               el("li", {}, "Session state snapshots to restore your exact position after timeout")
             ])
@@ -12929,7 +13068,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
           el("div", { style: { display: "flex", gap: "10px", alignItems: "flex-end", marginBottom: "15px" } }, [
             el("div", { style: { flex: "1" } }, [
               el("div", { style: { fontSize: "11px", color: "var(--apm-text-muted)", marginBottom: "4px", fontWeight: "bold" } }, "Badge Text (Nametag)"),
-              el("input", { type: "text", id: "cc-tag", className: "field-input", placeholder: "(Leave blank for no nametag)", style: { height: "28px", fontSize: "12px", width: "100%", boxSizing: "border-box", textTransform: "none" } })
+              el("textarea", { id: "cc-tag", className: "field-input", rows: 1, placeholder: "Press Enter for new line", style: { fontSize: "12px", width: "100%", boxSizing: "border-box", textTransform: "none", resize: "none", overflow: "hidden", minHeight: "28px", maxHeight: "72px", lineHeight: "18px", padding: "4px 6px", fontFamily: "inherit" } })
             ])
           ]),
           el("div", { style: { display: "flex", gap: "8px", width: "100%", marginBottom: "15px" } }, [
@@ -13024,8 +13163,22 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
             el("button", { id: "apm-btn-import-settings", className: "apm-footer-help-btn-box", title: "Restore from a full APM backup file", style: { flex: "1", padding: "5px 10px", fontSize: "var(--apm-text-xs)", minWidth: "0" } }, "Import All"),
             el("button", { id: "apm-btn-copy-b64", className: "apm-footer-help-btn-box", title: "Copy full backup as Base64 to clipboard", style: { flex: "1", padding: "5px 10px", fontSize: "var(--apm-text-xs)", minWidth: "0" } }, "Copy B64")
           ]),
-          el("input", { type: "file", id: "apm-import-file-input", accept: ".json", style: { display: "none" } }),
-          el("textarea", { id: "apm-import-paste-input", placeholder: "Paste backup (JSON or Base64) here, then Ctrl+Enter...", style: { display: "none", width: "100%", height: "60px", fontSize: "var(--apm-text-sm)", fontFamily: "var(--apm-font-mono)", padding: "6px", border: "1px solid var(--apm-border)", borderRadius: "var(--apm-radius-sm)", background: "var(--apm-surface-sunken)", color: "var(--apm-text-bright)", boxSizing: "border-box", resize: "vertical", marginTop: "6px" } })
+          el("div", { id: "apm-import-panel", style: { display: "none", marginTop: "8px", padding: "10px", border: "1px solid var(--apm-border)", borderRadius: "4px", background: "var(--apm-surface-inset)" } }, [
+            el("div", { style: { marginBottom: "8px" } }, [
+              el("div", { style: { fontSize: "11px", color: "var(--apm-text-muted)", marginBottom: "4px", fontWeight: "bold" } }, "Import from File or Paste:"),
+              el("input", { type: "file", id: "apm-import-file-input", accept: ".json", style: { display: "none" } }),
+              el("button", { id: "apm-import-file-btn", className: "apm-footer-help-btn-box", style: { width: "100%", marginBottom: "6px", padding: "5px 10px", fontSize: "var(--apm-text-xs)" } }, "\u{1F4C1} Select JSON File")
+            ]),
+            el("div", { style: { display: "flex", alignItems: "center", gap: "6px", marginBottom: "6px" } }, [
+              el("div", { style: { flex: "1", height: "1px", background: "var(--apm-border)" } }),
+              el("span", { style: { color: "var(--apm-text-disabled)", fontSize: "10px" } }, "OR"),
+              el("div", { style: { flex: "1", height: "1px", background: "var(--apm-border)" } })
+            ]),
+            el("div", { style: { marginBottom: "6px" } }, [
+              el("textarea", { id: "apm-import-paste-input", style: { width: "100%", height: "60px", fontSize: "var(--apm-text-sm)", fontFamily: "var(--apm-font-mono)", padding: "6px", border: "1px solid var(--apm-border)", borderRadius: "var(--apm-radius-sm)", background: "var(--apm-surface-sunken)", color: "var(--apm-text-bright)", boxSizing: "border-box", resize: "vertical" }, placeholder: "Paste backup (JSON or Base64) here, then Ctrl+Enter..." })
+            ]),
+            el("div", { style: { fontSize: "10px", color: "var(--apm-text-disabled)", marginTop: "4px" } }, "Press Ctrl+Enter to import pasted data")
+          ])
         ]),
         // ── Feature Modules ──
         el("div", { className: "apm-settings-section", style: { borderBottom: "1px solid var(--apm-border)", paddingBottom: "12px", marginBottom: "12px" } }, [
@@ -13151,7 +13304,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
         ]),
         el("div", { id: "cc-import-panel", style: { display: "none", marginTop: "8px", padding: "10px", border: "1px solid var(--apm-border)", borderRadius: "4px", background: "var(--apm-surface-inset)" } }, [
           el("div", { style: { marginBottom: "8px" } }, [
-            el("div", { style: { fontSize: "11px", color: "var(--apm-text-muted)", marginBottom: "4px", fontWeight: "bold" } }, "Import from File or Paste:"),
+            el("div", { style: { fontSize: "11px", color: "var(--apm-text-muted)", marginBottom: "4px", fontWeight: "bold" } }, "Import from File or Paste (supports BetterAPM backups):"),
             el("input", { type: "file", id: "cc-import-file-input", style: { display: "none" }, accept: ".json,application/json" }),
             el("button", { id: "cc-import-file-btn", className: "cc-footer-btn", style: { width: "100%", marginBottom: "6px" } }, "\u{1F4C1} Select JSON File")
           ]),
@@ -13161,7 +13314,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
             el("div", { style: { flex: "1", height: "1px", background: "var(--apm-border)" } })
           ]),
           el("div", { style: { marginBottom: "6px" } }, [
-            el("textarea", { id: "cc-import-textarea", style: { width: "100%", height: "80px", padding: "6px", fontSize: "11px", fontFamily: "monospace", border: "1px solid var(--apm-border)", borderRadius: "4px", background: "var(--apm-surface-sunken)", color: "var(--apm-text-bright)", resize: "vertical", boxSizing: "border-box" }, placeholder: "Paste Base64 (APM:...) or JSON array here\\nCtrl+Enter to import" })
+            el("textarea", { id: "cc-import-textarea", style: { width: "100%", height: "80px", padding: "6px", fontSize: "11px", fontFamily: "monospace", border: "1px solid var(--apm-border)", borderRadius: "4px", background: "var(--apm-surface-sunken)", color: "var(--apm-text-bright)", resize: "vertical", boxSizing: "border-box" }, placeholder: "Paste Base64 (APM:...), JSON array, or BetterAPM backup here\\nCtrl+Enter to import" })
           ]),
           el("div", { style: { fontSize: "10px", color: "var(--apm-text-disabled)", marginTop: "4px" } }, "Press Ctrl+Enter to import pasted data")
         ])
@@ -13441,29 +13594,95 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
         const importBtn = document.getElementById("apm-btn-import-settings");
         const importFileInput = document.getElementById("apm-import-file-input");
         const importPasteInput = document.getElementById("apm-import-paste-input");
+        const importPanel = document.getElementById("apm-import-panel");
+        const importFileBtn = document.getElementById("apm-import-file-btn");
         if (importBtn && importFileInput && importPasteInput) {
+          let showImportDialog = function(content) {
+            return new Promise((resolve) => {
+              const checkboxes = [];
+              const moduleRows = IMPORT_MODULES.map((mod) => {
+                const cb = el("input", { type: "checkbox", checked: true, id: `import-mod-${mod.id}`, style: { accentColor: "var(--apm-accent)", cursor: "pointer", width: "14px", height: "14px", margin: "0" } });
+                checkboxes.push({ cb, mod });
+                return el("label", { htmlFor: `import-mod-${mod.id}`, style: { display: "flex", alignItems: "center", gap: "8px", padding: "6px 8px", borderRadius: "var(--apm-radius-sm)", cursor: "pointer", transition: "background 0.15s", fontSize: "12px", color: "var(--apm-text-bright)" } }, [
+                  cb,
+                  el("span", {}, mod.label)
+                ]);
+              });
+              const setAll = (val) => checkboxes.forEach(({ cb }) => {
+                cb.checked = val;
+              });
+              const overlay = el("div", { className: "apm-modal-overlay", style: { zIndex: "2147483647" } }, [
+                el("div", { className: "apm-modal-content", style: { width: "400px", maxWidth: "90vw" } }, [
+                  el("div", { className: "apm-modal-header" }, [
+                    el("span", { style: { fontWeight: "600", fontSize: "14px", color: "var(--apm-text-bright)" } }, "Import Settings")
+                  ]),
+                  el("div", { className: "apm-modal-body", style: { padding: "14px 18px" } }, [
+                    el(
+                      "p",
+                      { style: { fontSize: "11px", color: "var(--apm-text-muted)", margin: "0 0 12px", lineHeight: "1.5" } },
+                      "Select which modules to import. Imported data will overwrite existing settings for the selected modules."
+                    ),
+                    el("div", { style: { display: "flex", gap: "8px", marginBottom: "10px" } }, [
+                      el("button", {
+                        className: "apm-modal-btn-pill",
+                        onclick: () => setAll(true)
+                      }, "Select All"),
+                      el("button", {
+                        className: "apm-modal-btn-pill",
+                        onclick: () => setAll(false)
+                      }, "Select None")
+                    ]),
+                    el("div", { style: { display: "flex", flexDirection: "column", gap: "2px", background: "var(--apm-surface-inset)", borderRadius: "var(--apm-radius)", padding: "6px", border: "1px solid var(--apm-border)" } }, moduleRows)
+                  ]),
+                  el("div", { className: "apm-modal-footer", style: { display: "flex", gap: "8px", justifyContent: "flex-end" } }, [
+                    el("button", {
+                      className: "apm-modal-btn apm-modal-btn-ghost",
+                      onclick: () => {
+                        overlay.remove();
+                        resolve(false);
+                      }
+                    }, "Cancel"),
+                    el("button", {
+                      className: "apm-modal-btn apm-modal-btn-accent",
+                      onclick: () => {
+                        const selectedKeys = /* @__PURE__ */ new Set();
+                        checkboxes.forEach(({ cb, mod }) => {
+                          if (cb.checked) mod.keys.forEach((k) => selectedKeys.add(k));
+                        });
+                        if (selectedKeys.size === 0) {
+                          showToast("No modules selected", "var(--apm-warning)");
+                          return;
+                        }
+                        overlay.remove();
+                        try {
+                          const result = importSettings(content, { onlyKeys: [...selectedKeys] });
+                          if (result.ok) {
+                            const count = checkboxes.filter(({ cb }) => cb.checked).length;
+                            showToast(`Imported ${count} module${count !== 1 ? "s" : ""} from backup`, "var(--apm-success)");
+                            APMLogger.info("Settings", `Selective import: ${count} modules`);
+                            importPasteInput.value = "";
+                            importPasteInput.style.borderColor = "var(--apm-border)";
+                            setTimeout(() => location.reload(), 1500);
+                          } else {
+                            const errorMsg = result.errors.length > 0 ? result.errors.slice(0, 3).join("; ") : "Import failed";
+                            showToast(errorMsg, "var(--apm-danger)");
+                            APMLogger.error("Settings", "Import errors:", result.errors);
+                          }
+                        } catch (e) {
+                          APMLogger.error("Settings", "Error during import:", e);
+                          showToast("Error processing import data", "var(--apm-danger)");
+                        }
+                        resolve(true);
+                      }
+                    }, "Import Selected")
+                  ])
+                ])
+              ]);
+              document.body.appendChild(overlay);
+            });
+          };
           const processImport = (content) => {
-            try {
-              const result = importSettings(content);
-              if (result.ok) {
-                const formatStr = result.format === "base64" ? "safe format" : "JSON";
-                const msg = `Settings imported from schema v${result.migratedFrom} (${formatStr})!`;
-                showToast(msg, "var(--apm-success)");
-                APMLogger.info("Settings", msg);
-                importPasteInput.value = "";
-                importPasteInput.style.borderColor = "var(--apm-border)";
-                setTimeout(() => {
-                  location.reload();
-                }, 1500);
-              } else {
-                const errorMsg = result.errors.length > 0 ? result.errors.slice(0, 3).join("; ") : "Import failed";
-                showToast(errorMsg, "var(--apm-danger)");
-                APMLogger.error("Settings", "Import errors:", result.errors);
-              }
-            } catch (e) {
-              APMLogger.error("Settings", "Error during import:", e);
-              showToast("Error processing import data", "var(--apm-danger)");
-            }
+            showImportDialog(content);
           };
           const performPasteImport = () => {
             const content = importPasteInput.value.trim();
@@ -13474,13 +13693,15 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
             processImport(content);
           };
           importBtn.onclick = () => {
-            if (importPasteInput.style.display === "none") {
-              importPasteInput.style.display = "block";
-              importPasteInput.focus();
-            } else {
-              importFileInput.click();
+            if (importPanel) {
+              const visible = importPanel.style.display !== "none";
+              importPanel.style.display = visible ? "none" : "block";
+              if (!visible) importPasteInput.focus();
             }
           };
+          if (importFileBtn) {
+            importFileBtn.onclick = () => importFileInput.click();
+          }
           importFileInput.onchange = (e) => {
             const file = e.target.files[0];
             if (!file) return;
