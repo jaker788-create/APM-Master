@@ -12998,10 +12998,17 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
             ])
           ]),
           el("div", { style: { display: "flex", gap: "6px", flexWrap: "wrap" } }, [
-            el("button", { id: "apm-btn-export-settings", className: "apm-footer-help-btn-box", style: { flex: "1", padding: "5px 10px", fontSize: "var(--apm-text-xs)", minWidth: "0" } }, "Export"),
-            el("button", { id: "apm-btn-import-settings", className: "apm-footer-help-btn-box", style: { flex: "1", padding: "5px 10px", fontSize: "var(--apm-text-xs)", minWidth: "0" } }, "Import"),
-            el("button", { id: "apm-btn-copy-b64", className: "apm-footer-help-btn-box", style: { flex: "1", padding: "5px 10px", fontSize: "var(--apm-text-xs)", minWidth: "0" } }, "Copy B64"),
             el("button", { id: "apm-btn-check-updates", className: "apm-footer-help-btn-box", style: { flex: "1", padding: "5px 10px", fontSize: "var(--apm-text-xs)", minWidth: "0" } }, "Check Updates")
+          ])
+        ]),
+        // ── Full System Backup ──
+        el("div", { className: "apm-section-group", style: { marginBottom: "12px", borderColor: "var(--apm-border)" } }, [
+          el("div", { className: "apm-section-label", style: { color: "var(--apm-accent)" } }, "Full System Backup"),
+          el("div", { style: { fontSize: "var(--apm-text-xs)", color: "var(--apm-text-muted)", marginBottom: "8px" } }, "Export or import all APM settings, ColorCode rules, AutoFill profiles, dataspys, and preferences."),
+          el("div", { style: { display: "flex", gap: "6px", flexWrap: "wrap" } }, [
+            el("button", { id: "apm-btn-export-settings", className: "apm-footer-help-btn-box", title: "Download a full backup of all APM data as JSON", style: { flex: "1", padding: "5px 10px", fontSize: "var(--apm-text-xs)", minWidth: "0" } }, "Export All"),
+            el("button", { id: "apm-btn-import-settings", className: "apm-footer-help-btn-box", title: "Restore from a full APM backup file", style: { flex: "1", padding: "5px 10px", fontSize: "var(--apm-text-xs)", minWidth: "0" } }, "Import All"),
+            el("button", { id: "apm-btn-copy-b64", className: "apm-footer-help-btn-box", title: "Copy full backup as Base64 to clipboard", style: { flex: "1", padding: "5px 10px", fontSize: "var(--apm-text-xs)", minWidth: "0" } }, "Copy B64")
           ]),
           el("input", { type: "file", id: "apm-import-file-input", accept: ".json", style: { display: "none" } }),
           el("textarea", { id: "apm-import-paste-input", placeholder: "Paste backup (JSON or Base64) here, then Ctrl+Enter...", style: { display: "none", width: "100%", height: "60px", fontSize: "var(--apm-text-sm)", fontFamily: "var(--apm-font-mono)", padding: "6px", border: "1px solid var(--apm-border)", borderRadius: "var(--apm-radius-sm)", background: "var(--apm-surface-sunken)", color: "var(--apm-text-bright)", boxSizing: "border-box", resize: "vertical", marginTop: "6px" } })
