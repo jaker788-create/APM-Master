@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         APM Master: Unified Tools
 // @namespace    https://w.amazon.com/bin/view/Users/rosendah/APM-Master/
-// @version      14.6.6
+// @version      14.6.7
 // @description  Quality of life and automation tool that uses native EAM ExtJS Framework functions for high reliability and capability. This is actively supported tool so Slack me or submit bug report/feature request through the bug report button in the menu.
 // @author       Jacob Rosendahl
 // @icon         https://media.licdn.com/dms/image/v2/D5603AQGdCV0_LQKRfQ/profile-displayphoto-scale_100_100/B56ZyZLvQ5HgAg-/0/1772096519061?e=1773878400&v=beta&t=eWO1Jiy0-WbzG_yBv-SBrmmsVOPMexF57-q1Xh_VXCk
@@ -124,7 +124,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
       PRESET_STORAGE_KEY = "apm_v1_autofill_presets";
       STORAGE_KEY = "apm_v1_forecast_prefs";
       APM_GENERAL_STORAGE = "apm_v1_general_settings";
-      CURRENT_VERSION = "14.6.6";
+      CURRENT_VERSION = "14.6.7";
       VERSION_CHECK_URL = "https://raw.githubusercontent.com/jaker788-create/APM-Master/main/forecast.user.js";
       UPDATE_URL = "https://raw.githubusercontent.com/jaker788-create/APM-Master/main/forecast.user.js";
       LABOR_EMPS_STORAGE = "apm_v1_labor_employees";
@@ -7913,7 +7913,13 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
 .eam-fc-date-mode-toggle { display:inline-flex; border:1px solid var(--apm-border); border-radius:var(--apm-radius-sm); overflow:hidden; }
 .eam-fc-date-mode-btn { background:transparent; border:none; color:var(--apm-text-disabled); padding:3px 10px; font-size:var(--apm-text-sm); font-weight:600; cursor:pointer; transition:all 0.15s; }
 .eam-fc-date-mode-btn.active { background:var(--apm-accent); color:var(--apm-text-on-accent); }
+.eam-fc-date-mode-btn.active:hover { filter:brightness(1.15); }
 .eam-fc-date-mode-btn:not(.active):hover { color:var(--apm-text-secondary); background:rgba(255,255,255,0.03); }
+.eam-fc-view-toggle { display:inline-flex; border:1px solid var(--apm-border); border-radius:var(--apm-radius-sm); overflow:hidden; }
+.eam-fc-view-btn { background:transparent; border:none; color:var(--apm-text-disabled); padding:3px 8px; font-size:var(--apm-text-sm); font-weight:600; cursor:pointer; transition:all 0.15s; }
+.eam-fc-view-btn.active { background:var(--apm-accent); color:var(--apm-text-on-accent); }
+.eam-fc-view-btn.active:hover { filter:brightness(1.15); }
+.eam-fc-view-btn:not(.active):hover { color:var(--apm-text-secondary); background:rgba(255,255,255,0.03); }
 .eam-fc-week-row { display:flex; gap:10px; align-items:center; margin-bottom:10px; }
 .eam-fc-days-box { padding:6px 10px; margin-bottom:10px; display:flex; justify-content:space-between; align-items:center; }
 .eam-fc-custom-dates { display:none; background:var(--apm-surface-inset); padding:8px 12px; border-radius:var(--apm-radius); margin-bottom:15px; gap:8px; flex-direction:column; box-sizing:border-box; }
@@ -8516,7 +8522,8 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
     descOp: "Contains",
     descText: "",
     todayOnly: false,
-    isSimpleMode: true,
+    viewMode: "standard",
+    // 'simple' | 'standard' | 'advanced'
     isCustomDateMode: false,
     customStart: "",
     customEnd: "",
@@ -8566,7 +8573,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
           descOp: prefs.descOp || "Contains",
           descText: prefs.descText || "",
           todayOnly: !!prefs.todayOnly,
-          isSimpleMode: prefs.isSimpleMode !== void 0 ? prefs.isSimpleMode : true,
+          viewMode: prefs.viewMode || (prefs.isSimpleMode === false ? "advanced" : prefs.isSimpleMode === true ? "simple" : "standard"),
           isCustomDateMode: !!prefs.isCustomDateMode,
           customStart: prefs.customStart || "",
           customEnd: prefs.customEnd || "",
@@ -10426,20 +10433,30 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
   function createSearchForm(callbacks = {}) {
     try {
       const form = el("div", { id: "eam-main-view" }, [
-        // ── Search Target (advanced only) ──
+        // ── Profile / Dataspy (standard + advanced) ──
+        el("div", { id: "eam-adv-profile", style: { display: "flex", flexDirection: "column", gap: "6px", marginBottom: "8px" } }, [
+          el("div", { className: "eam-fc-row" }, [
+            el("label", { className: "eam-fc-label", style: { width: "50px", minWidth: "50px" } }, "Profile:"),
+            el("select", { id: "eam-profile-select", className: "eam-fc-select", style: { color: "var(--apm-accent)", fontWeight: "bold" } }, [
+              el("option", { value: "manual" }, "[ Manual Native Search ]")
+            ]),
+            el("button", { id: "eam-btn-spies", title: "Open the dataspy builder", style: { background: "none", border: "none", color: "var(--apm-accent)", fontSize: "var(--apm-text-sm)", fontWeight: "600", cursor: "pointer", padding: "0 4px", whiteSpace: "nowrap", transition: "color 0.15s" }, onmouseover: function() {
+              this.style.color = "var(--apm-text-bright)";
+              this.style.textDecoration = "underline";
+            }, onmouseout: function() {
+              this.style.color = "var(--apm-accent)";
+              this.style.textDecoration = "none";
+            } }, "+ New")
+          ]),
+          el("div", { id: "eam-profile-summary", style: { display: "none", background: "var(--apm-accent-subtle)", border: "1px dashed var(--apm-accent)", borderRadius: "var(--apm-radius-sm)", padding: "6px 8px", fontSize: "var(--apm-text-sm)", color: "var(--apm-text-tertiary)" } }, [
+            el("div", { style: { fontWeight: "600", color: "var(--apm-accent)", marginBottom: "2px" } }, "Profile Active: ExtJS Filter Engaged"),
+            el("div", { id: "eam-profile-summary-text" }, "Loading profile details...")
+          ])
+        ]),
+        // ── Target & Site (advanced only) ──
         el("div", { id: "eam-adv-site", className: "eam-fc-adv-box" }, [
           el("div", { className: "apm-section-group", style: { marginBottom: "10px" } }, [
             el("div", { className: "apm-section-label" }, "Search Target"),
-            el("div", { className: "eam-fc-row", style: { marginBottom: "6px" } }, [
-              el("label", { className: "eam-fc-label", style: { width: "50px", minWidth: "50px" } }, "Profile:"),
-              el("select", { id: "eam-profile-select", className: "eam-fc-select", style: { color: "var(--apm-accent)", fontWeight: "bold" } }, [
-                el("option", { value: "manual" }, "[ Manual Native Search ]")
-              ])
-            ]),
-            el("div", { id: "eam-profile-summary", style: { display: "none", background: "var(--apm-accent-subtle)", border: "1px dashed var(--apm-accent)", borderRadius: "var(--apm-radius-sm)", padding: "8px", marginBottom: "8px", fontSize: "var(--apm-text-sm)", color: "var(--apm-text-tertiary)" } }, [
-              el("div", { style: { fontWeight: "600", color: "var(--apm-accent)", marginBottom: "3px" } }, "Profile Active: ExtJS Filter Engaged"),
-              el("div", { id: "eam-profile-summary-text" }, "Loading profile details...")
-            ]),
             el("div", { id: "eam-manual-inputs" }, [
               el("div", { className: "eam-fc-row" }, [
                 el("label", { className: "eam-fc-label", style: { width: "50px", minWidth: "50px" } }, "Target:"),
@@ -10513,7 +10530,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
         // ── Context status line (visible in simple mode, clickable to switch to advanced) ──
         el("div", { id: "eam-context-status", style: { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px", padding: "4px 0" } }, [
           el("span", { id: "eam-context-status-text", style: { fontSize: "var(--apm-text-sm)", color: "var(--apm-text-muted)" } }, "Searching: Work Orders \xB7 All Sites"),
-          el("button", { id: "eam-context-switch-btn", style: { background: "none", border: "none", color: "var(--apm-accent)", fontSize: "var(--apm-text-sm)", cursor: "pointer", padding: "0", fontWeight: "600", textDecoration: "underline" } }, "Change")
+          el("button", { id: "eam-context-switch-btn", style: { background: "none", border: "none", color: "var(--apm-accent)", fontSize: "var(--apm-text-sm)", cursor: "pointer", padding: "0", fontWeight: "600", textDecoration: "underline", marginLeft: "8px", flexShrink: "0" } }, "Change")
         ]),
         // ── Filter & Run ──
         el("div", { className: "eam-fc-desc-box" }, [
@@ -10559,15 +10576,21 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
     const contextText = container.querySelector("#eam-context-status-text");
     const contextSwitchBtn = container.querySelector("#eam-context-switch-btn");
     const refreshContextStatus = () => {
-      const targetEl = container.querySelector("#eam-target-select");
-      const orgEl = container.querySelector("#eam-org-select");
-      const targetLabel = targetEl ? targetEl.options[targetEl.selectedIndex]?.text || "Work Orders" : "Work Orders";
-      const siteLabel = orgEl && orgEl.value ? orgEl.value : "All Sites";
-      contextText.textContent = `Searching: ${targetLabel} \xB7 ${siteLabel}`;
+      const profSelect = container.querySelector("#eam-profile-select");
+      const profileId = profSelect ? profSelect.value : "manual";
+      const isProfileActive = profileId !== "manual";
+      if (contextStatus) contextStatus.style.display = isProfileActive ? "none" : "";
+      if (!isProfileActive) {
+        const targetEl = container.querySelector("#eam-target-select");
+        const orgEl = container.querySelector("#eam-org-select");
+        const targetLabel = targetEl ? targetEl.options[targetEl.selectedIndex]?.text || "Work Orders" : "Work Orders";
+        const siteLabel = orgEl && orgEl.value ? orgEl.value : "All Sites";
+        contextText.textContent = `Searching: ${targetLabel} \xB7 ${siteLabel}`;
+      }
     };
     contextSwitchBtn.onclick = () => {
-      const modeBtn = document.querySelector("#eam-mode-toggle");
-      if (modeBtn) modeBtn.click();
+      const advBtn = document.querySelector('.eam-fc-view-btn[data-mode="advanced"]');
+      if (advBtn) advBtn.click();
     };
     container.querySelector("#eam-target-select")?.addEventListener("change", refreshContextStatus);
     container.querySelector("#eam-org-select")?.addEventListener("change", () => {
@@ -10857,8 +10880,11 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
             el("div", { className: "rain-cloud-always", style: { color: "var(--apm-success)", marginTop: "-3px" }, innerHTML: SVG_CLOUD })
           ]),
           el("div", { className: "eam-fc-controls" }, [
-            el("button", { id: "eam-btn-spies", className: "eam-fc-mode-btn", title: "Open the dataspy builder to create custom filters", style: { color: "var(--apm-accent)", borderColor: "var(--apm-accent)" } }, "\u2699\uFE0F Build Dataspy"),
-            el("button", { id: "eam-mode-toggle", className: "eam-fc-mode-btn", title: "Advanced mode adds site selection and custom dataspys" }, "Simple \u{1F343}")
+            el("div", { className: "eam-fc-view-toggle" }, [
+              el("button", { dataset: { mode: "simple" }, className: "eam-fc-view-btn" }, "Simple"),
+              el("button", { dataset: { mode: "standard" }, className: "eam-fc-view-btn" }, "Standard"),
+              el("button", { dataset: { mode: "advanced" }, className: "eam-fc-view-btn" }, "Advanced")
+            ])
           ])
         ]);
         const searchForm = createSearchForm({});
@@ -10878,15 +10904,16 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
         panel.appendChild(updateContainer);
         document.body.appendChild(panel);
         document.body.appendChild(filterBuilder);
-        const modeBtn = panel.querySelector("#eam-mode-toggle");
+        const viewToggle = panel.querySelector(".eam-fc-view-toggle");
         const spiesBtn = panel.querySelector("#eam-btn-spies");
-        modeBtn.onclick = () => {
-          const isSimple = modeBtn.textContent.includes("Simple");
-          const nextSimple = !isSimple;
-          setModeUI(panel, nextSimple);
-          updateForecastState({ isSimpleMode: nextSimple });
+        viewToggle.addEventListener("click", (e) => {
+          const btn = e.target.closest(".eam-fc-view-btn");
+          if (!btn) return;
+          const mode = btn.dataset.mode;
+          setModeUI(panel, mode);
+          updateForecastState({ viewMode: mode });
           saveAllPreferences();
-        };
+        });
         spiesBtn.onclick = () => {
           const dTextEl = panel.querySelector("#eam-desc-text");
           const oTextEl = panel.querySelector("#eam-org-select");
@@ -10899,6 +10926,8 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
           setSelectedProfileId(newVal);
           updateProfileUI_Global();
           saveAllPreferences();
+          const mainView = panel.querySelector("#eam-main-view");
+          if (mainView?._refreshContextStatus) mainView._refreshContextStatus();
           if (newVal === "manual") {
             clearPersistentToast();
           }
@@ -10910,31 +10939,28 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
       APMLogger.error("Forecast", "Failed to build forecast UI:", e);
     }
   }
-  function setModeUI(panel, isSimple) {
-    const modeBtn = panel.querySelector("#eam-mode-toggle");
+  function setModeUI(panel, viewMode) {
+    const advProfile = panel.querySelector("#eam-adv-profile");
     const advSite = panel.querySelector("#eam-adv-site");
     const contextStatus = panel.querySelector("#eam-context-status");
-    if (isSimple) {
-      if (advSite) advSite.style.display = "none";
-      if (contextStatus) contextStatus.style.display = "flex";
-      modeBtn.innerHTML = "Simple \u{1F343}";
-      modeBtn.style.color = "var(--apm-success)";
-      modeBtn.style.borderColor = "var(--apm-success)";
-      modeBtn.style.background = "var(--apm-surface-inset)";
-    } else {
-      if (advSite) advSite.style.display = "flex";
-      if (contextStatus) contextStatus.style.display = "none";
-      modeBtn.innerHTML = "Advanced \u2699\uFE0F";
-      modeBtn.style.color = "var(--apm-warning)";
-      modeBtn.style.borderColor = "var(--apm-warning)";
-      modeBtn.style.background = "rgba(243, 156, 18, 0.08)";
-    }
+    const showProfile = viewMode === "standard" || viewMode === "advanced";
+    const showSite = viewMode === "advanced";
+    const showContext = viewMode !== "advanced";
+    if (advProfile) advProfile.style.display = showProfile ? "flex" : "none";
+    if (advSite) advSite.style.display = showSite ? "flex" : "none";
+    if (contextStatus) contextStatus.style.display = showContext ? "flex" : "none";
+    panel.querySelectorAll(".eam-fc-view-btn").forEach((btn) => {
+      btn.classList.toggle("active", btn.dataset.mode === viewMode);
+    });
     const mainView = panel.querySelector("#eam-main-view");
     if (mainView?._refreshContextStatus) mainView._refreshContextStatus();
   }
   function syncPreferences(panel) {
     const prefs = loadPreferences();
-    if (!prefs) return;
+    if (!prefs) {
+      setModeUI(panel, "standard");
+      return;
+    }
     if (prefs.descOp) {
       const field = panel.querySelector("#eam-desc-op");
       if (field) field.value = prefs.descOp;
@@ -10947,7 +10973,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
       const field = panel.querySelector("#eam-today-only-toggle");
       if (field) field.checked = prefs.todayOnly;
     }
-    setModeUI(panel, prefs.isSimpleMode !== false);
+    setModeUI(panel, forecastState.viewMode || "standard");
     const isCustomDateMode = prefs.isCustomDateMode === true;
     {
       const field = panel.querySelector("#eam-relative-dates");
@@ -11027,6 +11053,9 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
 .eam-fc-day-cb:checked {
     background: var(--apm-accent, #3498db);
     border-color: var(--apm-accent, #3498db);
+}
+.eam-fc-day-cb:checked:not(:disabled):hover {
+    filter: brightness(1.15);
 }
 .eam-fc-day-cb:checked::after {
     content: '';
@@ -11392,6 +11421,20 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
   init_dom_helpers();
   init_logger();
   var DEFAULT_RULE_COLOR = "#e74c3c";
+  function applyToggleBtnStyle(btn, active) {
+    if (!btn) return;
+    if (active) {
+      btn.classList.add("active");
+      btn.style.background = "var(--apm-accent-subtle)";
+      btn.style.borderColor = "var(--apm-accent)";
+      btn.style.color = "var(--apm-accent)";
+    } else {
+      btn.classList.remove("active");
+      btn.style.background = "var(--apm-surface-inset)";
+      btn.style.borderColor = "var(--apm-border)";
+      btn.style.color = "var(--apm-text-disabled)";
+    }
+  }
   var _setupInitialized = false;
   var _previewDebounceTimer = null;
   var _editingId = null;
@@ -11518,16 +11561,8 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
               if (ccColorEl) ccColorEl.value = r.color;
               const fillBtn = document.getElementById("cc-btn-fill");
               const tagBtn = document.getElementById("cc-btn-tag");
-              if (fillBtn) {
-                if (!!r.fill) fillBtn.classList.add("active");
-                else fillBtn.classList.remove("active");
-                fillBtn.style.background = fillBtn.classList.contains("active") ? "var(--apm-surface-0)" : "transparent";
-              }
-              if (tagBtn) {
-                if (!!r.showTag) tagBtn.classList.add("active");
-                else tagBtn.classList.remove("active");
-                tagBtn.style.background = tagBtn.classList.contains("active") ? "var(--apm-surface-0)" : "transparent";
-              }
+              applyToggleBtnStyle(fillBtn, !!r.fill);
+              applyToggleBtnStyle(tagBtn, !!r.showTag);
               updatePreview();
               const btnText = document.getElementById("cc-add-btn-text");
               const addBtn = document.getElementById("cc-add-btn");
@@ -11568,16 +11603,8 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
       if (ccTagEl) ccTagEl.value = "";
       const ccColorEl = document.getElementById("cc-color");
       if (ccColorEl) ccColorEl.value = DEFAULT_RULE_COLOR;
-      const fillBtn = document.getElementById("cc-btn-fill");
-      const tagBtn = document.getElementById("cc-btn-tag");
-      if (fillBtn) {
-        fillBtn.classList.add("active");
-        fillBtn.style.background = "var(--apm-surface-0)";
-      }
-      if (tagBtn) {
-        tagBtn.classList.add("active");
-        tagBtn.style.background = "var(--apm-surface-0)";
-      }
+      applyToggleBtnStyle(document.getElementById("cc-btn-fill"), true);
+      applyToggleBtnStyle(document.getElementById("cc-btn-tag"), true);
       clearPreview();
       updatePreview();
       const btnText = document.getElementById("cc-add-btn-text");
@@ -11611,16 +11638,14 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
     const elFillBtn = document.getElementById("cc-btn-fill");
     if (elFillBtn) elFillBtn.onclick = (e) => {
       e.stopPropagation();
-      elFillBtn.classList.toggle("active");
-      elFillBtn.style.background = elFillBtn.classList.contains("active") ? "var(--apm-surface-0)" : "var(--apm-inactive-bg, rgba(74, 90, 106, 0.4))";
+      applyToggleBtnStyle(elFillBtn, !elFillBtn.classList.contains("active"));
       updatePreview();
       updateGridPreview();
     };
     const elTagBtn = document.getElementById("cc-btn-tag");
     if (elTagBtn) elTagBtn.onclick = (e) => {
       e.stopPropagation();
-      elTagBtn.classList.toggle("active");
-      elTagBtn.style.background = elTagBtn.classList.contains("active") ? "var(--apm-surface-0)" : "var(--apm-inactive-bg, rgba(74, 90, 106, 0.4))";
+      applyToggleBtnStyle(elTagBtn, !elTagBtn.classList.contains("active"));
       updatePreview();
       updateGridPreview();
     };
@@ -11885,14 +11910,8 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
     if (ccSearch) ccSearch.value = "";
     if (ccTag) ccTag.value = "";
     if (ccColor) ccColor.value = DEFAULT_RULE_COLOR;
-    if (ccBtnFill) {
-      ccBtnFill.classList.add("active");
-      ccBtnFill.style.background = "var(--apm-surface-0)";
-    }
-    if (ccBtnTag) {
-      ccBtnTag.classList.add("active");
-      ccBtnTag.style.background = "var(--apm-surface-0)";
-    }
+    applyToggleBtnStyle(ccBtnFill, true);
+    applyToggleBtnStyle(ccBtnTag, true);
     const previewRow = document.getElementById("cc-preview-row");
     const previewTag = document.getElementById("cc-preview-tag");
     if (previewRow) {
@@ -12645,23 +12664,18 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
         ]),
         el("div", { className: "apm-help-content", style: { fontSize: "12px", lineHeight: "1.6" } }, [
           el("div", { style: { marginBottom: "15px", borderBottom: "1px solid var(--apm-border)", paddingBottom: "10px" } }, [
-            el("b", { style: { color: "var(--apm-success)", display: "block", marginBottom: "5px" } }, "Latest \u2014 UI & Quality of Life"),
+            el("b", { style: { color: "var(--apm-success)", display: "block", marginBottom: "5px" } }, "Latest \u2014 UI, Quality of Life, Infrastructure"),
             el("ul", { style: { paddingLeft: "20px", margin: "0" } }, [
               el("li", {}, "UI overhaul \u2014 centralized theme tokens, consistent visual flow across all panels and popups"),
               el("li", {}, "First-run welcome screen with theme selection and optional feature tour"),
               el("li", {}, "Comprehensive Help & Tips guide covering all features, linked from both settings and forecast"),
-              el("li", {}, "Redesigned Quick Book and Auto Fill trigger buttons with distinct colors and hover states")
-            ])
-          ]),
-          el("div", { style: { marginBottom: "15px", borderBottom: "1px solid var(--apm-border)", paddingBottom: "10px" } }, [
-            el("b", { style: { color: "var(--apm-text-secondary)", display: "block", marginBottom: "5px" } }, "Recent \u2014 Infrastructure & Dataspy"),
-            el("ul", { style: { paddingLeft: "20px", margin: "0" } }, [
               el("li", {}, "Custom dataspy builder with multi-keyword OR/AND/exclusion filters"),
               el("li", {}, "Performance & error diagnostics tab"),
-              el("li", {}, "Tab reordering with overflow menu support and tab hiding"),
+              el("li", {}, "Grid Column resizing, record tab reordering with overflow menu support and tab hiding"),
               el("li", {}, "ColorCode engine performance improvements with live rule preview"),
               el("li", {}, "Global configuration export/import"),
               el("li", {}, "Reduced dark mode page load flash"),
+              el("li", {}, "Expanded hyperlink support for non-work order records"),
               el("li", {}, "Service centralization and legacy code cleanup")
             ])
           ]),
@@ -12671,7 +12685,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
               el("li", {}, "WO QR codes for quick mobile access"),
               el("li", {}, "ColorCode rule pause/resume toggle"),
               el("li", {}, "Relative date filtering for ColorCode rules"),
-              el("li", {}, "Expanded hyperlink support for non-work order records")
+              el("li", {}, "Compatability with BetterAPM nametag export into ColorCode")
             ])
           ]),
           el("div", {}, [
@@ -12919,8 +12933,8 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
             ])
           ]),
           el("div", { style: { display: "flex", gap: "8px", width: "100%", marginBottom: "15px" } }, [
-            el("button", { id: "cc-btn-fill", className: "apm-cc-style-btn active", title: "Fill Row Background", style: { flex: "1", height: "28px", display: "flex", alignItems: "center", justifyContent: "center", border: "1px solid var(--apm-border)", borderRadius: "4px", background: "var(--apm-surface-raised)", cursor: "pointer", color: "white", transition: "all 0.2s", fontSize: "11px", fontWeight: "bold" } }, "Fill Row"),
-            el("button", { id: "cc-btn-tag", className: "apm-cc-style-btn active", title: "Show Nametag", style: { flex: "1", height: "28px", display: "flex", alignItems: "center", justifyContent: "center", border: "1px solid var(--apm-border)", borderRadius: "4px", background: "var(--apm-surface-raised)", cursor: "pointer", color: "white", transition: "all 0.2s", fontSize: "11px", fontWeight: "bold" } }, "Name Tag")
+            el("button", { id: "cc-btn-fill", className: "apm-cc-style-btn active", title: "Fill Row Background", style: { flex: "1", height: "28px", display: "flex", alignItems: "center", justifyContent: "center", border: "1px solid var(--apm-accent)", borderRadius: "4px", background: "var(--apm-accent-subtle)", cursor: "pointer", color: "var(--apm-accent)", transition: "all 0.15s", fontSize: "11px", fontWeight: "bold" } }, "Fill Row"),
+            el("button", { id: "cc-btn-tag", className: "apm-cc-style-btn active", title: "Show Nametag", style: { flex: "1", height: "28px", display: "flex", alignItems: "center", justifyContent: "center", border: "1px solid var(--apm-accent)", borderRadius: "4px", background: "var(--apm-accent-subtle)", cursor: "pointer", color: "var(--apm-accent)", transition: "all 0.15s", fontSize: "11px", fontWeight: "bold" } }, "Name Tag")
           ]),
           el("div", { style: { display: "flex", gap: "8px", flex: "1", justifyContent: "space-between", alignItems: "center" } }, [
             el("div", { style: { fontSize: "11px", color: "var(--apm-success)", fontStyle: "italic" } }, "\u2713 Live preview on grid"),
