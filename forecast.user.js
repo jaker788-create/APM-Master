@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         APM Master: Unified Tools
 // @namespace    https://w.amazon.com/bin/view/Users/rosendah/APM-Master/
-// @version      14.6.10
+// @version      14.7.2
 // @description  Quality of life and automation tool that uses native EAM ExtJS Framework functions for high reliability and capability. This is actively supported tool so Slack me or submit bug report/feature request through the bug report button in the menu.
 // @author       Jacob Rosendahl
 // @icon         https://media.licdn.com/dms/image/v2/D5603AQGdCV0_LQKRfQ/profile-displayphoto-scale_100_100/B56ZyZLvQ5HgAg-/0/1772096519061?e=1773878400&v=beta&t=eWO1Jiy0-WbzG_yBv-SBrmmsVOPMexF57-q1Xh_VXCk
@@ -10,7 +10,6 @@
 // @match        https://idp.federate.amazon.com/*
 // @match        https://*.ptp.amazon.dev/*
 // @match        https://*.insights.amazon.dev/*
-// @match        https://*.apm-es.gps.amazon.dev/*
 // @match        https://*.hexagon.com/*
 // @match        https://*.octave.com/*
 // @updateURL    https://drive.corp.amazon.com/view/rosendah@/greasemonkey_scripts/APM-Master/forecast.user.js
@@ -30,10 +29,10 @@
 // ==/UserScript==
 
 if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dark') {
-  var _dc = document.getElementById('apm-dark-canvas') || document.createElement('style');
-  _dc.id = 'apm-dark-canvas';
-  _dc.textContent = 'html { background-color: #121212 !important; color-scheme: dark !important; }';
-  (document.head || document.documentElement).appendChild(_dc);
+    var _dc = document.getElementById('apm-dark-canvas') || document.createElement('style');
+    _dc.id = 'apm-dark-canvas';
+    _dc.textContent = 'html { background-color: #121212 !important; color-scheme: dark !important; }';
+    (document.head || document.documentElement).appendChild(_dc);
 }
 
 (() => {
@@ -58,9 +57,9 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
         hostname,
         // Core Domains
         isEAM: hostname.includes("hxgnsmartcloud.com"),
-        // 'amazon.dev' targets the PTP development domain; 'insights' matches the
-        // HxGN EAM Insights subdomain where the PTP timer iframe is hosted.
-        isPTP: /\.amazon\.dev$|insights\.hxgnsmartcloud\.com/i.test(hostname),
+        // PTP runs on *.ptp.amazon.dev and *.insights.amazon.dev subdomains;
+        // 'insights' also matches the HxGN EAM Insights subdomain where the PTP timer iframe is hosted.
+        isPTP: /\.(ptp|insights)\.amazon\.dev$|insights\.hxgnsmartcloud\.com/i.test(hostname),
         isLanding: hostname.includes("octave.com") || hostname.includes("hexagon.com"),
         isShell: url.includes("/base/common"),
         // Auth / Transition Domains
@@ -76,7 +75,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
         // Fallback: outermost EAM content frame if parent IS top and we're not a
         // shell/content child frame. Note: PTP timer UI bypasses this entirely by
         // always rendering on unsafeWindow.top.document (see ptp-timer.js).
-        isTop: window === window.top || (function () {
+        isTop: window === window.top || (function() {
           try {
             return window.parent === window.top && !url.includes("/base/common") && !url.includes("/base/loadmain");
           } catch (e) {
@@ -116,7 +115,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
   });
 
   // src/core/constants.js
-  var KEY_THEME, CC_STORAGE_RULES, CC_STORAGE_SET, PRESET_STORAGE_KEY, STORAGE_KEY, APM_GENERAL_STORAGE, CURRENT_VERSION, VERSION_CHECK_URL, UPDATE_URL, LABOR_EMPS_STORAGE, LABOR_ACTIVE_STORAGE, LABOR_DOCK_STORAGE, LABOR_PREFS_STORAGE, LABOR_NIGHT_SHIFT_KEY, LABOR_LAST_EMP_KEY, SESSION_STORAGE_KEY, PTP_HISTORY_KEY, UPDATE_CHECK_KEY, MIGRATIONS_DONE_KEY, WELCOME_SEEN_KEY, BETA_VERSION_CHECK_URL, BETA_UPDATE_URL, LOG_LEVELS, DEFAULT_TENANT, SESSION_TIMEOUT_URL, LINK_CONFIG, MIN_GRID_COLUMNS, MIN_TAB_ITEMS, ENTITY_REGISTRY, SCREEN_TITLES;
+  var KEY_THEME, CC_STORAGE_RULES, CC_STORAGE_SET, PRESET_STORAGE_KEY, STORAGE_KEY, APM_GENERAL_STORAGE, CURRENT_VERSION, VERSION_CHECK_URL, UPDATE_URL, LABOR_EMPS_STORAGE, LABOR_ACTIVE_STORAGE, LABOR_DOCK_STORAGE, LABOR_PREFS_STORAGE, LABOR_NIGHT_SHIFT_KEY, LABOR_LAST_EMP_KEY, SESSION_STORAGE_KEY, PTP_HISTORY_KEY, UPDATE_CHECK_KEY, MIGRATIONS_DONE_KEY, WELCOME_SEEN_KEY, SNAPSHOT_STORAGE_PREFIX, BETA_VERSION_CHECK_URL, BETA_UPDATE_URL, LOG_LEVELS, DEFAULT_TENANT, SESSION_TIMEOUT_URL, LINK_CONFIG, MIN_GRID_COLUMNS, MIN_TAB_ITEMS, ENTITY_REGISTRY, SCREEN_TITLES;
   var init_constants = __esm({
     "src/core/constants.js"() {
       KEY_THEME = "apm_v1_ui_theme";
@@ -125,7 +124,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
       PRESET_STORAGE_KEY = "apm_v1_autofill_presets";
       STORAGE_KEY = "apm_v1_forecast_prefs";
       APM_GENERAL_STORAGE = "apm_v1_general_settings";
-      CURRENT_VERSION = "14.6.10";
+      CURRENT_VERSION = "14.7.2";
       VERSION_CHECK_URL = "https://raw.githubusercontent.com/jaker788-create/APM-Master/main/forecast.user.js";
       UPDATE_URL = "https://raw.githubusercontent.com/jaker788-create/APM-Master/main/forecast.user.js";
       LABOR_EMPS_STORAGE = "apm_v1_labor_employees";
@@ -139,6 +138,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
       UPDATE_CHECK_KEY = "apm_last_update_check";
       MIGRATIONS_DONE_KEY = "apm_v1_migrations_done";
       WELCOME_SEEN_KEY = "apm_v1_welcome_seen";
+      SNAPSHOT_STORAGE_PREFIX = "apm_v1_snapshot_";
       BETA_VERSION_CHECK_URL = "https://raw.githubusercontent.com/jaker788-create/APM-Master/Beta/forecast.user.js";
       BETA_UPDATE_URL = "https://raw.githubusercontent.com/jaker788-create/APM-Master/Beta/forecast.user.js";
       LOG_LEVELS = {
@@ -1493,7 +1493,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
       const ext = win?.Ext;
       if (!ext || !ext.Ajax) return resolve();
       if (!ext.Ajax.isLoading()) return resolve();
-      const onComplete = function () {
+      const onComplete = function() {
         if (!ext.Ajax.isLoading()) {
           ext.Ajax.un("requestcomplete", onComplete);
           ext.Ajax.un("requestexception", onComplete);
@@ -1666,7 +1666,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
         /**
          * Set a value on an ExtJS field and fire necessary events.
          */
-        setFieldValue: function (form, fieldName, value, isCombo = false) {
+        setFieldValue: function(form, fieldName, value, isCombo = false) {
           const f = form.findField(fieldName);
           if (!f) return false;
           try {
@@ -1694,7 +1694,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
         /**
          * Ensure a combo store is loaded before interacting.
          */
-        ensureStoreLoaded: async function (field, win) {
+        ensureStoreLoaded: async function(field, win) {
           if (!field || !field.store) return;
           if (field.store.getCount() === 0 && !field.store.isLoading()) {
             if (field.doQuery) field.doQuery(field.allQuery || "", true);
@@ -1723,11 +1723,10 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
       TRUSTED_PATTERNS = [
         /\.hxgnsmartcloud\.com$/,
         /\.hexagon\.com$/,
-        // IMPORTANT: Must be \.amazon\.dev$ (broad), NOT \.ptp\.amazon\.dev$ (narrow).
-        // PTP uses varying subdomains: user.sparsy.insights.amazon.dev, *.ptp.amazon.dev, etc.
-        // A narrow pattern breaks PTP communication silently — no error, just dropped messages.
+        // PTP uses varying subdomains under ptp and insights:
+        // e.g. user.sparsy.insights.amazon.dev, *.ptp.amazon.dev, etc.
         // Message handlers must also validate message structure/type.
-        /\.amazon\.dev$/
+        /\.(ptp|insights)\.amazon\.dev$/
       ];
     }
   });
@@ -1739,7 +1738,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
       init_logger();
       init_utils();
       init_origin_guard();
-      UIManager = /* @__PURE__ */ (function () {
+      UIManager = /* @__PURE__ */ (function() {
         const localPanels = /* @__PURE__ */ new Set();
         let isInitialized = false;
         const getGlobalRegistry = () => {
@@ -2303,7 +2302,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
             }
           });
           const origRequest = win.Ext.Ajax.request.bind(win.Ext.Ajax);
-          win.Ext.Ajax.request = function (options) {
+          win.Ext.Ajax.request = function(options) {
             if (!options._apmHooked) {
               options._apmHooked = true;
               handlers.beforerequest.forEach((fn, id) => {
@@ -2533,7 +2532,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
       init_logger();
       init_eam_query();
       cleanEmployeeId = (id) => (id && id.includes("@") ? id.split("@")[0] : id || "").toUpperCase();
-      LaborService = /* @__PURE__ */ (function () {
+      LaborService = /* @__PURE__ */ (function() {
         let laborCache = {
           data: [],
           lastFetch: 0,
@@ -2622,7 +2621,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
       init_ajax_hooks();
       init_feature_flags();
       init_dom_helpers();
-      LaborBooker = (function () {
+      LaborBooker = (function() {
         let _laborWin = null;
         const getLaborWin = () => _laborWin || (_laborWin = apmGetGlobalWindow());
         let isRunning2 = false;
@@ -2738,7 +2737,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
               margin: "0 0 0 8",
               html: '<button id="apm-quick-book-btn" class="apm-lb-trigger" style="height:24px;">Quick Book</button>',
               listeners: {
-                afterrender: function (cmp) {
+                afterrender: function(cmp) {
                   const btn = cmp.getEl()?.dom?.querySelector("#apm-quick-book-btn");
                   if (btn) {
                     btn.addEventListener("click", (e) => {
@@ -3079,12 +3078,18 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
                 const form = formPanel.getForm();
                 if (employee) {
                   ExtUtils.setFieldValue(form, "employee", employee, true);
-                  await delay(150);
+                  if (isWindowAccessible(targetWin)) {
+                    await waitForAjax(targetWin);
+                  }
+                  await delay(100);
                 }
                 ExtUtils.setFieldValue(form, "datework", eamDate);
                 ExtUtils.setFieldValue(form, "hrswork", targetHours);
                 await ExtUtils.ensureStoreLoaded(form.findField("octype"), targetWin);
                 ExtUtils.setFieldValue(form, "octype", targetType, true);
+                if (isWindowAccessible(targetWin)) {
+                  await waitForAjax(targetWin);
+                }
                 const fOcrType = form.findField("ocrtype");
                 if (fOcrType && !fOcrType.getValue()) {
                   ExtUtils.setFieldValue(form, "ocrtype", targetType);
@@ -3279,7 +3284,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
           checkTabAndInject(win);
         }
         return {
-          init: function (win) {
+          init: function(win) {
             if (!FeatureFlags.isEnabled("laborBooker")) return;
             const targetWin = win || getLaborWin();
             try {
@@ -3300,7 +3305,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
             });
           },
           checkTabAndInject,
-          checkAll: function () {
+          checkAll: function() {
             const wins = getExtWindows();
             const docs = wins.filter(isWindowAccessible).map((w) => w.document);
             for (const [doc, obs] of laborObservers.entries()) {
@@ -3320,7 +3325,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
               }
             });
           },
-          quickBookHours: async function (hours, win) {
+          quickBookHours: async function(hours, win) {
             return executeBookingFlow({ hours, date: getLocalIsoDate(/* @__PURE__ */ new Date()), type: "N" }, win);
           }
         };
@@ -3545,7 +3550,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
       }
       if (!hookState.wrapper) {
         hookState.origBeforeLoad = obj.beforeLoad;
-        hookState.wrapper = function (tags) {
+        hookState.wrapper = function(tags) {
           targetWin.Ext.manifest = manifestPath;
           if (typeof hookState.origBeforeLoad === "function") {
             try {
@@ -3781,11 +3786,9 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
           if (newTheme !== state.activeTheme) applyEnforcer(newTheme);
         } else if (d && d.type === "APM_GET_THEME") {
           const cur = state.activeTheme || "default";
-          if (cur !== "default") {
-            try {
-              if (e.source) safePostMessage(e.source, { type: "APM_SET_THEME", value: cur });
-            } catch (err) {
-            }
+          try {
+            if (e.source) safePostMessage(e.source, { type: "APM_SET_THEME", value: cur });
+          } catch (err) {
           }
         }
       });
@@ -3795,7 +3798,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
       try {
         if (!targetWin[FLAGS.STORAGE_PATCH]) {
           const _set = targetWin.localStorage.setItem;
-          targetWin.localStorage.setItem = function (k, v) {
+          targetWin.localStorage.setItem = function(k, v) {
             const r = _set.apply(this, arguments);
             if (k === "ApmGeneralSettings" || k === APM_GENERAL_STORAGE || k === CC_STORAGE_SET || k === KEY_THEME) {
               const next = ThemeResolver.getPreferredTheme();
@@ -4272,15 +4275,15 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
       const monitor = this;
       const origOpen = XMLHttpRequest.prototype.open;
       const origSend = XMLHttpRequest.prototype.send;
-      XMLHttpRequest.prototype.open = function (method, url2) {
+      XMLHttpRequest.prototype.open = function(method, url2) {
         this._apmUrl = (url2 || "").toString();
         return origOpen.apply(this, arguments);
       };
-      XMLHttpRequest.prototype.send = function (body) {
+      XMLHttpRequest.prototype.send = function(body) {
         if (AppState.session.isInitialized) return origSend.apply(this, arguments);
         const url2 = this._apmUrl;
         const payload = body && typeof body === "string" ? body : null;
-        this.addEventListener("load", function () {
+        this.addEventListener("load", function() {
           if (AppState.session.isInitialized) return;
           if (this.status === 200) {
             monitor.tryCaptureFromTraffic(url2, payload);
@@ -4297,7 +4300,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
       window[FLAGS.SESSION_FETCH_HOOK] = true;
       const monitor = this;
       const origFetch = window.fetch;
-      window.fetch = async function (...args) {
+      window.fetch = async function(...args) {
         const url2 = args[0] instanceof Request ? args[0].url : typeof args[0] === "string" ? args[0] : "";
         const options = (args[0] instanceof Request ? args[0] : args[1]) || {};
         const payload = options.body && typeof options.body === "string" ? options.body : null;
@@ -4419,7 +4422,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
     /**
      * Performs a lightweight request to EAM to keep the session alive.
      */
-    refreshSession: async function () {
+    refreshSession: async function() {
       const session = AppState.session;
       if (!session.eamid || !session.tenant) return;
       if (!window.location.hostname.includes("eam.hxgnsmartcloud.com")) return;
@@ -4559,10 +4562,10 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
     return document;
   }
   function setupCloseButton(closeBtn, timerUI, onClose) {
-    closeBtn.onmouseover = function () {
+    closeBtn.onmouseover = function() {
       this.style.opacity = "1";
     };
-    closeBtn.onmouseout = function () {
+    closeBtn.onmouseout = function() {
       this.style.opacity = "0.6";
     };
     closeBtn.onclick = () => {
@@ -4702,16 +4705,14 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
         }
       }
       if (msg.type === "APM_GET_THEME" || msg.apmMaster === "getTheme") {
-        const activeTheme = ThemeResolver.getPreferredTheme();
-        if (activeTheme && activeTheme !== "default") {
-          try {
-            e.source?.postMessage({
-              type: "APM_SET_THEME",
-              apmMaster: "theme",
-              value: activeTheme
-            }, e.origin);
-          } catch (err) {
-          }
+        const activeTheme = ThemeResolver.getPreferredTheme() || "default";
+        try {
+          e.source?.postMessage({
+            type: "APM_SET_THEME",
+            apmMaster: "theme",
+            value: activeTheme
+          }, e.origin);
+        } catch (err) {
         }
       }
       if (msg.type === "APM_PTP_CLICK_AWAY") {
@@ -6206,7 +6207,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
     const originalSetActive = mainTabPanel.setActiveTab;
     if (mainTabPanel.items && !mainTabPanel.items.__apmHooked) {
       const originalCollInsert = mainTabPanel.items.insert;
-      mainTabPanel.items.insert = function (idx, item) {
+      mainTabPanel.items.insert = function(idx, item) {
         const result = originalCollInsert.apply(this, arguments);
         if (!_isApplyingTabConsistency) {
           scheduleCleanupPass();
@@ -6215,7 +6216,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
       };
       mainTabPanel.items.__apmHooked = true;
     }
-    mainTabPanel.move = function (item, toIdx) {
+    mainTabPanel.move = function(item, toIdx) {
       const result = originalMove.apply(this, arguments);
       if (!_isApplyingTabConsistency) {
         APMLogger.debug("TabGridOrder", `Framework moved "${normalizeTabName(item?.title || item?.text || "")}" to ${toIdx}. Scheduling cleanup.`);
@@ -6223,21 +6224,21 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
       }
       return result;
     };
-    mainTabPanel.add = function () {
+    mainTabPanel.add = function() {
       const result = originalAdd.apply(this, arguments);
       if (!_isApplyingTabConsistency) {
         scheduleCleanupPass();
       }
       return result;
     };
-    mainTabPanel.insert = function (idx, item) {
+    mainTabPanel.insert = function(idx, item) {
       const result = originalInsert.apply(this, arguments);
       if (!_isApplyingTabConsistency) {
         scheduleCleanupPass();
       }
       return result;
     };
-    mainTabPanel.setActiveTab = function (item) {
+    mainTabPanel.setActiveTab = function(item) {
       if (_allowActiveTabChange) return originalSetActive.apply(this, arguments);
       APMLogger.warn("TabGridOrder", `Blocked focus jump for "${normalizeTabName(item?.title || item?.text || "")}". Focus protected.`);
       return originalSetActive.call(this, this.getActiveTab());
@@ -7501,7 +7502,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
       if (!win.Ext || !win.Ext.Component || win[FLAGS.CONSISTENCY_BOUND + "_watcher"]) return;
       const self = this;
       const originalInit = win.Ext.Component.prototype.initComponent;
-      win.Ext.Component.prototype.initComponent = function () {
+      win.Ext.Component.prototype.initComponent = function() {
         const res = originalInit.apply(this, arguments);
         if (this.isXType) {
           if (this.isXType("gridpanel") || this.isXType("tabpanel")) {
@@ -7536,7 +7537,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
       if (!reader) return;
       const self = this;
       const originalRead = reader.read;
-      reader.read = function (response) {
+      reader.read = function(response) {
         const result = originalRead.apply(this, arguments);
         try {
           const rawData = response.responseXML || response.responseText || response;
@@ -8377,7 +8378,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
           for (let i = 0; i < m.addedNodes.length; i++) {
             const n = m.addedNodes[i];
             if (n.nodeType === 1 && (n.classList?.contains("x-grid-item-container") || n.classList?.contains("x-grid-view") || n.classList?.contains("x-panel-body") || // Generic panel body for tab switches
-              n.tagName === "IFRAME")) {
+            n.tagName === "IFRAME")) {
               hasPotentialGrid = true;
               break;
             }
@@ -9182,7 +9183,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
   }
   function createFilterBuilder() {
     try {
-      let refreshChipList = function () {
+      let refreshChipList = function() {
         chipListEl.innerHTML = "";
         let hasAny = false;
         for (const fc of FIELD_CONFIG) {
@@ -9221,16 +9222,16 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
             )
           );
         }
-      }, refreshPreview = function () {
+      }, refreshPreview = function() {
         previewEl.innerHTML = "";
         previewEl.appendChild(buildPreviewText(state));
-      }, updateHint = function () {
+      }, updateHint = function() {
         const op = OPERATORS.find((o) => o.value === opSelect.value);
         hintEl.textContent = op ? op.hint : "";
-      }, updatePlaceholder = function () {
+      }, updatePlaceholder = function() {
         const fc = FIELD_CONFIG.find((f) => f.key === fieldSelect.value);
         keywordInput.placeholder = fc ? fc.placeholder : "Enter keyword...";
-      }, addChip = function () {
+      }, addChip = function() {
         const field = fieldSelect.value;
         const operator = opSelect.value;
         const keyword = keywordInput.value.trim();
@@ -9251,19 +9252,19 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
         keywordInput.focus();
         refreshChipList();
         refreshPreview();
-      }, syncToTextMode = function () {
+      }, syncToTextMode = function() {
         if (!textContainer) return;
         for (const fc of FIELD_CONFIG) {
           const input = textContainer.querySelector(`#fb-text-${fc.key}`);
           if (input) input.value = serializeField(state.fields[fc.key]);
         }
-      }, syncFromTextMode = function () {
+      }, syncFromTextMode = function() {
         if (!textContainer) return;
         for (const fc of FIELD_CONFIG) {
           const input = textContainer.querySelector(`#fb-text-${fc.key}`);
           if (input) state.fields[fc.key] = parseField(input.value);
         }
-      }, loadProfile = function (profId) {
+      }, loadProfile = function(profId) {
         if (!profId) {
           state = createEmptyState();
         } else {
@@ -9287,7 +9288,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
           syncToTextMode();
         }
         refreshPreview();
-      }, saveProfile = function () {
+      }, saveProfile = function() {
         if (!isVisualMode) syncFromTextMode();
         const name = nameInput.value.trim();
         if (!name) {
@@ -9316,7 +9317,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
         profileSelect.value = profData.id;
         deleteBtn.style.display = "inline-block";
         showToast("Profile saved!", "#2ecc71");
-      }, deleteProfile = function () {
+      }, deleteProfile = function() {
         const id = state.profileId;
         if (!id) return;
         if (!confirm("Delete this profile?")) return;
@@ -9329,14 +9330,14 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
         profileSelect.value = "";
         loadProfile(null);
         showToast("Profile deleted", "#e74c3c");
-      }, renderProfileOptions = function () {
+      }, renderProfileOptions = function() {
         profileSelect.innerHTML = "";
         profileSelect.appendChild(el("option", { value: "" }, "-- Create New Profile --"));
         savedProfiles.forEach((p) => {
           const suffix = p.target === "CTJOBS" ? " [CT]" : "";
           profileSelect.appendChild(el("option", { value: p.id }, `${p.name}${suffix}`));
         });
-      }, buildTextMode = function () {
+      }, buildTextMode = function() {
         const rows = FIELD_CONFIG.map(
           (fc) => el("div", { className: "eam-fc-row", style: { marginBottom: "6px" } }, [
             el("label", { className: "eam-fc-label", style: { width: "110px", minWidth: "110px" } }, fc.label + ":"),
@@ -9714,6 +9715,160 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
   init_ajax_hooks();
   init_feature_flags();
   init_toast();
+
+  // src/core/eam-nav.js
+  init_logger();
+  init_constants();
+  function buildEamScreenUrl(target) {
+    const entry = ENTITY_REGISTRY[target];
+    const base = entry ? entry.systemFunc : target;
+    return `${base}?USER_FUNCTION_NAME=${target}&FUNCTION_CLASS=WEBL`;
+  }
+  function suppressEamTransitionError(win) {
+    const suppressors = [];
+    try {
+      const origOnerror = win.onerror;
+      win.onerror = function(msg, url2, line, col, error) {
+        const msgStr = String(msg || "");
+        if (msgStr.includes("items") && msgStr.includes("null")) {
+          APMLogger.debug("EamNav", "Suppressed EAM transition error (window.onerror):", msgStr);
+          return true;
+        }
+        if (origOnerror) return origOnerror.call(this, msg, url2, line, col, error);
+        return false;
+      };
+      suppressors.push(() => {
+        win.onerror = origOnerror;
+      });
+    } catch (e) {
+    }
+    try {
+      const origHandle = win.Ext?.Error?.handle;
+      if (win.Ext?.Error) {
+        win.Ext.Error.handle = function(err) {
+          const msg = err && (err.msg || err.message || String(err)) || "";
+          if (msg.includes("items") && msg.includes("null")) {
+            APMLogger.debug("EamNav", "Suppressed EAM transition error (Ext.Error.handle):", msg);
+            return true;
+          }
+          return origHandle ? origHandle.apply(this, arguments) : false;
+        };
+        suppressors.push(() => {
+          win.Ext.Error.handle = origHandle;
+        });
+      }
+    } catch (e) {
+    }
+    return () => {
+      suppressors.forEach((fn) => {
+        try {
+          fn();
+        } catch (e) {
+        }
+      });
+      APMLogger.debug("EamNav", "EAM error suppression removed");
+    };
+  }
+  function launchScreenDirect(win, target) {
+    try {
+      const nav = win.EAM?.Nav;
+      if (!nav || typeof nav.launchScreen !== "function") {
+        APMLogger.warn("EamNav", "EAM.Nav.launchScreen not available");
+        return false;
+      }
+      const url2 = buildEamScreenUrl(target);
+      APMLogger.info("EamNav", `Direct navigation via EAM.Nav.launchScreen("${url2}")`);
+      const cleanup = suppressEamTransitionError(win);
+      nav.launchScreen(url2, null, { fromNav: true });
+      setTimeout(cleanup, 5e3);
+      return true;
+    } catch (e) {
+      APMLogger.error("EamNav", "EAM.Nav.launchScreen failed:", e);
+      return false;
+    }
+  }
+
+  // src/core/maddon.js
+  init_logger();
+  function injectMaddonFilter(grid, filters) {
+    try {
+      const store = grid.getStore?.();
+      if (!store) return null;
+      const proxy = store.getProxy?.();
+      if (!proxy || !proxy.doRequest) return null;
+      const origDoRequest = proxy.doRequest;
+      proxy.doRequest = function(operation) {
+        proxy.doRequest = origDoRequest;
+        try {
+          const params = operation.getParams?.() || {};
+          const extraParams = proxy.getExtraParams ? proxy.getExtraParams() : proxy.extraParams || {};
+          const allParams = { ...extraParams, ...params };
+          const existingSeqKeys = Object.keys(allParams).filter((k) => k.startsWith("MADDON_FILTER_SEQNUM_"));
+          const existingSeqs = existingSeqKeys.map((k) => parseInt(k.split("_").pop(), 10));
+          const maxSeq = existingSeqs.length > 0 ? Math.max(...existingSeqs) : 0;
+          const ourFilterKeys = Object.keys(filters).filter((k) => k.startsWith("MADDON_FILTER_ALIAS_NAME_"));
+          const ourSeqs = ourFilterKeys.map((k) => parseInt(k.split("_").pop(), 10)).sort((a, b) => a - b);
+          const shifted = {};
+          ourSeqs.forEach((origSeq, idx) => {
+            const newSeq = maxSeq + idx + 1;
+            shifted[`MADDON_FILTER_ALIAS_NAME_${newSeq}`] = filters[`MADDON_FILTER_ALIAS_NAME_${origSeq}`];
+            shifted[`MADDON_FILTER_OPERATOR_${newSeq}`] = filters[`MADDON_FILTER_OPERATOR_${origSeq}`];
+            shifted[`MADDON_FILTER_VALUE_${newSeq}`] = filters[`MADDON_FILTER_VALUE_${origSeq}`];
+            shifted[`MADDON_FILTER_SEQNUM_${newSeq}`] = newSeq.toString();
+            shifted[`MADDON_FILTER_JOINER_${newSeq}`] = filters[`MADDON_FILTER_JOINER_${origSeq}`];
+            if (filters[`MADDON_LPAREN_${origSeq}`] !== void 0) shifted[`MADDON_LPAREN_${newSeq}`] = filters[`MADDON_LPAREN_${origSeq}`];
+            if (filters[`MADDON_RPAREN_${origSeq}`] !== void 0) shifted[`MADDON_RPAREN_${newSeq}`] = filters[`MADDON_RPAREN_${origSeq}`];
+          });
+          const mergedExtra = { ...extraParams, ...shifted };
+          if (proxy.setExtraParams) {
+            proxy.setExtraParams(mergedExtra);
+          } else {
+            proxy.extraParams = mergedExtra;
+          }
+          APMLogger.debug("Maddon", `doRequest: injected ${ourSeqs.length} MADDON filters (shifted after seq ${maxSeq})`);
+        } catch (e) {
+          APMLogger.error("Maddon", "Error injecting MADDON in doRequest:", e);
+        }
+        return origDoRequest.call(this, operation);
+      };
+      APMLogger.debug("Maddon", `Patched proxy.doRequest for ${Object.keys(filters).length} MADDON params`);
+      return { proxy, restore: () => {
+        proxy.doRequest = origDoRequest;
+      } };
+    } catch (e) {
+      APMLogger.error("Maddon", "Failed to inject MADDON filter:", e);
+      return null;
+    }
+  }
+  function clearMaddonFilters(handle) {
+    if (!handle) return;
+    try {
+      if (handle.restore) handle.restore();
+      if (handle.proxy) {
+        const existing = handle.proxy.getExtraParams ? handle.proxy.getExtraParams() : handle.proxy.extraParams || {};
+        const cleaned = { ...existing };
+        let removed = 0;
+        for (const k of Object.keys(cleaned)) {
+          if (k.startsWith("MADDON_")) {
+            delete cleaned[k];
+            removed++;
+          }
+        }
+        if (removed > 0) {
+          if (handle.proxy.setExtraParams) {
+            handle.proxy.setExtraParams(cleaned);
+          } else {
+            handle.proxy.extraParams = cleaned;
+          }
+          APMLogger.debug("Maddon", `Cleaned ${removed} MADDON keys from proxy extraParams`);
+        }
+      }
+    } catch (e) {
+      APMLogger.error("Maddon", "Failed to clear MADDON filters:", e);
+    }
+  }
+
+  // src/modules/forecast/forecast-engine.js
   var isRunning = false;
   var isStopped = false;
   var currentMode = "normal";
@@ -9751,72 +9906,6 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
     } catch (e) {
     }
     return "";
-  }
-  function buildEamScreenUrl(target) {
-    return `WSJOBS?USER_FUNCTION_NAME=${target}&FUNCTION_CLASS=WEBL`;
-  }
-  function suppressEamTransitionError(win) {
-    const suppressors = [];
-    try {
-      const origOnerror = win.onerror;
-      win.onerror = function (msg, url2, line, col, error) {
-        const msgStr = String(msg || "");
-        if (msgStr.includes("items") && msgStr.includes("null")) {
-          APMLogger.debug("Forecast", "Suppressed EAM transition error (window.onerror):", msgStr);
-          return true;
-        }
-        if (origOnerror) return origOnerror.call(this, msg, url2, line, col, error);
-        return false;
-      };
-      suppressors.push(() => {
-        win.onerror = origOnerror;
-      });
-    } catch (e) {
-    }
-    try {
-      const origHandle = win.Ext?.Error?.handle;
-      if (win.Ext?.Error) {
-        win.Ext.Error.handle = function (err) {
-          const msg = err && (err.msg || err.message || String(err)) || "";
-          if (msg.includes("items") && msg.includes("null")) {
-            APMLogger.debug("Forecast", "Suppressed EAM transition error (Ext.Error.handle):", msg);
-            return true;
-          }
-          return origHandle ? origHandle.apply(this, arguments) : false;
-        };
-        suppressors.push(() => {
-          win.Ext.Error.handle = origHandle;
-        });
-      }
-    } catch (e) {
-    }
-    return () => {
-      suppressors.forEach((fn) => {
-        try {
-          fn();
-        } catch (e) {
-        }
-      });
-      APMLogger.debug("Forecast", "EAM error suppression removed");
-    };
-  }
-  function launchScreenDirect(win, target) {
-    try {
-      const nav = win.EAM?.Nav;
-      if (!nav || typeof nav.launchScreen !== "function") {
-        APMLogger.warn("Forecast", "EAM.Nav.launchScreen not available");
-        return false;
-      }
-      const url2 = buildEamScreenUrl(target);
-      APMLogger.info("Forecast", `Direct navigation via EAM.Nav.launchScreen("${url2}")`);
-      const cleanup = suppressEamTransitionError(win);
-      nav.launchScreen(url2, null, { fromNav: true });
-      setTimeout(cleanup, 5e3);
-      return true;
-    } catch (e) {
-      APMLogger.error("Forecast", "EAM.Nav.launchScreen failed:", e);
-      return false;
-    }
   }
   AjaxHooks.onBeforeRequest("forecast-maddon", (win, conn, options) => {
     try {
@@ -10328,27 +10417,19 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
             if (!store) continue;
             const sid = (store.storeId || "").toLowerCase();
             if (!sid.includes("wsjobs") && !sid.includes("ctjobs")) continue;
-            const proxy = store.getProxy && store.getProxy();
-            if (proxy) {
-              const existing = proxy.getExtraParams ? proxy.getExtraParams() : proxy.extraParams || {};
-              proxy.setExtraParams ? proxy.setExtraParams({ ...existing, ...data.maddonParams }) : proxy.extraParams = { ...existing, ...data.maddonParams };
-              data._injectedMaddonKeys = Object.keys(data.maddonParams);
-              data._injectedProxy = proxy;
-              APMLogger.debug("Forecast", `Injected ${Object.keys(data.maddonParams).length} MADDON params into store proxy`);
+            const handle = injectMaddonFilter(grid, data.maddonParams);
+            if (handle) {
+              data._maddonHandle = handle;
               break;
             }
           }
         }
         if (runBtn.handler) runBtn.handler.call(runBtn.scope || runBtn, runBtn);
         else runBtn.fireEvent("click", runBtn);
+        await delay(300);
         await waitForAjax(targetWin);
-        if (data._injectedProxy && data._injectedMaddonKeys) {
-          const proxy = data._injectedProxy;
-          const existing = proxy.getExtraParams ? proxy.getExtraParams() : proxy.extraParams || {};
-          const cleaned = { ...existing };
-          for (const k of data._injectedMaddonKeys) delete cleaned[k];
-          proxy.setExtraParams ? proxy.setExtraParams(cleaned) : proxy.extraParams = cleaned;
-          APMLogger.debug("Forecast", "Cleaned up MADDON params from store proxy");
+        if (data._maddonHandle) {
+          clearMaddonFilters(data._maddonHandle);
         }
       }
     }
@@ -10602,15 +10683,13 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
             el("select", { id: "eam-profile-select", className: "eam-fc-select", style: { color: "var(--apm-accent)", fontWeight: "bold" } }, [
               el("option", { value: "manual" }, "[ Manual Native Search ]")
             ]),
-            el("button", {
-              id: "eam-btn-spies", title: "Open the dataspy builder", style: { background: "none", border: "none", color: "var(--apm-accent)", fontSize: "var(--apm-text-sm)", fontWeight: "600", cursor: "pointer", padding: "0 4px", whiteSpace: "nowrap", transition: "color 0.15s" }, onmouseover: function () {
-                this.style.color = "var(--apm-text-bright)";
-                this.style.textDecoration = "underline";
-              }, onmouseout: function () {
-                this.style.color = "var(--apm-accent)";
-                this.style.textDecoration = "none";
-              }
-            }, "+ New")
+            el("button", { id: "eam-btn-spies", title: "Open the dataspy builder", style: { background: "none", border: "none", color: "var(--apm-accent)", fontSize: "var(--apm-text-sm)", fontWeight: "600", cursor: "pointer", padding: "0 4px", whiteSpace: "nowrap", transition: "color 0.15s" }, onmouseover: function() {
+              this.style.color = "var(--apm-text-bright)";
+              this.style.textDecoration = "underline";
+            }, onmouseout: function() {
+              this.style.color = "var(--apm-accent)";
+              this.style.textDecoration = "none";
+            } }, "+ New")
           ]),
           el("div", { id: "eam-profile-summary", style: { display: "none", background: "var(--apm-accent-subtle)", border: "1px dashed var(--apm-accent)", borderRadius: "var(--apm-radius-sm)", padding: "6px 8px", fontSize: "var(--apm-text-sm)", color: "var(--apm-text-tertiary)" } }, [
             el("div", { style: { fontWeight: "600", color: "var(--apm-accent)", marginBottom: "2px" } }, "Profile Active: ExtJS Filter Engaged"),
@@ -11056,12 +11135,10 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
         const filterBuilder = createFilterBuilder();
         const statusLabel = el("div", { id: "eam-status", className: "eam-fc-status" });
         const updateContainer = el("div", { id: "eam-update-container", className: "eam-fc-update-box" }, [
-          el("a", {
-            href: getUpdateUrls().download, target: "_blank", className: "apm-footer-update-btn", onclick: (e) => {
-              e.preventDefault();
-              window.open(getUpdateUrls().download, "_blank");
-            }
-          }, "\u2728 Update Available")
+          el("a", { href: getUpdateUrls().download, target: "_blank", className: "apm-footer-update-btn", onclick: (e) => {
+            e.preventDefault();
+            window.open(getUpdateUrls().download, "_blank");
+          } }, "\u2728 Update Available")
         ]);
         panel.appendChild(header);
         panel.appendChild(searchForm);
@@ -11298,7 +11375,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
   init_scheduler();
   init_utils();
   init_logger();
-  var ForecastFilter = /* @__PURE__ */ (function () {
+  var ForecastFilter = /* @__PURE__ */ (function() {
     let filterState = 0;
     let lastKnownStoreId = null;
     const TARGET_DATA_INDEX = "duedate";
@@ -11346,7 +11423,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
         return filterState === 1 ? !isBlank : isBlank;
       });
       const count = store.getCount();
-      store.getTotalCount = function () {
+      store.getTotalCount = function() {
         return count;
       };
       updateFooterTextNatively(grid, count);
@@ -11418,7 +11495,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
         margin: "0 0 0 8",
         html: btnHtml,
         listeners: {
-          afterrender: function (cmp) {
+          afterrender: function(cmp) {
             const btnEl = cmp.getEl()?.dom?.querySelector("#apm-list-pm-btn");
             if (btnEl) {
               btnEl.addEventListener("click", (e) => {
@@ -11432,7 +11509,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
       APMLogger.info("ForecastFilter", `PM filter button injected into toolbar: ${parentToolbar.id}`);
     }
     return {
-      init: function () {
+      init: function() {
         APMScheduler.registerTask("forecast-filter", 1500, () => {
           const existingBtn = document.getElementById("apm-list-pm-btn");
           if (existingBtn && document.body.contains(existingBtn) && filterState === 0) return;
@@ -12293,11 +12370,9 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
   init_constants();
   init_storage();
   init_feature_flags();
-  var LaborTracker = (function () {
-    if (!isTopFrame()) return {
-      init: function () {
-      }
-    };
+  var LaborTracker = (function() {
+    if (!isTopFrame()) return { init: function() {
+    } };
     let activeTab = 1;
     let isFetching = false;
     let isInitialized = false;
@@ -12616,7 +12691,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
       }
     }
     return {
-      init: function () {
+      init: function() {
         if (!FeatureFlags.isEnabled("laborBooker")) return;
         if (!isTopFrame()) return;
         if (isInitialized) {
@@ -12710,6 +12785,435 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
       APMLogger.error("TabTitle", "Failed to update tab title:", e);
     }
   }
+
+  // src/modules/session-snapshot/session-snapshot.js
+  init_scheduler();
+  init_storage();
+  init_logger();
+  init_constants();
+  init_utils();
+  init_toast();
+  init_dom_helpers();
+  init_feature_flags();
+  var SNAPSHOT_TTL = 4 * 60 * 60 * 1e3;
+  var CAPTURE_INTERVAL = 3e3;
+  var RESTORE_GRID_TIMEOUT = 1e4;
+  var PROMPT_AUTO_DISMISS = 15e3;
+  function getTabId() {
+    let id = sessionStorage.getItem("apm_tab_id");
+    if (!id) {
+      id = crypto.randomUUID();
+      sessionStorage.setItem("apm_tab_id", id);
+    }
+    return id;
+  }
+  function snapshotKey(tabId) {
+    return SNAPSHOT_STORAGE_PREFIX + tabId;
+  }
+  function purgeExpiredSnapshots() {
+    const now = Date.now();
+    let purged = 0;
+    try {
+      const keys = APMStorage.list();
+      for (const k of keys) {
+        if (!k.startsWith(SNAPSHOT_STORAGE_PREFIX)) continue;
+        const snap = APMStorage.get(k);
+        if (!snap || !snap.ts || now - snap.ts > SNAPSHOT_TTL) {
+          APMStorage.remove(k);
+          purged++;
+        }
+      }
+      if (purged > 0) APMLogger.info("Snapshot", `Purged ${purged} expired snapshot(s)`);
+    } catch (e) {
+      APMLogger.error("Snapshot", "Error purging expired snapshots:", e);
+    }
+  }
+  var _lastScreen = null;
+  var _lastRecordType = null;
+  var _lastRecordId = null;
+  function detectRecordView() {
+    for (const w of getExtWindows()) {
+      try {
+        if (!w.Ext?.ComponentQuery) continue;
+        const forms = w.Ext.ComponentQuery.query("form[id*=recordview]");
+        for (const form of forms) {
+          if (!form.rendered || form.isDestroyed) continue;
+          const screen = detectScreenFunction(w, null);
+          const entityConfig = ENTITY_REGISTRY[screen];
+          if (!entityConfig) continue;
+          const field = form.down?.(`field[name=${entityConfig.entityKey}]`);
+          const val = field?.getValue?.();
+          if (val) {
+            return { entityType: screen, entityId: String(val) };
+          }
+          const basicForm = form.getForm?.();
+          if (basicForm) {
+            const fVal = basicForm.findField?.(entityConfig.entityKey)?.getValue?.();
+            if (fVal) {
+              return { entityType: screen, entityId: String(fVal) };
+            }
+          }
+          const ctx = findMainGrid();
+          if (ctx) {
+            const sel = ctx.grid.getSelectionModel?.()?.getSelection?.();
+            if (sel && sel.length > 0) {
+              const selVal = sel[0].get(entityConfig.entityKey);
+              if (selVal) {
+                return { entityType: screen, entityId: String(selVal) };
+              }
+            }
+          }
+        }
+      } catch (e) {
+      }
+    }
+    return null;
+  }
+  function captureState(tabId) {
+    if (!isTopFrame()) return;
+    const ctx = findMainGrid();
+    const screen = ctx ? detectScreenFunction(ctx.win, ctx.grid) : null;
+    const record = detectRecordView();
+    const screenChanged = screen !== _lastScreen;
+    const recordChanged = record?.entityType !== _lastRecordType || record?.entityId !== _lastRecordId;
+    if (!screenChanged && !recordChanged) return;
+    _lastScreen = screen;
+    _lastRecordType = record?.entityType || null;
+    _lastRecordId = record?.entityId || null;
+    if (!screen) return;
+    const snapshot = {
+      _v: 1,
+      tabId,
+      ts: Date.now(),
+      screen,
+      record: record ? { entityType: record.entityType, entityId: record.entityId } : null
+    };
+    APMStorage.set(snapshotKey(tabId), snapshot);
+    APMLogger.debug("Snapshot", `Captured: ${screen}${record ? " / " + record.entityId : ""}`);
+  }
+  function buildPromptMessage(snapshot) {
+    if (snapshot.record) {
+      const entry2 = ENTITY_REGISTRY[snapshot.record.entityType];
+      const label = entry2 ? entry2.label : snapshot.record.entityType;
+      return `Your previous session had <b>${label} ${snapshot.record.entityId}</b> open. Restore?`;
+    }
+    const entry = ENTITY_REGISTRY[snapshot.screen];
+    const screenLabel = entry ? entry.screenTitle : snapshot.screen;
+    return `You were on the <b>${screenLabel}</b> screen. Restore?`;
+  }
+  function showRestorePrompt(snapshot) {
+    return new Promise((resolve) => {
+      const PROMPT_ID = "apm-snapshot-restore-prompt";
+      const existing = document.getElementById(PROMPT_ID);
+      if (existing) existing.remove();
+      let resolved = false;
+      let dismissTimer;
+      let progressFrame;
+      const finish = (choice) => {
+        if (resolved) return;
+        resolved = true;
+        if (progressFrame) cancelAnimationFrame(progressFrame);
+        const promptEl = document.getElementById(PROMPT_ID);
+        if (promptEl) {
+          promptEl.style.opacity = "0";
+          promptEl.style.transform = "translateX(-50%) translateY(-20px)";
+          setTimeout(() => promptEl.remove(), 300);
+        }
+        if (dismissTimer) clearTimeout(dismissTimer);
+        resolve(choice);
+      };
+      const font = "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif";
+      const btnBase = {
+        border: "none",
+        borderRadius: "var(--apm-radius-sm, 4px)",
+        fontWeight: "bold",
+        fontFamily: font,
+        fontSize: "var(--apm-text-base, 12px)",
+        cursor: "pointer",
+        padding: "6px 14px",
+        transition: "filter 0.15s, background 0.15s"
+      };
+      const progressBar = el("div", {
+        style: {
+          position: "absolute",
+          bottom: "0",
+          left: "0",
+          height: "2px",
+          width: "100%",
+          background: "var(--apm-accent, #3498db)",
+          borderRadius: "0 0 var(--apm-radius-lg, 10px) var(--apm-radius-lg, 10px)",
+          transformOrigin: "left",
+          opacity: "0.6"
+        }
+      });
+      const startTime = performance.now();
+      const animateProgress = (now) => {
+        if (resolved) return;
+        const elapsed = now - startTime;
+        const remaining = Math.max(0, 1 - elapsed / PROMPT_AUTO_DISMISS);
+        progressBar.style.transform = `scaleX(${remaining})`;
+        if (remaining > 0) progressFrame = requestAnimationFrame(animateProgress);
+      };
+      const prompt2 = el("div", {
+        id: PROMPT_ID,
+        style: {
+          position: "fixed",
+          top: "15px",
+          left: "50%",
+          transform: "translateX(-50%) translateY(-20px)",
+          zIndex: "2147483647",
+          padding: "14px 20px 12px",
+          borderRadius: "var(--apm-radius-lg, 10px)",
+          background: "var(--apm-surface-0, #35404a)",
+          border: "1px solid var(--apm-border, #45535e)",
+          boxShadow: "0 4px 10px rgba(0,0,0,0.5)",
+          fontFamily: font,
+          color: "var(--apm-text-primary, #fff)",
+          display: "flex",
+          flexDirection: "column",
+          gap: "10px",
+          minWidth: "300px",
+          maxWidth: "460px",
+          opacity: "0",
+          transition: "opacity 0.3s ease, transform 0.3s ease",
+          overflow: "hidden"
+        }
+      }, [
+        // Message row
+        el("div", {
+          style: {
+            display: "flex",
+            alignItems: "center",
+            gap: "8px",
+            fontSize: "var(--apm-text-md, 13px)",
+            lineHeight: "1.4"
+          }
+        }, [
+          el("span", {
+            style: {
+              fontSize: "16px",
+              color: "var(--apm-accent, #3498db)",
+              flexShrink: "0"
+            }
+          }, ["\u21BB"]),
+          el("span", { innerHTML: buildPromptMessage(snapshot) })
+        ]),
+        // Button row
+        el("div", {
+          style: {
+            display: "flex",
+            alignItems: "center",
+            gap: "8px"
+          }
+        }, [
+          el("button", {
+            style: {
+              ...btnBase,
+              background: "var(--apm-accent, #3498db)",
+              color: "var(--apm-text-on-accent, #fff)"
+            },
+            onmouseenter(e) {
+              e.target.style.filter = "brightness(1.15)";
+            },
+            onmouseleave(e) {
+              e.target.style.filter = "";
+            },
+            onclick: () => finish("restore")
+          }, ["Restore"]),
+          el("button", {
+            style: {
+              ...btnBase,
+              background: "var(--apm-control-bg, #4a5a6a)",
+              color: "var(--apm-text-primary, #fff)"
+            },
+            onmouseenter(e) {
+              e.target.style.background = "var(--apm-control-bg-hover, #5c6d7e)";
+            },
+            onmouseleave(e) {
+              e.target.style.background = "var(--apm-control-bg, #4a5a6a)";
+            },
+            onclick: () => finish("dismiss")
+          }, ["Dismiss"]),
+          // Spacer pushes "Don't Ask Again" to the right
+          el("div", { style: { flex: "1" } }),
+          el("button", {
+            style: {
+              ...btnBase,
+              background: "transparent",
+              color: "var(--apm-text-muted, #95a5a6)",
+              padding: "6px 8px",
+              fontWeight: "600"
+            },
+            onmouseenter(e) {
+              e.target.style.color = "var(--apm-text-secondary, #b0bec5)";
+            },
+            onmouseleave(e) {
+              e.target.style.color = "var(--apm-text-muted, #95a5a6)";
+            },
+            onclick: () => {
+              FeatureFlags.set("sessionSnapshot", false);
+              showToast("Session restore disabled \u2014 re-enable in APM Master \u2192 General", "var(--apm-control-bg, #4a5a6a)", false);
+              finish("dismiss");
+            }
+          }, ["Don\u2019t Ask Again"])
+        ]),
+        // Progress bar
+        progressBar
+      ]);
+      document.body.appendChild(prompt2);
+      setTimeout(() => {
+        prompt2.style.opacity = "1";
+        prompt2.style.transform = "translateX(-50%) translateY(0)";
+        progressFrame = requestAnimationFrame(animateProgress);
+      }, 10);
+      dismissTimer = setTimeout(() => finish("dismiss"), PROMPT_AUTO_DISMISS);
+    });
+  }
+  var FILTER_FIELD_MAP = {
+    WSJOBS: "ff_workordernum",
+    CTJOBS: "ff_workordernum",
+    SSRCVI: "ff_receiptcode",
+    SSPART: "ff_partcode"
+  };
+  function setFilterField(ext, fieldName, value) {
+    const fields = ext.ComponentQuery.query(`[name=${fieldName}]:not([destroyed=true])`);
+    if (!fields || fields.length === 0) return false;
+    const cmp = fields[0];
+    cmp.setValue(value);
+    cmp.fireEvent("change", cmp, value);
+    cmp.fireEvent("blur", cmp);
+    const el2 = cmp.getEl();
+    const parentWrap = el2.up(".x-box-inner") || el2.up(".x-column-header-inner") || el2.up(".x-container");
+    if (parentWrap) {
+      const triggerBtnEl = parentWrap.down(".uft-id-btnfilteroperator") || parentWrap.down(".x-btn-icon-el-gridfilter-small");
+      const btnEl = triggerBtnEl?.hasCls?.("x-btn-icon-el-gridfilter-small") ? triggerBtnEl.up(".x-btn") : triggerBtnEl;
+      if (btnEl) {
+        const opBtnCmp = ext.getCmp(btnEl.id);
+        if (opBtnCmp?.menu?.items?.items) {
+          const eqItem = opBtnCmp.menu.items.items.find((item) => item && !item.isDestroyed && item.iconCls === "fo_eq");
+          if (eqItem) {
+            if (eqItem.handler) eqItem.handler.call(eqItem.scope || eqItem, eqItem);
+            else eqItem.fireEvent("click", eqItem);
+          }
+        }
+      }
+    }
+    return true;
+  }
+  async function executeRestore(snapshot) {
+    APMLogger.info("Snapshot", `Restoring: navigating to ${snapshot.screen}`);
+    let navOk = false;
+    for (const win of getExtWindows()) {
+      try {
+        if (launchScreenDirect(win, snapshot.screen)) {
+          navOk = true;
+          break;
+        }
+      } catch (e) {
+      }
+    }
+    if (!navOk) {
+      showToast("Could not restore \u2014 navigation unavailable", "#e74c3c", false);
+      return;
+    }
+    if (!snapshot.record) {
+      const entry2 = ENTITY_REGISTRY[snapshot.screen];
+      const label = entry2 ? entry2.screenTitle : snapshot.screen;
+      showToast(`Restored ${label} screen`, "var(--apm-success, #27ae60)", false);
+      return;
+    }
+    const entry = ENTITY_REGISTRY[snapshot.record.entityType];
+    if (!entry) {
+      showToast(`Unknown entity type: ${snapshot.record.entityType}`, "#e74c3c", false);
+      return;
+    }
+    const filterFieldName = FILTER_FIELD_MAP[snapshot.screen];
+    if (!filterFieldName) {
+      showToast(`No filter field mapped for ${snapshot.screen}`, "#e74c3c", false);
+      return;
+    }
+    await delay(2e3);
+    const POLL_INTERVAL = 500;
+    const maxPolls = Math.ceil(RESTORE_GRID_TIMEOUT / POLL_INTERVAL);
+    let targetWin = null;
+    for (let i = 0; i < maxPolls; i++) {
+      for (const win of getExtWindows()) {
+        try {
+          if (!win.Ext?.ComponentQuery) continue;
+          const fields = win.Ext.ComponentQuery.query(`[name=${filterFieldName}]:not([destroyed=true])`);
+          const runBtns2 = win.Ext.ComponentQuery.query("button[text=Run]:not([destroyed=true])");
+          if (fields?.length > 0 && runBtns2?.length > 0) {
+            targetWin = win;
+            break;
+          }
+        } catch (e) {
+        }
+      }
+      if (targetWin) break;
+      await delay(POLL_INTERVAL);
+    }
+    if (!targetWin) {
+      showToast("Could not restore \u2014 search fields unavailable", "#e74c3c", false);
+      return;
+    }
+    const fieldSet = setFilterField(targetWin.Ext, filterFieldName, snapshot.record.entityId);
+    if (!fieldSet) {
+      showToast("Could not restore \u2014 filter field not found", "#e74c3c", false);
+      return;
+    }
+    APMLogger.info("Snapshot", `Set ${filterFieldName}=${snapshot.record.entityId}, clicking Run`);
+    const runBtns = targetWin.Ext.ComponentQuery.query("button[text=Run]:not([destroyed=true])");
+    const btn = runBtns[0];
+    if (btn.handler) btn.handler.call(btn.scope || btn, btn);
+    else btn.fireEvent("click", btn);
+    await delay(300);
+    await waitForAjax(targetWin);
+    await delay(500);
+    const ctx = findMainGrid(true);
+    if (!ctx || ctx.grid.getStore().getCount() === 0) {
+      showToast(`Could not find ${entry.label} ${snapshot.record.entityId}`, "#e74c3c", false);
+      return;
+    }
+    const result = await openFirstGridRecord(ctx.grid, ctx.win);
+    if (result.success) {
+      showToast(`Restored ${entry.label} ${snapshot.record.entityId}`, "var(--apm-success, #27ae60)", false);
+    } else {
+      showToast(`Could not open ${entry.label} ${snapshot.record.entityId}`, "#e74c3c", false);
+    }
+  }
+  var _restoreHandled = false;
+  var SessionSnapshot = {
+    async init() {
+      if (!isTopFrame()) return;
+      const tabId = getTabId();
+      APMLogger.info("Snapshot", `Tab ID: ${tabId}`);
+      purgeExpiredSnapshots();
+      if (!_restoreHandled) {
+        _restoreHandled = true;
+        const params = new URLSearchParams(window.location.search);
+        const hasDrillback = Object.values(ENTITY_REGISTRY).some(
+          (entry) => params.get(entry.drillbackFlag) === "YES" && params.get(entry.entityKey)
+        );
+        if (!hasDrillback) {
+          const snapshot = APMStorage.get(snapshotKey(tabId));
+          if (snapshot && snapshot.ts && Date.now() - snapshot.ts <= SNAPSHOT_TTL) {
+            APMLogger.info("Snapshot", `Found restorable snapshot: ${snapshot.screen}${snapshot.record ? " / " + snapshot.record.entityId : ""}`);
+            const choice = await showRestorePrompt(snapshot);
+            await delay(350);
+            if (choice === "restore") {
+              await executeRestore(snapshot);
+            }
+            APMStorage.remove(snapshotKey(tabId));
+          }
+        }
+      }
+      setTimeout(() => {
+        APMScheduler.registerTask("session-snapshot", CAPTURE_INTERVAL, () => {
+          captureState(tabId);
+        });
+      }, 3e4);
+    }
+  };
 
   // src/ui/settings-panel.js
   init_logger();
@@ -12998,6 +13502,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
           el("div", { style: { marginBottom: "15px", borderBottom: "1px solid var(--apm-border)", paddingBottom: "10px" } }, [
             el("b", { style: { color: "var(--apm-success)", display: "block", marginBottom: "5px" } }, "Latest \u2014 UI, Quality of Life, Infrastructure"),
             el("ul", { style: { paddingLeft: "20px", margin: "0" } }, [
+              el("li", {}, "Session state snapshot to restore the record you were viewing after timeout, for now its only the record, maybe i can restore/replay search results in the future"),
               el("li", {}, "UI overhaul \u2014 centralized theme tokens, consistent visual flow across all panels and popups"),
               el("li", {}, "First-run welcome screen with theme selection and optional feature tour"),
               el("li", {}, "Comprehensive Help & Tips guide covering all features, linked from both settings and forecast"),
@@ -13017,15 +13522,16 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
             el("ul", { style: { paddingLeft: "20px", margin: "0" } }, [
               el("li", {}, "WO QR codes for quick mobile access"),
               el("li", {}, "ColorCode rule pause/resume toggle"),
-              el("li", {}, "Relative date filtering for ColorCode rules")
+              el("li", {}, "Relative date filtering for ColorCode rules"),
+              el("li", {}, "Bug fixes specific to EAM environment differences")
             ])
           ]),
           el("div", {}, [
             el("b", { style: { color: "var(--apm-accent)", display: "block", marginBottom: "5px" } }, "Planned Research"),
             el("ul", { style: { paddingLeft: "20px", margin: "0" } }, [
               el("li", {}, "Broader use of direct EXTJS API interaction and AJAX requests beyond Labor Tally/booking, dataspy, etc."),
-              el("li", {}, "Personalized shift snapshots and multi-employee overview reports"),
-              el("li", {}, "Session state snapshots to restore your exact position after timeout")
+              el("li", {}, "Configurable shift snapshots and multi-employee overview reports"),
+              el("li", {}, "Plenty of other stuff I'm sure")
             ])
           ])
         ])
@@ -13174,11 +13680,9 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
                 el("option", { value: "no" }, "(Check NO)")
               ]),
               el("div", { className: "field-label", title: "How many checkboxes to fill during autofill", style: { flexGrow: "1", textAlign: "right", color: "var(--apm-text-bright)", marginRight: "5px" } }, "10-Tech PM:"),
-              el("input", {
-                type: "number", id: "apm-c-pm-checks", className: "field-input", title: "How many checkboxes to fill during autofill", min: "0", placeholder: "0", onblur: (e) => {
-                  if (e.target.value === "") e.target.value = "0";
-                }, style: { width: "55px", height: "28px", padding: "0 4px", textAlign: "center" }
-              })
+              el("input", { type: "number", id: "apm-c-pm-checks", className: "field-input", title: "How many checkboxes to fill during autofill", min: "0", placeholder: "0", onblur: (e) => {
+                if (e.target.value === "") e.target.value = "0";
+              }, style: { width: "55px", height: "28px", padding: "0 4px", textAlign: "center" } })
             ])
           ]),
           // ── Trouble Codes & Assignment ──
@@ -13377,7 +13881,8 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
         ]),
         // ── Feature Modules ──
         el("div", { className: "apm-settings-section", style: { borderBottom: "1px solid var(--apm-border)", paddingBottom: "12px", marginBottom: "12px" } }, [
-          el("div", { className: "apm-section-label", style: { color: "var(--apm-accent)", marginBottom: "8px" } }, "Feature Modules"),
+          el("div", { className: "apm-section-label", style: { color: "var(--apm-accent)", marginBottom: "4px" } }, "Feature Modules"),
+          el("div", { style: { fontSize: "var(--apm-text-xs)", color: "var(--apm-text-muted)", marginBottom: "8px" } }, "Changes take effect next session"),
           ...flagItems
         ]),
         // ── Preferences ──
@@ -13792,7 +14297,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
         const importPanel = document.getElementById("apm-import-panel");
         const importFileBtn = document.getElementById("apm-import-file-btn");
         if (importBtn && importFileInput && importPasteInput) {
-          let showImportDialog = function (content) {
+          let showImportDialog = function(content) {
             return new Promise((resolve) => {
               const checkboxes = [];
               const moduleRows = IMPORT_MODULES.map((mod) => {
@@ -14684,6 +15189,8 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
             if (tb.items && tb.items.getCount() > 0) {
               const visibleCount = tb.items.items.filter((it) => !it.hidden && !it.isDestroyed).length;
               if (visibleCount === 0) continue;
+              const tbDom = tb.getEl?.()?.dom;
+              if (!tbDom || !tbDom.querySelector(".x-btn-mainmenuButton-toolbar-small")) continue;
               parentContainer = tb;
               insertIndex = tb.items.getCount();
               APMLogger.debug("APM Toolbar", `Strategy 1: Found toolbar via ComponentQuery (${tb.id}, ${visibleCount}/${tb.items.getCount()} visible items)`);
@@ -14721,6 +15228,8 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
               if (!tb.rendered || tb.isDestroyed || !tb.isVisible?.(true)) continue;
               if (tb.up("gridpanel") || tb.up("window")) continue;
               if (tb.items && tb.items.getCount() > 1) {
+                const tbDom = tb.getEl?.()?.dom;
+                if (!tbDom || !tbDom.querySelector(".x-btn-mainmenuButton-toolbar-small")) continue;
                 parentContainer = tb;
                 insertIndex = tb.items.getCount();
                 APMLogger.debug("APM Toolbar", `Strategy 3: Fallback toolbar (${tb.id}, ${tb.items.getCount()} items)`);
@@ -14758,12 +15267,29 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
               ])
             ]).outerHTML
           });
+          try {
+            parentContainer.updateLayout();
+          } catch (e) {
+          }
         } catch (e) {
           APMLogger.error("Toolbar", "Native Button Injection Error:", e);
         }
       };
       APMScheduler.registerTask("ext-btn-injection", 500, tryInjectButtons);
       tryInjectButtons();
+      document.addEventListener("visibilitychange", () => {
+        if (!document.hidden) {
+          const cmp = tbWin.Ext?.getCmp?.("apm-custom-btn-group");
+          if (cmp && cmp.ownerCt) {
+            APMLogger.debug("APM Toolbar", "Tab visible \u2014 forcing toolbar layout.");
+            try {
+              cmp.ownerCt.updateLayout();
+            } catch (e) {
+            }
+          }
+          setTimeout(tryInjectButtons, 200);
+        }
+      });
     }
   }
 
@@ -14842,6 +15368,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
     FeatureFlags.register("ptpTimer", { label: "PTP Take-2 Timer", description: "Safety countdown on PTP screen" });
     FeatureFlags.register("tabGridOrder", { label: "UI Customization", description: "Drag & drop reordering of grids/tabs" });
     FeatureFlags.register("tabTitle", { label: "Tab Title", description: "Show current screen name in browser tab" });
+    FeatureFlags.register("sessionSnapshot", { label: "Session Snapshot", description: "Restore your screen and record after session timeout", default: true });
     initGlobalSync();
     if (isTop) {
       try {
@@ -14875,12 +15402,10 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
         { name: "SettingsPanel", onlyTop: true, fn: buildSettingsPanel },
         { name: "ColorCodeLogic", flag: "colorCode", noShell: true, fn: setupColorCodeLogic },
         { name: "AutoFillObserver", flag: "autoFill", onlyTop: true, fn: initAutoFillObserver },
-        {
-          name: "TabGridOrder", flag: "tabGridOrder", noShell: true, fn: () => {
-            applyGridConsistency();
-            applyTabConsistency();
-          }
-        },
+        { name: "TabGridOrder", flag: "tabGridOrder", noShell: true, fn: () => {
+          applyGridConsistency();
+          applyTabConsistency();
+        } },
         { name: "NativeToggle", flag: "colorCode", onlyTop: true, fn: injectToggleBtnNatively },
         { name: "PtpStatus", flag: "ptpTimer", onlyTop: true, noShell: true, fn: checkPtpStatus }
       ];
@@ -14967,6 +15492,9 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
         });
       } catch (e) {
         APMLogger.error("Boot", "Failed to register scheduler-investigator task:", e);
+      }
+      if (isTop && FeatureFlags.isEnabled("sessionSnapshot")) {
+        SessionSnapshot.init().catch((e) => APMLogger.error("Boot", "Session snapshot error:", e));
       }
       handleDrillbackAutoOpen().catch((e) => APMLogger.error("Boot", "Drillback auto-open error:", e));
     });
@@ -15538,20 +16066,20 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
     const RealXHR = _pageWin.XMLHttpRequest;
     const origOpen = RealXHR.prototype.open;
     const origSend = RealXHR.prototype.send;
-    RealXHR.prototype.open = function (method, url2) {
+    RealXHR.prototype.open = function(method, url2) {
       this._apmUrl = (url2 || "").toString();
       return origOpen.apply(this, arguments);
     };
-    RealXHR.prototype.send = function (body) {
+    RealXHR.prototype.send = function(body) {
       if (isRelevantUrl(this._apmUrl)) {
-        this.addEventListener("load", function () {
+        this.addEventListener("load", function() {
           handleAssessmentResponse(this._apmUrl, this.responseText, this.status, body);
         });
       }
       return origSend.apply(this, arguments);
     };
     const origFetch = _pageWin.fetch;
-    _pageWin.fetch = async function (...args) {
+    _pageWin.fetch = async function(...args) {
       const response = await origFetch.apply(this, args);
       try {
         const url2 = args[0] instanceof Request ? args[0].url : typeof args[0] === "string" ? args[0] : "";
@@ -15672,7 +16200,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
     }
     if (!found) {
       const walk = document.createTreeWalker(gridDom, NodeFilter.SHOW_TEXT, {
-        acceptNode: function (node2) {
+        acceptNode: function(node2) {
           return /Records:\s*\d+\s*of\s*\d+/.test(node2.nodeValue) ? NodeFilter.FILTER_ACCEPT : NodeFilter.FILTER_SKIP;
         }
       }, false);
@@ -15748,7 +16276,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
         store._apmCacheHook = true;
       }
       const count = store.getCount();
-      store.getTotalCount = function () {
+      store.getTotalCount = function() {
         return this.getCount();
       };
       forceFooterText(gridDom, count);
