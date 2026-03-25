@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         APM Master: Unified Tools
 // @namespace    https://w.amazon.com/bin/view/Users/rosendah/APM-Master/
-// @version      14.6.10
+// @version      14.7.1
 // @description  Quality of life and automation tool that uses native EAM ExtJS Framework functions for high reliability and capability. This is actively supported tool so Slack me or submit bug report/feature request through the bug report button in the menu.
 // @author       Jacob Rosendahl
 // @icon         https://media.licdn.com/dms/image/v2/D5603AQGdCV0_LQKRfQ/profile-displayphoto-scale_100_100/B56ZyZLvQ5HgAg-/0/1772096519061?e=1773878400&v=beta&t=eWO1Jiy0-WbzG_yBv-SBrmmsVOPMexF57-q1Xh_VXCk
@@ -124,7 +124,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
       PRESET_STORAGE_KEY = "apm_v1_autofill_presets";
       STORAGE_KEY = "apm_v1_forecast_prefs";
       APM_GENERAL_STORAGE = "apm_v1_general_settings";
-      CURRENT_VERSION = "14.6.10";
+      CURRENT_VERSION = "14.7.1";
       VERSION_CHECK_URL = "https://raw.githubusercontent.com/jaker788-create/APM-Master/main/forecast.user.js";
       UPDATE_URL = "https://raw.githubusercontent.com/jaker788-create/APM-Master/main/forecast.user.js";
       LABOR_EMPS_STORAGE = "apm_v1_labor_employees";
@@ -3078,12 +3078,18 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
                 const form = formPanel.getForm();
                 if (employee) {
                   ExtUtils.setFieldValue(form, "employee", employee, true);
-                  await delay(150);
+                  if (isWindowAccessible(targetWin)) {
+                    await waitForAjax(targetWin);
+                  }
+                  await delay(100);
                 }
                 ExtUtils.setFieldValue(form, "datework", eamDate);
                 ExtUtils.setFieldValue(form, "hrswork", targetHours);
                 await ExtUtils.ensureStoreLoaded(form.findField("octype"), targetWin);
                 ExtUtils.setFieldValue(form, "octype", targetType, true);
+                if (isWindowAccessible(targetWin)) {
+                  await waitForAjax(targetWin);
+                }
                 const fOcrType = form.findField("ocrtype");
                 if (fOcrType && !fOcrType.getValue()) {
                   ExtUtils.setFieldValue(form, "ocrtype", targetType);
@@ -9793,35 +9799,76 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
       const store = grid.getStore?.();
       if (!store) return null;
       const proxy = store.getProxy?.();
-      if (!proxy) return null;
-      const existing = proxy.getExtraParams ? proxy.getExtraParams() : proxy.extraParams || {};
-      const merged = { ...existing, ...filters };
-      if (proxy.setExtraParams) {
-        proxy.setExtraParams(merged);
-      } else {
-        proxy.extraParams = merged;
-      }
-      const injectedKeys = Object.keys(filters);
-      APMLogger.debug("Maddon", `Injected ${injectedKeys.length} MADDON params into store proxy`);
-      return { proxy, injectedKeys };
+      if (!proxy || !proxy.doRequest) return null;
+      const origDoRequest = proxy.doRequest;
+      proxy.doRequest = function (operation) {
+        proxy.doRequest = origDoRequest;
+        try {
+          const params = operation.getParams?.() || {};
+          const extraParams = proxy.getExtraParams ? proxy.getExtraParams() : proxy.extraParams || {};
+          const allParams = { ...extraParams, ...params };
+          const existingSeqKeys = Object.keys(allParams).filter((k) => k.startsWith("MADDON_FILTER_SEQNUM_"));
+          const existingSeqs = existingSeqKeys.map((k) => parseInt(k.split("_").pop(), 10));
+          const maxSeq = existingSeqs.length > 0 ? Math.max(...existingSeqs) : 0;
+          const ourFilterKeys = Object.keys(filters).filter((k) => k.startsWith("MADDON_FILTER_ALIAS_NAME_"));
+          const ourSeqs = ourFilterKeys.map((k) => parseInt(k.split("_").pop(), 10)).sort((a, b) => a - b);
+          const shifted = {};
+          ourSeqs.forEach((origSeq, idx) => {
+            const newSeq = maxSeq + idx + 1;
+            shifted[`MADDON_FILTER_ALIAS_NAME_${newSeq}`] = filters[`MADDON_FILTER_ALIAS_NAME_${origSeq}`];
+            shifted[`MADDON_FILTER_OPERATOR_${newSeq}`] = filters[`MADDON_FILTER_OPERATOR_${origSeq}`];
+            shifted[`MADDON_FILTER_VALUE_${newSeq}`] = filters[`MADDON_FILTER_VALUE_${origSeq}`];
+            shifted[`MADDON_FILTER_SEQNUM_${newSeq}`] = newSeq.toString();
+            shifted[`MADDON_FILTER_JOINER_${newSeq}`] = filters[`MADDON_FILTER_JOINER_${origSeq}`];
+            if (filters[`MADDON_LPAREN_${origSeq}`] !== void 0) shifted[`MADDON_LPAREN_${newSeq}`] = filters[`MADDON_LPAREN_${origSeq}`];
+            if (filters[`MADDON_RPAREN_${origSeq}`] !== void 0) shifted[`MADDON_RPAREN_${newSeq}`] = filters[`MADDON_RPAREN_${origSeq}`];
+          });
+          const mergedExtra = { ...extraParams, ...shifted };
+          if (proxy.setExtraParams) {
+            proxy.setExtraParams(mergedExtra);
+          } else {
+            proxy.extraParams = mergedExtra;
+          }
+          APMLogger.debug("Maddon", `doRequest: injected ${ourSeqs.length} MADDON filters (shifted after seq ${maxSeq})`);
+        } catch (e) {
+          APMLogger.error("Maddon", "Error injecting MADDON in doRequest:", e);
+        }
+        return origDoRequest.call(this, operation);
+      };
+      APMLogger.debug("Maddon", `Patched proxy.doRequest for ${Object.keys(filters).length} MADDON params`);
+      return {
+        proxy, restore: () => {
+          proxy.doRequest = origDoRequest;
+        }
+      };
     } catch (e) {
       APMLogger.error("Maddon", "Failed to inject MADDON filter:", e);
       return null;
     }
   }
   function clearMaddonFilters(handle) {
-    if (!handle?.proxy || !handle?.injectedKeys) return;
+    if (!handle) return;
     try {
-      const { proxy, injectedKeys } = handle;
-      const existing = proxy.getExtraParams ? proxy.getExtraParams() : proxy.extraParams || {};
-      const cleaned = { ...existing };
-      for (const k of injectedKeys) delete cleaned[k];
-      if (proxy.setExtraParams) {
-        proxy.setExtraParams(cleaned);
-      } else {
-        proxy.extraParams = cleaned;
+      if (handle.restore) handle.restore();
+      if (handle.proxy) {
+        const existing = handle.proxy.getExtraParams ? handle.proxy.getExtraParams() : handle.proxy.extraParams || {};
+        const cleaned = { ...existing };
+        let removed = 0;
+        for (const k of Object.keys(cleaned)) {
+          if (k.startsWith("MADDON_")) {
+            delete cleaned[k];
+            removed++;
+          }
+        }
+        if (removed > 0) {
+          if (handle.proxy.setExtraParams) {
+            handle.proxy.setExtraParams(cleaned);
+          } else {
+            handle.proxy.extraParams = cleaned;
+          }
+          APMLogger.debug("Maddon", `Cleaned ${removed} MADDON keys from proxy extraParams`);
+        }
       }
-      APMLogger.debug("Maddon", "Cleaned up MADDON params from store proxy");
     } catch (e) {
       APMLogger.error("Maddon", "Failed to clear MADDON filters:", e);
     }
@@ -10394,6 +10441,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
         }
         if (runBtn.handler) runBtn.handler.call(runBtn.scope || runBtn, runBtn);
         else runBtn.fireEvent("click", runBtn);
+        await delay(300);
         await waitForAjax(targetWin);
         if (data._maddonHandle) {
           clearMaddonFilters(data._maddonHandle);
@@ -15182,7 +15230,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
     FeatureFlags.register("ptpTimer", { label: "PTP Take-2 Timer", description: "Safety countdown on PTP screen" });
     FeatureFlags.register("tabGridOrder", { label: "UI Customization", description: "Drag & drop reordering of grids/tabs" });
     FeatureFlags.register("tabTitle", { label: "Tab Title", description: "Show current screen name in browser tab" });
-    FeatureFlags.register("sessionSnapshot", { label: "Session Snapshot", description: "Restore your screen and record after session timeout", default: true });
+    FeatureFlags.register("sessionSnapshot", { label: "Session Snapshot", description: "Restore your screen and record after session timeout", default: false });
     initGlobalSync();
     if (isTop) {
       try {
