@@ -7805,6 +7805,12 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
 .apm-overflow-badge { font-size: 9px; background: var(--apm-warning); color: var(--apm-text-on-accent); padding: 1px 4px; border-radius: 3px; margin-left: 6px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.3px; }
 
 /* =========================
+ * Grid Cell Height Clamp
+ * ========================= */
+.x-grid-cell-inner { max-height: 64px; overflow: hidden; }
+.x-grid-cell-inner:has(.apm-nametag) { max-height: none; }
+
+/* =========================
  * ColorCode Nametag & Links
  * ========================= */
 .apm-nametag { display: table; color: var(--apm-text-primary); font-weight: bold; font-size: 11px; padding: 3px 6px; border-radius: 4px; margin-top: 5px; text-align: center; box-shadow: 0 1px 3px rgba(0,0,0,0.3); cursor: pointer; transition: transform 0.1s; }
