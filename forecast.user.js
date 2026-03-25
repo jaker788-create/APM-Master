@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         APM Master: Unified Tools
 // @namespace    https://w.amazon.com/bin/view/Users/rosendah/APM-Master/
-// @version      14.6.8
+// @version      14.6.9
 // @description  Quality of life and automation tool that uses native EAM ExtJS Framework functions for high reliability and capability. This is actively supported tool so Slack me or submit bug report/feature request through the bug report button in the menu.
 // @author       Jacob Rosendahl
 // @icon         https://media.licdn.com/dms/image/v2/D5603AQGdCV0_LQKRfQ/profile-displayphoto-scale_100_100/B56ZyZLvQ5HgAg-/0/1772096519061?e=1773878400&v=beta&t=eWO1Jiy0-WbzG_yBv-SBrmmsVOPMexF57-q1Xh_VXCk
@@ -124,7 +124,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
       PRESET_STORAGE_KEY = "apm_v1_autofill_presets";
       STORAGE_KEY = "apm_v1_forecast_prefs";
       APM_GENERAL_STORAGE = "apm_v1_general_settings";
-      CURRENT_VERSION = "14.6.8";
+      CURRENT_VERSION = "14.6.9";
       VERSION_CHECK_URL = "https://raw.githubusercontent.com/jaker788-create/APM-Master/main/forecast.user.js";
       UPDATE_URL = "https://raw.githubusercontent.com/jaker788-create/APM-Master/main/forecast.user.js";
       LABOR_EMPS_STORAGE = "apm_v1_labor_employees";
@@ -2676,39 +2676,83 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
             const tabs = win.Ext.ComponentQuery.query("uxtabcontainer[itemId=BOO]:not([destroyed=true])");
             const booTab = tabs.find((t) => t.rendered && !t.isDestroyed && t.isVisible(true));
             if (!booTab) {
-              const btn2 = win.document.getElementById("apm-quick-book-btn");
-              if (btn2) btn2.remove();
+              const existingCmp2 = win.Ext.getCmp("apm-quick-book-cmp");
+              if (existingCmp2 && !existingCmp2.isDestroyed) existingCmp2.destroy();
+              const btn = win.document.getElementById("apm-quick-book-btn");
+              if (btn) btn.remove();
               return;
             }
-            const toolbar = booTab.down("toolbar");
-            if (!toolbar || !toolbar.el || !toolbar.el.dom) return;
-            const actionsBtn = win.Ext.ComponentQuery.query("button[text=Actions]:not([destroyed=true])", booTab)[0];
-            if (!actionsBtn || !actionsBtn.el || !actionsBtn.el.dom) return;
-            let btn = win.document.getElementById("apm-quick-book-btn");
-            const parent = actionsBtn.el.dom.parentNode;
-            if (!btn) {
-              btn = win.document.createElement("button");
-              btn.id = "apm-quick-book-btn";
-              btn.innerHTML = "Quick Book";
-              btn.className = "apm-lb-trigger";
-              btn.style.height = "24px";
-              btn.onclick = (e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                UIManager.toggle("apm-labor-popup", () => {
-                  APMLogger.debug("LaborBooker", "Quick Book button atomic toggle -> opening");
-                  showQuickBookPopup(win, btn);
-                });
-              };
-              parent.appendChild(btn);
+            const existingCmp = win.Ext.getCmp("apm-quick-book-cmp");
+            if (existingCmp && existingCmp.getEl?.()?.dom && win.document.body.contains(existingCmp.getEl().dom)) return;
+            if (existingCmp && !existingCmp.isDestroyed) existingCmp.destroy();
+            let toolbar = null;
+            let insertIdx = -1;
+            const actionsBtns = win.Ext.ComponentQuery.query("button:not([destroyed=true])", booTab);
+            const actionsBtn = actionsBtns.find(
+              (b) => b.rendered && !b.isDestroyed && b.isVisible?.() && /^Actions$/i.test(b.getText?.() || b.text || "")
+            );
+            if (actionsBtn) {
+              toolbar = actionsBtn.up("toolbar");
+              if (toolbar && toolbar.rendered && !toolbar.isDestroyed) {
+                let directChild = actionsBtn;
+                while (directChild.ownerCt && directChild.ownerCt !== toolbar) {
+                  directChild = directChild.ownerCt;
+                }
+                insertIdx = toolbar.items.indexOf(directChild) + 1;
+                APMLogger.debug("LaborBooker", `Strategy 1: Found Actions button in toolbar ${toolbar.id}`);
+              } else {
+                toolbar = null;
+              }
             }
-            const leftOffset = (actionsBtn.el.dom.offsetLeft || 0) + (actionsBtn.el.dom.offsetWidth || 0) + 10;
-            Object.assign(btn.style, {
-              position: "absolute",
-              left: leftOffset + "px",
-              top: "8px",
-              zIndex: 10
+            if (!toolbar) {
+              const ldv = booTab.down("listdetailview");
+              if (ldv) {
+                toolbar = ldv.down("toolbar");
+                if (toolbar && toolbar.rendered && !toolbar.isDestroyed) {
+                  insertIdx = toolbar.items.getCount();
+                  APMLogger.debug("LaborBooker", `Strategy 2: Found listdetailview toolbar ${toolbar.id}`);
+                } else {
+                  toolbar = null;
+                }
+              }
+            }
+            if (!toolbar) {
+              const toolbars = win.Ext.ComponentQuery.query("toolbar:not([destroyed=true])", booTab);
+              for (const tb of toolbars) {
+                if (!tb.rendered || tb.isDestroyed || !tb.isVisible?.()) continue;
+                const hasCombo = tb.items.items.some((it) => it.xtype === "combobox" || it.xtype === "combo");
+                if (hasCombo) continue;
+                if (tb.items.getCount() > 1) {
+                  toolbar = tb;
+                  insertIdx = tb.items.getCount();
+                  APMLogger.debug("LaborBooker", `Strategy 3: Fallback toolbar ${tb.id}`);
+                  break;
+                }
+              }
+            }
+            if (!toolbar) return;
+            toolbar.insert(insertIdx, {
+              xtype: "component",
+              id: "apm-quick-book-cmp",
+              margin: "0 0 0 8",
+              html: '<button id="apm-quick-book-btn" class="apm-lb-trigger" style="height:24px;">Quick Book</button>',
+              listeners: {
+                afterrender: function(cmp) {
+                  const btn = cmp.getEl()?.dom?.querySelector("#apm-quick-book-btn");
+                  if (btn) {
+                    btn.addEventListener("click", (e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      UIManager.toggle("apm-labor-popup", () => {
+                        APMLogger.debug("LaborBooker", "Quick Book button atomic toggle -> opening");
+                        showQuickBookPopup(win, btn);
+                      });
+                    });
+                  }
+                }
+              }
             });
+            APMLogger.debug("LaborBooker", `Quick Book injected into BOO toolbar at index ${insertIdx}`);
           } catch (e) {
             APMLogger.debug("LaborBooker", "checkTabAndInject error:", e);
           }
@@ -7238,20 +7282,38 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
         removeExisting();
         let parentContainer = null;
         let insertIdx = -1;
-        const anchorIconEl = d.querySelector(".toolbarExpandRight");
-        if (anchorIconEl) {
-          const anchorDomBtn = anchorIconEl.closest(".x-btn");
-          if (anchorDomBtn?.id) {
-            const anchorCmp = win.Ext.getCmp(anchorDomBtn.id);
-            if (anchorCmp) {
-              const container = anchorCmp.up("toolbar") || anchorCmp.up("container");
-              if (container) {
-                parentContainer = container;
-                let directChild = anchorCmp;
-                while (directChild.ownerCt && directChild.ownerCt !== parentContainer) {
-                  directChild = directChild.ownerCt;
+        if (rvForm) {
+          const recordPanel = rvForm.up("panel");
+          if (recordPanel) {
+            const dockedToolbars = recordPanel.getDockedItems?.('toolbar[dock="top"]') || [];
+            for (const tb of dockedToolbars) {
+              if (!tb.rendered || tb.isDestroyed || !tb.isVisible?.()) continue;
+              if (tb.items && tb.items.getCount() > 0) {
+                parentContainer = tb;
+                insertIdx = tb.items.getCount();
+                APMLogger.debug("AutoFill", `Strategy 1a: Found record toolbar via getDockedItems (${tb.id})`);
+                break;
+              }
+            }
+          }
+        }
+        if (!parentContainer) {
+          const anchorIconEl = d.querySelector(".toolbarExpandRight");
+          if (anchorIconEl) {
+            const anchorDomBtn = anchorIconEl.closest(".x-btn");
+            if (anchorDomBtn?.id) {
+              const anchorCmp = win.Ext.getCmp(anchorDomBtn.id);
+              if (anchorCmp) {
+                const container = anchorCmp.up("toolbar") || anchorCmp.up("container");
+                if (container) {
+                  parentContainer = container;
+                  let directChild = anchorCmp;
+                  while (directChild.ownerCt && directChild.ownerCt !== parentContainer) {
+                    directChild = directChild.ownerCt;
+                  }
+                  insertIdx = parentContainer.items.indexOf(directChild) + 1;
+                  APMLogger.debug("AutoFill", `Strategy 1b: Found toolbar via .toolbarExpandRight (${container.id})`);
                 }
-                insertIdx = parentContainer.items.indexOf(directChild) + 1;
               }
             }
           }
@@ -11230,6 +11292,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
   // src/modules/forecast/forecast-filter.js
   init_scheduler();
   init_utils();
+  init_logger();
   var ForecastFilter = /* @__PURE__ */ (function() {
     let filterState = 0;
     let lastKnownStoreId = null;
@@ -11296,42 +11359,78 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
     function injectForecastFilter() {
       const ctx = getTargetContext();
       if (!ctx) return;
-      const { doc, grid } = ctx;
+      const { win, doc, grid } = ctx;
       const store = grid.getStore();
       if (filterState !== 0 && store.storeId !== lastKnownStoreId) {
         applyStoreFilter();
       }
       lastKnownStoreId = store.storeId;
-      const dataspyInput = doc.querySelector('input[name="dataspylist"]');
-      if (!dataspyInput || dataspyInput.offsetWidth === 0) return;
-      const dataspyWrapper = dataspyInput.closest(".x-form-trigger-wrap-default") || dataspyInput.parentElement;
-      const toolbarContainer = dataspyInput.closest(".x-box-target");
-      if (!toolbarContainer || doc.getElementById("apm-list-pm-btn")) return;
-      const btn = doc.createElement("button");
-      btn.id = "apm-list-pm-btn";
-      btn.textContent = STATES[filterState].label;
-      btn.title = STATES[filterState].tooltip;
-      const wrapperRect = dataspyWrapper.getBoundingClientRect();
-      const containerRect = toolbarContainer.getBoundingClientRect();
-      const leftPos = wrapperRect.right - containerRect.left + 8;
-      btn.style.cssText = `
-            position: absolute; left: ${leftPos}px; top: 9px; z-index: 1000;
+      const Ext2 = win.Ext;
+      if (!Ext2 || !Ext2.ComponentQuery) return;
+      const existingCmp = Ext2.getCmp("apm-pm-filter-cmp");
+      if (existingCmp && existingCmp.getEl?.()?.dom && doc.body.contains(existingCmp.getEl().dom)) return;
+      if (existingCmp) existingCmp.destroy();
+      let parentToolbar = null;
+      let insertAfterIdx = -1;
+      const combos = Ext2.ComponentQuery.query('combobox[name="dataspylist"]:not([destroyed=true])');
+      for (const combo of combos) {
+        if (!combo.rendered || combo.isDestroyed || !combo.isVisible?.(true)) continue;
+        const tb = combo.up("toolbar");
+        if (tb && tb.rendered && !tb.isDestroyed) {
+          parentToolbar = tb;
+          insertAfterIdx = tb.items.indexOf(combo) + 1;
+          APMLogger.debug("ForecastFilter", `Strategy 1: Found dataspy combo in toolbar (${tb.id})`);
+          break;
+        }
+      }
+      if (!parentToolbar) {
+        const dataspyInput = doc.querySelector('input[name="dataspylist"]');
+        if (dataspyInput && dataspyInput.offsetWidth > 0) {
+          const extEl = dataspyInput.closest(".x-field") || dataspyInput.closest(".x-form-item");
+          if (extEl && extEl.id) {
+            const fieldCmp = Ext2.getCmp(extEl.id);
+            if (fieldCmp) {
+              const tb = fieldCmp.up("toolbar") || fieldCmp.up("container");
+              if (tb && tb.rendered && !tb.isDestroyed) {
+                parentToolbar = tb;
+                insertAfterIdx = tb.items.indexOf(fieldCmp) + 1;
+                APMLogger.debug("ForecastFilter", `Strategy 2: Found dataspy via DOM anchor (${tb.id})`);
+              }
+            }
+          }
+        }
+      }
+      if (!parentToolbar) return;
+      const btnHtml = `<button id="apm-list-pm-btn" title="${STATES[filterState].tooltip.replace(/"/g, "&quot;")}" style="
             padding: 4px 10px; background: ${STATES[filterState].bg};
             color: white; border: none; border-radius: 4px;
             font-weight: bold; cursor: pointer; font-size: 11px;
             box-shadow: 0 1px 3px rgba(0,0,0,0.3); transition: background 0.2s;
-        `;
-      btn.onclick = (e) => {
-        e.preventDefault();
-        toggleGridFilter(btn);
-      };
-      toolbarContainer.appendChild(btn);
+        ">${STATES[filterState].label}</button>`;
+      parentToolbar.insert(insertAfterIdx, {
+        xtype: "component",
+        id: "apm-pm-filter-cmp",
+        margin: "0 0 0 8",
+        html: btnHtml,
+        listeners: {
+          afterrender: function(cmp) {
+            const btnEl = cmp.getEl()?.dom?.querySelector("#apm-list-pm-btn");
+            if (btnEl) {
+              btnEl.addEventListener("click", (e) => {
+                e.preventDefault();
+                toggleGridFilter(btnEl);
+              });
+            }
+          }
+        }
+      });
+      APMLogger.info("ForecastFilter", `PM filter button injected into toolbar: ${parentToolbar.id}`);
     }
     return {
       init: function() {
         APMScheduler.registerTask("forecast-filter", 1500, () => {
           const existingBtn = document.getElementById("apm-list-pm-btn");
-          if (existingBtn && filterState === 0) return;
+          if (existingBtn && document.body.contains(existingBtn) && filterState === 0) return;
           injectForecastFilter();
         });
       }
