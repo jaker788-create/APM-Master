@@ -1,14 +1,15 @@
 // ==UserScript==
 // @name         APM Master: Unified Tools
 // @namespace    https://w.amazon.com/bin/view/Users/rosendah/APM-Master/
-// @version      14.6.9
+// @version      14.6.10
 // @description  Quality of life and automation tool that uses native EAM ExtJS Framework functions for high reliability and capability. This is actively supported tool so Slack me or submit bug report/feature request through the bug report button in the menu.
 // @author       Jacob Rosendahl
 // @icon         https://media.licdn.com/dms/image/v2/D5603AQGdCV0_LQKRfQ/profile-displayphoto-scale_100_100/B56ZyZLvQ5HgAg-/0/1772096519061?e=1773878400&v=beta&t=eWO1Jiy0-WbzG_yBv-SBrmmsVOPMexF57-q1Xh_VXCk
 // @match        https://*.eam.hxgnsmartcloud.com/*
 // @match        https://*.sso.eam.hxgnsmartcloud.com/*
 // @match        https://idp.federate.amazon.com/*
-// @match        https://*.amazon.dev/*
+// @match        https://*.ptp.amazon.dev/*
+// @match        https://*.insights.amazon.dev/*
 // @match        https://*.apm-es.gps.amazon.dev/*
 // @match        https://*.hexagon.com/*
 // @match        https://*.octave.com/*
@@ -29,10 +30,10 @@
 // ==/UserScript==
 
 if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dark') {
-    var _dc = document.getElementById('apm-dark-canvas') || document.createElement('style');
-    _dc.id = 'apm-dark-canvas';
-    _dc.textContent = 'html { background-color: #121212 !important; color-scheme: dark !important; }';
-    (document.head || document.documentElement).appendChild(_dc);
+  var _dc = document.getElementById('apm-dark-canvas') || document.createElement('style');
+  _dc.id = 'apm-dark-canvas';
+  _dc.textContent = 'html { background-color: #121212 !important; color-scheme: dark !important; }';
+  (document.head || document.documentElement).appendChild(_dc);
 }
 
 (() => {
@@ -75,7 +76,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
         // Fallback: outermost EAM content frame if parent IS top and we're not a
         // shell/content child frame. Note: PTP timer UI bypasses this entirely by
         // always rendering on unsafeWindow.top.document (see ptp-timer.js).
-        isTop: window === window.top || (function() {
+        isTop: window === window.top || (function () {
           try {
             return window.parent === window.top && !url.includes("/base/common") && !url.includes("/base/loadmain");
           } catch (e) {
@@ -124,7 +125,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
       PRESET_STORAGE_KEY = "apm_v1_autofill_presets";
       STORAGE_KEY = "apm_v1_forecast_prefs";
       APM_GENERAL_STORAGE = "apm_v1_general_settings";
-      CURRENT_VERSION = "14.6.9";
+      CURRENT_VERSION = "14.6.10";
       VERSION_CHECK_URL = "https://raw.githubusercontent.com/jaker788-create/APM-Master/main/forecast.user.js";
       UPDATE_URL = "https://raw.githubusercontent.com/jaker788-create/APM-Master/main/forecast.user.js";
       LABOR_EMPS_STORAGE = "apm_v1_labor_employees";
@@ -1492,7 +1493,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
       const ext = win?.Ext;
       if (!ext || !ext.Ajax) return resolve();
       if (!ext.Ajax.isLoading()) return resolve();
-      const onComplete = function() {
+      const onComplete = function () {
         if (!ext.Ajax.isLoading()) {
           ext.Ajax.un("requestcomplete", onComplete);
           ext.Ajax.un("requestexception", onComplete);
@@ -1665,7 +1666,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
         /**
          * Set a value on an ExtJS field and fire necessary events.
          */
-        setFieldValue: function(form, fieldName, value, isCombo = false) {
+        setFieldValue: function (form, fieldName, value, isCombo = false) {
           const f = form.findField(fieldName);
           if (!f) return false;
           try {
@@ -1693,7 +1694,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
         /**
          * Ensure a combo store is loaded before interacting.
          */
-        ensureStoreLoaded: async function(field, win) {
+        ensureStoreLoaded: async function (field, win) {
           if (!field || !field.store) return;
           if (field.store.getCount() === 0 && !field.store.isLoading()) {
             if (field.doQuery) field.doQuery(field.allQuery || "", true);
@@ -1738,7 +1739,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
       init_logger();
       init_utils();
       init_origin_guard();
-      UIManager = /* @__PURE__ */ (function() {
+      UIManager = /* @__PURE__ */ (function () {
         const localPanels = /* @__PURE__ */ new Set();
         let isInitialized = false;
         const getGlobalRegistry = () => {
@@ -2302,7 +2303,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
             }
           });
           const origRequest = win.Ext.Ajax.request.bind(win.Ext.Ajax);
-          win.Ext.Ajax.request = function(options) {
+          win.Ext.Ajax.request = function (options) {
             if (!options._apmHooked) {
               options._apmHooked = true;
               handlers.beforerequest.forEach((fn, id) => {
@@ -2532,7 +2533,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
       init_logger();
       init_eam_query();
       cleanEmployeeId = (id) => (id && id.includes("@") ? id.split("@")[0] : id || "").toUpperCase();
-      LaborService = /* @__PURE__ */ (function() {
+      LaborService = /* @__PURE__ */ (function () {
         let laborCache = {
           data: [],
           lastFetch: 0,
@@ -2621,7 +2622,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
       init_ajax_hooks();
       init_feature_flags();
       init_dom_helpers();
-      LaborBooker = (function() {
+      LaborBooker = (function () {
         let _laborWin = null;
         const getLaborWin = () => _laborWin || (_laborWin = apmGetGlobalWindow());
         let isRunning2 = false;
@@ -2737,7 +2738,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
               margin: "0 0 0 8",
               html: '<button id="apm-quick-book-btn" class="apm-lb-trigger" style="height:24px;">Quick Book</button>',
               listeners: {
-                afterrender: function(cmp) {
+                afterrender: function (cmp) {
                   const btn = cmp.getEl()?.dom?.querySelector("#apm-quick-book-btn");
                   if (btn) {
                     btn.addEventListener("click", (e) => {
@@ -3278,7 +3279,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
           checkTabAndInject(win);
         }
         return {
-          init: function(win) {
+          init: function (win) {
             if (!FeatureFlags.isEnabled("laborBooker")) return;
             const targetWin = win || getLaborWin();
             try {
@@ -3299,7 +3300,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
             });
           },
           checkTabAndInject,
-          checkAll: function() {
+          checkAll: function () {
             const wins = getExtWindows();
             const docs = wins.filter(isWindowAccessible).map((w) => w.document);
             for (const [doc, obs] of laborObservers.entries()) {
@@ -3319,7 +3320,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
               }
             });
           },
-          quickBookHours: async function(hours, win) {
+          quickBookHours: async function (hours, win) {
             return executeBookingFlow({ hours, date: getLocalIsoDate(/* @__PURE__ */ new Date()), type: "N" }, win);
           }
         };
@@ -3544,7 +3545,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
       }
       if (!hookState.wrapper) {
         hookState.origBeforeLoad = obj.beforeLoad;
-        hookState.wrapper = function(tags) {
+        hookState.wrapper = function (tags) {
           targetWin.Ext.manifest = manifestPath;
           if (typeof hookState.origBeforeLoad === "function") {
             try {
@@ -3794,7 +3795,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
       try {
         if (!targetWin[FLAGS.STORAGE_PATCH]) {
           const _set = targetWin.localStorage.setItem;
-          targetWin.localStorage.setItem = function(k, v) {
+          targetWin.localStorage.setItem = function (k, v) {
             const r = _set.apply(this, arguments);
             if (k === "ApmGeneralSettings" || k === APM_GENERAL_STORAGE || k === CC_STORAGE_SET || k === KEY_THEME) {
               const next = ThemeResolver.getPreferredTheme();
@@ -4271,15 +4272,15 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
       const monitor = this;
       const origOpen = XMLHttpRequest.prototype.open;
       const origSend = XMLHttpRequest.prototype.send;
-      XMLHttpRequest.prototype.open = function(method, url2) {
+      XMLHttpRequest.prototype.open = function (method, url2) {
         this._apmUrl = (url2 || "").toString();
         return origOpen.apply(this, arguments);
       };
-      XMLHttpRequest.prototype.send = function(body) {
+      XMLHttpRequest.prototype.send = function (body) {
         if (AppState.session.isInitialized) return origSend.apply(this, arguments);
         const url2 = this._apmUrl;
         const payload = body && typeof body === "string" ? body : null;
-        this.addEventListener("load", function() {
+        this.addEventListener("load", function () {
           if (AppState.session.isInitialized) return;
           if (this.status === 200) {
             monitor.tryCaptureFromTraffic(url2, payload);
@@ -4296,7 +4297,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
       window[FLAGS.SESSION_FETCH_HOOK] = true;
       const monitor = this;
       const origFetch = window.fetch;
-      window.fetch = async function(...args) {
+      window.fetch = async function (...args) {
         const url2 = args[0] instanceof Request ? args[0].url : typeof args[0] === "string" ? args[0] : "";
         const options = (args[0] instanceof Request ? args[0] : args[1]) || {};
         const payload = options.body && typeof options.body === "string" ? options.body : null;
@@ -4418,7 +4419,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
     /**
      * Performs a lightweight request to EAM to keep the session alive.
      */
-    refreshSession: async function() {
+    refreshSession: async function () {
       const session = AppState.session;
       if (!session.eamid || !session.tenant) return;
       if (!window.location.hostname.includes("eam.hxgnsmartcloud.com")) return;
@@ -4558,10 +4559,10 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
     return document;
   }
   function setupCloseButton(closeBtn, timerUI, onClose) {
-    closeBtn.onmouseover = function() {
+    closeBtn.onmouseover = function () {
       this.style.opacity = "1";
     };
-    closeBtn.onmouseout = function() {
+    closeBtn.onmouseout = function () {
       this.style.opacity = "0.6";
     };
     closeBtn.onclick = () => {
@@ -6205,7 +6206,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
     const originalSetActive = mainTabPanel.setActiveTab;
     if (mainTabPanel.items && !mainTabPanel.items.__apmHooked) {
       const originalCollInsert = mainTabPanel.items.insert;
-      mainTabPanel.items.insert = function(idx, item) {
+      mainTabPanel.items.insert = function (idx, item) {
         const result = originalCollInsert.apply(this, arguments);
         if (!_isApplyingTabConsistency) {
           scheduleCleanupPass();
@@ -6214,7 +6215,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
       };
       mainTabPanel.items.__apmHooked = true;
     }
-    mainTabPanel.move = function(item, toIdx) {
+    mainTabPanel.move = function (item, toIdx) {
       const result = originalMove.apply(this, arguments);
       if (!_isApplyingTabConsistency) {
         APMLogger.debug("TabGridOrder", `Framework moved "${normalizeTabName(item?.title || item?.text || "")}" to ${toIdx}. Scheduling cleanup.`);
@@ -6222,21 +6223,21 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
       }
       return result;
     };
-    mainTabPanel.add = function() {
+    mainTabPanel.add = function () {
       const result = originalAdd.apply(this, arguments);
       if (!_isApplyingTabConsistency) {
         scheduleCleanupPass();
       }
       return result;
     };
-    mainTabPanel.insert = function(idx, item) {
+    mainTabPanel.insert = function (idx, item) {
       const result = originalInsert.apply(this, arguments);
       if (!_isApplyingTabConsistency) {
         scheduleCleanupPass();
       }
       return result;
     };
-    mainTabPanel.setActiveTab = function(item) {
+    mainTabPanel.setActiveTab = function (item) {
       if (_allowActiveTabChange) return originalSetActive.apply(this, arguments);
       APMLogger.warn("TabGridOrder", `Blocked focus jump for "${normalizeTabName(item?.title || item?.text || "")}". Focus protected.`);
       return originalSetActive.call(this, this.getActiveTab());
@@ -7500,7 +7501,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
       if (!win.Ext || !win.Ext.Component || win[FLAGS.CONSISTENCY_BOUND + "_watcher"]) return;
       const self = this;
       const originalInit = win.Ext.Component.prototype.initComponent;
-      win.Ext.Component.prototype.initComponent = function() {
+      win.Ext.Component.prototype.initComponent = function () {
         const res = originalInit.apply(this, arguments);
         if (this.isXType) {
           if (this.isXType("gridpanel") || this.isXType("tabpanel")) {
@@ -7535,7 +7536,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
       if (!reader) return;
       const self = this;
       const originalRead = reader.read;
-      reader.read = function(response) {
+      reader.read = function (response) {
         const result = originalRead.apply(this, arguments);
         try {
           const rawData = response.responseXML || response.responseText || response;
@@ -8376,7 +8377,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
           for (let i = 0; i < m.addedNodes.length; i++) {
             const n = m.addedNodes[i];
             if (n.nodeType === 1 && (n.classList?.contains("x-grid-item-container") || n.classList?.contains("x-grid-view") || n.classList?.contains("x-panel-body") || // Generic panel body for tab switches
-            n.tagName === "IFRAME")) {
+              n.tagName === "IFRAME")) {
               hasPotentialGrid = true;
               break;
             }
@@ -9181,7 +9182,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
   }
   function createFilterBuilder() {
     try {
-      let refreshChipList = function() {
+      let refreshChipList = function () {
         chipListEl.innerHTML = "";
         let hasAny = false;
         for (const fc of FIELD_CONFIG) {
@@ -9220,16 +9221,16 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
             )
           );
         }
-      }, refreshPreview = function() {
+      }, refreshPreview = function () {
         previewEl.innerHTML = "";
         previewEl.appendChild(buildPreviewText(state));
-      }, updateHint = function() {
+      }, updateHint = function () {
         const op = OPERATORS.find((o) => o.value === opSelect.value);
         hintEl.textContent = op ? op.hint : "";
-      }, updatePlaceholder = function() {
+      }, updatePlaceholder = function () {
         const fc = FIELD_CONFIG.find((f) => f.key === fieldSelect.value);
         keywordInput.placeholder = fc ? fc.placeholder : "Enter keyword...";
-      }, addChip = function() {
+      }, addChip = function () {
         const field = fieldSelect.value;
         const operator = opSelect.value;
         const keyword = keywordInput.value.trim();
@@ -9250,19 +9251,19 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
         keywordInput.focus();
         refreshChipList();
         refreshPreview();
-      }, syncToTextMode = function() {
+      }, syncToTextMode = function () {
         if (!textContainer) return;
         for (const fc of FIELD_CONFIG) {
           const input = textContainer.querySelector(`#fb-text-${fc.key}`);
           if (input) input.value = serializeField(state.fields[fc.key]);
         }
-      }, syncFromTextMode = function() {
+      }, syncFromTextMode = function () {
         if (!textContainer) return;
         for (const fc of FIELD_CONFIG) {
           const input = textContainer.querySelector(`#fb-text-${fc.key}`);
           if (input) state.fields[fc.key] = parseField(input.value);
         }
-      }, loadProfile = function(profId) {
+      }, loadProfile = function (profId) {
         if (!profId) {
           state = createEmptyState();
         } else {
@@ -9286,7 +9287,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
           syncToTextMode();
         }
         refreshPreview();
-      }, saveProfile = function() {
+      }, saveProfile = function () {
         if (!isVisualMode) syncFromTextMode();
         const name = nameInput.value.trim();
         if (!name) {
@@ -9315,7 +9316,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
         profileSelect.value = profData.id;
         deleteBtn.style.display = "inline-block";
         showToast("Profile saved!", "#2ecc71");
-      }, deleteProfile = function() {
+      }, deleteProfile = function () {
         const id = state.profileId;
         if (!id) return;
         if (!confirm("Delete this profile?")) return;
@@ -9328,14 +9329,14 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
         profileSelect.value = "";
         loadProfile(null);
         showToast("Profile deleted", "#e74c3c");
-      }, renderProfileOptions = function() {
+      }, renderProfileOptions = function () {
         profileSelect.innerHTML = "";
         profileSelect.appendChild(el("option", { value: "" }, "-- Create New Profile --"));
         savedProfiles.forEach((p) => {
           const suffix = p.target === "CTJOBS" ? " [CT]" : "";
           profileSelect.appendChild(el("option", { value: p.id }, `${p.name}${suffix}`));
         });
-      }, buildTextMode = function() {
+      }, buildTextMode = function () {
         const rows = FIELD_CONFIG.map(
           (fc) => el("div", { className: "eam-fc-row", style: { marginBottom: "6px" } }, [
             el("label", { className: "eam-fc-label", style: { width: "110px", minWidth: "110px" } }, fc.label + ":"),
@@ -9758,7 +9759,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
     const suppressors = [];
     try {
       const origOnerror = win.onerror;
-      win.onerror = function(msg, url2, line, col, error) {
+      win.onerror = function (msg, url2, line, col, error) {
         const msgStr = String(msg || "");
         if (msgStr.includes("items") && msgStr.includes("null")) {
           APMLogger.debug("Forecast", "Suppressed EAM transition error (window.onerror):", msgStr);
@@ -9775,7 +9776,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
     try {
       const origHandle = win.Ext?.Error?.handle;
       if (win.Ext?.Error) {
-        win.Ext.Error.handle = function(err) {
+        win.Ext.Error.handle = function (err) {
           const msg = err && (err.msg || err.message || String(err)) || "";
           if (msg.includes("items") && msg.includes("null")) {
             APMLogger.debug("Forecast", "Suppressed EAM transition error (Ext.Error.handle):", msg);
@@ -10601,13 +10602,15 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
             el("select", { id: "eam-profile-select", className: "eam-fc-select", style: { color: "var(--apm-accent)", fontWeight: "bold" } }, [
               el("option", { value: "manual" }, "[ Manual Native Search ]")
             ]),
-            el("button", { id: "eam-btn-spies", title: "Open the dataspy builder", style: { background: "none", border: "none", color: "var(--apm-accent)", fontSize: "var(--apm-text-sm)", fontWeight: "600", cursor: "pointer", padding: "0 4px", whiteSpace: "nowrap", transition: "color 0.15s" }, onmouseover: function() {
-              this.style.color = "var(--apm-text-bright)";
-              this.style.textDecoration = "underline";
-            }, onmouseout: function() {
-              this.style.color = "var(--apm-accent)";
-              this.style.textDecoration = "none";
-            } }, "+ New")
+            el("button", {
+              id: "eam-btn-spies", title: "Open the dataspy builder", style: { background: "none", border: "none", color: "var(--apm-accent)", fontSize: "var(--apm-text-sm)", fontWeight: "600", cursor: "pointer", padding: "0 4px", whiteSpace: "nowrap", transition: "color 0.15s" }, onmouseover: function () {
+                this.style.color = "var(--apm-text-bright)";
+                this.style.textDecoration = "underline";
+              }, onmouseout: function () {
+                this.style.color = "var(--apm-accent)";
+                this.style.textDecoration = "none";
+              }
+            }, "+ New")
           ]),
           el("div", { id: "eam-profile-summary", style: { display: "none", background: "var(--apm-accent-subtle)", border: "1px dashed var(--apm-accent)", borderRadius: "var(--apm-radius-sm)", padding: "6px 8px", fontSize: "var(--apm-text-sm)", color: "var(--apm-text-tertiary)" } }, [
             el("div", { style: { fontWeight: "600", color: "var(--apm-accent)", marginBottom: "2px" } }, "Profile Active: ExtJS Filter Engaged"),
@@ -11053,10 +11056,12 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
         const filterBuilder = createFilterBuilder();
         const statusLabel = el("div", { id: "eam-status", className: "eam-fc-status" });
         const updateContainer = el("div", { id: "eam-update-container", className: "eam-fc-update-box" }, [
-          el("a", { href: getUpdateUrls().download, target: "_blank", className: "apm-footer-update-btn", onclick: (e) => {
-            e.preventDefault();
-            window.open(getUpdateUrls().download, "_blank");
-          } }, "\u2728 Update Available")
+          el("a", {
+            href: getUpdateUrls().download, target: "_blank", className: "apm-footer-update-btn", onclick: (e) => {
+              e.preventDefault();
+              window.open(getUpdateUrls().download, "_blank");
+            }
+          }, "\u2728 Update Available")
         ]);
         panel.appendChild(header);
         panel.appendChild(searchForm);
@@ -11293,7 +11298,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
   init_scheduler();
   init_utils();
   init_logger();
-  var ForecastFilter = /* @__PURE__ */ (function() {
+  var ForecastFilter = /* @__PURE__ */ (function () {
     let filterState = 0;
     let lastKnownStoreId = null;
     const TARGET_DATA_INDEX = "duedate";
@@ -11341,7 +11346,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
         return filterState === 1 ? !isBlank : isBlank;
       });
       const count = store.getCount();
-      store.getTotalCount = function() {
+      store.getTotalCount = function () {
         return count;
       };
       updateFooterTextNatively(grid, count);
@@ -11413,7 +11418,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
         margin: "0 0 0 8",
         html: btnHtml,
         listeners: {
-          afterrender: function(cmp) {
+          afterrender: function (cmp) {
             const btnEl = cmp.getEl()?.dom?.querySelector("#apm-list-pm-btn");
             if (btnEl) {
               btnEl.addEventListener("click", (e) => {
@@ -11427,7 +11432,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
       APMLogger.info("ForecastFilter", `PM filter button injected into toolbar: ${parentToolbar.id}`);
     }
     return {
-      init: function() {
+      init: function () {
         APMScheduler.registerTask("forecast-filter", 1500, () => {
           const existingBtn = document.getElementById("apm-list-pm-btn");
           if (existingBtn && document.body.contains(existingBtn) && filterState === 0) return;
@@ -12288,9 +12293,11 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
   init_constants();
   init_storage();
   init_feature_flags();
-  var LaborTracker = (function() {
-    if (!isTopFrame()) return { init: function() {
-    } };
+  var LaborTracker = (function () {
+    if (!isTopFrame()) return {
+      init: function () {
+      }
+    };
     let activeTab = 1;
     let isFetching = false;
     let isInitialized = false;
@@ -12609,7 +12616,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
       }
     }
     return {
-      init: function() {
+      init: function () {
         if (!FeatureFlags.isEnabled("laborBooker")) return;
         if (!isTopFrame()) return;
         if (isInitialized) {
@@ -13167,9 +13174,11 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
                 el("option", { value: "no" }, "(Check NO)")
               ]),
               el("div", { className: "field-label", title: "How many checkboxes to fill during autofill", style: { flexGrow: "1", textAlign: "right", color: "var(--apm-text-bright)", marginRight: "5px" } }, "10-Tech PM:"),
-              el("input", { type: "number", id: "apm-c-pm-checks", className: "field-input", title: "How many checkboxes to fill during autofill", min: "0", placeholder: "0", onblur: (e) => {
-                if (e.target.value === "") e.target.value = "0";
-              }, style: { width: "55px", height: "28px", padding: "0 4px", textAlign: "center" } })
+              el("input", {
+                type: "number", id: "apm-c-pm-checks", className: "field-input", title: "How many checkboxes to fill during autofill", min: "0", placeholder: "0", onblur: (e) => {
+                  if (e.target.value === "") e.target.value = "0";
+                }, style: { width: "55px", height: "28px", padding: "0 4px", textAlign: "center" }
+              })
             ])
           ]),
           // ── Trouble Codes & Assignment ──
@@ -13783,7 +13792,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
         const importPanel = document.getElementById("apm-import-panel");
         const importFileBtn = document.getElementById("apm-import-file-btn");
         if (importBtn && importFileInput && importPasteInput) {
-          let showImportDialog = function(content) {
+          let showImportDialog = function (content) {
             return new Promise((resolve) => {
               const checkboxes = [];
               const moduleRows = IMPORT_MODULES.map((mod) => {
@@ -14866,10 +14875,12 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
         { name: "SettingsPanel", onlyTop: true, fn: buildSettingsPanel },
         { name: "ColorCodeLogic", flag: "colorCode", noShell: true, fn: setupColorCodeLogic },
         { name: "AutoFillObserver", flag: "autoFill", onlyTop: true, fn: initAutoFillObserver },
-        { name: "TabGridOrder", flag: "tabGridOrder", noShell: true, fn: () => {
-          applyGridConsistency();
-          applyTabConsistency();
-        } },
+        {
+          name: "TabGridOrder", flag: "tabGridOrder", noShell: true, fn: () => {
+            applyGridConsistency();
+            applyTabConsistency();
+          }
+        },
         { name: "NativeToggle", flag: "colorCode", onlyTop: true, fn: injectToggleBtnNatively },
         { name: "PtpStatus", flag: "ptpTimer", onlyTop: true, noShell: true, fn: checkPtpStatus }
       ];
@@ -15527,20 +15538,20 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
     const RealXHR = _pageWin.XMLHttpRequest;
     const origOpen = RealXHR.prototype.open;
     const origSend = RealXHR.prototype.send;
-    RealXHR.prototype.open = function(method, url2) {
+    RealXHR.prototype.open = function (method, url2) {
       this._apmUrl = (url2 || "").toString();
       return origOpen.apply(this, arguments);
     };
-    RealXHR.prototype.send = function(body) {
+    RealXHR.prototype.send = function (body) {
       if (isRelevantUrl(this._apmUrl)) {
-        this.addEventListener("load", function() {
+        this.addEventListener("load", function () {
           handleAssessmentResponse(this._apmUrl, this.responseText, this.status, body);
         });
       }
       return origSend.apply(this, arguments);
     };
     const origFetch = _pageWin.fetch;
-    _pageWin.fetch = async function(...args) {
+    _pageWin.fetch = async function (...args) {
       const response = await origFetch.apply(this, args);
       try {
         const url2 = args[0] instanceof Request ? args[0].url : typeof args[0] === "string" ? args[0] : "";
@@ -15661,7 +15672,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
     }
     if (!found) {
       const walk = document.createTreeWalker(gridDom, NodeFilter.SHOW_TEXT, {
-        acceptNode: function(node2) {
+        acceptNode: function (node2) {
           return /Records:\s*\d+\s*of\s*\d+/.test(node2.nodeValue) ? NodeFilter.FILTER_ACCEPT : NodeFilter.FILTER_SKIP;
         }
       }, false);
@@ -15737,7 +15748,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
         store._apmCacheHook = true;
       }
       const count = store.getCount();
-      store.getTotalCount = function() {
+      store.getTotalCount = function () {
         return this.getCount();
       };
       forceFooterText(gridDom, count);
