@@ -3786,11 +3786,9 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
           if (newTheme !== state.activeTheme) applyEnforcer(newTheme);
         } else if (d && d.type === "APM_GET_THEME") {
           const cur = state.activeTheme || "default";
-          if (cur !== "default") {
-            try {
-              if (e.source) safePostMessage(e.source, { type: "APM_SET_THEME", value: cur });
-            } catch (err) {
-            }
+          try {
+            if (e.source) safePostMessage(e.source, { type: "APM_SET_THEME", value: cur });
+          } catch (err) {
           }
         }
       });
@@ -4707,16 +4705,14 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
         }
       }
       if (msg.type === "APM_GET_THEME" || msg.apmMaster === "getTheme") {
-        const activeTheme = ThemeResolver.getPreferredTheme();
-        if (activeTheme && activeTheme !== "default") {
-          try {
-            e.source?.postMessage({
-              type: "APM_SET_THEME",
-              apmMaster: "theme",
-              value: activeTheme
-            }, e.origin);
-          } catch (err) {
-          }
+        const activeTheme = ThemeResolver.getPreferredTheme() || "default";
+        try {
+          e.source?.postMessage({
+            type: "APM_SET_THEME",
+            apmMaster: "theme",
+            value: activeTheme
+          }, e.origin);
+        } catch (err) {
         }
       }
       if (msg.type === "APM_PTP_CLICK_AWAY") {
@@ -12798,6 +12794,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
   init_utils();
   init_toast();
   init_dom_helpers();
+  init_feature_flags();
   var SNAPSHOT_TTL = 4 * 60 * 60 * 1e3;
   var CAPTURE_INTERVAL = 3e3;
   var RESTORE_GRID_TIMEOUT = 1e4;
@@ -12911,9 +12908,11 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
       if (existing) existing.remove();
       let resolved = false;
       let dismissTimer;
+      let progressFrame;
       const finish = (choice) => {
         if (resolved) return;
         resolved = true;
+        if (progressFrame) cancelAnimationFrame(progressFrame);
         const promptEl = document.getElementById(PROMPT_ID);
         if (promptEl) {
           promptEl.style.opacity = "0";
@@ -12923,7 +12922,38 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
         if (dismissTimer) clearTimeout(dismissTimer);
         resolve(choice);
       };
-      const btnStyle = "padding:6px 16px; border:none; border-radius:4px; font-weight:bold; font-size:12px; cursor:pointer; margin-left:8px;";
+      const font = "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif";
+      const btnBase = {
+        border: "none",
+        borderRadius: "var(--apm-radius-sm, 4px)",
+        fontWeight: "bold",
+        fontFamily: font,
+        fontSize: "var(--apm-text-base, 12px)",
+        cursor: "pointer",
+        padding: "6px 14px",
+        transition: "filter 0.15s, background 0.15s"
+      };
+      const progressBar = el("div", {
+        style: {
+          position: "absolute",
+          bottom: "0",
+          left: "0",
+          height: "2px",
+          width: "100%",
+          background: "var(--apm-accent, #3498db)",
+          borderRadius: "0 0 var(--apm-radius-lg, 10px) var(--apm-radius-lg, 10px)",
+          transformOrigin: "left",
+          opacity: "0.6"
+        }
+      });
+      const startTime = performance.now();
+      const animateProgress = (now) => {
+        if (resolved) return;
+        const elapsed = now - startTime;
+        const remaining = Math.max(0, 1 - elapsed / PROMPT_AUTO_DISMISS);
+        progressBar.style.transform = `scaleX(${remaining})`;
+        if (remaining > 0) progressFrame = requestAnimationFrame(animateProgress);
+      };
       const prompt2 = el("div", {
         id: PROMPT_ID,
         style: {
@@ -12932,37 +12962,109 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
           left: "50%",
           transform: "translateX(-50%) translateY(-20px)",
           zIndex: "2147483647",
-          padding: "12px 20px",
-          borderRadius: "10px",
-          background: "var(--apm-surface, #2a2a2e)",
-          border: "1px solid var(--apm-border, #444)",
-          boxShadow: "0 4px 20px rgba(0,0,0,0.5)",
-          fontFamily: "sans-serif",
-          fontSize: "13px",
-          color: "var(--apm-text-primary, #eee)",
+          padding: "14px 20px 12px",
+          borderRadius: "var(--apm-radius-lg, 10px)",
+          background: "var(--apm-surface-0, #35404a)",
+          border: "1px solid var(--apm-border, #45535e)",
+          boxShadow: "0 4px 10px rgba(0,0,0,0.5)",
+          fontFamily: font,
+          color: "var(--apm-text-primary, #fff)",
           display: "flex",
-          alignItems: "center",
-          gap: "12px",
+          flexDirection: "column",
+          gap: "10px",
+          minWidth: "300px",
+          maxWidth: "460px",
           opacity: "0",
-          transition: "opacity 0.3s ease, transform 0.3s ease"
+          transition: "opacity 0.3s ease, transform 0.3s ease",
+          overflow: "hidden"
         }
       }, [
-        el("span", { innerHTML: buildPromptMessage(snapshot) }),
-        el("button", {
-          textContent: "Restore",
-          style: btnStyle + "background:var(--apm-success, #27ae60); color:white;",
-          onclick: () => finish("restore")
-        }),
-        el("button", {
-          textContent: "Dismiss",
-          style: btnStyle + "background:var(--apm-text-disabled, #666); color:white;",
-          onclick: () => finish("dismiss")
-        })
+        // Message row
+        el("div", {
+          style: {
+            display: "flex",
+            alignItems: "center",
+            gap: "8px",
+            fontSize: "var(--apm-text-md, 13px)",
+            lineHeight: "1.4"
+          }
+        }, [
+          el("span", {
+            style: {
+              fontSize: "16px",
+              color: "var(--apm-accent, #3498db)",
+              flexShrink: "0"
+            }
+          }, ["\u21BB"]),
+          el("span", { innerHTML: buildPromptMessage(snapshot) })
+        ]),
+        // Button row
+        el("div", {
+          style: {
+            display: "flex",
+            alignItems: "center",
+            gap: "8px"
+          }
+        }, [
+          el("button", {
+            style: {
+              ...btnBase,
+              background: "var(--apm-accent, #3498db)",
+              color: "var(--apm-text-on-accent, #fff)"
+            },
+            onmouseenter(e) {
+              e.target.style.filter = "brightness(1.15)";
+            },
+            onmouseleave(e) {
+              e.target.style.filter = "";
+            },
+            onclick: () => finish("restore")
+          }, ["Restore"]),
+          el("button", {
+            style: {
+              ...btnBase,
+              background: "var(--apm-control-bg, #4a5a6a)",
+              color: "var(--apm-text-primary, #fff)"
+            },
+            onmouseenter(e) {
+              e.target.style.background = "var(--apm-control-bg-hover, #5c6d7e)";
+            },
+            onmouseleave(e) {
+              e.target.style.background = "var(--apm-control-bg, #4a5a6a)";
+            },
+            onclick: () => finish("dismiss")
+          }, ["Dismiss"]),
+          // Spacer pushes "Don't Ask Again" to the right
+          el("div", { style: { flex: "1" } }),
+          el("button", {
+            style: {
+              ...btnBase,
+              background: "transparent",
+              color: "var(--apm-text-muted, #95a5a6)",
+              padding: "6px 8px",
+              fontWeight: "600"
+            },
+            onmouseenter(e) {
+              e.target.style.color = "var(--apm-text-secondary, #b0bec5)";
+            },
+            onmouseleave(e) {
+              e.target.style.color = "var(--apm-text-muted, #95a5a6)";
+            },
+            onclick: () => {
+              FeatureFlags.set("sessionSnapshot", false);
+              showToast("Session restore disabled \u2014 re-enable in APM Master \u2192 General", "var(--apm-control-bg, #4a5a6a)", false);
+              finish("dismiss");
+            }
+          }, ["Don\u2019t Ask Again"])
+        ]),
+        // Progress bar
+        progressBar
       ]);
       document.body.appendChild(prompt2);
       setTimeout(() => {
         prompt2.style.opacity = "1";
         prompt2.style.transform = "translateX(-50%) translateY(0)";
+        progressFrame = requestAnimationFrame(animateProgress);
       }, 10);
       dismissTimer = setTimeout(() => finish("dismiss"), PROMPT_AUTO_DISMISS);
     });
@@ -13400,6 +13502,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
           el("div", { style: { marginBottom: "15px", borderBottom: "1px solid var(--apm-border)", paddingBottom: "10px" } }, [
             el("b", { style: { color: "var(--apm-success)", display: "block", marginBottom: "5px" } }, "Latest \u2014 UI, Quality of Life, Infrastructure"),
             el("ul", { style: { paddingLeft: "20px", margin: "0" } }, [
+              el("li", {}, "Session state snapshot to restore the record you were viewing after timeout, for now its only the record, maybe i can restore/replay search results in the future"),
               el("li", {}, "UI overhaul \u2014 centralized theme tokens, consistent visual flow across all panels and popups"),
               el("li", {}, "First-run welcome screen with theme selection and optional feature tour"),
               el("li", {}, "Comprehensive Help & Tips guide covering all features, linked from both settings and forecast"),
@@ -13419,15 +13522,16 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
             el("ul", { style: { paddingLeft: "20px", margin: "0" } }, [
               el("li", {}, "WO QR codes for quick mobile access"),
               el("li", {}, "ColorCode rule pause/resume toggle"),
-              el("li", {}, "Relative date filtering for ColorCode rules")
+              el("li", {}, "Relative date filtering for ColorCode rules"),
+              el("li", {}, "Bug fixes specific to EAM environment differences")
             ])
           ]),
           el("div", {}, [
             el("b", { style: { color: "var(--apm-accent)", display: "block", marginBottom: "5px" } }, "Planned Research"),
             el("ul", { style: { paddingLeft: "20px", margin: "0" } }, [
               el("li", {}, "Broader use of direct EXTJS API interaction and AJAX requests beyond Labor Tally/booking, dataspy, etc."),
-              el("li", {}, "Personalized shift snapshots and multi-employee overview reports"),
-              el("li", {}, "Session state snapshots to restore your exact position after timeout")
+              el("li", {}, "Configurable shift snapshots and multi-employee overview reports"),
+              el("li", {}, "Plenty of other stuff I'm sure")
             ])
           ])
         ])
@@ -13777,7 +13881,8 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
         ]),
         // ── Feature Modules ──
         el("div", { className: "apm-settings-section", style: { borderBottom: "1px solid var(--apm-border)", paddingBottom: "12px", marginBottom: "12px" } }, [
-          el("div", { className: "apm-section-label", style: { color: "var(--apm-accent)", marginBottom: "8px" } }, "Feature Modules"),
+          el("div", { className: "apm-section-label", style: { color: "var(--apm-accent)", marginBottom: "4px" } }, "Feature Modules"),
+          el("div", { style: { fontSize: "var(--apm-text-xs)", color: "var(--apm-text-muted)", marginBottom: "8px" } }, "Changes take effect next session"),
           ...flagItems
         ]),
         // ── Preferences ──
