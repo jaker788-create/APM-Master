@@ -10,7 +10,6 @@
 // @match        https://idp.federate.amazon.com/*
 // @match        https://*.ptp.amazon.dev/*
 // @match        https://*.insights.amazon.dev/*
-// @match        https://*.apm-es.gps.amazon.dev/*
 // @match        https://*.hexagon.com/*
 // @match        https://*.octave.com/*
 // @updateURL    https://drive.corp.amazon.com/view/rosendah@/greasemonkey_scripts/APM-Master/forecast.user.js
@@ -58,9 +57,9 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
         hostname,
         // Core Domains
         isEAM: hostname.includes("hxgnsmartcloud.com"),
-        // 'amazon.dev' targets the PTP development domain; 'insights' matches the
-        // HxGN EAM Insights subdomain where the PTP timer iframe is hosted.
-        isPTP: /\.amazon\.dev$|insights\.hxgnsmartcloud\.com/i.test(hostname),
+        // PTP runs on *.ptp.amazon.dev and *.insights.amazon.dev subdomains;
+        // 'insights' also matches the HxGN EAM Insights subdomain where the PTP timer iframe is hosted.
+        isPTP: /\.(ptp|insights)\.amazon\.dev$|insights\.hxgnsmartcloud\.com/i.test(hostname),
         isLanding: hostname.includes("octave.com") || hostname.includes("hexagon.com"),
         isShell: url.includes("/base/common"),
         // Auth / Transition Domains
@@ -116,7 +115,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
   });
 
   // src/core/constants.js
-  var KEY_THEME, CC_STORAGE_RULES, CC_STORAGE_SET, PRESET_STORAGE_KEY, STORAGE_KEY, APM_GENERAL_STORAGE, CURRENT_VERSION, VERSION_CHECK_URL, UPDATE_URL, LABOR_EMPS_STORAGE, LABOR_ACTIVE_STORAGE, LABOR_DOCK_STORAGE, LABOR_PREFS_STORAGE, LABOR_NIGHT_SHIFT_KEY, LABOR_LAST_EMP_KEY, SESSION_STORAGE_KEY, PTP_HISTORY_KEY, UPDATE_CHECK_KEY, MIGRATIONS_DONE_KEY, WELCOME_SEEN_KEY, BETA_VERSION_CHECK_URL, BETA_UPDATE_URL, LOG_LEVELS, DEFAULT_TENANT, SESSION_TIMEOUT_URL, LINK_CONFIG, MIN_GRID_COLUMNS, MIN_TAB_ITEMS, ENTITY_REGISTRY, SCREEN_TITLES;
+  var KEY_THEME, CC_STORAGE_RULES, CC_STORAGE_SET, PRESET_STORAGE_KEY, STORAGE_KEY, APM_GENERAL_STORAGE, CURRENT_VERSION, VERSION_CHECK_URL, UPDATE_URL, LABOR_EMPS_STORAGE, LABOR_ACTIVE_STORAGE, LABOR_DOCK_STORAGE, LABOR_PREFS_STORAGE, LABOR_NIGHT_SHIFT_KEY, LABOR_LAST_EMP_KEY, SESSION_STORAGE_KEY, PTP_HISTORY_KEY, UPDATE_CHECK_KEY, MIGRATIONS_DONE_KEY, WELCOME_SEEN_KEY, SNAPSHOT_STORAGE_PREFIX, BETA_VERSION_CHECK_URL, BETA_UPDATE_URL, LOG_LEVELS, DEFAULT_TENANT, SESSION_TIMEOUT_URL, LINK_CONFIG, MIN_GRID_COLUMNS, MIN_TAB_ITEMS, ENTITY_REGISTRY, SCREEN_TITLES;
   var init_constants = __esm({
     "src/core/constants.js"() {
       KEY_THEME = "apm_v1_ui_theme";
@@ -139,6 +138,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
       UPDATE_CHECK_KEY = "apm_last_update_check";
       MIGRATIONS_DONE_KEY = "apm_v1_migrations_done";
       WELCOME_SEEN_KEY = "apm_v1_welcome_seen";
+      SNAPSHOT_STORAGE_PREFIX = "apm_v1_snapshot_";
       BETA_VERSION_CHECK_URL = "https://raw.githubusercontent.com/jaker788-create/APM-Master/Beta/forecast.user.js";
       BETA_UPDATE_URL = "https://raw.githubusercontent.com/jaker788-create/APM-Master/Beta/forecast.user.js";
       LOG_LEVELS = {
@@ -1723,11 +1723,10 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
       TRUSTED_PATTERNS = [
         /\.hxgnsmartcloud\.com$/,
         /\.hexagon\.com$/,
-        // IMPORTANT: Must be \.amazon\.dev$ (broad), NOT \.ptp\.amazon\.dev$ (narrow).
-        // PTP uses varying subdomains: user.sparsy.insights.amazon.dev, *.ptp.amazon.dev, etc.
-        // A narrow pattern breaks PTP communication silently — no error, just dropped messages.
+        // PTP uses varying subdomains under ptp and insights:
+        // e.g. user.sparsy.insights.amazon.dev, *.ptp.amazon.dev, etc.
         // Message handlers must also validate message structure/type.
-        /\.amazon\.dev$/
+        /\.(ptp|insights)\.amazon\.dev$/
       ];
     }
   });
@@ -9714,6 +9713,130 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
   init_ajax_hooks();
   init_feature_flags();
   init_toast();
+
+  // src/core/eam-nav.js
+  init_logger();
+  init_constants();
+  function buildEamScreenUrl(target) {
+    const entry = ENTITY_REGISTRY[target];
+    const base = entry ? entry.systemFunc : target;
+    return `${base}?USER_FUNCTION_NAME=${target}&FUNCTION_CLASS=WEBL`;
+  }
+  function suppressEamTransitionError(win) {
+    const suppressors = [];
+    try {
+      const origOnerror = win.onerror;
+      win.onerror = function (msg, url2, line, col, error) {
+        const msgStr = String(msg || "");
+        if (msgStr.includes("items") && msgStr.includes("null")) {
+          APMLogger.debug("EamNav", "Suppressed EAM transition error (window.onerror):", msgStr);
+          return true;
+        }
+        if (origOnerror) return origOnerror.call(this, msg, url2, line, col, error);
+        return false;
+      };
+      suppressors.push(() => {
+        win.onerror = origOnerror;
+      });
+    } catch (e) {
+    }
+    try {
+      const origHandle = win.Ext?.Error?.handle;
+      if (win.Ext?.Error) {
+        win.Ext.Error.handle = function (err) {
+          const msg = err && (err.msg || err.message || String(err)) || "";
+          if (msg.includes("items") && msg.includes("null")) {
+            APMLogger.debug("EamNav", "Suppressed EAM transition error (Ext.Error.handle):", msg);
+            return true;
+          }
+          return origHandle ? origHandle.apply(this, arguments) : false;
+        };
+        suppressors.push(() => {
+          win.Ext.Error.handle = origHandle;
+        });
+      }
+    } catch (e) {
+    }
+    return () => {
+      suppressors.forEach((fn) => {
+        try {
+          fn();
+        } catch (e) {
+        }
+      });
+      APMLogger.debug("EamNav", "EAM error suppression removed");
+    };
+  }
+  function launchScreenDirect(win, target) {
+    try {
+      const nav = win.EAM?.Nav;
+      if (!nav || typeof nav.launchScreen !== "function") {
+        APMLogger.warn("EamNav", "EAM.Nav.launchScreen not available");
+        return false;
+      }
+      const url2 = buildEamScreenUrl(target);
+      APMLogger.info("EamNav", `Direct navigation via EAM.Nav.launchScreen("${url2}")`);
+      const cleanup = suppressEamTransitionError(win);
+      nav.launchScreen(url2, null, { fromNav: true });
+      setTimeout(cleanup, 5e3);
+      return true;
+    } catch (e) {
+      APMLogger.error("EamNav", "EAM.Nav.launchScreen failed:", e);
+      return false;
+    }
+  }
+
+  // src/core/maddon.js
+  init_logger();
+  function injectMaddonFilter(grid, filters) {
+    try {
+      const store = grid.getStore?.();
+      if (!store) return null;
+      const proxy = store.getProxy?.();
+      if (!proxy) return null;
+      const existing = proxy.getExtraParams ? proxy.getExtraParams() : proxy.extraParams || {};
+      const merged = { ...existing, ...filters };
+      if (proxy.setExtraParams) {
+        proxy.setExtraParams(merged);
+      } else {
+        proxy.extraParams = merged;
+      }
+      const injectedKeys = Object.keys(filters);
+      APMLogger.debug("Maddon", `Injected ${injectedKeys.length} MADDON params into store proxy`);
+      return { proxy, injectedKeys };
+    } catch (e) {
+      APMLogger.error("Maddon", "Failed to inject MADDON filter:", e);
+      return null;
+    }
+  }
+  function clearMaddonFilters(handle) {
+    if (!handle?.proxy || !handle?.injectedKeys) return;
+    try {
+      const { proxy, injectedKeys } = handle;
+      const existing = proxy.getExtraParams ? proxy.getExtraParams() : proxy.extraParams || {};
+      const cleaned = { ...existing };
+      for (const k of injectedKeys) delete cleaned[k];
+      if (proxy.setExtraParams) {
+        proxy.setExtraParams(cleaned);
+      } else {
+        proxy.extraParams = cleaned;
+      }
+      APMLogger.debug("Maddon", "Cleaned up MADDON params from store proxy");
+    } catch (e) {
+      APMLogger.error("Maddon", "Failed to clear MADDON filters:", e);
+    }
+  }
+  function buildEntityFilter(entityKey, entityId) {
+    return {
+      MADDON_FILTER_ALIAS_NAME_1: entityKey,
+      MADDON_FILTER_OPERATOR_1: "=",
+      MADDON_FILTER_VALUE_1: entityId,
+      MADDON_FILTER_SEQNUM_1: "1",
+      MADDON_FILTER_JOINER_1: "AND"
+    };
+  }
+
+  // src/modules/forecast/forecast-engine.js
   var isRunning = false;
   var isStopped = false;
   var currentMode = "normal";
@@ -9751,72 +9874,6 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
     } catch (e) {
     }
     return "";
-  }
-  function buildEamScreenUrl(target) {
-    return `WSJOBS?USER_FUNCTION_NAME=${target}&FUNCTION_CLASS=WEBL`;
-  }
-  function suppressEamTransitionError(win) {
-    const suppressors = [];
-    try {
-      const origOnerror = win.onerror;
-      win.onerror = function (msg, url2, line, col, error) {
-        const msgStr = String(msg || "");
-        if (msgStr.includes("items") && msgStr.includes("null")) {
-          APMLogger.debug("Forecast", "Suppressed EAM transition error (window.onerror):", msgStr);
-          return true;
-        }
-        if (origOnerror) return origOnerror.call(this, msg, url2, line, col, error);
-        return false;
-      };
-      suppressors.push(() => {
-        win.onerror = origOnerror;
-      });
-    } catch (e) {
-    }
-    try {
-      const origHandle = win.Ext?.Error?.handle;
-      if (win.Ext?.Error) {
-        win.Ext.Error.handle = function (err) {
-          const msg = err && (err.msg || err.message || String(err)) || "";
-          if (msg.includes("items") && msg.includes("null")) {
-            APMLogger.debug("Forecast", "Suppressed EAM transition error (Ext.Error.handle):", msg);
-            return true;
-          }
-          return origHandle ? origHandle.apply(this, arguments) : false;
-        };
-        suppressors.push(() => {
-          win.Ext.Error.handle = origHandle;
-        });
-      }
-    } catch (e) {
-    }
-    return () => {
-      suppressors.forEach((fn) => {
-        try {
-          fn();
-        } catch (e) {
-        }
-      });
-      APMLogger.debug("Forecast", "EAM error suppression removed");
-    };
-  }
-  function launchScreenDirect(win, target) {
-    try {
-      const nav = win.EAM?.Nav;
-      if (!nav || typeof nav.launchScreen !== "function") {
-        APMLogger.warn("Forecast", "EAM.Nav.launchScreen not available");
-        return false;
-      }
-      const url2 = buildEamScreenUrl(target);
-      APMLogger.info("Forecast", `Direct navigation via EAM.Nav.launchScreen("${url2}")`);
-      const cleanup = suppressEamTransitionError(win);
-      nav.launchScreen(url2, null, { fromNav: true });
-      setTimeout(cleanup, 5e3);
-      return true;
-    } catch (e) {
-      APMLogger.error("Forecast", "EAM.Nav.launchScreen failed:", e);
-      return false;
-    }
   }
   AjaxHooks.onBeforeRequest("forecast-maddon", (win, conn, options) => {
     try {
@@ -10328,13 +10385,9 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
             if (!store) continue;
             const sid = (store.storeId || "").toLowerCase();
             if (!sid.includes("wsjobs") && !sid.includes("ctjobs")) continue;
-            const proxy = store.getProxy && store.getProxy();
-            if (proxy) {
-              const existing = proxy.getExtraParams ? proxy.getExtraParams() : proxy.extraParams || {};
-              proxy.setExtraParams ? proxy.setExtraParams({ ...existing, ...data.maddonParams }) : proxy.extraParams = { ...existing, ...data.maddonParams };
-              data._injectedMaddonKeys = Object.keys(data.maddonParams);
-              data._injectedProxy = proxy;
-              APMLogger.debug("Forecast", `Injected ${Object.keys(data.maddonParams).length} MADDON params into store proxy`);
+            const handle = injectMaddonFilter(grid, data.maddonParams);
+            if (handle) {
+              data._maddonHandle = handle;
               break;
             }
           }
@@ -10342,13 +10395,8 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
         if (runBtn.handler) runBtn.handler.call(runBtn.scope || runBtn, runBtn);
         else runBtn.fireEvent("click", runBtn);
         await waitForAjax(targetWin);
-        if (data._injectedProxy && data._injectedMaddonKeys) {
-          const proxy = data._injectedProxy;
-          const existing = proxy.getExtraParams ? proxy.getExtraParams() : proxy.extraParams || {};
-          const cleaned = { ...existing };
-          for (const k of data._injectedMaddonKeys) delete cleaned[k];
-          proxy.setExtraParams ? proxy.setExtraParams(cleaned) : proxy.extraParams = cleaned;
-          APMLogger.debug("Forecast", "Cleaned up MADDON params from store proxy");
+        if (data._maddonHandle) {
+          clearMaddonFilters(data._maddonHandle);
         }
       }
     }
@@ -12711,6 +12759,277 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
     }
   }
 
+  // src/modules/session-snapshot/session-snapshot.js
+  init_scheduler();
+  init_storage();
+  init_logger();
+  init_constants();
+  init_utils();
+  init_toast();
+  init_dom_helpers();
+  var SNAPSHOT_TTL = 4 * 60 * 60 * 1e3;
+  var CAPTURE_INTERVAL = 3e3;
+  var RESTORE_GRID_TIMEOUT = 7e3;
+  var PROMPT_AUTO_DISMISS = 15e3;
+  function getTabId() {
+    let id = sessionStorage.getItem("apm_tab_id");
+    if (!id) {
+      id = crypto.randomUUID();
+      sessionStorage.setItem("apm_tab_id", id);
+    }
+    return id;
+  }
+  function snapshotKey(tabId) {
+    return SNAPSHOT_STORAGE_PREFIX + tabId;
+  }
+  function purgeExpiredSnapshots() {
+    const now = Date.now();
+    let purged = 0;
+    try {
+      const keys = APMStorage.list();
+      for (const k of keys) {
+        if (!k.startsWith(SNAPSHOT_STORAGE_PREFIX)) continue;
+        const snap = APMStorage.get(k);
+        if (!snap || !snap.ts || now - snap.ts > SNAPSHOT_TTL) {
+          APMStorage.remove(k);
+          purged++;
+        }
+      }
+      if (purged > 0) APMLogger.info("Snapshot", `Purged ${purged} expired snapshot(s)`);
+    } catch (e) {
+      APMLogger.error("Snapshot", "Error purging expired snapshots:", e);
+    }
+  }
+  var _lastScreen = null;
+  var _lastRecordType = null;
+  var _lastRecordId = null;
+  function detectRecordView() {
+    for (const w of getExtWindows()) {
+      try {
+        if (!w.Ext?.ComponentQuery) continue;
+        const forms = w.Ext.ComponentQuery.query("form[id*=recordview]");
+        for (const form of forms) {
+          if (!form.rendered || form.isDestroyed) continue;
+          const screen = detectScreenFunction(w, null);
+          const entityConfig = ENTITY_REGISTRY[screen];
+          if (!entityConfig) continue;
+          const field = form.down?.(`field[name=${entityConfig.entityKey}]`);
+          const val = field?.getValue?.();
+          if (val) {
+            return { entityType: screen, entityId: String(val) };
+          }
+          const basicForm = form.getForm?.();
+          if (basicForm) {
+            const fVal = basicForm.findField?.(entityConfig.entityKey)?.getValue?.();
+            if (fVal) {
+              return { entityType: screen, entityId: String(fVal) };
+            }
+          }
+          const ctx = findMainGrid();
+          if (ctx) {
+            const sel = ctx.grid.getSelectionModel?.()?.getSelection?.();
+            if (sel && sel.length > 0) {
+              const selVal = sel[0].get(entityConfig.entityKey);
+              if (selVal) {
+                return { entityType: screen, entityId: String(selVal) };
+              }
+            }
+          }
+        }
+      } catch (e) {
+      }
+    }
+    return null;
+  }
+  function captureState(tabId) {
+    if (!isTopFrame()) return;
+    const ctx = findMainGrid();
+    const screen = ctx ? detectScreenFunction(ctx.win, ctx.grid) : null;
+    const record = detectRecordView();
+    const screenChanged = screen !== _lastScreen;
+    const recordChanged = record?.entityType !== _lastRecordType || record?.entityId !== _lastRecordId;
+    if (!screenChanged && !recordChanged) return;
+    _lastScreen = screen;
+    _lastRecordType = record?.entityType || null;
+    _lastRecordId = record?.entityId || null;
+    if (!screen) return;
+    const snapshot = {
+      _v: 1,
+      tabId,
+      ts: Date.now(),
+      screen,
+      record: record ? { entityType: record.entityType, entityId: record.entityId } : null
+    };
+    APMStorage.set(snapshotKey(tabId), snapshot);
+    APMLogger.debug("Snapshot", `Captured: ${screen}${record ? " / " + record.entityId : ""}`);
+  }
+  function buildPromptMessage(snapshot) {
+    if (snapshot.record) {
+      const entry2 = ENTITY_REGISTRY[snapshot.record.entityType];
+      const label = entry2 ? entry2.label : snapshot.record.entityType;
+      return `Your previous session had <b>${label} ${snapshot.record.entityId}</b> open. Restore?`;
+    }
+    const entry = ENTITY_REGISTRY[snapshot.screen];
+    const screenLabel = entry ? entry.screenTitle : snapshot.screen;
+    return `You were on the <b>${screenLabel}</b> screen. Restore?`;
+  }
+  function showRestorePrompt(snapshot) {
+    return new Promise((resolve) => {
+      const PROMPT_ID = "apm-snapshot-restore-prompt";
+      const existing = document.getElementById(PROMPT_ID);
+      if (existing) existing.remove();
+      let resolved = false;
+      let dismissTimer;
+      const finish = (choice) => {
+        if (resolved) return;
+        resolved = true;
+        const promptEl = document.getElementById(PROMPT_ID);
+        if (promptEl) {
+          promptEl.style.opacity = "0";
+          promptEl.style.transform = "translateX(-50%) translateY(-20px)";
+          setTimeout(() => promptEl.remove(), 300);
+        }
+        if (dismissTimer) clearTimeout(dismissTimer);
+        resolve(choice);
+      };
+      const btnStyle = "padding:6px 16px; border:none; border-radius:4px; font-weight:bold; font-size:12px; cursor:pointer; margin-left:8px;";
+      const prompt2 = el("div", {
+        id: PROMPT_ID,
+        style: {
+          position: "fixed",
+          top: "15px",
+          left: "50%",
+          transform: "translateX(-50%) translateY(-20px)",
+          zIndex: "2147483647",
+          padding: "12px 20px",
+          borderRadius: "10px",
+          background: "var(--apm-surface, #2a2a2e)",
+          border: "1px solid var(--apm-border, #444)",
+          boxShadow: "0 4px 20px rgba(0,0,0,0.5)",
+          fontFamily: "sans-serif",
+          fontSize: "13px",
+          color: "var(--apm-text-primary, #eee)",
+          display: "flex",
+          alignItems: "center",
+          gap: "12px",
+          opacity: "0",
+          transition: "opacity 0.3s ease, transform 0.3s ease"
+        }
+      }, [
+        el("span", { innerHTML: buildPromptMessage(snapshot) }),
+        el("button", {
+          textContent: "Restore",
+          style: btnStyle + "background:var(--apm-success, #27ae60); color:white;",
+          onclick: () => finish("restore")
+        }),
+        el("button", {
+          textContent: "Dismiss",
+          style: btnStyle + "background:var(--apm-text-disabled, #666); color:white;",
+          onclick: () => finish("dismiss")
+        })
+      ]);
+      document.body.appendChild(prompt2);
+      setTimeout(() => {
+        prompt2.style.opacity = "1";
+        prompt2.style.transform = "translateX(-50%) translateY(0)";
+      }, 10);
+      dismissTimer = setTimeout(() => finish("dismiss"), PROMPT_AUTO_DISMISS);
+    });
+  }
+  async function executeRestore(snapshot) {
+    const targetWin = window;
+    APMLogger.info("Snapshot", `Restoring: navigating to ${snapshot.screen}`);
+    const navOk = launchScreenDirect(targetWin, snapshot.screen);
+    if (!navOk) {
+      showToast("Could not restore \u2014 navigation unavailable", "#e74c3c", false);
+      return;
+    }
+    await delay(1500);
+    const POLL_INTERVAL = 250;
+    const maxPolls = Math.ceil(RESTORE_GRID_TIMEOUT / POLL_INTERVAL);
+    let grid = null;
+    let gridWin = null;
+    for (let i = 0; i < maxPolls; i++) {
+      const ctx = findMainGrid(true);
+      if (ctx) {
+        const screen = detectScreenFunction(ctx.win, ctx.grid);
+        if (screen === snapshot.screen || !snapshot.record) {
+          grid = ctx.grid;
+          gridWin = ctx.win;
+          break;
+        }
+      }
+      await delay(POLL_INTERVAL);
+    }
+    if (!grid) {
+      showToast("Could not restore \u2014 screen unavailable", "#e74c3c", false);
+      return;
+    }
+    if (snapshot.record) {
+      const entry = ENTITY_REGISTRY[snapshot.record.entityType];
+      if (!entry) {
+        showToast(`Unknown entity type: ${snapshot.record.entityType}`, "#e74c3c", false);
+        return;
+      }
+      const filters = buildEntityFilter(entry.entityKey, snapshot.record.entityId);
+      const handle = injectMaddonFilter(grid, filters);
+      if (!handle) {
+        showToast("Could not restore \u2014 filter injection failed", "#e74c3c", false);
+        return;
+      }
+      const store = grid.getStore();
+      store.load();
+      await waitForAjax(gridWin);
+      await delay(500);
+      clearMaddonFilters(handle);
+      if (store.getCount() === 0) {
+        showToast(`Could not find ${entry.label} ${snapshot.record.entityId}`, "#e74c3c", false);
+        return;
+      }
+      const result = await openFirstGridRecord(grid, gridWin);
+      if (result.success) {
+        showToast(`Restored ${entry.label} ${snapshot.record.entityId}`, "var(--apm-success, #27ae60)", false);
+      } else {
+        showToast(`Could not open ${entry.label} ${snapshot.record.entityId}`, "#e74c3c", false);
+      }
+    } else {
+      const entry = ENTITY_REGISTRY[snapshot.screen];
+      const label = entry ? entry.screenTitle : snapshot.screen;
+      showToast(`Restored ${label} screen`, "var(--apm-success, #27ae60)", false);
+    }
+  }
+  var _restoreHandled = false;
+  var SessionSnapshot = {
+    async init() {
+      if (!isTopFrame()) return;
+      const tabId = getTabId();
+      APMLogger.info("Snapshot", `Tab ID: ${tabId}`);
+      purgeExpiredSnapshots();
+      if (!_restoreHandled) {
+        _restoreHandled = true;
+        const params = new URLSearchParams(window.location.search);
+        const hasDrillback = Object.values(ENTITY_REGISTRY).some(
+          (entry) => params.get(entry.drillbackFlag) === "YES" && params.get(entry.entityKey)
+        );
+        if (!hasDrillback) {
+          const snapshot = APMStorage.get(snapshotKey(tabId));
+          if (snapshot && snapshot.ts && Date.now() - snapshot.ts <= SNAPSHOT_TTL) {
+            APMLogger.info("Snapshot", `Found restorable snapshot: ${snapshot.screen}${snapshot.record ? " / " + snapshot.record.entityId : ""}`);
+            const choice = await showRestorePrompt(snapshot);
+            await delay(350);
+            if (choice === "restore") {
+              await executeRestore(snapshot);
+            }
+            APMStorage.remove(snapshotKey(tabId));
+          }
+        }
+      }
+      APMScheduler.registerTask("session-snapshot", CAPTURE_INTERVAL, () => {
+        captureState(tabId);
+      });
+    }
+  };
+
   // src/ui/settings-panel.js
   init_logger();
   init_toast();
@@ -14684,6 +15003,8 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
             if (tb.items && tb.items.getCount() > 0) {
               const visibleCount = tb.items.items.filter((it) => !it.hidden && !it.isDestroyed).length;
               if (visibleCount === 0) continue;
+              const tbDom = tb.getEl?.()?.dom;
+              if (!tbDom || !tbDom.querySelector(".x-btn-mainmenuButton-toolbar-small")) continue;
               parentContainer = tb;
               insertIndex = tb.items.getCount();
               APMLogger.debug("APM Toolbar", `Strategy 1: Found toolbar via ComponentQuery (${tb.id}, ${visibleCount}/${tb.items.getCount()} visible items)`);
@@ -14721,6 +15042,8 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
               if (!tb.rendered || tb.isDestroyed || !tb.isVisible?.(true)) continue;
               if (tb.up("gridpanel") || tb.up("window")) continue;
               if (tb.items && tb.items.getCount() > 1) {
+                const tbDom = tb.getEl?.()?.dom;
+                if (!tbDom || !tbDom.querySelector(".x-btn-mainmenuButton-toolbar-small")) continue;
                 parentContainer = tb;
                 insertIndex = tb.items.getCount();
                 APMLogger.debug("APM Toolbar", `Strategy 3: Fallback toolbar (${tb.id}, ${tb.items.getCount()} items)`);
@@ -14758,12 +15081,29 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
               ])
             ]).outerHTML
           });
+          try {
+            parentContainer.updateLayout();
+          } catch (e) {
+          }
         } catch (e) {
           APMLogger.error("Toolbar", "Native Button Injection Error:", e);
         }
       };
       APMScheduler.registerTask("ext-btn-injection", 500, tryInjectButtons);
       tryInjectButtons();
+      document.addEventListener("visibilitychange", () => {
+        if (!document.hidden) {
+          const cmp = tbWin.Ext?.getCmp?.("apm-custom-btn-group");
+          if (cmp && cmp.ownerCt) {
+            APMLogger.debug("APM Toolbar", "Tab visible \u2014 forcing toolbar layout.");
+            try {
+              cmp.ownerCt.updateLayout();
+            } catch (e) {
+            }
+          }
+          setTimeout(tryInjectButtons, 200);
+        }
+      });
     }
   }
 
@@ -14842,6 +15182,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
     FeatureFlags.register("ptpTimer", { label: "PTP Take-2 Timer", description: "Safety countdown on PTP screen" });
     FeatureFlags.register("tabGridOrder", { label: "UI Customization", description: "Drag & drop reordering of grids/tabs" });
     FeatureFlags.register("tabTitle", { label: "Tab Title", description: "Show current screen name in browser tab" });
+    FeatureFlags.register("sessionSnapshot", { label: "Session Snapshot", description: "Restore your screen and record after session timeout", default: true });
     initGlobalSync();
     if (isTop) {
       try {
@@ -14967,6 +15308,9 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
         });
       } catch (e) {
         APMLogger.error("Boot", "Failed to register scheduler-investigator task:", e);
+      }
+      if (isTop && FeatureFlags.isEnabled("sessionSnapshot")) {
+        SessionSnapshot.init().catch((e) => APMLogger.error("Boot", "Session snapshot error:", e));
       }
       handleDrillbackAutoOpen().catch((e) => APMLogger.error("Boot", "Drillback auto-open error:", e));
     });
