@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         APM Master: Unified Tools
 // @namespace    https://w.amazon.com/bin/view/Users/rosendah/APM-Master/
-// @version      14.6.7
+// @version      14.6.8
 // @description  Quality of life and automation tool that uses native EAM ExtJS Framework functions for high reliability and capability. This is actively supported tool so Slack me or submit bug report/feature request through the bug report button in the menu.
 // @author       Jacob Rosendahl
 // @icon         https://media.licdn.com/dms/image/v2/D5603AQGdCV0_LQKRfQ/profile-displayphoto-scale_100_100/B56ZyZLvQ5HgAg-/0/1772096519061?e=1773878400&v=beta&t=eWO1Jiy0-WbzG_yBv-SBrmmsVOPMexF57-q1Xh_VXCk
@@ -124,7 +124,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
       PRESET_STORAGE_KEY = "apm_v1_autofill_presets";
       STORAGE_KEY = "apm_v1_forecast_prefs";
       APM_GENERAL_STORAGE = "apm_v1_general_settings";
-      CURRENT_VERSION = "14.6.7";
+      CURRENT_VERSION = "14.6.8";
       VERSION_CHECK_URL = "https://raw.githubusercontent.com/jaker788-create/APM-Master/main/forecast.user.js";
       UPDATE_URL = "https://raw.githubusercontent.com/jaker788-create/APM-Master/main/forecast.user.js";
       LABOR_EMPS_STORAGE = "apm_v1_labor_employees";
@@ -1507,6 +1507,38 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
         resolve();
       }, 1e4);
     });
+  }
+  async function openFirstGridRecord(grid, win, timeoutMs = 5e3) {
+    const store = grid.getStore();
+    if (!store || store.getCount() === 0) return { success: false };
+    const record = store.getAt(0);
+    const selModel = grid.getSelectionModel();
+    if (selModel && selModel.select) selModel.select(record);
+    const view = grid.getView();
+    const rowEl = view.getRow?.(0) ?? view.getNode?.(0);
+    APMLogger.info("Utils", `Opening first grid record: ${record.get("workordernum") || record.getId()}`);
+    grid.fireEvent("itemdblclick", grid, record, rowEl, 0, {});
+    await waitForAjax(win);
+    const pollInterval = 250;
+    const maxPolls = Math.ceil(timeoutMs / pollInterval);
+    for (let i = 0; i < maxPolls; i++) {
+      await delay(pollInterval);
+      for (const w of getExtWindows()) {
+        try {
+          if (!w.Ext?.ComponentQuery) continue;
+          const forms = w.Ext.ComponentQuery.query("form[id*=recordview]");
+          if (forms.some((f) => f.rendered && f.el && !f.isDestroyed)) {
+            APMLogger.info("Utils", `Record view ready after ${(i + 1) * pollInterval}ms`);
+            await delay(200);
+            const entityId = record.get("workordernum") || record.get("receiptcode") || record.get("partcode") || record.getId();
+            return { success: true, entityId: String(entityId) };
+          }
+        } catch (e) {
+        }
+      }
+    }
+    APMLogger.warn("Utils", `Record view did not appear within ${timeoutMs}ms`);
+    return { success: false };
   }
   function _detectMoreRecords(store, rawData) {
     if (store.__apmLastHasMore !== void 0) {
@@ -3205,7 +3237,11 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
           init: function(win) {
             if (!FeatureFlags.isEnabled("laborBooker")) return;
             const targetWin = win || getLaborWin();
-            initLaborObserver(targetWin);
+            try {
+              initLaborObserver(targetWin);
+            } catch (e) {
+              APMLogger.error("LaborBooker", "initLaborObserver failed:", e);
+            }
             UIManager.registerPanel("apm-labor-popup", ["#apm-quick-book-btn", ".apm-autofill-btn"]);
             window.addEventListener("APM_SESSION_UPDATED", () => {
               if (!isWindowAccessible(targetWin)) return;
@@ -5504,7 +5540,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
         const fillRule = rowMatches.find((r) => r.fill);
         const tagRulesCount = rowMatches.filter((r) => r.showTag).length;
         const entityConfig = _activeEntityConfig || ENTITY_REGISTRY.WSJOBS;
-        const hasEntity = _entityColumnId ? true : entityConfig.pattern ? entityConfig.pattern.test(rawText) : false;
+        const hasEntity = _entityColumnId ? true : !!entityConfig.pattern;
         _rowCache.set(row, {
           len: textLen,
           textRaw: rawText,
@@ -5768,10 +5804,12 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
         if (cleanText && cleanText !== "&#160;") {
           const systemHidden = !!(t.hidden || t.tab && t.tab.hidden);
           let isOverflow = false;
-          if (barRect && t.tab && t.tab.rendered) {
-            const tabEl = t.tab.el.dom;
-            const tabRect = tabEl.getBoundingClientRect();
-            isOverflow = tabRect.right > barRect.right + 2 || tabRect.left < barRect.left - 2;
+          if (barRect && t.tab && t.tab.rendered && !t.tab.isDestroyed) {
+            const tabEl = t.tab.el?.dom;
+            if (tabEl) {
+              const tabRect = tabEl.getBoundingClientRect();
+              isOverflow = tabRect.right > barRect.right + 2 || tabRect.left < barRect.left - 2;
+            }
           }
           const existing = tabsMap.get(cleanText);
           if (!existing || existing.systemHidden && !systemHidden) {
@@ -5918,11 +5956,13 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
       if (preferredOrder.length === 0) return;
       if (!mainGrid.headerCt.rendered) {
         if (++_gridRetries > 10 || mainGrid.isDestroyed) {
+          APMLogger.warn("TabGridOrder", `Grid header retry exhausted (${_gridRetries} attempts). Grid: ${mainGrid.id}, destroyed: ${mainGrid.isDestroyed}`);
           _gridRetries = 0;
           return;
         }
-        APMLogger.debug("TabGridOrder", `Grid ${mainGrid.id} header not ready. Deferring...`);
-        setTimeout(applyGridConsistency, 500);
+        const delay2 = Math.min(200 * Math.pow(2, _gridRetries - 1), 2e3);
+        APMLogger.debug("TabGridOrder", `Grid ${mainGrid.id} header not ready. Retry ${_gridRetries}/10 in ${delay2}ms`);
+        setTimeout(applyGridConsistency, delay2);
         return;
       }
       _gridRetries = 0;
@@ -8254,7 +8294,11 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
   function attachObserverToDoc(doc, win) {
     if (!doc || _gridObservers.has(win)) return;
     injectStylesIntoDoc(doc);
-    if (LaborBooker && LaborBooker.init) LaborBooker.init(win);
+    try {
+      if (LaborBooker && LaborBooker.init) LaborBooker.init(win);
+    } catch (e) {
+      APMLogger.error("FrameManager", "LaborBooker.init failed for frame \u2014 continuing observer setup:", e);
+    }
     APMLogger.debug("FrameManager", "Setting up Centralized Reactive Observer for:", win.location.href);
     const observer = new MutationObserver((mutations) => {
       let shouldCheckGrid = false;
@@ -10399,6 +10443,43 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
         endOpClass
       };
       await applyForecastFiltersExtJS(extjsFilterData);
+      if (mode === "quick") {
+        let woGrid = null;
+        let woGridWin = null;
+        for (const w of getExtWindows()) {
+          try {
+            if (!w.Ext?.ComponentQuery) continue;
+            const grids = w.Ext.ComponentQuery.query("gridpanel:not([destroyed=true])");
+            for (const g of grids) {
+              if (!g.rendered || g.isDestroyed) continue;
+              const s = g.getStore?.();
+              if (!s) continue;
+              const sid = (s.storeId || "").toLowerCase();
+              if (sid.includes("wsjobs") || sid.includes("ctjobs")) {
+                woGrid = g;
+                woGridWin = w;
+                break;
+              }
+            }
+            if (woGrid) break;
+          } catch (e) {
+          }
+        }
+        if (woGrid) {
+          const store = woGrid.getStore();
+          if (store.getCount() === 0) {
+            setStatus("WO not found.", "var(--apm-danger)");
+          } else {
+            setStatus("Opening record...", "#3498db");
+            const result = await openFirstGridRecord(woGrid, woGridWin);
+            if (result.success) {
+              showToast(`Opened WO ${result.entityId}`, "#1abc9c", false);
+            } else {
+              setStatus("Record open timed out.", "var(--apm-danger)");
+            }
+          }
+        }
+      }
       if (activeProfile && mode !== "clear") {
         const datePart = buildDateSummary(activeProfile);
         const toastMsg = datePart ? `Dataspy: ${activeProfile.name} \u2014 ${datePart} (Click to Clear)` : `Dataspy: ${activeProfile.name} (Click to Clear)`;
@@ -14466,7 +14547,10 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
             APMLogger.debug("APM Toolbar", "Pulse: Injection task active.");
             lastPulse = now;
           }
-          if (!tbWin.Ext || !tbWin.Ext.ComponentQuery) return;
+          if (!tbWin.Ext || !tbWin.Ext.ComponentQuery) {
+            if (now - lastPulse > 1e4) APMLogger.debug("APM Toolbar", "Waiting for ExtJS...");
+            return;
+          }
           const existingCmp = tbWin.Ext.getCmp("apm-custom-btn-group");
           if (existingCmp && existingCmp.getEl() && existingCmp.getEl().dom && document.body.contains(existingCmp.getEl().dom)) {
             return;
@@ -14475,25 +14559,66 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
             APMLogger.debug("APM Toolbar", "Destroying stale button component.");
             existingCmp.destroy();
           }
-          const rawBtns = document.querySelectorAll(".x-btn-mainmenuButton-toolbar-small");
-          if (rawBtns.length === 0) return;
-          const visibleBtns = [];
-          for (let i = 0; i < rawBtns.length; i++) {
-            if (rawBtns[i].offsetWidth > 0) visibleBtns.push(rawBtns[i]);
+          let parentContainer = null;
+          let insertIndex = -1;
+          const topToolbars = tbWin.Ext.ComponentQuery.query('toolbar[dock="top"]:not([destroyed=true])');
+          for (const tb of topToolbars) {
+            if (!tb.rendered || tb.isDestroyed || !tb.isVisible?.(true)) continue;
+            if (tb.up("gridpanel") || tb.up("window")) continue;
+            const owner = tb.ownerCt;
+            if (!owner) continue;
+            if (tb.items && tb.items.getCount() > 0) {
+              const visibleCount = tb.items.items.filter((it) => !it.hidden && !it.isDestroyed).length;
+              if (visibleCount === 0) continue;
+              parentContainer = tb;
+              insertIndex = tb.items.getCount();
+              APMLogger.debug("APM Toolbar", `Strategy 1: Found toolbar via ComponentQuery (${tb.id}, ${visibleCount}/${tb.items.getCount()} visible items)`);
+              break;
+            }
           }
-          if (visibleBtns.length === 0) return;
-          const lastDomBtn = visibleBtns[visibleBtns.length - 1];
-          const extEl = lastDomBtn.closest(".x-btn") || lastDomBtn;
-          if (!extEl || !extEl.id) return;
-          const extCmp = tbWin.Ext.getCmp(extEl.id);
-          if (!extCmp) return;
-          let parentContainer = extCmp.up("toolbar") || extCmp.up("container");
           if (!parentContainer) {
-            parentContainer = extCmp.up("panel")?.getDockedItems('toolbar[dock="top"]')[0];
+            const rawBtns = document.querySelectorAll(".x-btn-mainmenuButton-toolbar-small");
+            if (rawBtns.length > 0) {
+              let lastVisible = null;
+              for (let i = 0; i < rawBtns.length; i++) {
+                if (rawBtns[i].offsetWidth > 0) lastVisible = rawBtns[i];
+              }
+              if (lastVisible) {
+                const extEl = lastVisible.closest(".x-btn") || lastVisible;
+                if (extEl && extEl.id) {
+                  const extCmp = tbWin.Ext.getCmp(extEl.id);
+                  if (extCmp) {
+                    parentContainer = extCmp.up("toolbar") || extCmp.up("container");
+                    if (!parentContainer) {
+                      parentContainer = extCmp.up("panel")?.getDockedItems?.('toolbar[dock="top"]')?.[0];
+                    }
+                    if (parentContainer) {
+                      insertIndex = parentContainer.items.indexOf(extCmp) + 1;
+                      APMLogger.debug("APM Toolbar", `Strategy 2: Found toolbar via DOM anchor (${parentContainer.id})`);
+                    }
+                  }
+                }
+              }
+            }
           }
-          if (!parentContainer) return;
-          APMLogger.info("APM Toolbar", "Injecting buttons into container:", parentContainer.id);
-          const insertIndex = parentContainer.items.indexOf(extCmp) + 1;
+          if (!parentContainer) {
+            const allToolbars = tbWin.Ext.ComponentQuery.query("toolbar:not([destroyed=true])");
+            for (const tb of allToolbars) {
+              if (!tb.rendered || tb.isDestroyed || !tb.isVisible?.(true)) continue;
+              if (tb.up("gridpanel") || tb.up("window")) continue;
+              if (tb.items && tb.items.getCount() > 1) {
+                parentContainer = tb;
+                insertIndex = tb.items.getCount();
+                APMLogger.debug("APM Toolbar", `Strategy 3: Fallback toolbar (${tb.id}, ${tb.items.getCount()} items)`);
+                break;
+              }
+            }
+          }
+          if (!parentContainer) {
+            if (now - lastPulse > 1e4) APMLogger.debug("APM Toolbar", "No suitable toolbar found (tried 3 strategies)");
+            return;
+          }
+          APMLogger.info("APM Toolbar", `Injecting buttons into: ${parentContainer.id} at index ${insertIndex}`);
           parentContainer.insert(insertIndex, {
             xtype: "component",
             id: "apm-custom-btn-group",
@@ -14529,6 +14654,71 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
   }
 
   // src/boot.js
+  init_toast();
+  init_constants();
+  var _drillbackHandled = false;
+  async function handleDrillbackAutoOpen() {
+    if (_drillbackHandled || !isTopFrame()) return;
+    const params = new URLSearchParams(window.location.search);
+    let matchedEntry = null;
+    let entityId = null;
+    for (const [key, entry] of Object.entries(ENTITY_REGISTRY)) {
+      if (params.get(entry.drillbackFlag) === "YES" && params.get(entry.entityKey)) {
+        const urlUserFunc = params.get("USER_FUNCTION_NAME");
+        if (urlUserFunc && urlUserFunc !== key) continue;
+        matchedEntry = entry;
+        entityId = params.get(entry.entityKey);
+        break;
+      }
+    }
+    if (!matchedEntry || !entityId) return;
+    _drillbackHandled = true;
+    APMLogger.info("Boot", `Drillback detected: ${matchedEntry.label} ${entityId}`);
+    const GRID_TIMEOUT = 7e3;
+    const POLL_INTERVAL = 250;
+    const maxPolls = Math.ceil(GRID_TIMEOUT / POLL_INTERVAL);
+    let grid = null;
+    let gridWin = null;
+    for (let i = 0; i < maxPolls; i++) {
+      await delay(POLL_INTERVAL);
+      for (const w of getExtWindows()) {
+        try {
+          if (!w.Ext?.ComponentQuery) continue;
+          const grids = w.Ext.ComponentQuery.query("gridpanel:not([destroyed=true])");
+          for (const g of grids) {
+            if (!g.rendered || g.isDestroyed) continue;
+            const store2 = g.getStore?.();
+            if (!store2 || store2.isLoading?.()) continue;
+            const sid = (store2.storeId || "").toLowerCase();
+            if (sid.includes("wsjobs") || sid.includes("ctjobs") || sid.includes(matchedEntry.systemFunc.toLowerCase())) {
+              grid = g;
+              gridWin = w;
+              break;
+            }
+          }
+          if (grid) break;
+        } catch (e) {
+        }
+      }
+      if (grid) break;
+    }
+    if (!grid) {
+      APMLogger.warn("Boot", `Drillback grid not found within ${GRID_TIMEOUT}ms`);
+      showToast(`${matchedEntry.label} grid did not load`, "#e74c3c", false);
+      return;
+    }
+    const store = grid.getStore();
+    if (store.getCount() === 0) {
+      showToast(`${matchedEntry.label} ${entityId} not found`, "#e74c3c", false);
+      return;
+    }
+    const result = await openFirstGridRecord(grid, gridWin);
+    if (result.success) {
+      showToast(`Opened ${matchedEntry.label} ${result.entityId}`, "#1abc9c", false);
+    } else {
+      showToast(`Could not open ${matchedEntry.label} ${entityId}`, "#e74c3c", false);
+    }
+  }
   function initBootSequence(win = window) {
     const isTop = win === win.top;
     FeatureFlags.register("colorCode", { label: "ColorCode Engine", description: "Real-time grid highlighting and nametags" });
@@ -14636,7 +14826,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
               const wins = getExtWindows();
               for (const w of wins) {
                 try {
-                  if (w.Ext) debouncedProcessColorCodeGrid(w.document);
+                  if (w.Ext && isFrameVisible(w)) debouncedProcessColorCodeGrid(w.document);
                 } catch (e) {
                 }
               }
@@ -14662,6 +14852,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
       } catch (e) {
         APMLogger.error("Boot", "Failed to register scheduler-investigator task:", e);
       }
+      handleDrillbackAutoOpen().catch((e) => APMLogger.error("Boot", "Drillback auto-open error:", e));
     });
   }
 
@@ -15399,35 +15590,34 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
     const startFilter = performance.now();
     try {
       const keywords = kw.split(",").map((s) => s.trim().toLowerCase()).filter((s) => s);
-      if (keywords.length === 0) {
-        store.clearFilter();
-        if (store._nativeGetTotalCount) {
-          store.getTotalCount = store._nativeGetTotalCount;
-        }
-      } else {
-        store.clearFilter(true);
-        store.filterBy((record) => {
-          if (!record._apmSearchText) {
-            record._apmSearchText = Object.values(record.data).map((v) => v !== null && v !== void 0 ? String(v).toLowerCase() : "").join(" ");
+      store.suspendEvents();
+      try {
+        if (keywords.length === 0) {
+          store.clearFilter();
+          if (store._nativeGetTotalCount) {
+            store.getTotalCount = store._nativeGetTotalCount;
           }
-          return keywords.some((k) => record._apmSearchText.includes(k));
-        });
-        if (view) {
-          view.refresh();
+        } else {
+          store.clearFilter(true);
+          store.filterBy((record) => {
+            if (!record._apmSearchText) {
+              record._apmSearchText = Object.values(record.data).map((v) => v !== null && v !== void 0 ? String(v).toLowerCase() : "").join(" ");
+            }
+            return keywords.some((k) => record._apmSearchText.includes(k));
+          });
         }
+      } finally {
+        store.resumeEvents();
+        if (view) view.refresh();
       }
       const endFilter = performance.now();
       const matchesCount = store.getCount();
       APMLogger.debug("Nametag", `Applied to '${ctx.grid.id}': ${matchesCount} matches in ${(endFilter - startFilter).toFixed(2)}ms`);
-      const triggerPulse = (msg) => {
-        const invalidate = APMApi.get("invalidateColorCodeCache");
-        if (invalidate) {
-          APMLogger.debug("Nametag", `${msg} rendering pulse for '${ctx.grid.id}'`);
-          invalidate(ctx.doc);
-        }
-      };
-      triggerPulse("Immediate");
-      setTimeout(() => triggerPulse("Delayed"), 300);
+      const invalidate = APMApi.get("invalidateColorCodeCache");
+      if (invalidate) {
+        APMLogger.debug("Nametag", `Rendering pulse for '${ctx.grid.id}'`);
+        invalidate(ctx.doc);
+      }
       if (!store._apmCacheHook) {
         store.on("load", () => {
           store.each((r) => {
