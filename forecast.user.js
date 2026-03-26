@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         APM Master: Unified Tools
 // @namespace    https://w.amazon.com/bin/view/Users/rosendah/APM-Master/
-// @version      14.7.2
+// @version      14.7.3
 // @description  Quality of life and automation tool that uses native EAM ExtJS Framework functions for high reliability and capability. This is actively supported tool so Slack me or submit bug report/feature request through the bug report button in the menu.
 // @author       Jacob Rosendahl
 // @icon         https://media.licdn.com/dms/image/v2/D5603AQGdCV0_LQKRfQ/profile-displayphoto-scale_100_100/B56ZyZLvQ5HgAg-/0/1772096519061?e=1773878400&v=beta&t=eWO1Jiy0-WbzG_yBv-SBrmmsVOPMexF57-q1Xh_VXCk
@@ -124,7 +124,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
       PRESET_STORAGE_KEY = "apm_v1_autofill_presets";
       STORAGE_KEY = "apm_v1_forecast_prefs";
       APM_GENERAL_STORAGE = "apm_v1_general_settings";
-      CURRENT_VERSION = "14.7.2";
+      CURRENT_VERSION = "14.7.3";
       VERSION_CHECK_URL = "https://raw.githubusercontent.com/jaker788-create/APM-Master/main/forecast.user.js";
       UPDATE_URL = "https://raw.githubusercontent.com/jaker788-create/APM-Master/main/forecast.user.js";
       LABOR_EMPS_STORAGE = "apm_v1_labor_employees";
@@ -3098,6 +3098,10 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
                 await ExtUtils.ensureStoreLoaded(fAct, targetWin);
                 const actCode = detectActivityCode(fAct);
                 ExtUtils.setFieldValue(form, "booactivity", actCode, true);
+                if (isWindowAccessible(targetWin)) {
+                  await waitForAjax(targetWin);
+                }
+                await delay(100);
                 const fRate = form.findField("rate") || form.findField("laborrate") || form.findField("traderate") || form.findField("costrate") || form.findField("trarate");
                 const fRD = form.findField("ratedate");
                 if (fRate) {
@@ -9579,9 +9583,12 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
       renderProfileOptions();
       refreshChipList();
       refreshPreview();
-      modal.openBuilder = (prefillDesc, prefillOrg) => {
+      modal.openBuilder = (prefillDesc, prefillOrg, editProfileId) => {
         renderProfileOptions();
-        if (profileSelect.value === "" || !profileSelect.value) {
+        if (editProfileId) {
+          profileSelect.value = editProfileId;
+          loadProfile(editProfileId);
+        } else if (profileSelect.value === "" || !profileSelect.value) {
           state = createEmptyState();
           nameInput.value = "";
           deleteBtn.style.display = "none";
@@ -10220,29 +10227,34 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
   }
   async function returnToListView(target = "WSJOBS") {
     let targetExt = null;
+    let targetWin = null;
     for (const win of getExtWindows()) {
       try {
         if (!win.Ext || !win.Ext.ComponentQuery) continue;
         const winUserFunc = getWinUserFunc(win);
+        if (winUserFunc) {
+          if (target === "CTJOBS" && winUserFunc === "CTJOBS") {
+            targetExt = win.Ext;
+            targetWin = win;
+            break;
+          }
+          if (target === "WSJOBS" && winUserFunc === "WSJOBS") {
+            targetExt = win.Ext;
+            targetWin = win;
+            break;
+          }
+        }
         const grids = win.Ext.ComponentQuery.query("gridpanel:not([destroyed=true])");
         const found = grids.some((g) => {
           if (!g.rendered || !g.getStore) return false;
           const store = g.getStore();
           if (!store) return false;
           const sid = (store.storeId || "").toLowerCase();
-          const isWo = sid.includes("wsjobs") || sid.includes("ctjobs");
-          if (!isWo) return false;
-          if (winUserFunc) {
-            if (target === "CTJOBS" && winUserFunc !== "CTJOBS") return false;
-            if (target === "WSJOBS" && winUserFunc === "CTJOBS") return false;
-          } else {
-            const visible = g.isVisible ? g.isVisible(true) : true;
-            if (!visible) return false;
-          }
-          return true;
+          return sid.includes("wsjobs") || sid.includes("ctjobs");
         });
         if (found) {
           targetExt = win.Ext;
+          targetWin = win;
           break;
         }
       } catch (e) {
@@ -10250,6 +10262,33 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
     }
     if (!targetExt) targetExt = window.Ext;
     if (!targetExt || !targetExt.ComponentQuery) return;
+    try {
+      const ldvs = targetExt.ComponentQuery.query("listdetailview:not([destroyed=true])");
+      for (const ldv of ldvs) {
+        if (!ldv || ldv.isDestroyed || !ldv.rendered) continue;
+        const layout = ldv.getLayout();
+        if (layout && typeof layout.setActiveItem === "function") {
+          const items = ldv.items?.items || [];
+          const gridIdx = items.findIndex(
+            (item) => item.down?.("gridpanel") || item.xtype === "gridpanel"
+          );
+          if (gridIdx >= 0) {
+            layout.setActiveItem(gridIdx);
+            APMLogger.debug("Forecast", `returnToListView: listdetailview.setActiveItem(${gridIdx})`);
+            return;
+          }
+        }
+        for (const method of ["showList", "showGrid", "expandList", "collapseRight"]) {
+          if (typeof ldv[method] === "function") {
+            ldv[method]();
+            APMLogger.debug("Forecast", `returnToListView: listdetailview.${method}()`);
+            return;
+          }
+        }
+      }
+    } catch (e) {
+      APMLogger.debug("Forecast", "returnToListView: listdetailview strategy failed:", e.message);
+    }
     const queries = [
       "button[cls~=uftid-collapseright]",
       'button[tooltip*="Expand Right"]',
@@ -10265,7 +10304,6 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
           el2.handler.call(el2.scope || el2, el2);
           return;
         } else if (el2.isTab) {
-          const win = getExtWindows().find((w) => w.Ext === targetExt) || window;
           const tp = el2.up("tabpanel");
           if (tp) tp.setActiveTab(el2);
           else el2.fireEvent("click", el2);
@@ -10274,6 +10312,12 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
           el2.fireEvent("click", el2);
           return;
         }
+      }
+    }
+    if (targetWin) {
+      if (launchScreenDirect(targetWin, target)) {
+        await delay(1500);
+        return;
       }
     }
     await delay(150);
@@ -10540,19 +10584,20 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
       else triggerThunderstrike();
       await navigateTo("Work Orders", ["Work", "Work Orders"], { target: currentTarget });
       setStatus("Expanding...", "#f1c40f");
+      await returnToListView(currentTarget);
       let gridFound = false;
       for (let i = 0; i < 60; i++) {
         if (isGridReady(currentTarget)) {
           gridFound = true;
           break;
         }
+        if (i === 8 || i === 20) await returnToListView(currentTarget);
         await delay(250);
       }
       if (!gridFound) {
         setStatus("Grid timeout.", "#e74c3c");
         return;
       }
-      await returnToListView(currentTarget);
       setStatus(mode === "clear" ? "Wiping Fields..." : "Injecting API...", "#f1c40f");
       const todayOnlyCheckbox = document.getElementById("eam-today-only-toggle");
       const isTodayOnly = todayOnlyCheckbox && todayOnlyCheckbox.checked;
@@ -10584,7 +10629,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
         profile: activeProfile,
         maddonParams,
         org: mode === "quick" || mode === "clear" ? "" : activeProfile ? activeProfile.org && !activeProfile.org.includes(",") ? activeProfile.org : "" : orgText,
-        woNum: mode === "quick" ? quickSearchText : mode === "clear" ? "" : null,
+        woNum: mode === "quick" ? quickSearchText : "",
         desc: mode === "quick" || mode === "clear" || activeProfile ? "" : descText,
         descOpClass: descOp === "Contains" ? OP_CON : OP_DNCON,
         start: mode === "quick" || mode === "clear" || profileHandlesDates ? "" : effectiveStartDate,
@@ -10643,6 +10688,8 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
       }
       if (mode === "clear") {
         setStatus("", "#1abc9c");
+        const qsClear = document.getElementById("apm-qs-input");
+        if (qsClear) qsClear.value = "";
       } else {
         setStatus("", "#18bc9c");
         if (mode === "quick") {
@@ -10683,7 +10730,17 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
             el("select", { id: "eam-profile-select", className: "eam-fc-select", style: { color: "var(--apm-accent)", fontWeight: "bold" } }, [
               el("option", { value: "manual" }, "[ Manual Native Search ]")
             ]),
-            el("button", { id: "eam-btn-spies", title: "Open the dataspy builder", style: { background: "none", border: "none", color: "var(--apm-accent)", fontSize: "var(--apm-text-sm)", fontWeight: "600", cursor: "pointer", padding: "0 4px", whiteSpace: "nowrap", transition: "color 0.15s" }, onmouseover: function() {
+            el("button", { id: "eam-btn-profile-edit", title: "Edit selected profile", style: { display: "none", background: "none", border: "none", color: "var(--apm-text-secondary)", fontSize: "var(--apm-text-sm)", fontWeight: "600", cursor: "pointer", padding: "0 4px", whiteSpace: "nowrap", transition: "color 0.15s" }, onmouseover: function() {
+              this.style.color = "var(--apm-accent)";
+            }, onmouseout: function() {
+              this.style.color = "var(--apm-text-secondary)";
+            } }, "\u270E Edit"),
+            el("button", { id: "eam-btn-profile-delete", title: "Delete selected profile", style: { display: "none", background: "none", border: "none", color: "var(--apm-text-muted)", fontSize: "var(--apm-text-sm)", cursor: "pointer", padding: "0 3px", whiteSpace: "nowrap", transition: "color 0.15s" }, onmouseover: function() {
+              this.style.color = "var(--apm-danger, #e74c3c)";
+            }, onmouseout: function() {
+              this.style.color = "var(--apm-text-muted)";
+            } }, "\u2715"),
+            el("button", { id: "eam-btn-spies", title: "Create a new profile", style: { background: "none", border: "none", color: "var(--apm-accent)", fontSize: "var(--apm-text-sm)", fontWeight: "600", cursor: "pointer", padding: "0 4px", whiteSpace: "nowrap", transition: "color 0.15s" }, onmouseover: function() {
               this.style.color = "var(--apm-text-bright)";
               this.style.textDecoration = "underline";
             }, onmouseout: function() {
@@ -10839,8 +10896,21 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
     container.querySelector("#eam-org-select")?.addEventListener("change", () => {
       setTimeout(refreshContextStatus, 10);
     });
+    const profileEditBtn = container.querySelector("#eam-btn-profile-edit");
+    const profileDeleteBtn = container.querySelector("#eam-btn-profile-delete");
+    const profileNewBtn = container.querySelector("#eam-btn-spies");
+    const refreshProfileActions = () => {
+      const profSelect = container.querySelector("#eam-profile-select");
+      const isProfileActive = profSelect && profSelect.value !== "manual";
+      profileEditBtn.style.display = isProfileActive ? "inline-block" : "none";
+      profileDeleteBtn.style.display = isProfileActive ? "inline-block" : "none";
+      profileNewBtn.textContent = isProfileActive ? "+" : "+ New";
+      profileNewBtn.title = isProfileActive ? "Create a new profile" : "Open the dataspy builder";
+    };
     container._refreshContextStatus = refreshContextStatus;
+    container._refreshProfileActions = refreshProfileActions;
     refreshContextStatus();
+    refreshProfileActions();
     btnRun.onclick = () => {
       if (!getIsRunning()) executeForecast("normal");
     };
@@ -11164,6 +11234,33 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
           const prefillOrg = oTextEl ? oTextEl.value.trim() : "";
           filterBuilder.openBuilder(prefillDesc, prefillOrg);
         };
+        const editBtn = panel.querySelector("#eam-btn-profile-edit");
+        editBtn.onclick = () => {
+          const profSelect = panel.querySelector("#eam-profile-select");
+          const profId = profSelect ? profSelect.value : null;
+          if (profId && profId !== "manual") {
+            filterBuilder.openBuilder("", "", profId);
+          }
+        };
+        const deleteBtn = panel.querySelector("#eam-btn-profile-delete");
+        deleteBtn.onclick = () => {
+          const profSelect = panel.querySelector("#eam-profile-select");
+          const profId = profSelect ? profSelect.value : null;
+          if (!profId || profId === "manual") return;
+          const prof = savedProfiles.find((p) => p.id === profId);
+          if (!prof) return;
+          if (!confirm(`Delete profile "${prof.name}"?`)) return;
+          setSavedProfiles(savedProfiles.filter((p) => p.id !== profId));
+          setSelectedProfileId("manual");
+          renderProfiles_Global();
+          updateProfileUI_Global();
+          saveAllPreferences();
+          clearPersistentToast();
+          showToast("Profile deleted", "#e74c3c");
+          const mainView = panel.querySelector("#eam-main-view");
+          if (mainView?._refreshProfileActions) mainView._refreshProfileActions();
+          if (mainView?._refreshContextStatus) mainView._refreshContextStatus();
+        };
         panel.querySelector("#eam-profile-select").onchange = (e) => {
           const newVal = e.target.value;
           setSelectedProfileId(newVal);
@@ -11171,6 +11268,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
           saveAllPreferences();
           const mainView = panel.querySelector("#eam-main-view");
           if (mainView?._refreshContextStatus) mainView._refreshContextStatus();
+          if (mainView?._refreshProfileActions) mainView._refreshProfileActions();
           if (newVal === "manual") {
             clearPersistentToast();
           }
@@ -15725,6 +15823,33 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
     #root div[style*="position: sticky"]:has(> nav[class*="awsui_breadcrumb-group_"]) {
       background-color: var(--bg-2) !important;
       border-bottom-color: var(--border) !important;
+    }
+
+    /* data-sticky-breadcrumb wrapper */
+    #root [data-sticky-breadcrumb="true"] {
+      background-color: var(--bg-2) !important;
+    }
+
+    /* Sticky-note banner ("Add an optional note\u2026") + all wrappers */
+    .sticky-note-cell,
+    .sticky-note-cell-full,
+    button.sticky-note-banner-add,
+    #root .sticky-note-cell,
+    #root .sticky-note-cell-full,
+    #root button.sticky-note-banner-add {
+      background-color: var(--bg-3) !important;
+      background-image: none !important;
+      color: var(--fg) !important;
+      border-color: var(--border) !important;
+    }
+    button.sticky-note-banner-add span,
+    #root button.sticky-note-banner-add span {
+      color: var(--fg) !important;
+    }
+    /* Cloudscape grid child wrapping the sticky-note cell */
+    [class*="awsui_child_"]:has(.sticky-note-cell),
+    [class*="awsui_child_"]:has(.sticky-note-banner-add) {
+      background-color: var(--bg-3) !important;
     }
 
     #root header,
