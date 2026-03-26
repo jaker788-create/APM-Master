@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         APM Master: Unified Tools
 // @namespace    https://w.amazon.com/bin/view/Users/rosendah/APM-Master/
-// @version      14.7.4
+// @version      14.7.5
 // @description  Quality of life and automation tool that uses native EAM ExtJS Framework functions for high reliability and capability. This is actively supported tool so Slack me or submit bug report/feature request through the bug report button in the menu.
 // @author       Jacob Rosendahl
 // @icon         https://media.licdn.com/dms/image/v2/D5603AQGdCV0_LQKRfQ/profile-displayphoto-scale_100_100/B56ZyZLvQ5HgAg-/0/1772096519061?e=1773878400&v=beta&t=eWO1Jiy0-WbzG_yBv-SBrmmsVOPMexF57-q1Xh_VXCk
@@ -124,7 +124,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
       PRESET_STORAGE_KEY = "apm_v1_autofill_presets";
       STORAGE_KEY = "apm_v1_forecast_prefs";
       APM_GENERAL_STORAGE = "apm_v1_general_settings";
-      CURRENT_VERSION = "14.7.4";
+      CURRENT_VERSION = "14.7.5";
       VERSION_CHECK_URL = "https://raw.githubusercontent.com/jaker788-create/APM-Master/main/forecast.user.js";
       UPDATE_URL = "https://raw.githubusercontent.com/jaker788-create/APM-Master/main/forecast.user.js";
       LABOR_EMPS_STORAGE = "apm_v1_labor_employees";
@@ -4357,10 +4357,15 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
   init_api();
   var SessionMonitor = {
     _liveConfirmed: /* @__PURE__ */ new Set(),
+    _lastActivity: Date.now(),
+    _nextHeartbeat: 0,
+    _ACTIVITY_TIMEOUT: 2 * 60 * 60 * 1e3,
+    // 2 hours
     init() {
       if (typeof window === "undefined") return;
       if (AppContext.isTop) {
         APMLogger.info("APM Session", "Initializing Monitor...");
+        this.initActivityTracking();
       }
       this.restore();
       this.hookXHR();
@@ -4372,6 +4377,14 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
     setupGlobalRedirects() {
       APMApi.register("checkSession", () => this.monitorStatus());
       APMApi.register("forceRedirect", () => this.forceRedirect());
+    },
+    initActivityTracking() {
+      const update = () => {
+        this._lastActivity = Date.now();
+      };
+      ["mousemove", "keydown", "click", "scroll"].forEach((evt) => {
+        window.addEventListener(evt, update, { passive: true, capture: true });
+      });
     },
     restore() {
       const stored = APMStorage.get(SESSION_STORAGE_KEY);
@@ -4545,24 +4558,32 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
      * Performs a lightweight request to EAM to keep the session alive.
      */
     refreshSession: async function() {
+      if (window.__apmRedirecting) return;
       const session = AppState.session;
       if (!session.eamid || !session.tenant) return;
       if (!window.location.hostname.includes("eam.hxgnsmartcloud.com")) return;
+      if (Date.now() - this._lastActivity > this._ACTIVITY_TIMEOUT) {
+        APMLogger.debug("APM Session", "Skipping heartbeat \u2014 no user activity in last 2 hours.");
+        return;
+      }
+      if (Date.now() < this._nextHeartbeat) return;
       APMLogger.debug("APM Session", "Refreshing session heartbeat...");
       try {
-        const url2 = `/web/base/logindisp?tenant=${encodeURIComponent(session.tenant || DEFAULT_TENANT)}`;
+        const url2 = `/web/base/BSSTRT.xmlhttp?tenant=${encodeURIComponent(session.tenant || DEFAULT_TENANT)}&eamid=${encodeURIComponent(session.eamid)}`;
         const resp = await fetch(url2, {
-          method: "HEAD",
-          credentials: "same-origin"
+          method: "GET",
+          credentials: "same-origin",
+          headers: { "X-Requested-With": "XMLHttpRequest" }
         });
         if (resp.status === 200) {
           APMLogger.debug("APM Session", "Session heartbeat successful.");
         } else if (resp.status === 401 || resp.redirected) {
-          APMLogger.warn("APM Session", "Session heartbeat failed with auth error, session may be expired.");
+          APMLogger.warn("APM Session", "Session heartbeat failed \u2014 session may be expired.");
         }
       } catch (e) {
         APMLogger.error("APM Session", "Session heartbeat error:", e);
       }
+      this._nextHeartbeat = Date.now() + 6e5 + Math.random() * 3e5;
     },
     forceRedirect() {
       if (window.__apmRedirecting) return;
