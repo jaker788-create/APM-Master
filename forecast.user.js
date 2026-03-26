@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         APM Master: Unified Tools
 // @namespace    https://w.amazon.com/bin/view/Users/rosendah/APM-Master/
-// @version      14.7.5
+// @version      14.7.6
 // @description  Quality of life and automation tool that uses native EAM ExtJS Framework functions for high reliability and capability. This is actively supported tool so Slack me or submit bug report/feature request through the bug report button in the menu.
 // @author       Jacob Rosendahl
 // @icon         https://media.licdn.com/dms/image/v2/D5603AQGdCV0_LQKRfQ/profile-displayphoto-scale_100_100/B56ZyZLvQ5HgAg-/0/1772096519061?e=1773878400&v=beta&t=eWO1Jiy0-WbzG_yBv-SBrmmsVOPMexF57-q1Xh_VXCk
@@ -124,7 +124,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
       PRESET_STORAGE_KEY = "apm_v1_autofill_presets";
       STORAGE_KEY = "apm_v1_forecast_prefs";
       APM_GENERAL_STORAGE = "apm_v1_general_settings";
-      CURRENT_VERSION = "14.7.5";
+      CURRENT_VERSION = "14.7.6";
       VERSION_CHECK_URL = "https://raw.githubusercontent.com/jaker788-create/APM-Master/main/forecast.user.js";
       UPDATE_URL = "https://raw.githubusercontent.com/jaker788-create/APM-Master/main/forecast.user.js";
       LABOR_EMPS_STORAGE = "apm_v1_labor_employees";
@@ -3078,6 +3078,14 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
               const formPanel = targetExt.ComponentQuery.query("form:not([destroyed=true])", booTab)[0];
               if (formPanel && formPanel.getForm && formPanel.getForm()) {
                 const form = formPanel.getForm();
+                const fAct = form.findField("booactivity");
+                await ExtUtils.ensureStoreLoaded(fAct, targetWin);
+                const actCode = detectActivityCode(fAct);
+                ExtUtils.setFieldValue(form, "booactivity", actCode, true);
+                if (isWindowAccessible(targetWin)) {
+                  await waitForAjax(targetWin);
+                }
+                await delay(100);
                 if (employee) {
                   ExtUtils.setFieldValue(form, "employee", employee, true);
                   if (isWindowAccessible(targetWin)) {
@@ -3085,8 +3093,6 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
                   }
                   await delay(100);
                 }
-                ExtUtils.setFieldValue(form, "datework", eamDate);
-                ExtUtils.setFieldValue(form, "hrswork", targetHours);
                 await ExtUtils.ensureStoreLoaded(form.findField("octype"), targetWin);
                 ExtUtils.setFieldValue(form, "octype", targetType, true);
                 if (isWindowAccessible(targetWin)) {
@@ -3096,14 +3102,8 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
                 if (fOcrType && !fOcrType.getValue()) {
                   ExtUtils.setFieldValue(form, "ocrtype", targetType);
                 }
-                const fAct = form.findField("booactivity");
-                await ExtUtils.ensureStoreLoaded(fAct, targetWin);
-                const actCode = detectActivityCode(fAct);
-                ExtUtils.setFieldValue(form, "booactivity", actCode, true);
-                if (isWindowAccessible(targetWin)) {
-                  await waitForAjax(targetWin);
-                }
-                await delay(100);
+                ExtUtils.setFieldValue(form, "datework", eamDate);
+                ExtUtils.setFieldValue(form, "hrswork", targetHours);
                 const fRate = form.findField("rate") || form.findField("laborrate") || form.findField("traderate") || form.findField("costrate") || form.findField("trarate");
                 const fRD = form.findField("ratedate");
                 if (fRate) {
