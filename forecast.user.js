@@ -2477,7 +2477,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
       let allRecords = dataObj?.pageData?.grid?.GRIDRESULT?.GRID?.DATA || [];
       let metadata = dataObj?.pageData?.grid?.GRIDRESULT?.GRID?.METADATA || {};
       const pos0 = parseInt(metadata.CURRENTCURSORPOSITION, 10);
-      let nextCursor = (isNaN(pos0) ? allRecords.length : pos0) + 5;
+      let nextCursor = (isNaN(pos0) ? allRecords.length : pos0) + 1;
       const MAX_PAGES = Math.ceil(maxRows / pageSize) + 5;
       let pageCount = 0;
       const seenCursors = /* @__PURE__ */ new Set();
@@ -10324,13 +10324,13 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
   var _FRAME_GENERIC = /* @__PURE__ */ new Set(["BSSTRT", "WSTABS", "WSFLTR", "GLOBAL", ""]);
   function getWinUserFunc(win) {
     try {
-      const userFunc = win.EAM?.FocusManager?.activeView?.screen?.userFunction;
-      if (userFunc && !_FRAME_GENERIC.has(userFunc)) return userFunc;
+      const initpath = win.EAM?.AppData?.getAppData?.()?.initpath;
+      if (initpath && !_FRAME_GENERIC.has(initpath)) return initpath;
     } catch (e) {
     }
     try {
-      const initpath = win.EAM?.AppData?.getAppData?.()?.initpath;
-      if (initpath && !_FRAME_GENERIC.has(initpath)) return initpath;
+      const userFunc = win.EAM?.FocusManager?.activeView?.screen?.userFunction;
+      if (userFunc && !_FRAME_GENERIC.has(userFunc)) return userFunc;
     } catch (e) {
     }
     try {
@@ -10554,10 +10554,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
       try {
         if (!win.Ext?.ComponentQuery) continue;
         const winUserFunc = getWinUserFunc(win);
-        if (winUserFunc) {
-          if (target === "CTJOBS" && winUserFunc !== "CTJOBS") continue;
-          if (target === "WSJOBS" && winUserFunc === "CTJOBS") continue;
-        }
+        if (winUserFunc && winUserFunc !== target) continue;
         const grids = win.Ext.ComponentQuery.query("gridpanel:not([destroyed=true])");
         for (const grid of grids) {
           if (!grid.rendered || !grid.getStore) continue;
@@ -10689,16 +10686,12 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
         if (!win.Ext || !win.Ext.ComponentQuery) continue;
         const winUserFunc = getWinUserFunc(win);
         if (winUserFunc) {
-          if (target === "CTJOBS" && winUserFunc === "CTJOBS") {
+          if (winUserFunc === target) {
             targetExt = win.Ext;
             targetWin = win;
             break;
           }
-          if (target === "WSJOBS" && winUserFunc === "WSJOBS") {
-            targetExt = win.Ext;
-            targetWin = win;
-            break;
-          }
+          continue;
         }
         const grids = win.Ext.ComponentQuery.query("gridpanel:not([destroyed=true])");
         const found = grids.some((g) => {
@@ -10790,10 +10783,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
         try {
           if (!win.Ext || !win.Ext.ComponentQuery) continue;
           const winUserFunc = getWinUserFunc(win);
-          if (winUserFunc) {
-            if (gridTarget === "CTJOBS" && winUserFunc !== "CTJOBS") continue;
-            if (gridTarget === "WSJOBS" && winUserFunc === "CTJOBS") continue;
-          }
+          if (winUserFunc && winUserFunc !== gridTarget) continue;
           if (!isFrameVisible(win)) continue;
           const grids = win.Ext.ComponentQuery.query("gridpanel:not([destroyed=true])");
           foundFrame = grids.some((g) => {
