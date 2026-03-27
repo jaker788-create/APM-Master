@@ -1330,8 +1330,15 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
     }
     if (win) {
       try {
-        const eamUsr = win.EAM?.USER_FUNCTION_NAME;
-        if (eamUsr && !_GENERIC_FUNCS.has(eamUsr)) return eamUsr;
+        const initpath = win.EAM?.AppData?.getAppData?.()?.initpath;
+        if (initpath && !_GENERIC_FUNCS.has(initpath)) return initpath;
+      } catch (e) {
+      }
+    }
+    if (win) {
+      try {
+        const userFunc = win.EAM?.FocusManager?.activeView?.screen?.userFunction;
+        if (userFunc && !_GENERIC_FUNCS.has(userFunc)) return userFunc;
       } catch (e) {
       }
     }
@@ -3073,11 +3080,12 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
             const targetHours = String(data.hours || "0.25");
             const targetType = data.type || "N";
             APMLogger.debug("LaborBooker", `Starting flow for field injection. Emp: ${employee}, Hrs: ${targetHours}, Type: ${targetType}`);
+            APMLogger.debug("LaborBooker", `Starting injection: emp=${employee}, hrs=${targetHours}, type=${targetType}`);
             let injectionSuccess = false;
             for (let i = 0; i < 20; i++) {
-              const formPanel = targetExt.ComponentQuery.query("form:not([destroyed=true])", booTab)[0];
-              if (formPanel && formPanel.getForm && formPanel.getForm()) {
-                const form = formPanel.getForm();
+              const formPanel2 = targetExt.ComponentQuery.query("form:not([destroyed=true])", booTab)[0];
+              if (formPanel2 && formPanel2.getForm && formPanel2.getForm()) {
+                const form = formPanel2.getForm();
                 const fAct = form.findField("booactivity");
                 await ExtUtils.ensureStoreLoaded(fAct, targetWin);
                 const actCode = detectActivityCode(fAct);
@@ -3127,8 +3135,9 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
                 const finalAct = form.findField("booactivity")?.getValue();
                 const finalRate = fRate ? fRate.getValue() : "N/A";
                 const isRateOk = finalRate !== null && finalRate !== void 0 && finalRate !== "" || !fRate;
+                APMLogger.debug("LaborBooker", `Verify i=${i}: emp=${!!finalEmp} hrs=${!!finalHrs} type=${!!finalType} act=${!!finalAct} rate=${finalRate} ok=${isRateOk}`);
                 if (finalEmp && finalHrs && finalType && finalAct && isRateOk) {
-                  const record = formPanel.getRecord();
+                  const record = formPanel2.getRecord();
                   if (record) {
                     form.getFields().each((f) => {
                       if (f.getName() && f.getValue() !== record.get(f.getName())) {
@@ -3142,12 +3151,15 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
                     if (form.updateRecord) form.updateRecord(record);
                   }
                   injectionSuccess = true;
+                  APMLogger.debug("LaborBooker", `Injection succeeded on iteration ${i}`);
                   break;
                 }
               }
               await delay(400);
             }
-            if (!injectionSuccess) throw new Error("Fields failed to stick (EAM Cascade/Clear)");
+            if (!injectionSuccess) {
+              throw new Error("Fields failed to stick (EAM Cascade/Clear)");
+            }
             const preForm = targetExt.ComponentQuery.query("form:not([destroyed=true])", booTab)[0];
             if (preForm && preForm.getForm) {
               const pf = preForm.getForm();
@@ -3157,28 +3169,49 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
               if (rd && !rd.getValue()) ExtUtils.setFieldValue(pf, "ratedate", RATE_DATE_DEFAULT);
               if (!pf.findField("isdetailfieldchanged")?.getValue()) ExtUtils.setFieldValue(pf, "isdetailfieldchanged", "true");
             }
-            let saveBtn = targetExt.ComponentQuery.query("button[action=saveRec]:not([destroyed=true]), button.uft-id-saverec:not([destroyed=true])", booTab)[0];
-            if (!saveBtn) {
-              saveBtn = targetExt.ComponentQuery.query("button[action=saveRec]:not([destroyed=true]), button.uft-id-saverec:not([destroyed=true])").find((b) => b.rendered && !(typeof b.isHidden === "function" && b.isHidden()));
+            APMLogger.debug("LaborBooker", "Reached save step");
+            const formPanel = targetExt.ComponentQuery.query("form:not([destroyed=true])", booTab)[0];
+            if (formPanel && formPanel.getForm && !formPanel.getForm().isValid()) {
+              APMLogger.warn("LaborBooker", "Form invalid before save, attempting to force it...");
+              formPanel.getForm().getFields().each((f) => {
+                if (f.validate && !f.validate()) {
+                  APMLogger.debug("LaborBooker", `Invalid field: ${f.name} - Errors: ${JSON.stringify(f.getErrors())}`);
+                }
+              });
             }
-            if (saveBtn) {
-              const formPanel = targetExt.ComponentQuery.query("form:not([destroyed=true])", booTab)[0];
-              if (formPanel && formPanel.getForm && !formPanel.getForm().isValid()) {
-                APMLogger.warn("LaborBooker", "Form invalid before save, attempting to force it...");
-                formPanel.getForm().getFields().each((f) => {
-                  if (f.validate && !f.validate()) {
-                    APMLogger.debug("LaborBooker", `Invalid field: ${f.name} - Errors: ${JSON.stringify(f.getErrors())}`);
-                  }
-                });
+            const booGrid = targetExt.ComponentQuery.query("grid:not([destroyed=true])", booTab)[0] || targetExt.ComponentQuery.query("gridpanel:not([destroyed=true])", booTab)[0];
+            const booStore = booGrid?.getStore?.();
+            const preCount = booStore ? booStore.getCount() : -1;
+            APMLogger.debug("LaborBooker", `Pre-save record count: ${preCount}`);
+            let saveTriggered = false;
+            try {
+              const tabView = formPanel?.getTabView?.();
+              const tabViewAlt = !tabView ? formPanel?.up?.("[callSave]") : null;
+              const saveTarget = tabView || tabViewAlt;
+              APMLogger.debug("LaborBooker", `Save lookup: getTabView=${!!tabView}, up=[callSave]=${!!tabViewAlt}, callSave=${typeof saveTarget?.callSave}`);
+              if (saveTarget && typeof saveTarget.callSave === "function") {
+                APMLogger.debug("LaborBooker", "Save via callSave() (primary)");
+                saveTarget.callSave();
+                saveTriggered = true;
               }
-              const booGrid = targetExt.ComponentQuery.query("grid:not([destroyed=true])", booTab)[0] || targetExt.ComponentQuery.query("gridpanel:not([destroyed=true])", booTab)[0];
-              const booStore = booGrid?.getStore?.();
-              const preCount = booStore ? booStore.getCount() : -1;
-              APMLogger.debug("LaborBooker", `Pre-save record count: ${preCount}`);
-              APMLogger.debug("LaborBooker", "Executing Save...");
-              if (saveBtn.handler) saveBtn.handler.call(saveBtn.scope || saveBtn, saveBtn);
-              else saveBtn.fireEvent("click", saveBtn);
-              await waitForAjax(targetWin);
+            } catch (e) {
+              APMLogger.debug("LaborBooker", "callSave() failed:", e.message);
+            }
+            if (!saveTriggered) {
+              let saveBtn = targetExt.ComponentQuery.query("button[action=saveRec]:not([destroyed=true]), button.uft-id-saverec:not([destroyed=true])", booTab)[0];
+              if (!saveBtn) {
+                saveBtn = targetExt.ComponentQuery.query("button[action=saveRec]:not([destroyed=true]), button.uft-id-saverec:not([destroyed=true])").find((b) => b.rendered && !(typeof b.isHidden === "function" && b.isHidden()));
+              }
+              if (saveBtn) {
+                APMLogger.debug("LaborBooker", "Save via button click (fallback)");
+                if (saveBtn.handler) saveBtn.handler.call(saveBtn.scope || saveBtn, saveBtn);
+                else saveBtn.fireEvent("click", saveBtn);
+              } else {
+                throw new Error("No save mechanism available");
+              }
+            }
+            await waitForAjax(targetWin);
+            if (true) {
               let saveVerified = false;
               if (booStore && preCount >= 0) {
                 await delay(300);
@@ -3212,7 +3245,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
                 window.dispatchEvent(new CustomEvent("APM_LABOR_SYNC", { detail: { source: "quick-book" } }));
               }, 800);
               return { result };
-            } else throw new Error("Save button not found");
+            }
           } catch (e) {
             APMLogger.error("LaborBooker", "executeBookingFlow Error:", e);
             if (!options.silent) showToast("Error: " + e.message, "#e74c3c");
@@ -4355,6 +4388,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
   init_state();
   init_context();
   init_api();
+  init_scheduler();
   var SessionMonitor = {
     _liveConfirmed: /* @__PURE__ */ new Set(),
     _lastActivity: Date.now(),
@@ -4588,6 +4622,10 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
     forceRedirect() {
       if (window.__apmRedirecting) return;
       window.__apmRedirecting = true;
+      try {
+        APMScheduler.stop();
+      } catch (e) {
+      }
       APMLogger.info("APM Session", "Session timeout detected. Auto-redirecting...");
       const topWin = apmGetGlobalWindow().top;
       topWin.location.replace(SESSION_TIMEOUT_URL);
@@ -10224,13 +10262,15 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
   function detectActiveTarget() {
     for (const win of getExtWindows()) {
       try {
-        if (!win.Ext?.ComponentQuery) continue;
-        const activeTabs = win.Ext.ComponentQuery.query("tab[active=true]:not([destroyed=true])");
-        for (const tab of activeTabs) {
-          const text = (tab.text || "").toUpperCase();
-          if (text.includes("COMPLIANCE") && text.includes("WORK")) return "CTJOBS";
-          if (text.includes("WORK ORDER") && !text.includes("COMPLIANCE")) return "WSJOBS";
-        }
+        const userFunc = win.EAM?.FocusManager?.activeView?.screen?.userFunction;
+        if (userFunc === "WSJOBS" || userFunc === "CTJOBS") return userFunc;
+      } catch (e) {
+      }
+    }
+    for (const win of getExtWindows()) {
+      try {
+        const initpath = win.EAM?.AppData?.getAppData?.()?.initpath;
+        if (initpath === "WSJOBS" || initpath === "CTJOBS") return initpath;
       } catch (e) {
       }
     }
@@ -10238,14 +10278,19 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
   }
   function getWinUserFunc(win) {
     try {
-      const params = new URLSearchParams(win.location.search);
-      const fromUrl = params.get("USER_FUNCTION_NAME");
-      if (fromUrl) return fromUrl;
+      const initpath = win.EAM?.AppData?.getAppData?.()?.initpath;
+      if (initpath) return initpath;
     } catch (e) {
     }
     try {
-      const fromEAM = win.EAM?.USER_FUNCTION_NAME;
-      if (fromEAM) return fromEAM;
+      const userFunc = win.EAM?.FocusManager?.activeView?.screen?.userFunction;
+      if (userFunc) return userFunc;
+    } catch (e) {
+    }
+    try {
+      const params = new URLSearchParams(win.location.search);
+      const fromUrl = params.get("USER_FUNCTION_NAME");
+      if (fromUrl) return fromUrl;
     } catch (e) {
     }
     return "";
@@ -10462,33 +10507,26 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
     return { start: formatDate(startD), end: formatDate(endD) };
   }
   function isGridReady(target = "WSJOBS") {
-    const wins = getExtWindows();
-    for (const win of wins) {
+    for (const win of getExtWindows()) {
       try {
         if (!win.Ext?.ComponentQuery) continue;
         const winUserFunc = getWinUserFunc(win);
+        if (winUserFunc) {
+          if (target === "CTJOBS" && winUserFunc !== "CTJOBS") continue;
+          if (target === "WSJOBS" && winUserFunc === "CTJOBS") continue;
+        }
         const grids = win.Ext.ComponentQuery.query("gridpanel:not([destroyed=true])");
         for (const grid of grids) {
-          if (grid.rendered && grid.getStore) {
-            const store = grid.getStore();
-            if (!store || store.isLoading()) continue;
+          if (!grid.rendered || !grid.getStore) continue;
+          const store = grid.getStore();
+          if (!store || store.isLoading()) continue;
+          if (!winUserFunc) {
             const storeId = (store.storeId || "").toLowerCase();
-            const className = (store.$className || "").toLowerCase();
-            const proxyUrl = (store.getProxy?.()?.url || "").toLowerCase();
-            const winFunc = (win.EAM?.USER_FUNCTION_NAME || "").toUpperCase();
-            const isWoGrid = storeId.includes("wsjobs") || storeId.includes("ctjobs") || className.includes("wsjobs") || proxyUrl.includes("wsjobs") || winFunc === "WSJOBS" || winFunc === "CTJOBS";
-            if (!isWoGrid) continue;
-            if (winUserFunc) {
-              if (target === "CTJOBS" && winUserFunc !== "CTJOBS") continue;
-              if (target === "WSJOBS" && winUserFunc === "CTJOBS") continue;
-            }
-            if (!winUserFunc) {
-              const visible = grid.isVisible ? grid.isVisible(true) : true;
-              if (!visible) continue;
-            }
-            APMLogger.debug("Forecast", `isGridReady found ${target} grid: ${grid.id} (Store: ${storeId}, Frame: ${winUserFunc || "unknown"})`);
-            return true;
+            if (!storeId.includes("wsjobs") && !storeId.includes("ctjobs")) continue;
+            if (grid.isVisible && !grid.isVisible(true)) continue;
           }
+          APMLogger.debug("Forecast", `isGridReady found ${target} grid: ${grid.id} (Frame: ${winUserFunc || "unknown"})`);
+          return true;
         }
       } catch (e) {
       }
@@ -10560,6 +10598,45 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
       } catch (e) {
       }
     }
+  }
+  async function goToRecordDirect(woNum, target = "WSJOBS") {
+    for (const win of getExtWindows()) {
+      try {
+        const nav = win.EAM?.Nav;
+        if (!nav || typeof nav.goTo !== "function") continue;
+        APMLogger.info("Forecast", `Quick search via Nav.goTo for ${woNum}`);
+        const url2 = `WSJOBS?USER_FUNCTION_NAME=${target}`;
+        nav.goTo(url2, {
+          CURRENT_TAB_NAME: "HDR",
+          DEFAULT_VIEW: "HDR",
+          SAVE_FOR_HEADER: "true",
+          workordernum: woNum
+        }, { drillback: true, smartCache: false });
+        await delay(2e3);
+        await waitForAjax(win);
+        for (const w of getExtWindows()) {
+          try {
+            if (!w.Ext?.ComponentQuery) continue;
+            const grids = w.Ext.ComponentQuery.query("gridpanel:not([destroyed=true])");
+            for (const g of grids) {
+              if (!g.rendered || !g.getStore) continue;
+              const store = g.getStore();
+              if (!store || store.getCount() === 0) continue;
+              const sid = (store.storeId || "").toLowerCase();
+              if (!sid.includes("wsjobs") && !sid.includes("ctjobs")) continue;
+              APMLogger.info("Forecast", `Opening from grid: ${store.getCount()} results`);
+              const result = await openFirstGridRecord(g, w);
+              return result.success;
+            }
+          } catch (e) {
+          }
+        }
+        return true;
+      } catch (e) {
+        APMLogger.debug("Forecast", "goToRecordDirect error:", e.message);
+      }
+    }
+    return false;
   }
   async function returnToListView(target = "WSJOBS") {
     let targetExt = null;
@@ -10668,20 +10745,19 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
         try {
           if (!win.Ext || !win.Ext.ComponentQuery) continue;
           const winUserFunc = getWinUserFunc(win);
+          if (winUserFunc) {
+            if (gridTarget === "CTJOBS" && winUserFunc !== "CTJOBS") continue;
+            if (gridTarget === "WSJOBS" && winUserFunc === "CTJOBS") continue;
+          }
           const grids = win.Ext.ComponentQuery.query("gridpanel:not([destroyed=true])");
           foundFrame = grids.some((g) => {
             if (!g.rendered || !g.getStore) return false;
             const store = g.getStore();
             if (!store) return false;
-            const sid = (store.storeId || "").toLowerCase();
-            const isWo = sid.includes("wsjobs") || sid.includes("ctjobs");
-            if (!isWo) return false;
-            if (winUserFunc) {
-              if (gridTarget === "CTJOBS" && winUserFunc !== "CTJOBS") return false;
-              if (gridTarget === "WSJOBS" && winUserFunc === "CTJOBS") return false;
-            } else {
-              const visible = g.isVisible ? g.isVisible(true) : true;
-              if (!visible) return false;
+            if (!winUserFunc) {
+              const sid = (store.storeId || "").toLowerCase();
+              if (!sid.includes("wsjobs") && !sid.includes("ctjobs")) return false;
+              if (g.isVisible && !g.isVisible(true)) return false;
             }
             return true;
           });
@@ -10918,6 +10994,17 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
       if (mode === "quick") setStatus("Jumping...", "#3498db");
       else if (mode === "clear") setStatus("Clearing...", "#f1c40f");
       else triggerThunderstrike();
+      if (mode === "quick" && quickSearchText) {
+        const jumped = await goToRecordDirect(quickSearchText, currentTarget);
+        if (jumped) {
+          setStatus("", "#18bc9c");
+          showToast(`Opened WO ${quickSearchText}`, "#1abc9c", false);
+          const qsClear = document.getElementById("apm-qs-input");
+          if (qsClear) qsClear.value = "";
+          return;
+        }
+        APMLogger.debug("Forecast", "Nav.goTo unavailable, falling back to grid search");
+      }
       await navigateTo("Work Orders", ["Work", "Work Orders"], { target: currentTarget });
       setStatus("Expanding...", "#f1c40f");
       await returnToListView(currentTarget);
@@ -13222,6 +13309,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
   init_logger();
   init_constants();
   init_utils();
+  init_api();
   init_toast();
   init_dom_helpers();
   init_feature_flags();
@@ -13258,9 +13346,143 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
       APMLogger.error("Snapshot", "Error purging expired snapshots:", e);
     }
   }
+  function captureGridState(targetWin) {
+    const wins = targetWin ? [targetWin, ...getExtWindows().filter((w) => w !== targetWin)] : getExtWindows();
+    for (const w of wins) {
+      try {
+        if (!w.Ext?.ComponentQuery) continue;
+        let dataspyId = null;
+        const allCombos = w.Ext.ComponentQuery.query("combobox:not([destroyed=true])");
+        let dataspyCombo = allCombos.find((c) => (c.itemId || "").toLowerCase().includes("dataspy"));
+        if (!dataspyCombo) dataspyCombo = allCombos.find((c) => (c.name || "").toLowerCase().includes("spy"));
+        if (dataspyCombo) {
+          const val = dataspyCombo.getValue?.();
+          if (val) dataspyId = String(typeof val === "object" ? val.id || val.value || val : val);
+        }
+        const filterFields = {};
+        const fields = w.Ext.ComponentQuery.query("[name^=ff_]:not([destroyed=true])");
+        for (const f of fields) {
+          try {
+            const raw = f.getRawValue?.();
+            const val = raw !== null && raw !== void 0 && raw !== "" ? raw : f.getValue?.();
+            let strVal = null;
+            if (val !== null && val !== void 0 && val !== "" && !(val instanceof Date)) {
+              strVal = String(val);
+            } else if (val instanceof Date) {
+              const display = f.getRawValue?.();
+              if (display) strVal = display;
+            }
+            if (!strVal) continue;
+            let operator = "fo_con";
+            try {
+              const fEl = f.getEl();
+              const parentWrap = fEl.up(".x-box-inner") || fEl.up(".x-column-header-inner") || fEl.up(".x-container");
+              if (parentWrap) {
+                const triggerBtnEl = parentWrap.down(".uft-id-btnfilteroperator") || parentWrap.down(".x-btn-icon-el-gridfilter-small");
+                const btnEl = triggerBtnEl?.hasCls?.("x-btn-icon-el-gridfilter-small") ? triggerBtnEl.up(".x-btn") : triggerBtnEl;
+                if (btnEl) {
+                  const opBtnCmp = w.Ext.getCmp(btnEl.id);
+                  const iconCls = opBtnCmp?.iconCls || "";
+                  if (iconCls.startsWith("fo_")) operator = iconCls;
+                }
+              }
+            } catch (e) {
+            }
+            const name = f.name || f.getName?.();
+            filterFields[name] = { value: strVal, operator };
+          } catch (e) {
+          }
+        }
+        const hasFilters = Object.keys(filterFields).length > 0;
+        if (!dataspyId && !hasFilters) continue;
+        return {
+          dataspyId,
+          filterFields: hasFilters ? filterFields : null
+        };
+      } catch (e) {
+      }
+    }
+    return null;
+  }
+  async function restoreGridState(gridState) {
+    if (!gridState) return false;
+    let targetWin = null;
+    for (let poll = 0; poll < 30; poll++) {
+      for (const w of getExtWindows()) {
+        try {
+          if (!w.Ext?.ComponentQuery) continue;
+          const runBtns2 = w.Ext.ComponentQuery.query("button[text=Run]:not([destroyed=true])");
+          if (runBtns2?.length > 0) {
+            targetWin = w;
+            break;
+          }
+        } catch (e) {
+        }
+      }
+      if (targetWin) break;
+      await delay(500);
+    }
+    if (!targetWin) {
+      APMLogger.info("Snapshot", "restoreGridState: Run button not found after polling");
+      return false;
+    }
+    const ext = targetWin.Ext;
+    if (gridState.dataspyId) {
+      const allCombos = ext.ComponentQuery.query("combobox:not([destroyed=true])");
+      let dataspyCombo = allCombos.find((c) => (c.itemId || "").toLowerCase().includes("dataspy"));
+      if (!dataspyCombo) dataspyCombo = allCombos.find((c) => (c.name || "").toLowerCase().includes("spy"));
+      if (dataspyCombo) {
+        const current = dataspyCombo.getValue();
+        APMLogger.info("Snapshot", `Dataspy: current=${current}, target=${gridState.dataspyId}`);
+        if (String(current) !== gridState.dataspyId) {
+          dataspyCombo.setValue(gridState.dataspyId);
+          dataspyCombo.fireEvent("select", dataspyCombo, dataspyCombo.findRecordByValue?.(gridState.dataspyId));
+          await delay(1e3);
+          await waitForAjax(targetWin);
+        }
+      } else {
+        APMLogger.debug("Snapshot", "Dataspy combo not found in restore frame");
+      }
+    }
+    if (gridState.filterFields) {
+      for (const [fieldName, entry] of Object.entries(gridState.filterFields)) {
+        const value = typeof entry === "object" ? entry.value : entry;
+        const operator = typeof entry === "object" ? entry.operator || "fo_eq" : "fo_eq";
+        const ok = setFilterField(ext, fieldName, value, operator);
+        APMLogger.debug("Snapshot", `Filter ${fieldName}=${value} (${operator}) \u2192 ${ok ? "set" : "FAILED"}`);
+      }
+    }
+    const runBtns = ext.ComponentQuery.query("button[text=Run]:not([destroyed=true])");
+    if (runBtns.length > 0) {
+      const btn = runBtns[0];
+      if (btn.handler) btn.handler.call(btn.scope || btn, btn);
+      else btn.fireEvent("click", btn);
+      await delay(300);
+      await waitForAjax(targetWin);
+      await delay(500);
+      return true;
+    }
+    return false;
+  }
+  async function openMatchingGridRecord(grid, win, dataIndex, entityId) {
+    const store = grid.getStore();
+    if (!store || store.getCount() === 0) return { success: false };
+    const record = store.findRecord(dataIndex, entityId, 0, false, true, true);
+    if (record) {
+      const view = grid.getView();
+      const idx = store.indexOf(record);
+      grid.getSelectionModel().select(record);
+      view.fireEvent("itemdblclick", view, record, view.getNode(idx), idx);
+      await delay(300);
+      await waitForAjax(win);
+      return { success: true };
+    }
+    return openFirstGridRecord(grid, win);
+  }
   var _lastScreen = null;
   var _lastRecordType = null;
   var _lastRecordId = null;
+  var _lastGridStateHash = null;
   function detectRecordView() {
     for (const w of getExtWindows()) {
       try {
@@ -13304,32 +13526,46 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
     const ctx = findMainGrid();
     const screen = ctx ? detectScreenFunction(ctx.win, ctx.grid) : null;
     const record = detectRecordView();
+    const gridState = captureGridState(ctx?.win);
+    const gridStateHash = gridState ? JSON.stringify(gridState) : null;
+    const profSelect = document.getElementById("eam-profile-select");
+    const forecastProfileId = profSelect?.value && profSelect.value !== "manual" ? profSelect.value : null;
     const screenChanged = screen !== _lastScreen;
     const recordChanged = record?.entityType !== _lastRecordType || record?.entityId !== _lastRecordId;
-    if (!screenChanged && !recordChanged) return;
+    const gridChanged = gridStateHash !== _lastGridStateHash;
+    if (!screenChanged && !recordChanged && !gridChanged) return;
     _lastScreen = screen;
     _lastRecordType = record?.entityType || null;
     _lastRecordId = record?.entityId || null;
+    _lastGridStateHash = gridStateHash;
     if (!screen) return;
     const snapshot = {
-      _v: 1,
+      _v: 2,
       tabId,
       ts: Date.now(),
       screen,
-      record: record ? { entityType: record.entityType, entityId: record.entityId } : null
+      record: record ? { entityType: record.entityType, entityId: record.entityId } : null,
+      gridState: gridState || null,
+      forecastProfileId: forecastProfileId || null
     };
     APMStorage.set(snapshotKey(tabId), snapshot);
-    APMLogger.debug("Snapshot", `Captured: ${screen}${record ? " / " + record.entityId : ""}`);
+    APMLogger.debug("Snapshot", `Captured: ${screen}${record ? " / " + record.entityId : ""}${gridState ? " +filters" : ""}${forecastProfileId ? " prof:" + forecastProfileId : ""}`);
   }
   function buildPromptMessage(snapshot) {
+    const hasFilters = snapshot.gridState?.filterFields && Object.keys(snapshot.gridState.filterFields).length > 0;
+    const hasProfile = !!snapshot.forecastProfileId;
+    const contextParts = [];
+    if (hasProfile) contextParts.push("forecast profile");
+    if (hasFilters) contextParts.push("search filters");
+    const contextSuffix = contextParts.length > 0 ? ` with ${contextParts.join(" + ")}` : "";
     if (snapshot.record) {
       const entry2 = ENTITY_REGISTRY[snapshot.record.entityType];
       const label = entry2 ? entry2.label : snapshot.record.entityType;
-      return `Your previous session had <b>${label} ${snapshot.record.entityId}</b> open. Restore?`;
+      return `Your previous session had <b>${label} ${snapshot.record.entityId}</b> open${contextSuffix}. Restore?`;
     }
     const entry = ENTITY_REGISTRY[snapshot.screen];
     const screenLabel = entry ? entry.screenTitle : snapshot.screen;
-    return `You were on the <b>${screenLabel}</b> screen. Restore?`;
+    return `You were on the <b>${screenLabel}</b> screen${contextSuffix}. Restore?`;
   }
   function showRestorePrompt(snapshot) {
     return new Promise((resolve) => {
@@ -13505,7 +13741,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
     SSRCVI: "ff_receiptcode",
     SSPART: "ff_partcode"
   };
-  function setFilterField(ext, fieldName, value) {
+  function setFilterField(ext, fieldName, value, operatorCls = "fo_eq") {
     const fields = ext.ComponentQuery.query(`[name=${fieldName}]:not([destroyed=true])`);
     if (!fields || fields.length === 0) return false;
     const cmp = fields[0];
@@ -13520,10 +13756,10 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
       if (btnEl) {
         const opBtnCmp = ext.getCmp(btnEl.id);
         if (opBtnCmp?.menu?.items?.items) {
-          const eqItem = opBtnCmp.menu.items.items.find((item) => item && !item.isDestroyed && item.iconCls === "fo_eq");
-          if (eqItem) {
-            if (eqItem.handler) eqItem.handler.call(eqItem.scope || eqItem, eqItem);
-            else eqItem.fireEvent("click", eqItem);
+          const opItem = opBtnCmp.menu.items.items.find((item) => item && !item.isDestroyed && item.iconCls === operatorCls);
+          if (opItem) {
+            if (opItem.handler) opItem.handler.call(opItem.scope || opItem, opItem);
+            else opItem.fireEvent("click", opItem);
           }
         }
       }
@@ -13532,6 +13768,42 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
   }
   async function executeRestore(snapshot) {
     APMLogger.info("Snapshot", `Restoring: navigating to ${snapshot.screen}`);
+    if (snapshot.forecastProfileId) {
+      const executeForecast2 = APMApi.get?.("executeForecast");
+      if (executeForecast2) {
+        APMLogger.info("Snapshot", `Restoring via forecast profile: ${snapshot.forecastProfileId}`);
+        const profSelect = document.getElementById("eam-profile-select");
+        if (profSelect) {
+          profSelect.value = snapshot.forecastProfileId;
+          profSelect.dispatchEvent(new Event("change"));
+        }
+        await executeForecast2("normal");
+        if (snapshot.record) {
+          const entry2 = ENTITY_REGISTRY[snapshot.record.entityType];
+          if (entry2) {
+            await delay(500);
+            const ctx2 = findMainGrid(true);
+            if (ctx2 && ctx2.grid.getStore().getCount() > 0) {
+              const result2 = await openMatchingGridRecord(ctx2.grid, ctx2.win, entry2.dataIndex, snapshot.record.entityId);
+              if (result2.success) {
+                showToast(`Restored ${entry2.label} ${snapshot.record.entityId} (profile)`, "var(--apm-success, #27ae60)", false);
+                return;
+              }
+            }
+          }
+        }
+        showToast("Restored forecast profile", "var(--apm-success, #27ae60)", false);
+        return;
+      }
+    }
+    if (snapshot.record && !snapshot.gridState) {
+      const entry2 = ENTITY_REGISTRY[snapshot.record.entityType];
+      if (entry2) {
+        const jumped = await restoreViaNavGoTo(snapshot, entry2);
+        if (jumped) return;
+        APMLogger.debug("Snapshot", "Nav.goTo unavailable, falling back to filter+run");
+      }
+    }
     let navOk = false;
     for (const win of getExtWindows()) {
       try {
@@ -13545,6 +13817,32 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
     if (!navOk) {
       showToast("Could not restore \u2014 navigation unavailable", "#e74c3c", false);
       return;
+    }
+    await delay(2e3);
+    if (snapshot.gridState) {
+      APMLogger.info("Snapshot", "Restoring grid state (dataspy + filters)");
+      const gridRestored = await restoreGridState(snapshot.gridState);
+      if (gridRestored && snapshot.record) {
+        const entry2 = ENTITY_REGISTRY[snapshot.record.entityType];
+        if (entry2) {
+          const ctx2 = findMainGrid(true);
+          if (ctx2 && ctx2.grid.getStore().getCount() > 0) {
+            const result2 = await openMatchingGridRecord(ctx2.grid, ctx2.win, entry2.dataIndex, snapshot.record.entityId);
+            if (result2.success) {
+              showToast(`Restored ${entry2.label} ${snapshot.record.entityId}`, "var(--apm-success, #27ae60)", false);
+            } else {
+              showToast(`Restored filters \u2014 could not open ${snapshot.record.entityId}`, "#f39c12", false);
+            }
+            return;
+          }
+        }
+      }
+      if (gridRestored) {
+        const entry2 = ENTITY_REGISTRY[snapshot.screen];
+        const label = entry2 ? entry2.screenTitle : snapshot.screen;
+        showToast(`Restored ${label} with search filters`, "var(--apm-success, #27ae60)", false);
+        return;
+      }
     }
     if (!snapshot.record) {
       const entry2 = ENTITY_REGISTRY[snapshot.screen];
@@ -13562,7 +13860,6 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
       showToast(`No filter field mapped for ${snapshot.screen}`, "#e74c3c", false);
       return;
     }
-    await delay(2e3);
     const POLL_INTERVAL = 500;
     const maxPolls = Math.ceil(RESTORE_GRID_TIMEOUT / POLL_INTERVAL);
     let targetWin = null;
@@ -13604,12 +13901,60 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
       showToast(`Could not find ${entry.label} ${snapshot.record.entityId}`, "#e74c3c", false);
       return;
     }
-    const result = await openFirstGridRecord(ctx.grid, ctx.win);
+    const result = await openMatchingGridRecord(ctx.grid, ctx.win, entry.dataIndex, snapshot.record.entityId);
     if (result.success) {
       showToast(`Restored ${entry.label} ${snapshot.record.entityId}`, "var(--apm-success, #27ae60)", false);
     } else {
       showToast(`Could not open ${entry.label} ${snapshot.record.entityId}`, "#e74c3c", false);
     }
+  }
+  async function restoreViaNavGoTo(snapshot, entry) {
+    for (const win of getExtWindows()) {
+      try {
+        const nav = win.EAM?.Nav;
+        if (!nav || typeof nav.goTo !== "function") continue;
+        const target = snapshot.screen;
+        const url2 = `${entry.systemFunc}?USER_FUNCTION_NAME=${target}`;
+        APMLogger.info("Snapshot", `Restoring via Nav.goTo: ${entry.label} ${snapshot.record.entityId}`);
+        nav.goTo(url2, {
+          CURRENT_TAB_NAME: "HDR",
+          DEFAULT_VIEW: "HDR",
+          SAVE_FOR_HEADER: "true",
+          [entry.entityKey]: snapshot.record.entityId
+        }, { drillback: true, smartCache: false });
+        await delay(2e3);
+        await waitForAjax(win);
+        const screenKey = target.toLowerCase();
+        for (let poll = 0; poll < 10; poll++) {
+          for (const w of getExtWindows()) {
+            try {
+              if (!w.Ext?.ComponentQuery) continue;
+              const grids = w.Ext.ComponentQuery.query("gridpanel:not([destroyed=true])");
+              for (const g of grids) {
+                if (!g.rendered || !g.getStore) continue;
+                const store = g.getStore();
+                if (!store || store.getCount() === 0) continue;
+                const sid = (store.storeId || "").toLowerCase();
+                if (!sid.includes(screenKey) && !sid.includes("wsjobs") && !sid.includes("ctjobs")) continue;
+                APMLogger.info("Snapshot", `Opening from grid: ${store.getCount()} results`);
+                const result = await openMatchingGridRecord(g, w, entry.dataIndex, snapshot.record.entityId);
+                if (result.success) {
+                  showToast(`Restored ${entry.label} ${snapshot.record.entityId}`, "var(--apm-success, #27ae60)", false);
+                  return true;
+                }
+              }
+            } catch (e) {
+            }
+          }
+          await delay(500);
+        }
+        showToast(`Navigated to ${entry.label} \u2014 could not open ${snapshot.record.entityId}`, "#f39c12", false);
+        return true;
+      } catch (e) {
+        APMLogger.debug("Snapshot", "Nav.goTo restore failed:", e.message);
+      }
+    }
+    return false;
   }
   var _restoreHandled = false;
   var SessionSnapshot = {
@@ -13627,7 +13972,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
         if (!hasDrillback) {
           const snapshot = APMStorage.get(snapshotKey(tabId));
           if (snapshot && snapshot.ts && Date.now() - snapshot.ts <= SNAPSHOT_TTL) {
-            APMLogger.info("Snapshot", `Found restorable snapshot: ${snapshot.screen}${snapshot.record ? " / " + snapshot.record.entityId : ""}`);
+            APMLogger.info("Snapshot", `Found restorable snapshot: ${snapshot.screen}${snapshot.record ? " / " + snapshot.record.entityId : ""}${snapshot.gridState?.dataspyId ? " (dataspy:" + snapshot.gridState.dataspyId + ")" : ""}${snapshot.gridState?.filterFields ? " +filters" : ""}`);
             const choice = await showRestorePrompt(snapshot);
             await delay(350);
             if (choice === "restore") {
@@ -16038,7 +16383,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
       }, { isIdle: true });
       APMScheduler.registerTask("session-heartbeat", 3e5, () => {
         SessionMonitor.refreshSession();
-      }, { isIdle: true });
+      });
       if (isLanding) {
         APMLogger.info("Boot", "Landing page detected. Skipping core UI initialization.");
         return;
