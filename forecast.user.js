@@ -1330,8 +1330,15 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
     }
     if (win) {
       try {
-        const eamUsr = win.EAM?.USER_FUNCTION_NAME;
-        if (eamUsr && !_GENERIC_FUNCS.has(eamUsr)) return eamUsr;
+        const initpath = win.EAM?.AppData?.getAppData?.()?.initpath;
+        if (initpath && !_GENERIC_FUNCS.has(initpath)) return initpath;
+      } catch (e) {
+      }
+    }
+    if (win) {
+      try {
+        const userFunc = win.EAM?.FocusManager?.activeView?.screen?.userFunction;
+        if (userFunc && !_GENERIC_FUNCS.has(userFunc)) return userFunc;
       } catch (e) {
       }
     }
@@ -2253,6 +2260,15 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
           handlers.requestexception.set(id, fn);
         },
         /**
+         * Remove a previously registered hook by id
+         * @param {string} id Hook identifier
+         */
+        remove(id) {
+          handlers.beforerequest.delete(id);
+          handlers.requestcomplete.delete(id);
+          handlers.requestexception.delete(id);
+        },
+        /**
          * Install global listeners on a window's Ext.Ajax singleton.
          * Uses both Ext.Ajax.on() events AND a monkey-patch on Ext.Ajax.request()
          * to ensure we catch requests from grid store proxies that may bypass
@@ -3073,11 +3089,12 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
             const targetHours = String(data.hours || "0.25");
             const targetType = data.type || "N";
             APMLogger.debug("LaborBooker", `Starting flow for field injection. Emp: ${employee}, Hrs: ${targetHours}, Type: ${targetType}`);
+            APMLogger.debug("LaborBooker", `Starting injection: emp=${employee}, hrs=${targetHours}, type=${targetType}`);
             let injectionSuccess = false;
             for (let i = 0; i < 20; i++) {
-              const formPanel = targetExt.ComponentQuery.query("form:not([destroyed=true])", booTab)[0];
-              if (formPanel && formPanel.getForm && formPanel.getForm()) {
-                const form = formPanel.getForm();
+              const formPanel2 = targetExt.ComponentQuery.query("form:not([destroyed=true])", booTab)[0];
+              if (formPanel2 && formPanel2.getForm && formPanel2.getForm()) {
+                const form = formPanel2.getForm();
                 const fAct = form.findField("booactivity");
                 await ExtUtils.ensureStoreLoaded(fAct, targetWin);
                 const actCode = detectActivityCode(fAct);
@@ -3127,8 +3144,9 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
                 const finalAct = form.findField("booactivity")?.getValue();
                 const finalRate = fRate ? fRate.getValue() : "N/A";
                 const isRateOk = finalRate !== null && finalRate !== void 0 && finalRate !== "" || !fRate;
+                APMLogger.debug("LaborBooker", `Verify i=${i}: emp=${!!finalEmp} hrs=${!!finalHrs} type=${!!finalType} act=${!!finalAct} rate=${finalRate} ok=${isRateOk}`);
                 if (finalEmp && finalHrs && finalType && finalAct && isRateOk) {
-                  const record = formPanel.getRecord();
+                  const record = formPanel2.getRecord();
                   if (record) {
                     form.getFields().each((f) => {
                       if (f.getName() && f.getValue() !== record.get(f.getName())) {
@@ -3142,12 +3160,15 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
                     if (form.updateRecord) form.updateRecord(record);
                   }
                   injectionSuccess = true;
+                  APMLogger.debug("LaborBooker", `Injection succeeded on iteration ${i}`);
                   break;
                 }
               }
               await delay(400);
             }
-            if (!injectionSuccess) throw new Error("Fields failed to stick (EAM Cascade/Clear)");
+            if (!injectionSuccess) {
+              throw new Error("Fields failed to stick (EAM Cascade/Clear)");
+            }
             const preForm = targetExt.ComponentQuery.query("form:not([destroyed=true])", booTab)[0];
             if (preForm && preForm.getForm) {
               const pf = preForm.getForm();
@@ -3157,28 +3178,49 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
               if (rd && !rd.getValue()) ExtUtils.setFieldValue(pf, "ratedate", RATE_DATE_DEFAULT);
               if (!pf.findField("isdetailfieldchanged")?.getValue()) ExtUtils.setFieldValue(pf, "isdetailfieldchanged", "true");
             }
-            let saveBtn = targetExt.ComponentQuery.query("button[action=saveRec]:not([destroyed=true]), button.uft-id-saverec:not([destroyed=true])", booTab)[0];
-            if (!saveBtn) {
-              saveBtn = targetExt.ComponentQuery.query("button[action=saveRec]:not([destroyed=true]), button.uft-id-saverec:not([destroyed=true])").find((b) => b.rendered && !(typeof b.isHidden === "function" && b.isHidden()));
+            APMLogger.debug("LaborBooker", "Reached save step");
+            const formPanel = targetExt.ComponentQuery.query("form:not([destroyed=true])", booTab)[0];
+            if (formPanel && formPanel.getForm && !formPanel.getForm().isValid()) {
+              APMLogger.warn("LaborBooker", "Form invalid before save, attempting to force it...");
+              formPanel.getForm().getFields().each((f) => {
+                if (f.validate && !f.validate()) {
+                  APMLogger.debug("LaborBooker", `Invalid field: ${f.name} - Errors: ${JSON.stringify(f.getErrors())}`);
+                }
+              });
             }
-            if (saveBtn) {
-              const formPanel = targetExt.ComponentQuery.query("form:not([destroyed=true])", booTab)[0];
-              if (formPanel && formPanel.getForm && !formPanel.getForm().isValid()) {
-                APMLogger.warn("LaborBooker", "Form invalid before save, attempting to force it...");
-                formPanel.getForm().getFields().each((f) => {
-                  if (f.validate && !f.validate()) {
-                    APMLogger.debug("LaborBooker", `Invalid field: ${f.name} - Errors: ${JSON.stringify(f.getErrors())}`);
-                  }
-                });
+            const booGrid = targetExt.ComponentQuery.query("grid:not([destroyed=true])", booTab)[0] || targetExt.ComponentQuery.query("gridpanel:not([destroyed=true])", booTab)[0];
+            const booStore = booGrid?.getStore?.();
+            const preCount = booStore ? booStore.getCount() : -1;
+            APMLogger.debug("LaborBooker", `Pre-save record count: ${preCount}`);
+            let saveTriggered = false;
+            try {
+              const tabView = formPanel?.getTabView?.();
+              const tabViewAlt = !tabView ? formPanel?.up?.("[callSave]") : null;
+              const saveTarget = tabView || tabViewAlt;
+              APMLogger.debug("LaborBooker", `Save lookup: getTabView=${!!tabView}, up=[callSave]=${!!tabViewAlt}, callSave=${typeof saveTarget?.callSave}`);
+              if (saveTarget && typeof saveTarget.callSave === "function") {
+                APMLogger.debug("LaborBooker", "Save via callSave() (primary)");
+                saveTarget.callSave();
+                saveTriggered = true;
               }
-              const booGrid = targetExt.ComponentQuery.query("grid:not([destroyed=true])", booTab)[0] || targetExt.ComponentQuery.query("gridpanel:not([destroyed=true])", booTab)[0];
-              const booStore = booGrid?.getStore?.();
-              const preCount = booStore ? booStore.getCount() : -1;
-              APMLogger.debug("LaborBooker", `Pre-save record count: ${preCount}`);
-              APMLogger.debug("LaborBooker", "Executing Save...");
-              if (saveBtn.handler) saveBtn.handler.call(saveBtn.scope || saveBtn, saveBtn);
-              else saveBtn.fireEvent("click", saveBtn);
-              await waitForAjax(targetWin);
+            } catch (e) {
+              APMLogger.debug("LaborBooker", "callSave() failed:", e.message);
+            }
+            if (!saveTriggered) {
+              let saveBtn = targetExt.ComponentQuery.query("button[action=saveRec]:not([destroyed=true]), button.uft-id-saverec:not([destroyed=true])", booTab)[0];
+              if (!saveBtn) {
+                saveBtn = targetExt.ComponentQuery.query("button[action=saveRec]:not([destroyed=true]), button.uft-id-saverec:not([destroyed=true])").find((b) => b.rendered && !(typeof b.isHidden === "function" && b.isHidden()));
+              }
+              if (saveBtn) {
+                APMLogger.debug("LaborBooker", "Save via button click (fallback)");
+                if (saveBtn.handler) saveBtn.handler.call(saveBtn.scope || saveBtn, saveBtn);
+                else saveBtn.fireEvent("click", saveBtn);
+              } else {
+                throw new Error("No save mechanism available");
+              }
+            }
+            await waitForAjax(targetWin);
+            if (true) {
               let saveVerified = false;
               if (booStore && preCount >= 0) {
                 await delay(300);
@@ -3212,7 +3254,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
                 window.dispatchEvent(new CustomEvent("APM_LABOR_SYNC", { detail: { source: "quick-book" } }));
               }, 800);
               return { result };
-            } else throw new Error("Save button not found");
+            }
           } catch (e) {
             APMLogger.error("LaborBooker", "executeBookingFlow Error:", e);
             if (!options.silent) showToast("Error: " + e.message, "#e74c3c");
@@ -4355,6 +4397,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
   init_state();
   init_context();
   init_api();
+  init_scheduler();
   var SessionMonitor = {
     _liveConfirmed: /* @__PURE__ */ new Set(),
     _lastActivity: Date.now(),
@@ -4555,7 +4598,9 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
       }
     },
     /**
-     * Performs a lightweight request to EAM to keep the session alive.
+     * Performs a POST request to EAM to keep the session alive.
+     * Uses the same request format as real EAM navigation so the servlet
+     * container resets its session idle timer.
      */
     refreshSession: async function() {
       if (window.__apmRedirecting) return;
@@ -4569,11 +4614,22 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
       if (Date.now() < this._nextHeartbeat) return;
       APMLogger.debug("APM Session", "Refreshing session heartbeat...");
       try {
-        const url2 = `/web/base/BSSTRT.xmlhttp?tenant=${encodeURIComponent(session.tenant || DEFAULT_TENANT)}&eamid=${encodeURIComponent(session.eamid)}`;
+        const currentTenant = session.tenant || DEFAULT_TENANT;
+        const url2 = `/web/base/BSSTRT.xmlhttp`;
+        const body = new URLSearchParams({
+          COMPONENT_INFO_TYPE: "DATA_ONLY",
+          CURRENT_TAB_NAME: "HDR",
+          eamid: session.eamid,
+          tenant: currentTenant
+        });
         const resp = await fetch(url2, {
-          method: "GET",
+          method: "POST",
           credentials: "same-origin",
-          headers: { "X-Requested-With": "XMLHttpRequest" }
+          headers: {
+            "Content-Type": "application/x-www-form-urlencoded",
+            "X-Requested-With": "XMLHttpRequest"
+          },
+          body: body.toString()
         });
         if (resp.status === 200) {
           APMLogger.debug("APM Session", "Session heartbeat successful.");
@@ -4588,6 +4644,10 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
     forceRedirect() {
       if (window.__apmRedirecting) return;
       window.__apmRedirecting = true;
+      try {
+        APMScheduler.stop();
+      } catch (e) {
+      }
       APMLogger.info("APM Session", "Session timeout detected. Auto-redirecting...");
       const topWin = apmGetGlobalWindow().top;
       topWin.location.replace(SESSION_TIMEOUT_URL);
@@ -8050,6 +8110,8 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
     --apm-input-focus: rgba(52, 152, 219, 0.4);
     --apm-shadow: 0 8px 25px rgba(0,0,0,0.6);
     --apm-shadow-sm: 0 1px 3px rgba(0,0,0,0.2);
+    --apm-overlay-light: rgba(255,255,255,0.05);
+    --apm-overlay-dark: rgba(0,0,0,0.1);
     --apm-radius: 6px;
     --apm-radius-sm: 4px;
     --apm-radius-lg: 10px;
@@ -10133,50 +10195,68 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
 
   // src/core/maddon.js
   init_logger();
+  init_ajax_hooks();
+  function shiftFilters(existingParams, filters) {
+    const existingSeqKeys = Object.keys(existingParams).filter((k) => k.startsWith("MADDON_FILTER_SEQNUM_"));
+    const existingSeqs = existingSeqKeys.map((k) => parseInt(k.split("_").pop(), 10));
+    const maxSeq = existingSeqs.length > 0 ? Math.max(...existingSeqs) : 0;
+    const ourFilterKeys = Object.keys(filters).filter((k) => k.startsWith("MADDON_FILTER_ALIAS_NAME_"));
+    const ourSeqs = ourFilterKeys.map((k) => parseInt(k.split("_").pop(), 10)).sort((a, b) => a - b);
+    const shifted = {};
+    ourSeqs.forEach((origSeq, idx) => {
+      const newSeq = maxSeq + idx + 1;
+      shifted[`MADDON_FILTER_ALIAS_NAME_${newSeq}`] = filters[`MADDON_FILTER_ALIAS_NAME_${origSeq}`];
+      shifted[`MADDON_FILTER_OPERATOR_${newSeq}`] = filters[`MADDON_FILTER_OPERATOR_${origSeq}`];
+      shifted[`MADDON_FILTER_VALUE_${newSeq}`] = filters[`MADDON_FILTER_VALUE_${origSeq}`];
+      shifted[`MADDON_FILTER_SEQNUM_${newSeq}`] = newSeq.toString();
+      shifted[`MADDON_FILTER_JOINER_${newSeq}`] = filters[`MADDON_FILTER_JOINER_${origSeq}`];
+      if (filters[`MADDON_LPAREN_${origSeq}`] !== void 0) shifted[`MADDON_LPAREN_${newSeq}`] = filters[`MADDON_LPAREN_${origSeq}`];
+      if (filters[`MADDON_RPAREN_${origSeq}`] !== void 0) shifted[`MADDON_RPAREN_${newSeq}`] = filters[`MADDON_RPAREN_${origSeq}`];
+    });
+    return shifted;
+  }
+  var HOOK_ID = "maddon-inject";
   function injectMaddonFilter(grid, filters) {
     try {
       const store = grid.getStore?.();
       if (!store) return null;
       const proxy = store.getProxy?.();
-      if (!proxy || !proxy.doRequest) return null;
-      const origDoRequest = proxy.doRequest;
-      proxy.doRequest = function(operation) {
-        proxy.doRequest = origDoRequest;
-        try {
-          const params = operation.getParams?.() || {};
-          const extraParams = proxy.getExtraParams ? proxy.getExtraParams() : proxy.extraParams || {};
-          const allParams = { ...extraParams, ...params };
-          const existingSeqKeys = Object.keys(allParams).filter((k) => k.startsWith("MADDON_FILTER_SEQNUM_"));
-          const existingSeqs = existingSeqKeys.map((k) => parseInt(k.split("_").pop(), 10));
-          const maxSeq = existingSeqs.length > 0 ? Math.max(...existingSeqs) : 0;
-          const ourFilterKeys = Object.keys(filters).filter((k) => k.startsWith("MADDON_FILTER_ALIAS_NAME_"));
-          const ourSeqs = ourFilterKeys.map((k) => parseInt(k.split("_").pop(), 10)).sort((a, b) => a - b);
-          const shifted = {};
-          ourSeqs.forEach((origSeq, idx) => {
-            const newSeq = maxSeq + idx + 1;
-            shifted[`MADDON_FILTER_ALIAS_NAME_${newSeq}`] = filters[`MADDON_FILTER_ALIAS_NAME_${origSeq}`];
-            shifted[`MADDON_FILTER_OPERATOR_${newSeq}`] = filters[`MADDON_FILTER_OPERATOR_${origSeq}`];
-            shifted[`MADDON_FILTER_VALUE_${newSeq}`] = filters[`MADDON_FILTER_VALUE_${origSeq}`];
-            shifted[`MADDON_FILTER_SEQNUM_${newSeq}`] = newSeq.toString();
-            shifted[`MADDON_FILTER_JOINER_${newSeq}`] = filters[`MADDON_FILTER_JOINER_${origSeq}`];
-            if (filters[`MADDON_LPAREN_${origSeq}`] !== void 0) shifted[`MADDON_LPAREN_${newSeq}`] = filters[`MADDON_LPAREN_${origSeq}`];
-            if (filters[`MADDON_RPAREN_${origSeq}`] !== void 0) shifted[`MADDON_RPAREN_${newSeq}`] = filters[`MADDON_RPAREN_${origSeq}`];
-          });
-          const mergedExtra = { ...extraParams, ...shifted };
-          if (proxy.setExtraParams) {
-            proxy.setExtraParams(mergedExtra);
-          } else {
-            proxy.extraParams = mergedExtra;
+      if (!proxy) return null;
+      if (typeof proxy.doRequest === "function") {
+        const origDoRequest = proxy.doRequest;
+        proxy.doRequest = function(operation) {
+          proxy.doRequest = origDoRequest;
+          try {
+            const extraParams = proxy.getExtraParams ? proxy.getExtraParams() : proxy.extraParams || {};
+            const shifted = shiftFilters(extraParams, filters);
+            const merged = { ...extraParams, ...shifted };
+            if (proxy.setExtraParams) proxy.setExtraParams(merged);
+            else proxy.extraParams = merged;
+            APMLogger.debug("Maddon", `doRequest: injected ${Object.keys(shifted).filter((k) => k.includes("ALIAS_NAME")).length} MADDON filters`);
+          } catch (e) {
+            APMLogger.error("Maddon", "Error injecting MADDON in doRequest:", e);
           }
-          APMLogger.debug("Maddon", `doRequest: injected ${ourSeqs.length} MADDON filters (shifted after seq ${maxSeq})`);
+          return origDoRequest.call(this, operation);
+        };
+        APMLogger.debug("Maddon", `Strategy 1: patched proxy.doRequest`);
+        return { proxy, restore: () => {
+          proxy.doRequest = origDoRequest;
+        } };
+      }
+      APMLogger.debug("Maddon", `Strategy 2: using AjaxHooks.onBeforeRequest (proxy type: ${proxy.$className || proxy.type || "unknown"})`);
+      AjaxHooks.onBeforeRequest(HOOK_ID, (_win, _conn, options) => {
+        AjaxHooks.remove(HOOK_ID);
+        try {
+          const params = options.params || {};
+          const shifted = shiftFilters(params, filters);
+          options.params = { ...params, ...shifted };
+          APMLogger.debug("Maddon", `beforerequest: injected ${Object.keys(shifted).filter((k) => k.includes("ALIAS_NAME")).length} MADDON filters into Ajax request`);
         } catch (e) {
-          APMLogger.error("Maddon", "Error injecting MADDON in doRequest:", e);
+          APMLogger.error("Maddon", "Error injecting MADDON in beforerequest:", e);
         }
-        return origDoRequest.call(this, operation);
-      };
-      APMLogger.debug("Maddon", `Patched proxy.doRequest for ${Object.keys(filters).length} MADDON params`);
+      });
       return { proxy, restore: () => {
-        proxy.doRequest = origDoRequest;
+        AjaxHooks.remove(HOOK_ID);
       } };
     } catch (e) {
       APMLogger.error("Maddon", "Failed to inject MADDON filter:", e);
@@ -10187,6 +10267,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
     if (!handle) return;
     try {
       if (handle.restore) handle.restore();
+      AjaxHooks.remove(HOOK_ID);
       if (handle.proxy) {
         const existing = handle.proxy.getExtraParams ? handle.proxy.getExtraParams() : handle.proxy.extraParams || {};
         const cleaned = { ...existing };
@@ -10224,13 +10305,15 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
   function detectActiveTarget() {
     for (const win of getExtWindows()) {
       try {
-        if (!win.Ext?.ComponentQuery) continue;
-        const activeTabs = win.Ext.ComponentQuery.query("tab[active=true]:not([destroyed=true])");
-        for (const tab of activeTabs) {
-          const text = (tab.text || "").toUpperCase();
-          if (text.includes("COMPLIANCE") && text.includes("WORK")) return "CTJOBS";
-          if (text.includes("WORK ORDER") && !text.includes("COMPLIANCE")) return "WSJOBS";
-        }
+        const userFunc = win.EAM?.FocusManager?.activeView?.screen?.userFunction;
+        if (userFunc === "WSJOBS" || userFunc === "CTJOBS") return userFunc;
+      } catch (e) {
+      }
+    }
+    for (const win of getExtWindows()) {
+      try {
+        const initpath = win.EAM?.AppData?.getAppData?.()?.initpath;
+        if (initpath === "WSJOBS" || initpath === "CTJOBS") return initpath;
       } catch (e) {
       }
     }
@@ -10238,14 +10321,19 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
   }
   function getWinUserFunc(win) {
     try {
-      const params = new URLSearchParams(win.location.search);
-      const fromUrl = params.get("USER_FUNCTION_NAME");
-      if (fromUrl) return fromUrl;
+      const initpath = win.EAM?.AppData?.getAppData?.()?.initpath;
+      if (initpath) return initpath;
     } catch (e) {
     }
     try {
-      const fromEAM = win.EAM?.USER_FUNCTION_NAME;
-      if (fromEAM) return fromEAM;
+      const userFunc = win.EAM?.FocusManager?.activeView?.screen?.userFunction;
+      if (userFunc) return userFunc;
+    } catch (e) {
+    }
+    try {
+      const params = new URLSearchParams(win.location.search);
+      const fromUrl = params.get("USER_FUNCTION_NAME");
+      if (fromUrl) return fromUrl;
     } catch (e) {
     }
     return "";
@@ -10462,33 +10550,26 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
     return { start: formatDate(startD), end: formatDate(endD) };
   }
   function isGridReady(target = "WSJOBS") {
-    const wins = getExtWindows();
-    for (const win of wins) {
+    for (const win of getExtWindows()) {
       try {
         if (!win.Ext?.ComponentQuery) continue;
         const winUserFunc = getWinUserFunc(win);
+        if (winUserFunc) {
+          if (target === "CTJOBS" && winUserFunc !== "CTJOBS") continue;
+          if (target === "WSJOBS" && winUserFunc === "CTJOBS") continue;
+        }
         const grids = win.Ext.ComponentQuery.query("gridpanel:not([destroyed=true])");
         for (const grid of grids) {
-          if (grid.rendered && grid.getStore) {
-            const store = grid.getStore();
-            if (!store || store.isLoading()) continue;
+          if (!grid.rendered || !grid.getStore) continue;
+          const store = grid.getStore();
+          if (!store || store.isLoading()) continue;
+          if (!winUserFunc) {
             const storeId = (store.storeId || "").toLowerCase();
-            const className = (store.$className || "").toLowerCase();
-            const proxyUrl = (store.getProxy?.()?.url || "").toLowerCase();
-            const winFunc = (win.EAM?.USER_FUNCTION_NAME || "").toUpperCase();
-            const isWoGrid = storeId.includes("wsjobs") || storeId.includes("ctjobs") || className.includes("wsjobs") || proxyUrl.includes("wsjobs") || winFunc === "WSJOBS" || winFunc === "CTJOBS";
-            if (!isWoGrid) continue;
-            if (winUserFunc) {
-              if (target === "CTJOBS" && winUserFunc !== "CTJOBS") continue;
-              if (target === "WSJOBS" && winUserFunc === "CTJOBS") continue;
-            }
-            if (!winUserFunc) {
-              const visible = grid.isVisible ? grid.isVisible(true) : true;
-              if (!visible) continue;
-            }
-            APMLogger.debug("Forecast", `isGridReady found ${target} grid: ${grid.id} (Store: ${storeId}, Frame: ${winUserFunc || "unknown"})`);
-            return true;
+            if (!storeId.includes("wsjobs") && !storeId.includes("ctjobs")) continue;
+            if (grid.isVisible && !grid.isVisible(true)) continue;
           }
+          APMLogger.debug("Forecast", `isGridReady found ${target} grid: ${grid.id} (Frame: ${winUserFunc || "unknown"})`);
+          return true;
         }
       } catch (e) {
       }
@@ -10560,6 +10641,45 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
       } catch (e) {
       }
     }
+  }
+  async function goToRecordDirect(woNum, target = "WSJOBS") {
+    for (const win of getExtWindows()) {
+      try {
+        const nav = win.EAM?.Nav;
+        if (!nav || typeof nav.goTo !== "function") continue;
+        APMLogger.info("Forecast", `Quick search via Nav.goTo for ${woNum}`);
+        const url2 = `WSJOBS?USER_FUNCTION_NAME=${target}`;
+        nav.goTo(url2, {
+          CURRENT_TAB_NAME: "HDR",
+          DEFAULT_VIEW: "HDR",
+          SAVE_FOR_HEADER: "true",
+          workordernum: woNum
+        }, { drillback: true, smartCache: false });
+        await delay(2e3);
+        await waitForAjax(win);
+        for (const w of getExtWindows()) {
+          try {
+            if (!w.Ext?.ComponentQuery) continue;
+            const grids = w.Ext.ComponentQuery.query("gridpanel:not([destroyed=true])");
+            for (const g of grids) {
+              if (!g.rendered || !g.getStore) continue;
+              const store = g.getStore();
+              if (!store || store.getCount() === 0) continue;
+              const sid = (store.storeId || "").toLowerCase();
+              if (!sid.includes("wsjobs") && !sid.includes("ctjobs")) continue;
+              APMLogger.info("Forecast", `Opening from grid: ${store.getCount()} results`);
+              const result = await openFirstGridRecord(g, w);
+              return result.success;
+            }
+          } catch (e) {
+          }
+        }
+        return true;
+      } catch (e) {
+        APMLogger.debug("Forecast", "goToRecordDirect error:", e.message);
+      }
+    }
+    return false;
   }
   async function returnToListView(target = "WSJOBS") {
     let targetExt = null;
@@ -10668,20 +10788,19 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
         try {
           if (!win.Ext || !win.Ext.ComponentQuery) continue;
           const winUserFunc = getWinUserFunc(win);
+          if (winUserFunc) {
+            if (gridTarget === "CTJOBS" && winUserFunc !== "CTJOBS") continue;
+            if (gridTarget === "WSJOBS" && winUserFunc === "CTJOBS") continue;
+          }
           const grids = win.Ext.ComponentQuery.query("gridpanel:not([destroyed=true])");
           foundFrame = grids.some((g) => {
             if (!g.rendered || !g.getStore) return false;
             const store = g.getStore();
             if (!store) return false;
-            const sid = (store.storeId || "").toLowerCase();
-            const isWo = sid.includes("wsjobs") || sid.includes("ctjobs");
-            if (!isWo) return false;
-            if (winUserFunc) {
-              if (gridTarget === "CTJOBS" && winUserFunc !== "CTJOBS") return false;
-              if (gridTarget === "WSJOBS" && winUserFunc === "CTJOBS") return false;
-            } else {
-              const visible = g.isVisible ? g.isVisible(true) : true;
-              if (!visible) return false;
+            if (!winUserFunc) {
+              const sid = (store.storeId || "").toLowerCase();
+              if (!sid.includes("wsjobs") && !sid.includes("ctjobs")) return false;
+              if (g.isVisible && !g.isVisible(true)) return false;
             }
             return true;
           });
@@ -10918,6 +11037,17 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
       if (mode === "quick") setStatus("Jumping...", "#3498db");
       else if (mode === "clear") setStatus("Clearing...", "#f1c40f");
       else triggerThunderstrike();
+      if (mode === "quick" && quickSearchText) {
+        const jumped = await goToRecordDirect(quickSearchText, currentTarget);
+        if (jumped) {
+          setStatus("", "#18bc9c");
+          showToast(`Opened WO ${quickSearchText}`, "#1abc9c", false);
+          const qsClear = document.getElementById("apm-qs-input");
+          if (qsClear) qsClear.value = "";
+          return;
+        }
+        APMLogger.debug("Forecast", "Nav.goTo unavailable, falling back to grid search");
+      }
       await navigateTo("Work Orders", ["Work", "Work Orders"], { target: currentTarget });
       setStatus("Expanding...", "#f1c40f");
       await returnToListView(currentTarget);
@@ -13222,6 +13352,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
   init_logger();
   init_constants();
   init_utils();
+  init_api();
   init_toast();
   init_dom_helpers();
   init_feature_flags();
@@ -13258,9 +13389,143 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
       APMLogger.error("Snapshot", "Error purging expired snapshots:", e);
     }
   }
+  function captureGridState(targetWin) {
+    const wins = targetWin ? [targetWin, ...getExtWindows().filter((w) => w !== targetWin)] : getExtWindows();
+    for (const w of wins) {
+      try {
+        if (!w.Ext?.ComponentQuery) continue;
+        let dataspyId = null;
+        const allCombos = w.Ext.ComponentQuery.query("combobox:not([destroyed=true])");
+        let dataspyCombo = allCombos.find((c) => (c.itemId || "").toLowerCase().includes("dataspy"));
+        if (!dataspyCombo) dataspyCombo = allCombos.find((c) => (c.name || "").toLowerCase().includes("spy"));
+        if (dataspyCombo) {
+          const val = dataspyCombo.getValue?.();
+          if (val) dataspyId = String(typeof val === "object" ? val.id || val.value || val : val);
+        }
+        const filterFields = {};
+        const fields = w.Ext.ComponentQuery.query("[name^=ff_]:not([destroyed=true])");
+        for (const f of fields) {
+          try {
+            const raw = f.getRawValue?.();
+            const val = raw !== null && raw !== void 0 && raw !== "" ? raw : f.getValue?.();
+            let strVal = null;
+            if (val !== null && val !== void 0 && val !== "" && !(val instanceof Date)) {
+              strVal = String(val);
+            } else if (val instanceof Date) {
+              const display = f.getRawValue?.();
+              if (display) strVal = display;
+            }
+            if (!strVal) continue;
+            let operator = "fo_con";
+            try {
+              const fEl = f.getEl();
+              const parentWrap = fEl.up(".x-box-inner") || fEl.up(".x-column-header-inner") || fEl.up(".x-container");
+              if (parentWrap) {
+                const triggerBtnEl = parentWrap.down(".uft-id-btnfilteroperator") || parentWrap.down(".x-btn-icon-el-gridfilter-small");
+                const btnEl = triggerBtnEl?.hasCls?.("x-btn-icon-el-gridfilter-small") ? triggerBtnEl.up(".x-btn") : triggerBtnEl;
+                if (btnEl) {
+                  const opBtnCmp = w.Ext.getCmp(btnEl.id);
+                  const iconCls = opBtnCmp?.iconCls || "";
+                  if (iconCls.startsWith("fo_")) operator = iconCls;
+                }
+              }
+            } catch (e) {
+            }
+            const name = f.name || f.getName?.();
+            filterFields[name] = { value: strVal, operator };
+          } catch (e) {
+          }
+        }
+        const hasFilters = Object.keys(filterFields).length > 0;
+        if (!dataspyId && !hasFilters) continue;
+        return {
+          dataspyId,
+          filterFields: hasFilters ? filterFields : null
+        };
+      } catch (e) {
+      }
+    }
+    return null;
+  }
+  async function restoreGridState(gridState) {
+    if (!gridState) return false;
+    let targetWin = null;
+    for (let poll = 0; poll < 30; poll++) {
+      for (const w of getExtWindows()) {
+        try {
+          if (!w.Ext?.ComponentQuery) continue;
+          const runBtns2 = w.Ext.ComponentQuery.query("button[text=Run]:not([destroyed=true])");
+          if (runBtns2?.length > 0) {
+            targetWin = w;
+            break;
+          }
+        } catch (e) {
+        }
+      }
+      if (targetWin) break;
+      await delay(500);
+    }
+    if (!targetWin) {
+      APMLogger.info("Snapshot", "restoreGridState: Run button not found after polling");
+      return false;
+    }
+    const ext = targetWin.Ext;
+    if (gridState.dataspyId) {
+      const allCombos = ext.ComponentQuery.query("combobox:not([destroyed=true])");
+      let dataspyCombo = allCombos.find((c) => (c.itemId || "").toLowerCase().includes("dataspy"));
+      if (!dataspyCombo) dataspyCombo = allCombos.find((c) => (c.name || "").toLowerCase().includes("spy"));
+      if (dataspyCombo) {
+        const current = dataspyCombo.getValue();
+        APMLogger.info("Snapshot", `Dataspy: current=${current}, target=${gridState.dataspyId}`);
+        if (String(current) !== gridState.dataspyId) {
+          dataspyCombo.setValue(gridState.dataspyId);
+          dataspyCombo.fireEvent("select", dataspyCombo, dataspyCombo.findRecordByValue?.(gridState.dataspyId));
+          await delay(1e3);
+          await waitForAjax(targetWin);
+        }
+      } else {
+        APMLogger.debug("Snapshot", "Dataspy combo not found in restore frame");
+      }
+    }
+    if (gridState.filterFields) {
+      for (const [fieldName, entry] of Object.entries(gridState.filterFields)) {
+        const value = typeof entry === "object" ? entry.value : entry;
+        const operator = typeof entry === "object" ? entry.operator || "fo_eq" : "fo_eq";
+        const ok = setFilterField(ext, fieldName, value, operator);
+        APMLogger.debug("Snapshot", `Filter ${fieldName}=${value} (${operator}) \u2192 ${ok ? "set" : "FAILED"}`);
+      }
+    }
+    const runBtns = ext.ComponentQuery.query("button[text=Run]:not([destroyed=true])");
+    if (runBtns.length > 0) {
+      const btn = runBtns[0];
+      if (btn.handler) btn.handler.call(btn.scope || btn, btn);
+      else btn.fireEvent("click", btn);
+      await delay(300);
+      await waitForAjax(targetWin);
+      await delay(500);
+      return true;
+    }
+    return false;
+  }
+  async function openMatchingGridRecord(grid, win, dataIndex, entityId) {
+    const store = grid.getStore();
+    if (!store || store.getCount() === 0) return { success: false };
+    const record = store.findRecord(dataIndex, entityId, 0, false, true, true);
+    if (record) {
+      const view = grid.getView();
+      const idx = store.indexOf(record);
+      grid.getSelectionModel().select(record);
+      view.fireEvent("itemdblclick", view, record, view.getNode(idx), idx);
+      await delay(300);
+      await waitForAjax(win);
+      return { success: true };
+    }
+    return openFirstGridRecord(grid, win);
+  }
   var _lastScreen = null;
   var _lastRecordType = null;
   var _lastRecordId = null;
+  var _lastGridStateHash = null;
   function detectRecordView() {
     for (const w of getExtWindows()) {
       try {
@@ -13304,32 +13569,46 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
     const ctx = findMainGrid();
     const screen = ctx ? detectScreenFunction(ctx.win, ctx.grid) : null;
     const record = detectRecordView();
+    const gridState = captureGridState(ctx?.win);
+    const gridStateHash = gridState ? JSON.stringify(gridState) : null;
+    const profSelect = document.getElementById("eam-profile-select");
+    const forecastProfileId = profSelect?.value && profSelect.value !== "manual" ? profSelect.value : null;
     const screenChanged = screen !== _lastScreen;
     const recordChanged = record?.entityType !== _lastRecordType || record?.entityId !== _lastRecordId;
-    if (!screenChanged && !recordChanged) return;
+    const gridChanged = gridStateHash !== _lastGridStateHash;
+    if (!screenChanged && !recordChanged && !gridChanged) return;
     _lastScreen = screen;
     _lastRecordType = record?.entityType || null;
     _lastRecordId = record?.entityId || null;
+    _lastGridStateHash = gridStateHash;
     if (!screen) return;
     const snapshot = {
-      _v: 1,
+      _v: 2,
       tabId,
       ts: Date.now(),
       screen,
-      record: record ? { entityType: record.entityType, entityId: record.entityId } : null
+      record: record ? { entityType: record.entityType, entityId: record.entityId } : null,
+      gridState: gridState || null,
+      forecastProfileId: forecastProfileId || null
     };
     APMStorage.set(snapshotKey(tabId), snapshot);
-    APMLogger.debug("Snapshot", `Captured: ${screen}${record ? " / " + record.entityId : ""}`);
+    APMLogger.debug("Snapshot", `Captured: ${screen}${record ? " / " + record.entityId : ""}${gridState ? " +filters" : ""}${forecastProfileId ? " prof:" + forecastProfileId : ""}`);
   }
   function buildPromptMessage(snapshot) {
+    const hasFilters = snapshot.gridState?.filterFields && Object.keys(snapshot.gridState.filterFields).length > 0;
+    const hasProfile = !!snapshot.forecastProfileId;
+    const contextParts = [];
+    if (hasProfile) contextParts.push("forecast profile");
+    if (hasFilters) contextParts.push("search filters");
+    const contextSuffix = contextParts.length > 0 ? ` with ${contextParts.join(" + ")}` : "";
     if (snapshot.record) {
       const entry2 = ENTITY_REGISTRY[snapshot.record.entityType];
       const label = entry2 ? entry2.label : snapshot.record.entityType;
-      return `Your previous session had <b>${label} ${snapshot.record.entityId}</b> open. Restore?`;
+      return `Your previous session had <b>${label} ${snapshot.record.entityId}</b> open${contextSuffix}. Restore?`;
     }
     const entry = ENTITY_REGISTRY[snapshot.screen];
     const screenLabel = entry ? entry.screenTitle : snapshot.screen;
-    return `You were on the <b>${screenLabel}</b> screen. Restore?`;
+    return `You were on the <b>${screenLabel}</b> screen${contextSuffix}. Restore?`;
   }
   function showRestorePrompt(snapshot) {
     return new Promise((resolve) => {
@@ -13505,7 +13784,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
     SSRCVI: "ff_receiptcode",
     SSPART: "ff_partcode"
   };
-  function setFilterField(ext, fieldName, value) {
+  function setFilterField(ext, fieldName, value, operatorCls = "fo_eq") {
     const fields = ext.ComponentQuery.query(`[name=${fieldName}]:not([destroyed=true])`);
     if (!fields || fields.length === 0) return false;
     const cmp = fields[0];
@@ -13520,10 +13799,10 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
       if (btnEl) {
         const opBtnCmp = ext.getCmp(btnEl.id);
         if (opBtnCmp?.menu?.items?.items) {
-          const eqItem = opBtnCmp.menu.items.items.find((item) => item && !item.isDestroyed && item.iconCls === "fo_eq");
-          if (eqItem) {
-            if (eqItem.handler) eqItem.handler.call(eqItem.scope || eqItem, eqItem);
-            else eqItem.fireEvent("click", eqItem);
+          const opItem = opBtnCmp.menu.items.items.find((item) => item && !item.isDestroyed && item.iconCls === operatorCls);
+          if (opItem) {
+            if (opItem.handler) opItem.handler.call(opItem.scope || opItem, opItem);
+            else opItem.fireEvent("click", opItem);
           }
         }
       }
@@ -13532,6 +13811,42 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
   }
   async function executeRestore(snapshot) {
     APMLogger.info("Snapshot", `Restoring: navigating to ${snapshot.screen}`);
+    if (snapshot.forecastProfileId) {
+      const executeForecast2 = APMApi.get?.("executeForecast");
+      if (executeForecast2) {
+        APMLogger.info("Snapshot", `Restoring via forecast profile: ${snapshot.forecastProfileId}`);
+        const profSelect = document.getElementById("eam-profile-select");
+        if (profSelect) {
+          profSelect.value = snapshot.forecastProfileId;
+          profSelect.dispatchEvent(new Event("change"));
+        }
+        await executeForecast2("normal");
+        if (snapshot.record) {
+          const entry2 = ENTITY_REGISTRY[snapshot.record.entityType];
+          if (entry2) {
+            await delay(500);
+            const ctx2 = findMainGrid(true);
+            if (ctx2 && ctx2.grid.getStore().getCount() > 0) {
+              const result2 = await openMatchingGridRecord(ctx2.grid, ctx2.win, entry2.dataIndex, snapshot.record.entityId);
+              if (result2.success) {
+                showToast(`Restored ${entry2.label} ${snapshot.record.entityId} (profile)`, "var(--apm-success, #27ae60)", false);
+                return;
+              }
+            }
+          }
+        }
+        showToast("Restored forecast profile", "var(--apm-success, #27ae60)", false);
+        return;
+      }
+    }
+    if (snapshot.record && !snapshot.gridState) {
+      const entry2 = ENTITY_REGISTRY[snapshot.record.entityType];
+      if (entry2) {
+        const jumped = await restoreViaNavGoTo(snapshot, entry2);
+        if (jumped) return;
+        APMLogger.debug("Snapshot", "Nav.goTo unavailable, falling back to filter+run");
+      }
+    }
     let navOk = false;
     for (const win of getExtWindows()) {
       try {
@@ -13545,6 +13860,32 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
     if (!navOk) {
       showToast("Could not restore \u2014 navigation unavailable", "#e74c3c", false);
       return;
+    }
+    await delay(2e3);
+    if (snapshot.gridState) {
+      APMLogger.info("Snapshot", "Restoring grid state (dataspy + filters)");
+      const gridRestored = await restoreGridState(snapshot.gridState);
+      if (gridRestored && snapshot.record) {
+        const entry2 = ENTITY_REGISTRY[snapshot.record.entityType];
+        if (entry2) {
+          const ctx2 = findMainGrid(true);
+          if (ctx2 && ctx2.grid.getStore().getCount() > 0) {
+            const result2 = await openMatchingGridRecord(ctx2.grid, ctx2.win, entry2.dataIndex, snapshot.record.entityId);
+            if (result2.success) {
+              showToast(`Restored ${entry2.label} ${snapshot.record.entityId}`, "var(--apm-success, #27ae60)", false);
+            } else {
+              showToast(`Restored filters \u2014 could not open ${snapshot.record.entityId}`, "#f39c12", false);
+            }
+            return;
+          }
+        }
+      }
+      if (gridRestored) {
+        const entry2 = ENTITY_REGISTRY[snapshot.screen];
+        const label = entry2 ? entry2.screenTitle : snapshot.screen;
+        showToast(`Restored ${label} with search filters`, "var(--apm-success, #27ae60)", false);
+        return;
+      }
     }
     if (!snapshot.record) {
       const entry2 = ENTITY_REGISTRY[snapshot.screen];
@@ -13562,7 +13903,6 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
       showToast(`No filter field mapped for ${snapshot.screen}`, "#e74c3c", false);
       return;
     }
-    await delay(2e3);
     const POLL_INTERVAL = 500;
     const maxPolls = Math.ceil(RESTORE_GRID_TIMEOUT / POLL_INTERVAL);
     let targetWin = null;
@@ -13604,12 +13944,60 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
       showToast(`Could not find ${entry.label} ${snapshot.record.entityId}`, "#e74c3c", false);
       return;
     }
-    const result = await openFirstGridRecord(ctx.grid, ctx.win);
+    const result = await openMatchingGridRecord(ctx.grid, ctx.win, entry.dataIndex, snapshot.record.entityId);
     if (result.success) {
       showToast(`Restored ${entry.label} ${snapshot.record.entityId}`, "var(--apm-success, #27ae60)", false);
     } else {
       showToast(`Could not open ${entry.label} ${snapshot.record.entityId}`, "#e74c3c", false);
     }
+  }
+  async function restoreViaNavGoTo(snapshot, entry) {
+    for (const win of getExtWindows()) {
+      try {
+        const nav = win.EAM?.Nav;
+        if (!nav || typeof nav.goTo !== "function") continue;
+        const target = snapshot.screen;
+        const url2 = `${entry.systemFunc}?USER_FUNCTION_NAME=${target}`;
+        APMLogger.info("Snapshot", `Restoring via Nav.goTo: ${entry.label} ${snapshot.record.entityId}`);
+        nav.goTo(url2, {
+          CURRENT_TAB_NAME: "HDR",
+          DEFAULT_VIEW: "HDR",
+          SAVE_FOR_HEADER: "true",
+          [entry.entityKey]: snapshot.record.entityId
+        }, { drillback: true, smartCache: false });
+        await delay(2e3);
+        await waitForAjax(win);
+        const screenKey = target.toLowerCase();
+        for (let poll = 0; poll < 10; poll++) {
+          for (const w of getExtWindows()) {
+            try {
+              if (!w.Ext?.ComponentQuery) continue;
+              const grids = w.Ext.ComponentQuery.query("gridpanel:not([destroyed=true])");
+              for (const g of grids) {
+                if (!g.rendered || !g.getStore) continue;
+                const store = g.getStore();
+                if (!store || store.getCount() === 0) continue;
+                const sid = (store.storeId || "").toLowerCase();
+                if (!sid.includes(screenKey) && !sid.includes("wsjobs") && !sid.includes("ctjobs")) continue;
+                APMLogger.info("Snapshot", `Opening from grid: ${store.getCount()} results`);
+                const result = await openMatchingGridRecord(g, w, entry.dataIndex, snapshot.record.entityId);
+                if (result.success) {
+                  showToast(`Restored ${entry.label} ${snapshot.record.entityId}`, "var(--apm-success, #27ae60)", false);
+                  return true;
+                }
+              }
+            } catch (e) {
+            }
+          }
+          await delay(500);
+        }
+        showToast(`Navigated to ${entry.label} \u2014 could not open ${snapshot.record.entityId}`, "#f39c12", false);
+        return true;
+      } catch (e) {
+        APMLogger.debug("Snapshot", "Nav.goTo restore failed:", e.message);
+      }
+    }
+    return false;
   }
   var _restoreHandled = false;
   var SessionSnapshot = {
@@ -13627,7 +14015,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
         if (!hasDrillback) {
           const snapshot = APMStorage.get(snapshotKey(tabId));
           if (snapshot && snapshot.ts && Date.now() - snapshot.ts <= SNAPSHOT_TTL) {
-            APMLogger.info("Snapshot", `Found restorable snapshot: ${snapshot.screen}${snapshot.record ? " / " + snapshot.record.entityId : ""}`);
+            APMLogger.info("Snapshot", `Found restorable snapshot: ${snapshot.screen}${snapshot.record ? " / " + snapshot.record.entityId : ""}${snapshot.gridState?.dataspyId ? " (dataspy:" + snapshot.gridState.dataspyId + ")" : ""}${snapshot.gridState?.filterFields ? " +filters" : ""}`);
             const choice = await showRestorePrompt(snapshot);
             await delay(350);
             if (choice === "restore") {
@@ -13658,6 +14046,9 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
   init_feature_flags();
   init_dom_helpers();
 
+  // src/ui/settings-panel-overlays.js
+  init_dom_helpers();
+
   // src/ui/help-images.js
   var HELP_IMAGES = {
     "Autofill_Contextual_Button_Exmple": "data:image/webp;base64,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",
@@ -13679,26 +14070,10 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
     "Record_tab_order": "data:image/webp;base64,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"
   };
 
-  // src/ui/settings-panel.js
-  function createMainPanel() {
-    const panel = el("div", { id: "apm-settings-panel", className: "apm-settings-container apm-ui-panel" });
-    applyZoomCompensation(panel);
-    return panel;
-  }
-  function createHeader() {
-    return el("div", { className: "apm-settings-header" }, [
-      el("h4", { className: "apm-settings-title" }, "APM Master")
-    ]);
-  }
-  function createTabContainer() {
-    return el("div", { id: "apm-tab-container", className: "apm-tab-container" }, [
-      el("div", { id: "tab-autofill", className: "apm-tab-btn apm-tab-active-autofill" }, "Auto Fill Profiles"),
-      el("div", { id: "tab-settings", className: "apm-tab-btn apm-tab-inactive" }, "Tab Order"),
-      el("div", { id: "tab-colorcode", className: "apm-tab-btn apm-tab-inactive" }, "ColorCode & Nametag"),
-      el("div", { id: "tab-general", className: "apm-tab-btn apm-tab-inactive" }, "General"),
-      el("div", { id: "tab-diagnostics", className: "apm-tab-btn apm-tab-inactive" }, "Diagnostics")
-    ]);
-  }
+  // src/ui/settings-panel-overlays.js
+  init_constants();
+  init_storage();
+  init_utils();
   function createHelpOverlay() {
     const sections = [
       { id: "general", label: "Getting Started" },
@@ -14099,53 +14474,12 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
       ])
     ]);
   }
-  function buildSettingsPanel() {
-    if (window.self !== window.top || document.getElementById("apm-settings-panel")) return;
-    const panel = createMainPanel();
-    const helpOverlay = createHelpOverlay();
-    const changelogModal = createChangelogModal();
-    const welcomeOverlay = createWelcomeOverlay();
-    const header = createHeader();
-    const tabContainer = createTabContainer();
-    const autofillFields = buildAutoFillTab();
-    const tabOrderFields = buildTabOrderTab();
-    const colorcodeFields = buildColorCodeTab();
-    const generalFields = buildGeneralTab();
-    const diagnosticsFields = buildDiagnosticsTab();
-    const footer = createFooter();
-    panel.appendChild(header);
-    panel.appendChild(tabContainer);
-    panel.appendChild(autofillFields);
-    panel.appendChild(tabOrderFields);
-    panel.appendChild(colorcodeFields);
-    panel.appendChild(generalFields);
-    panel.appendChild(diagnosticsFields);
-    panel.appendChild(footer);
-    document.body.appendChild(panel);
-    document.body.appendChild(helpOverlay);
-    document.body.appendChild(changelogModal);
-    document.body.appendChild(welcomeOverlay);
-    const state = {
-      settingsMode: "cols",
-      activeTab: "autofill",
-      panel,
-      autofillFields,
-      tabOrderFields,
-      colorcodeFields,
-      generalFields,
-      diagnosticsFields,
-      footer
-    };
-    bindSettingsEvents(state);
-    bindWelcomeEvents();
-    if (!APMStorage.get(WELCOME_SEEN_KEY)) {
-      setTimeout(() => {
-        const overlay = document.getElementById("apm-welcome-overlay");
-        if (overlay) overlay.style.display = "flex";
-      }, 1500);
-    }
-  }
-  APMApi.register("buildSettingsPanel", buildSettingsPanel);
+
+  // src/ui/settings-panel-tabs.js
+  init_dom_helpers();
+  init_state();
+  init_constants();
+  init_feature_flags();
   function buildAutoFillTab() {
     return el("div", { id: "apm-main-fields", className: "apm-panel-section" }, [
       el("div", { className: "apm-tab-content-scroll" }, [
@@ -14592,6 +14926,541 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
       ])
     ]);
   }
+
+  // src/ui/settings-panel-diagnostics.js
+  init_dom_helpers();
+  init_diagnostics();
+  var DIAG_TIPS = {
+    bootWaterfall: '<b>Boot Waterfall</b> shows how long each startup phase took.<br><span class="apm-tip-good">\u25CF &lt;500ms</span> = fast<br><span class="apm-tip-warn">\u25CF &lt;1500ms</span> = acceptable<br><span class="apm-tip-bad">\u25CF &gt;1500ms</span> = slow, investigate',
+    domReady: "Time from page load until the DOM was fully parsed. Should be near-instant \u2014 slow values suggest a heavy page or network delay.",
+    settingsLoad: "Time to read saved settings from Tampermonkey/localStorage. Slow if storage is bloated or the GM API is throttled.",
+    extjsReady: "Time waiting for the ExtJS 6 framework to initialize. Depends on EAM page weight \u2014 not something the script controls.",
+    totalBoot: "Wall-clock time from script start to all modules loaded. This is the sum of all phases plus module init.",
+    enginePerf: '<b>Engine Performance</b> tracks how long recurring processing takes per cycle.<br><b>avg</b> = mean of last 20 runs<br><b>p95</b> = 95th percentile (worst typical)<br><b>max</b> = single worst run<br><span class="apm-tip-good">\u25CF &lt;25ms</span> = smooth<br><span class="apm-tip-warn">\u25CF &lt;100ms</span> = noticeable<br><span class="apm-tip-bad">\u25CF &gt;100ms</span> = UI may lag',
+    colorCode: "Measures time to scan grid rows, evaluate rules, and apply highlighting. Grows with row count and rule complexity.",
+    eamQuery: "Measures round-trip time for EAM API calls (Ajax hooks). High values usually mean server latency, not script overhead.",
+    schedulerTasks: "<b>Scheduler Tasks</b> shows recurring background jobs.<br><b>avg</b> = mean execution time<br><b>max</b> = slowest single run<br>Tasks should stay under 50ms to avoid blocking the UI thread.",
+    systemState: "<b>System State</b> confirms core subsystems are running.<br><b>Uptime</b> = seconds since the script loaded<br><b>Hotkeys</b> = keyboard shortcuts active<br><b>Style injection</b> = CSS was applied to the page",
+    iframeHealth: "<b>Iframe Health</b> checks each EAM iframe.<br><b>Accessible</b> = the script can reach it (same-origin)<br><b>Grid/CC/Tags/Styles</b> = features injected successfully<br>Blocked frames are usually cross-origin (PTP, external)."
+  };
+  var _activeInfoTip = null;
+  var _activeInfoKey = null;
+  function closeInfoTip() {
+    if (_activeInfoTip) {
+      _activeInfoTip.remove();
+      _activeInfoTip = null;
+    }
+  }
+  function openInfoTip(tipEl, key) {
+    closeInfoTip();
+    const bubble = document.createElement("div");
+    bubble.className = "apm-info-bubble";
+    bubble.innerHTML = DIAG_TIPS[key] || key;
+    const host = document.getElementById("apm-settings-panel") || document.body;
+    host.appendChild(bubble);
+    const tipRect = tipEl.getBoundingClientRect();
+    const hostRect = host.getBoundingClientRect();
+    const bh = bubble.offsetHeight;
+    const bw = 210;
+    const relTop = tipRect.top - hostRect.top;
+    const relBottom = tipRect.bottom - hostRect.top;
+    const relLeft = tipRect.left - hostRect.left;
+    if (relTop > bh + 8) {
+      bubble.style.top = relTop - bh - 6 + "px";
+      bubble.setAttribute("data-arrow", "top");
+    } else {
+      bubble.style.top = relBottom + 6 + "px";
+      bubble.setAttribute("data-arrow", "bottom");
+    }
+    let left = relLeft;
+    const maxLeft = hostRect.width - bw - 8;
+    left = Math.max(4, Math.min(left, maxLeft));
+    bubble.style.left = left + "px";
+    _activeInfoTip = bubble;
+    _activeInfoKey = key;
+  }
+  function renderInfoTip(key) {
+    const tip = el("span", { className: "apm-info-tip", "data-tip-key": key }, "?");
+    tip.onclick = (e) => {
+      e.stopPropagation();
+      if (_activeInfoKey === key) {
+        closeInfoTip();
+        _activeInfoKey = null;
+        return;
+      }
+      openInfoTip(tip, key);
+    };
+    if (_activeInfoKey === key) {
+      requestAnimationFrame(() => openInfoTip(tip, key));
+    }
+    return tip;
+  }
+  if (!window._apmDiagTipCloseHandler) {
+    window._apmDiagTipCloseHandler = (e) => {
+      if (e.target.closest(".apm-info-tip")) return;
+      closeInfoTip();
+      _activeInfoKey = null;
+    };
+    document.addEventListener("click", window._apmDiagTipCloseHandler);
+  }
+  function sparkline(arr) {
+    if (!arr || arr.length === 0) return "";
+    const blocks = [" ", "\u2582", "\u2583", "\u2584", "\u2585", "\u2586", "\u2587", "\u2588"];
+    const max = Math.max(...arr) || 1;
+    return arr.map((v) => blocks[Math.min(blocks.length - 1, Math.floor(v / max * (blocks.length - 1)))]).join("");
+  }
+  function refreshDiagnosticsUI() {
+    const container = document.getElementById("diag-content");
+    if (!container) return;
+    closeInfoTip();
+    const data = Diagnostics.toJSON();
+    const renderRow = (label, value) => el("div", { style: { display: "flex", justifyContent: "space-between", fontSize: "var(--apm-text-sm)", marginBottom: "3px" } }, [
+      el("span", { style: { color: "var(--apm-text-muted)" } }, label),
+      el("span", { style: { color: "var(--apm-accent)" } }, value || "---")
+    ]);
+    const renderTiming = (label, ms) => renderRow(label, ms ? `${ms}ms` : null);
+    const renderError = (err) => el("div", { style: { borderLeft: "2px solid var(--apm-danger)", paddingLeft: "8px", marginBottom: "8px", fontSize: "var(--apm-text-xs)" } }, [
+      el("div", { style: { color: "var(--apm-danger)", fontWeight: "600" } }, `[${err.tag}] ${err.timestamp.split("T")[1].substring(0, 8)}`),
+      el("div", { style: { color: "var(--apm-text-bright)", whiteSpace: "pre-wrap", overflow: "hidden" } }, err.message)
+    ]);
+    const renderFrame = (f) => el("div", { style: { background: "var(--apm-surface-raised)", padding: "6px", borderRadius: "var(--apm-radius-sm)", marginBottom: "5px", fontSize: "var(--apm-text-xs)" } }, [
+      el("div", { style: { display: "flex", justifyContent: "space-between", marginBottom: "2px" } }, [
+        el("span", { style: { color: "var(--apm-accent)", fontWeight: "600" } }, f.id || "Unnamed Frame"),
+        el("span", { style: { color: f.accessible ? "var(--apm-success-bright)" : "var(--apm-danger)" } }, f.accessible ? "Accessible" : "Blocked")
+      ]),
+      f.accessible && el("div", { style: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: "2px", color: "var(--apm-text-muted)" } }, [
+        el("span", {}, f.gridFound ? "\u2705 Grid Found" : "\u274C No Grid"),
+        el("span", {}, f.ccFound ? "\u2705 ColorCode" : "\u274C No CC"),
+        el("span", {}, f.tagsFound ? "\u2705 Nametags" : "\u274C No Tags"),
+        el("span", {}, f.styles ? "\u2705 Styles" : "\u274C No Styles")
+      ]),
+      f.error && el("div", { style: { color: "var(--apm-warning)", fontSize: "9px" } }, f.error)
+    ]);
+    const perf = Diagnostics.getPerformanceSummary();
+    const totalBoot = data.bootTimings.total || 1;
+    const getPerfColor = (ms, type = "boot") => {
+      if (type === "boot") {
+        if (ms < 500) return "var(--apm-success-bright)";
+        if (ms < 1500) return "var(--apm-warning)";
+        return "var(--apm-danger)";
+      }
+      if (ms < 25) return "var(--apm-success-bright)";
+      if (ms < 100) return "var(--apm-warning)";
+      return "var(--apm-danger)";
+    };
+    const renderBootBar = (label, ms, tipKey) => {
+      const ratio = ms / totalBoot * 100;
+      const color = getPerfColor(ms, "boot");
+      const isTotal = label.includes("Total");
+      const labelChildren = [el("span", {}, label)];
+      if (tipKey) labelChildren.push(renderInfoTip(tipKey));
+      return el("div", { style: { marginBottom: "8px" } }, [
+        el("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: "var(--apm-text-xs)", color: "var(--apm-text-muted)", marginBottom: "2px" } }, [
+          el("span", { style: { display: "flex", alignItems: "center" } }, labelChildren),
+          el("span", { style: { color: isTotal ? "var(--apm-warning)" : "var(--apm-text-bright)" } }, `T+ ${ms}ms`)
+        ]),
+        el("div", { style: { height: "4px", background: "var(--apm-overlay-light)", borderRadius: "2px", overflow: "hidden" } }, [
+          el("div", { style: { height: "100%", width: `${Math.max(2, Math.min(100, ratio))}%`, background: color, transition: "width 0.5s ease" } })
+        ])
+      ]);
+    };
+    const sectionHeader = (text, tipKey, first) => el("div", { style: { fontWeight: "600", color: "var(--apm-text-bright)", fontSize: "var(--apm-text-sm)", marginTop: first ? "0" : "15px", marginBottom: "10px", borderBottom: "1px solid var(--apm-border)", paddingBottom: "4px", display: "flex", alignItems: "center" } }, tipKey ? [text, renderInfoTip(tipKey)] : [text]);
+    const bootNodes = [
+      sectionHeader("Boot Waterfall", "bootWaterfall", true),
+      renderBootBar("DOM Ready", data.bootTimings.dom, "domReady"),
+      renderBootBar("Settings Load", data.bootTimings.settings, "settingsLoad"),
+      renderBootBar("ExtJS Ready", data.bootTimings.extjs, "extjsReady"),
+      renderBootBar("Total Boot", data.bootTimings.total, "totalBoot")
+    ];
+    const moduleTimings = Object.entries(data.bootTimings).filter(([k]) => k.startsWith("module.")).sort((a, b) => b[1] - a[1]);
+    if (moduleTimings.length > 0) {
+      bootNodes.push(el(
+        "div",
+        { style: { fontSize: "var(--apm-text-xs)", color: "var(--apm-text-disabled)", marginTop: "10px", display: "grid", gridTemplateColumns: "1fr 1fr", gap: "4px" } },
+        moduleTimings.map(([k, v]) => el("div", { style: { display: "flex", justifyContent: "space-between", padding: "2px 4px", background: "var(--apm-overlay-dark)", borderRadius: "2px" } }, [
+          el("span", {}, k.replace("module.", "")),
+          el("span", { style: { color: getPerfColor(v, "module") } }, `${v}ms`)
+        ]))
+      ));
+    }
+    const renderEngineStat = (label, stat, history, tipKey) => {
+      let pill = "\u{1F7E2}";
+      const color = getPerfColor(stat.avg, "boot");
+      if (color === "var(--apm-warning)") pill = "\u{1F7E1}";
+      if (color === "var(--apm-danger)") pill = "\u{1F534}";
+      const labelChildren = [`${pill} ${label}`];
+      if (tipKey) labelChildren.push(renderInfoTip(tipKey));
+      return el("div", { style: { background: "var(--apm-surface-raised)", padding: "8px", borderRadius: "var(--apm-radius-sm)", marginBottom: "8px" } }, [
+        el("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "4px" } }, [
+          el("span", { style: { color: "var(--apm-text-bright)", fontSize: "var(--apm-text-sm)", fontWeight: "600", display: "flex", alignItems: "center" } }, labelChildren),
+          el("span", { style: { color: "var(--apm-accent)", fontSize: "var(--apm-text-sm)" } }, `${stat.avg}ms avg`)
+        ]),
+        el("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "center" } }, [
+          el("span", { style: { color: "var(--apm-text-disabled)", fontSize: "9px", fontFamily: "var(--apm-font-mono)" } }, sparkline(history)),
+          el("span", { style: { color: "var(--apm-text-muted)", fontSize: "9px" } }, `max: ${stat.max}ms / p95: ${stat.p95}ms`)
+        ])
+      ]);
+    };
+    const nodes = [
+      ...bootNodes,
+      sectionHeader("Engine Performance", "enginePerf"),
+      renderEngineStat("ColorCode Engine", perf.colorCode, data.performance.colorCode, "colorCode"),
+      renderEngineStat("EAM Query Service", perf.eamQuery, data.performance.eamQuery, "eamQuery"),
+      sectionHeader("Scheduler Tasks (avg/max)", "schedulerTasks"),
+      el("div", { style: { fontSize: "var(--apm-text-xs)" } }, perf.scheduler.slice(0, 5).map((s) => el("div", { style: { display: "flex", justifyContent: "space-between", marginBottom: "2px" } }, [
+        el("span", { style: { color: "var(--apm-text-muted)" } }, s.name),
+        el("span", { style: { color: "var(--apm-accent)" } }, `${s.avg} / ${s.max}ms`)
+      ]))),
+      sectionHeader("System State", "systemState"),
+      renderRow("Uptime", `${data.uptime}s`),
+      renderRow("Hotkeys", data.frames.top.hotkeys ? "Active" : "Disabled"),
+      renderRow("Style injection", data.frames.top.styles ? "OK" : "Missing"),
+      sectionHeader("Iframe Health", "iframeHealth"),
+      data.frames.frames.length === 0 ? el("div", { style: { color: "var(--apm-text-muted)", fontSize: "var(--apm-text-xs)" } }, "No iframes detected. This is normal if Screen Cache Tabs is disabled in EAM.") : el("div", {}, data.frames.frames.map(renderFrame)),
+      sectionHeader("Recent Errors"),
+      data.errors.length === 0 ? el("div", { style: { color: "var(--apm-text-muted)", fontSize: "var(--apm-text-xs)", fontStyle: "italic" } }, "No errors captured.") : el("div", {}, data.errors.slice(0, 5).map(renderError))
+    ];
+    container.replaceChildren();
+    nodes.forEach((node) => container.appendChild(node));
+  }
+
+  // src/ui/settings-panel-draglist.js
+  init_dom_helpers();
+  init_utils();
+  function renderDragList(state, colListContainer, itemsArray, emptyMsg) {
+    let _draggingEl = null;
+    colListContainer.innerHTML = "";
+    if (itemsArray.length === 0) {
+      const emptyDiv = document.createElement("div");
+      emptyDiv.style.cssText = "color:var(--apm-text-disabled); text-align:center; padding:10px;";
+      emptyDiv.textContent = emptyMsg;
+      colListContainer.appendChild(emptyDiv);
+      return;
+    }
+    const presets = getPresets();
+    if (!presets.config.hiddenTabs) presets.config.hiddenTabs = {};
+    const isTabsMode = state.settingsMode === "tabs";
+    let visibleItems = itemsArray;
+    let hiddenItems = [];
+    const funcName = detectScreenFunction();
+    const autoSaveOrder = () => {
+      const items = [...colListContainer.querySelectorAll(".apm-col-item")];
+      const visItems = items.filter((el2) => el2.dataset.hidden !== "true");
+      if (visItems.length === 0) return;
+      const p = getPresets();
+      if (isTabsMode) {
+        const orderArray = visItems.map((el2) => el2.dataset.index).filter(Boolean);
+        const tabOrders = { ...p.config.tabOrders || {}, [funcName]: orderArray };
+        updatePresetConfig({ tabOrders });
+      } else {
+        invalidateTabCache();
+        const currentCols = probeExtGridColumns();
+        const orderArray = visItems.map((el2) => {
+          const idx = el2.dataset.index;
+          const probed = currentCols.find((c) => c.index === idx);
+          return { index: idx, width: probed?.width || null };
+        }).filter((e) => e.index);
+        const columnOrders = { ...p.config.columnOrders || {}, [funcName]: orderArray };
+        updatePresetConfig({ columnOrders });
+      }
+    };
+    if (isTabsMode) {
+      const siloOrder = presets.config.tabOrders?.[funcName] || "";
+      const preferredOrder = typeof siloOrder === "string" ? siloOrder.split(",").map((s) => s.trim()).filter(Boolean) : Array.isArray(siloOrder) ? siloOrder : [];
+      const allHidden = presets.config.hiddenTabs || {};
+      const screenHidden = Array.isArray(allHidden) ? [...allHidden] : [...allHidden[funcName] || []];
+      itemsArray.forEach((c) => {
+        if (c.systemHidden && !screenHidden.includes(c.index) && !preferredOrder.includes(c.index)) {
+          screenHidden.push(c.index);
+        }
+      });
+      visibleItems = itemsArray.filter((c) => !screenHidden.includes(c.index));
+      hiddenItems = itemsArray.filter((c) => screenHidden.includes(c.index));
+    }
+    const resetBtn = document.getElementById("apm-s-btn-reset");
+    if (resetBtn) resetBtn.style.display = "block";
+    const createDragItem = (c, isHidden) => {
+      const item = document.createElement("div");
+      item.dataset.index = c.index;
+      item.className = "apm-col-item";
+      if (isHidden) {
+        item.draggable = false;
+        item.dataset.hidden = "true";
+        item.style.cursor = "default";
+        item.style.borderLeftColor = "var(--apm-danger)";
+        const badges = [];
+        if (c.isPluginMenu) badges.push(el("span", { className: "apm-overflow-badge", style: { background: "var(--apm-purple)" }, title: "This tab is managed by the EAM tab menu plugin (More menu)" }, "More Menu"));
+        const labelSpan = el("span", { style: { opacity: "0.5", flex: "1", display: "flex", alignItems: "center" } }, [
+          el("span", { style: { textDecoration: "line-through" } }, [
+            el("b", { style: { color: "var(--apm-text-disabled)" } }, "\u2630"),
+            document.createTextNode(" \xA0 " + c.text)
+          ]),
+          ...badges
+        ]);
+        const restoreBtn = el("button", {
+          className: "apm-tab-restore-btn",
+          "data-tab-name": c.index,
+          style: { background: "var(--apm-success-bright)", color: "white", border: "none", borderRadius: "4px", padding: "4px 10px", cursor: "pointer", fontSize: "14px", fontWeight: "bold", boxShadow: "var(--apm-shadow-sm)", transition: "transform 0.1s", position: "relative", zIndex: "10" },
+          title: "Restore tab"
+        }, "\uFF0B");
+        item.appendChild(labelSpan);
+        item.appendChild(restoreBtn);
+      } else {
+        item.draggable = true;
+        const actionEl = isTabsMode ? el("button", {
+          className: "apm-tab-hide-btn",
+          "data-tab-name": c.index,
+          style: { background: "transparent", color: "var(--apm-danger)", border: "none", borderRadius: "4px", padding: "2px 6px", cursor: "pointer", fontSize: "13px", fontWeight: "bold" },
+          title: "Hide tab"
+        }, "\u2716") : el("span", { style: { color: "var(--apm-text-disabled)", fontSize: "10px" } }, "[" + c.index + "]");
+        const badges = [];
+        if (isTabsMode && c.isPluginMenu) badges.push(el("span", { className: "apm-overflow-badge", style: { background: "var(--apm-purple)" }, title: "This tab is managed by the EAM tab menu plugin (More menu)" }, "More Menu"));
+        const labelSpan = el("span", {}, [
+          el("span", {}, [
+            el("b", { style: { color: "var(--apm-accent)" } }, "\u2630"),
+            document.createTextNode(" \xA0 " + c.text)
+          ]),
+          ...badges
+        ]);
+        item.appendChild(labelSpan);
+        item.appendChild(document.createTextNode(" "));
+        item.appendChild(actionEl);
+        item.ondragstart = (e) => {
+          e.dataTransfer.setData("text/plain", "");
+          item.classList.add("dragging");
+          _draggingEl = item;
+        };
+        item.ondragend = () => {
+          item.classList.remove("dragging");
+          _draggingEl = null;
+          autoSaveOrder();
+        };
+      }
+      return item;
+    };
+    visibleItems.forEach((c) => colListContainer.appendChild(createDragItem(c, false)));
+    if (isTabsMode && hiddenItems.length > 0) {
+      const divider = document.createElement("div");
+      divider.style.cssText = "text-align:center; color:var(--apm-text-disabled); font-size:11px; padding:6px 0; margin:4px 0; border-top:1px dashed var(--apm-border-strong); user-select:none;";
+      divider.textContent = "\u2500\u2500 Hidden \u2500\u2500";
+      colListContainer.appendChild(divider);
+      hiddenItems.forEach((c) => colListContainer.appendChild(createDragItem(c, true)));
+    }
+    if (isTabsMode) {
+      colListContainer.querySelectorAll(".apm-tab-hide-btn").forEach((btn) => {
+        btn.onclick = (e) => {
+          e.stopPropagation();
+          const tabName = btn.getAttribute("data-tab-name");
+          const p = getPresets();
+          const allHidden = { ...p.config.hiddenTabs || {} };
+          if (Array.isArray(p.config.hiddenTabs)) {
+            allHidden[funcName] = [...p.config.hiddenTabs];
+          }
+          const screenHidden = allHidden[funcName] || [];
+          if (!screenHidden.includes(tabName)) {
+            allHidden[funcName] = [...screenHidden, tabName];
+            updatePresetConfig({ hiddenTabs: allHidden });
+          }
+          renderDragList(state, colListContainer, itemsArray, emptyMsg);
+        };
+      });
+      colListContainer.querySelectorAll(".apm-tab-restore-btn").forEach((btn) => {
+        btn.onmousedown = (e) => e.stopPropagation();
+        btn.onclick = (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          const tabName = btn.getAttribute("data-tab-name");
+          const p = getPresets();
+          const allHidden = { ...p.config.hiddenTabs || {} };
+          if (Array.isArray(p.config.hiddenTabs)) {
+            allHidden[funcName] = p.config.hiddenTabs.filter((t) => t !== tabName);
+          } else {
+            allHidden[funcName] = (allHidden[funcName] || []).filter((t) => t !== tabName);
+          }
+          const tabOrders = { ...p.config.tabOrders || {} };
+          const siloOrder = tabOrders[funcName];
+          const orderArray = typeof siloOrder === "string" ? siloOrder.split(",").map((s) => s.trim()) : Array.isArray(siloOrder) ? [...siloOrder] : [];
+          if (!orderArray.includes(tabName)) {
+            orderArray.push(tabName);
+          }
+          tabOrders[funcName] = orderArray;
+          updatePresetConfig({
+            hiddenTabs: allHidden,
+            tabOrders
+          });
+          renderDragList(state, colListContainer, itemsArray, emptyMsg);
+        };
+      });
+    }
+    colListContainer.ondragover = (e) => {
+      e.preventDefault();
+      const dragging = _draggingEl;
+      if (!dragging) return;
+      const siblings = [...colListContainer.querySelectorAll(".apm-col-item:not(.dragging)")];
+      const nextSibling = siblings.find((sibling) => {
+        const box = sibling.getBoundingClientRect();
+        return e.clientY <= box.top + box.height / 2;
+      });
+      if (nextSibling) colListContainer.insertBefore(dragging, nextSibling);
+      else colListContainer.appendChild(dragging);
+    };
+  }
+
+  // src/ui/settings-panel-autofill.js
+  function syncDefaultToggle() {
+    const checked = document.getElementById("apm-c-is-default")?.checked;
+    const kwRow = document.getElementById("apm-c-keyword-row");
+    const kwHint = document.getElementById("apm-c-keyword-hint");
+    const kwLabel = document.getElementById("apm-c-keyword-label");
+    const titleRow = document.getElementById("apm-c-wo-title-row");
+    const titleHint = document.getElementById("apm-c-wo-title-hint");
+    if (kwRow) kwRow.style.display = checked ? "none" : "";
+    if (kwHint) kwHint.style.display = checked ? "none" : "";
+    if (kwLabel) kwLabel.textContent = checked ? "WO Description" : "Auto-Match Keywords";
+    if (titleRow) titleRow.style.display = checked ? "" : "none";
+    if (titleHint) titleHint.style.display = checked ? "" : "none";
+  }
+  function applyPresetData(data) {
+    if (!data) data = {};
+    const fields = [
+      "keyword",
+      "org",
+      "eq",
+      "type",
+      "status",
+      "exec",
+      "safety",
+      "loto-mode",
+      "pm-checks",
+      "prob",
+      "fail",
+      "cause",
+      "assign",
+      "start",
+      "end",
+      "close",
+      "labor-hours"
+    ];
+    fields.forEach((f) => {
+      const el2 = document.getElementById(`apm-c-${f}`);
+      if (el2) {
+        const key = f.replace(/-([a-z])/g, (g) => g[1].toUpperCase());
+        el2.value = data[key] || (f === "loto-mode" ? "none" : "");
+      }
+    });
+    const defaultCb = document.getElementById("apm-c-is-default");
+    if (defaultCb) defaultCb.checked = !!data.isDefault;
+    const woTitleEl = document.getElementById("apm-c-wo-title");
+    if (woTitleEl) woTitleEl.value = data.woTitle || "";
+    syncDefaultToggle();
+  }
+  function renderPresetOptions(selectEl) {
+    const presets = getPresets();
+    selectEl.replaceChildren();
+    const targetList = presets.autofill;
+    for (const pName in targetList) {
+      const opt = document.createElement("option");
+      opt.value = pName;
+      opt.textContent = pName;
+      selectEl.appendChild(opt);
+    }
+    if (Object.keys(targetList).length > 0) {
+      applyPresetData(targetList[Object.keys(targetList)[0]]);
+    } else {
+      applyPresetData({});
+    }
+  }
+  function getCurrentFormData() {
+    return {
+      keyword: document.getElementById("apm-c-keyword")?.value?.toLowerCase() || "",
+      org: document.getElementById("apm-c-org")?.value || "",
+      eq: document.getElementById("apm-c-eq")?.value || "",
+      type: document.getElementById("apm-c-type")?.value || "",
+      status: document.getElementById("apm-c-status")?.value || "",
+      exec: document.getElementById("apm-c-exec")?.value || "",
+      safety: document.getElementById("apm-c-safety")?.value || "",
+      lotoMode: document.getElementById("apm-c-loto-mode")?.value || "",
+      pmChecks: document.getElementById("apm-c-pm-checks")?.value ? parseInt(document.getElementById("apm-c-pm-checks").value, 10) : 0,
+      prob: document.getElementById("apm-c-prob")?.value || "",
+      fail: document.getElementById("apm-c-fail")?.value || "",
+      cause: document.getElementById("apm-c-cause")?.value || "",
+      assign: document.getElementById("apm-c-assign")?.value || "",
+      start: document.getElementById("apm-c-start")?.value || "",
+      end: document.getElementById("apm-c-end")?.value || "",
+      close: document.getElementById("apm-c-close")?.value || "",
+      laborHours: document.getElementById("apm-c-labor-hours")?.value || "",
+      isDefault: document.getElementById("apm-c-is-default")?.checked || false,
+      woTitle: document.getElementById("apm-c-wo-title")?.value || ""
+    };
+  }
+
+  // src/ui/settings-panel.js
+  function createMainPanel() {
+    const panel = el("div", { id: "apm-settings-panel", className: "apm-settings-container apm-ui-panel" });
+    applyZoomCompensation(panel);
+    return panel;
+  }
+  function createHeader() {
+    return el("div", { className: "apm-settings-header" }, [
+      el("h4", { className: "apm-settings-title" }, "APM Master")
+    ]);
+  }
+  function createTabContainer() {
+    return el("div", { id: "apm-tab-container", className: "apm-tab-container" }, [
+      el("div", { id: "tab-autofill", className: "apm-tab-btn apm-tab-active-autofill" }, "Auto Fill Profiles"),
+      el("div", { id: "tab-settings", className: "apm-tab-btn apm-tab-inactive" }, "Tab Order"),
+      el("div", { id: "tab-colorcode", className: "apm-tab-btn apm-tab-inactive" }, "ColorCode & Nametag"),
+      el("div", { id: "tab-general", className: "apm-tab-btn apm-tab-inactive" }, "General"),
+      el("div", { id: "tab-diagnostics", className: "apm-tab-btn apm-tab-inactive" }, "Diagnostics")
+    ]);
+  }
+  function buildSettingsPanel() {
+    if (window.self !== window.top || document.getElementById("apm-settings-panel")) return;
+    const panel = createMainPanel();
+    const helpOverlay = createHelpOverlay();
+    const changelogModal = createChangelogModal();
+    const welcomeOverlay = createWelcomeOverlay();
+    const header = createHeader();
+    const tabContainer = createTabContainer();
+    const autofillFields = buildAutoFillTab();
+    const tabOrderFields = buildTabOrderTab();
+    const colorcodeFields = buildColorCodeTab();
+    const generalFields = buildGeneralTab();
+    const diagnosticsFields = buildDiagnosticsTab();
+    const footer = createFooter();
+    panel.appendChild(header);
+    panel.appendChild(tabContainer);
+    panel.appendChild(autofillFields);
+    panel.appendChild(tabOrderFields);
+    panel.appendChild(colorcodeFields);
+    panel.appendChild(generalFields);
+    panel.appendChild(diagnosticsFields);
+    panel.appendChild(footer);
+    document.body.appendChild(panel);
+    document.body.appendChild(helpOverlay);
+    document.body.appendChild(changelogModal);
+    document.body.appendChild(welcomeOverlay);
+    const state = {
+      settingsMode: "cols",
+      activeTab: "autofill",
+      panel,
+      autofillFields,
+      tabOrderFields,
+      colorcodeFields,
+      generalFields,
+      diagnosticsFields,
+      footer
+    };
+    bindSettingsEvents(state);
+    bindWelcomeEvents();
+    if (!APMStorage.get(WELCOME_SEEN_KEY)) {
+      setTimeout(() => {
+        const overlay = document.getElementById("apm-welcome-overlay");
+        if (overlay) overlay.style.display = "flex";
+      }, 1500);
+    }
+  }
+  APMApi.register("buildSettingsPanel", buildSettingsPanel);
   function bindSettingsEvents(state) {
     const {
       panel,
@@ -15238,199 +16107,6 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
         performAutoFetch();
       };
     }
-    const DIAG_TIPS = {
-      bootWaterfall: '<b>Boot Waterfall</b> shows how long each startup phase took.<br><span class="apm-tip-good">\u25CF &lt;500ms</span> = fast<br><span class="apm-tip-warn">\u25CF &lt;1500ms</span> = acceptable<br><span class="apm-tip-bad">\u25CF &gt;1500ms</span> = slow, investigate',
-      domReady: "Time from page load until the DOM was fully parsed. Should be near-instant \u2014 slow values suggest a heavy page or network delay.",
-      settingsLoad: "Time to read saved settings from Tampermonkey/localStorage. Slow if storage is bloated or the GM API is throttled.",
-      extjsReady: "Time waiting for the ExtJS 6 framework to initialize. Depends on EAM page weight \u2014 not something the script controls.",
-      totalBoot: "Wall-clock time from script start to all modules loaded. This is the sum of all phases plus module init.",
-      enginePerf: '<b>Engine Performance</b> tracks how long recurring processing takes per cycle.<br><b>avg</b> = mean of last 20 runs<br><b>p95</b> = 95th percentile (worst typical)<br><b>max</b> = single worst run<br><span class="apm-tip-good">\u25CF &lt;25ms</span> = smooth<br><span class="apm-tip-warn">\u25CF &lt;100ms</span> = noticeable<br><span class="apm-tip-bad">\u25CF &gt;100ms</span> = UI may lag',
-      colorCode: "Measures time to scan grid rows, evaluate rules, and apply highlighting. Grows with row count and rule complexity.",
-      eamQuery: "Measures round-trip time for EAM API calls (Ajax hooks). High values usually mean server latency, not script overhead.",
-      schedulerTasks: "<b>Scheduler Tasks</b> shows recurring background jobs.<br><b>avg</b> = mean execution time<br><b>max</b> = slowest single run<br>Tasks should stay under 50ms to avoid blocking the UI thread.",
-      systemState: "<b>System State</b> confirms core subsystems are running.<br><b>Uptime</b> = seconds since the script loaded<br><b>Hotkeys</b> = keyboard shortcuts active<br><b>Style injection</b> = CSS was applied to the page",
-      iframeHealth: "<b>Iframe Health</b> checks each EAM iframe.<br><b>Accessible</b> = the script can reach it (same-origin)<br><b>Grid/CC/Tags/Styles</b> = features injected successfully<br>Blocked frames are usually cross-origin (PTP, external)."
-    };
-    let _activeInfoTip = null;
-    let _activeInfoKey = null;
-    function closeInfoTip() {
-      if (_activeInfoTip) {
-        _activeInfoTip.remove();
-        _activeInfoTip = null;
-      }
-    }
-    function openInfoTip(tipEl, key) {
-      closeInfoTip();
-      const bubble = document.createElement("div");
-      bubble.className = "apm-info-bubble";
-      bubble.innerHTML = DIAG_TIPS[key] || key;
-      const host = document.getElementById("apm-settings-panel") || document.body;
-      host.appendChild(bubble);
-      const tipRect = tipEl.getBoundingClientRect();
-      const hostRect = host.getBoundingClientRect();
-      const bh = bubble.offsetHeight;
-      const bw = 210;
-      const relTop = tipRect.top - hostRect.top;
-      const relBottom = tipRect.bottom - hostRect.top;
-      const relLeft = tipRect.left - hostRect.left;
-      if (relTop > bh + 8) {
-        bubble.style.top = relTop - bh - 6 + "px";
-        bubble.setAttribute("data-arrow", "top");
-      } else {
-        bubble.style.top = relBottom + 6 + "px";
-        bubble.setAttribute("data-arrow", "bottom");
-      }
-      let left = relLeft;
-      const maxLeft = hostRect.width - bw - 8;
-      left = Math.max(4, Math.min(left, maxLeft));
-      bubble.style.left = left + "px";
-      _activeInfoTip = bubble;
-      _activeInfoKey = key;
-    }
-    function renderInfoTip(key) {
-      const tip = el("span", { className: "apm-info-tip", "data-tip-key": key }, "?");
-      tip.onclick = (e) => {
-        e.stopPropagation();
-        if (_activeInfoKey === key) {
-          closeInfoTip();
-          _activeInfoKey = null;
-          return;
-        }
-        openInfoTip(tip, key);
-      };
-      if (_activeInfoKey === key) {
-        requestAnimationFrame(() => openInfoTip(tip, key));
-      }
-      return tip;
-    }
-    if (!window._apmDiagTipCloseHandler) {
-      window._apmDiagTipCloseHandler = (e) => {
-        if (e.target.closest(".apm-info-tip")) return;
-        closeInfoTip();
-        _activeInfoKey = null;
-      };
-      document.addEventListener("click", window._apmDiagTipCloseHandler);
-    }
-    function sparkline(arr) {
-      if (!arr || arr.length === 0) return "";
-      const blocks = [" ", "\u2582", "\u2583", "\u2584", "\u2585", "\u2586", "\u2587", "\u2588"];
-      const max = Math.max(...arr) || 1;
-      return arr.map((v) => blocks[Math.min(blocks.length - 1, Math.floor(v / max * (blocks.length - 1)))]).join("");
-    }
-    function refreshDiagnosticsUI() {
-      const container = document.getElementById("diag-content");
-      if (!container) return;
-      closeInfoTip();
-      const data = Diagnostics.toJSON();
-      const renderRow = (label, value) => el("div", { style: { display: "flex", justifyContent: "space-between", fontSize: "var(--apm-text-sm)", marginBottom: "3px" } }, [
-        el("span", { style: { color: "var(--apm-text-muted)" } }, label),
-        el("span", { style: { color: "var(--apm-accent)" } }, value || "---")
-      ]);
-      const renderTiming = (label, ms) => renderRow(label, ms ? `${ms}ms` : null);
-      const renderError = (err) => el("div", { style: { borderLeft: "2px solid var(--apm-danger)", paddingLeft: "8px", marginBottom: "8px", fontSize: "var(--apm-text-xs)" } }, [
-        el("div", { style: { color: "var(--apm-danger)", fontWeight: "600" } }, `[${err.tag}] ${err.timestamp.split("T")[1].substring(0, 8)}`),
-        el("div", { style: { color: "var(--apm-text-bright)", whiteSpace: "pre-wrap", overflow: "hidden" } }, err.message)
-      ]);
-      const renderFrame = (f) => el("div", { style: { background: "var(--apm-surface-raised)", padding: "6px", borderRadius: "var(--apm-radius-sm)", marginBottom: "5px", fontSize: "var(--apm-text-xs)" } }, [
-        el("div", { style: { display: "flex", justifyContent: "space-between", marginBottom: "2px" } }, [
-          el("span", { style: { color: "var(--apm-accent)", fontWeight: "600" } }, f.id || "Unnamed Frame"),
-          el("span", { style: { color: f.accessible ? "var(--apm-success-bright)" : "var(--apm-danger)" } }, f.accessible ? "Accessible" : "Blocked")
-        ]),
-        f.accessible && el("div", { style: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: "2px", color: "var(--apm-text-muted)" } }, [
-          el("span", {}, f.gridFound ? "\u2705 Grid Found" : "\u274C No Grid"),
-          el("span", {}, f.ccFound ? "\u2705 ColorCode" : "\u274C No CC"),
-          el("span", {}, f.tagsFound ? "\u2705 Nametags" : "\u274C No Tags"),
-          el("span", {}, f.styles ? "\u2705 Styles" : "\u274C No Styles")
-        ]),
-        f.error && el("div", { style: { color: "var(--apm-warning)", fontSize: "9px" } }, f.error)
-      ]);
-      const perf = Diagnostics.getPerformanceSummary();
-      const totalBoot = data.bootTimings.total || 1;
-      const getPerfColor = (ms, type = "boot") => {
-        if (type === "boot") {
-          if (ms < 500) return "var(--apm-success-bright)";
-          if (ms < 1500) return "var(--apm-warning)";
-          return "var(--apm-danger)";
-        }
-        if (ms < 25) return "var(--apm-success-bright)";
-        if (ms < 100) return "var(--apm-warning)";
-        return "var(--apm-danger)";
-      };
-      const renderBootBar = (label, ms, tipKey) => {
-        const ratio = ms / totalBoot * 100;
-        const color = getPerfColor(ms, "boot");
-        const isTotal = label.includes("Total");
-        const labelChildren = [el("span", {}, label)];
-        if (tipKey) labelChildren.push(renderInfoTip(tipKey));
-        return el("div", { style: { marginBottom: "8px" } }, [
-          el("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: "var(--apm-text-xs)", color: "var(--apm-text-muted)", marginBottom: "2px" } }, [
-            el("span", { style: { display: "flex", alignItems: "center" } }, labelChildren),
-            el("span", { style: { color: isTotal ? "var(--apm-warning)" : "var(--apm-text-bright)" } }, `T+ ${ms}ms`)
-          ]),
-          el("div", { style: { height: "4px", background: "rgba(255,255,255,0.05)", borderRadius: "2px", overflow: "hidden" } }, [
-            el("div", { style: { height: "100%", width: `${Math.max(2, Math.min(100, ratio))}%`, background: color, transition: "width 0.5s ease" } })
-          ])
-        ]);
-      };
-      const sectionHeader = (text, tipKey, first) => el("div", { style: { fontWeight: "600", color: "var(--apm-text-bright)", fontSize: "var(--apm-text-sm)", marginTop: first ? "0" : "15px", marginBottom: "10px", borderBottom: "1px solid var(--apm-border)", paddingBottom: "4px", display: "flex", alignItems: "center" } }, tipKey ? [text, renderInfoTip(tipKey)] : [text]);
-      const bootNodes = [
-        sectionHeader("Boot Waterfall", "bootWaterfall", true),
-        renderBootBar("DOM Ready", data.bootTimings.dom, "domReady"),
-        renderBootBar("Settings Load", data.bootTimings.settings, "settingsLoad"),
-        renderBootBar("ExtJS Ready", data.bootTimings.extjs, "extjsReady"),
-        renderBootBar("Total Boot", data.bootTimings.total, "totalBoot")
-      ];
-      const moduleTimings = Object.entries(data.bootTimings).filter(([k]) => k.startsWith("module.")).sort((a, b) => b[1] - a[1]);
-      if (moduleTimings.length > 0) {
-        bootNodes.push(el(
-          "div",
-          { style: { fontSize: "var(--apm-text-xs)", color: "var(--apm-text-disabled)", marginTop: "10px", display: "grid", gridTemplateColumns: "1fr 1fr", gap: "4px" } },
-          moduleTimings.map(([k, v]) => el("div", { style: { display: "flex", justifyContent: "space-between", padding: "2px 4px", background: "rgba(0,0,0,0.1)", borderRadius: "2px" } }, [
-            el("span", {}, k.replace("module.", "")),
-            el("span", { style: { color: getPerfColor(v, "module") } }, `${v}ms`)
-          ]))
-        ));
-      }
-      const renderEngineStat = (label, stat, history, tipKey) => {
-        let pill = "\u{1F7E2}";
-        const color = getPerfColor(stat.avg, "boot");
-        if (color === "var(--apm-warning)") pill = "\u{1F7E1}";
-        if (color === "var(--apm-danger)") pill = "\u{1F534}";
-        const labelChildren = [`${pill} ${label}`];
-        if (tipKey) labelChildren.push(renderInfoTip(tipKey));
-        return el("div", { style: { background: "var(--apm-surface-raised)", padding: "8px", borderRadius: "var(--apm-radius-sm)", marginBottom: "8px" } }, [
-          el("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "4px" } }, [
-            el("span", { style: { color: "var(--apm-text-bright)", fontSize: "var(--apm-text-sm)", fontWeight: "600", display: "flex", alignItems: "center" } }, labelChildren),
-            el("span", { style: { color: "var(--apm-accent)", fontSize: "var(--apm-text-sm)" } }, `${stat.avg}ms avg`)
-          ]),
-          el("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "center" } }, [
-            el("span", { style: { color: "var(--apm-text-disabled)", fontSize: "9px", fontFamily: "var(--apm-font-mono)" } }, sparkline(history)),
-            el("span", { style: { color: "var(--apm-text-muted)", fontSize: "9px" } }, `max: ${stat.max}ms / p95: ${stat.p95}ms`)
-          ])
-        ]);
-      };
-      const nodes = [
-        ...bootNodes,
-        sectionHeader("Engine Performance", "enginePerf"),
-        renderEngineStat("ColorCode Engine", perf.colorCode, data.performance.colorCode, "colorCode"),
-        renderEngineStat("EAM Query Service", perf.eamQuery, data.performance.eamQuery, "eamQuery"),
-        sectionHeader("Scheduler Tasks (avg/max)", "schedulerTasks"),
-        el("div", { style: { fontSize: "var(--apm-text-xs)" } }, perf.scheduler.slice(0, 5).map((s) => el("div", { style: { display: "flex", justifyContent: "space-between", marginBottom: "2px" } }, [
-          el("span", { style: { color: "var(--apm-text-muted)" } }, s.name),
-          el("span", { style: { color: "var(--apm-accent)" } }, `${s.avg} / ${s.max}ms`)
-        ]))),
-        sectionHeader("System State", "systemState"),
-        renderRow("Uptime", `${data.uptime}s`),
-        renderRow("Hotkeys", data.frames.top.hotkeys ? "Active" : "Disabled"),
-        renderRow("Style injection", data.frames.top.styles ? "OK" : "Missing"),
-        sectionHeader("Iframe Health", "iframeHealth"),
-        data.frames.frames.length === 0 ? el("div", { style: { color: "var(--apm-text-muted)", fontSize: "var(--apm-text-xs)" } }, "No iframes detected. This is normal if Screen Cache Tabs is disabled in EAM.") : el("div", {}, data.frames.frames.map(renderFrame)),
-        sectionHeader("Recent Errors"),
-        data.errors.length === 0 ? el("div", { style: { color: "var(--apm-text-muted)", fontSize: "var(--apm-text-xs)", fontStyle: "italic" } }, "No errors captured.") : el("div", {}, data.errors.slice(0, 5).map(renderError))
-      ];
-      container.replaceChildren();
-      nodes.forEach((node) => container.appendChild(node));
-    }
     initColorCodeAndRegionalSettings();
     bindPanelKeyboardTrap();
     bindCloseButton();
@@ -15443,270 +16119,6 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
     bindTabOrderActions();
     if (state.activeTab === "autofill") tabAutofill.onclick();
     else tabSettings.onclick();
-  }
-  function syncDefaultToggle() {
-    const checked = document.getElementById("apm-c-is-default")?.checked;
-    const kwRow = document.getElementById("apm-c-keyword-row");
-    const kwHint = document.getElementById("apm-c-keyword-hint");
-    const kwLabel = document.getElementById("apm-c-keyword-label");
-    const titleRow = document.getElementById("apm-c-wo-title-row");
-    const titleHint = document.getElementById("apm-c-wo-title-hint");
-    if (kwRow) kwRow.style.display = checked ? "none" : "";
-    if (kwHint) kwHint.style.display = checked ? "none" : "";
-    if (kwLabel) kwLabel.textContent = checked ? "WO Description" : "Auto-Match Keywords";
-    if (titleRow) titleRow.style.display = checked ? "" : "none";
-    if (titleHint) titleHint.style.display = checked ? "" : "none";
-  }
-  function applyPresetData(data) {
-    if (!data) data = {};
-    const fields = [
-      "keyword",
-      "org",
-      "eq",
-      "type",
-      "status",
-      "exec",
-      "safety",
-      "loto-mode",
-      "pm-checks",
-      "prob",
-      "fail",
-      "cause",
-      "assign",
-      "start",
-      "end",
-      "close",
-      "labor-hours"
-    ];
-    fields.forEach((f) => {
-      const el2 = document.getElementById(`apm-c-${f}`);
-      if (el2) {
-        const key = f.replace(/-([a-z])/g, (g) => g[1].toUpperCase());
-        el2.value = data[key] || (f === "loto-mode" ? "none" : "");
-      }
-    });
-    const defaultCb = document.getElementById("apm-c-is-default");
-    if (defaultCb) defaultCb.checked = !!data.isDefault;
-    const woTitleEl = document.getElementById("apm-c-wo-title");
-    if (woTitleEl) woTitleEl.value = data.woTitle || "";
-    syncDefaultToggle();
-  }
-  function renderPresetOptions(selectEl) {
-    const presets = getPresets();
-    selectEl.replaceChildren();
-    const targetList = presets.autofill;
-    for (const pName in targetList) {
-      const opt = document.createElement("option");
-      opt.value = pName;
-      opt.textContent = pName;
-      selectEl.appendChild(opt);
-    }
-    if (Object.keys(targetList).length > 0) {
-      applyPresetData(targetList[Object.keys(targetList)[0]]);
-    } else {
-      applyPresetData({});
-    }
-  }
-  function renderDragList(state, colListContainer, itemsArray, emptyMsg) {
-    let _draggingEl = null;
-    colListContainer.innerHTML = "";
-    if (itemsArray.length === 0) {
-      const emptyDiv = document.createElement("div");
-      emptyDiv.style.cssText = "color:var(--apm-text-disabled); text-align:center; padding:10px;";
-      emptyDiv.textContent = emptyMsg;
-      colListContainer.appendChild(emptyDiv);
-      return;
-    }
-    const presets = getPresets();
-    if (!presets.config.hiddenTabs) presets.config.hiddenTabs = {};
-    const isTabsMode = state.settingsMode === "tabs";
-    let visibleItems = itemsArray;
-    let hiddenItems = [];
-    const funcName = detectScreenFunction();
-    const autoSaveOrder = () => {
-      const items = [...colListContainer.querySelectorAll(".apm-col-item")];
-      const visItems = items.filter((el2) => el2.dataset.hidden !== "true");
-      if (visItems.length === 0) return;
-      const p = getPresets();
-      if (isTabsMode) {
-        const orderArray = visItems.map((el2) => el2.dataset.index).filter(Boolean);
-        const tabOrders = { ...p.config.tabOrders || {}, [funcName]: orderArray };
-        updatePresetConfig({ tabOrders });
-      } else {
-        invalidateTabCache();
-        const currentCols = probeExtGridColumns();
-        const orderArray = visItems.map((el2) => {
-          const idx = el2.dataset.index;
-          const probed = currentCols.find((c) => c.index === idx);
-          return { index: idx, width: probed?.width || null };
-        }).filter((e) => e.index);
-        const columnOrders = { ...p.config.columnOrders || {}, [funcName]: orderArray };
-        updatePresetConfig({ columnOrders });
-      }
-    };
-    if (isTabsMode) {
-      const siloOrder = presets.config.tabOrders?.[funcName] || "";
-      const preferredOrder = typeof siloOrder === "string" ? siloOrder.split(",").map((s) => s.trim()).filter(Boolean) : Array.isArray(siloOrder) ? siloOrder : [];
-      const allHidden = presets.config.hiddenTabs || {};
-      const screenHidden = Array.isArray(allHidden) ? [...allHidden] : [...allHidden[funcName] || []];
-      itemsArray.forEach((c) => {
-        if (c.systemHidden && !screenHidden.includes(c.index) && !preferredOrder.includes(c.index)) {
-          screenHidden.push(c.index);
-        }
-      });
-      visibleItems = itemsArray.filter((c) => !screenHidden.includes(c.index));
-      hiddenItems = itemsArray.filter((c) => screenHidden.includes(c.index));
-    }
-    const resetBtn = document.getElementById("apm-s-btn-reset");
-    if (resetBtn) resetBtn.style.display = "block";
-    const createDragItem = (c, isHidden) => {
-      const item = document.createElement("div");
-      item.dataset.index = c.index;
-      item.className = "apm-col-item";
-      if (isHidden) {
-        item.draggable = false;
-        item.dataset.hidden = "true";
-        item.style.cursor = "default";
-        item.style.borderLeftColor = "var(--apm-danger)";
-        const badges = [];
-        if (c.isPluginMenu) badges.push(el("span", { className: "apm-overflow-badge", style: { background: "var(--apm-purple)" }, title: "This tab is managed by the EAM tab menu plugin (More menu)" }, "More Menu"));
-        const labelSpan = el("span", { style: { opacity: "0.5", flex: "1", display: "flex", alignItems: "center" } }, [
-          el("span", { style: { textDecoration: "line-through" } }, [
-            el("b", { style: { color: "var(--apm-text-disabled)" } }, "\u2630"),
-            document.createTextNode(" \xA0 " + c.text)
-          ]),
-          ...badges
-        ]);
-        const restoreBtn = el("button", {
-          className: "apm-tab-restore-btn",
-          "data-tab-name": c.index,
-          style: { background: "var(--apm-success-bright)", color: "white", border: "none", borderRadius: "4px", padding: "4px 10px", cursor: "pointer", fontSize: "14px", fontWeight: "bold", boxShadow: "0 2px 4px rgba(0,0,0,0.2)", transition: "transform 0.1s", position: "relative", zIndex: "10" },
-          title: "Restore tab"
-        }, "\uFF0B");
-        item.appendChild(labelSpan);
-        item.appendChild(restoreBtn);
-      } else {
-        item.draggable = true;
-        const actionEl = isTabsMode ? el("button", {
-          className: "apm-tab-hide-btn",
-          "data-tab-name": c.index,
-          style: { background: "transparent", color: "var(--apm-danger)", border: "none", borderRadius: "4px", padding: "2px 6px", cursor: "pointer", fontSize: "13px", fontWeight: "bold" },
-          title: "Hide tab"
-        }, "\u2716") : el("span", { style: { color: "var(--apm-text-disabled)", fontSize: "10px" } }, "[" + c.index + "]");
-        const badges = [];
-        if (isTabsMode && c.isPluginMenu) badges.push(el("span", { className: "apm-overflow-badge", style: { background: "var(--apm-purple)" }, title: "This tab is managed by the EAM tab menu plugin (More menu)" }, "More Menu"));
-        const labelSpan = el("span", {}, [
-          el("span", {}, [
-            el("b", { style: { color: "var(--apm-accent)" } }, "\u2630"),
-            document.createTextNode(" \xA0 " + c.text)
-          ]),
-          ...badges
-        ]);
-        item.appendChild(labelSpan);
-        item.appendChild(document.createTextNode(" "));
-        item.appendChild(actionEl);
-        item.ondragstart = (e) => {
-          e.dataTransfer.setData("text/plain", "");
-          item.classList.add("dragging");
-          _draggingEl = item;
-        };
-        item.ondragend = () => {
-          item.classList.remove("dragging");
-          _draggingEl = null;
-          autoSaveOrder();
-        };
-      }
-      return item;
-    };
-    visibleItems.forEach((c) => colListContainer.appendChild(createDragItem(c, false)));
-    if (isTabsMode && hiddenItems.length > 0) {
-      const divider = document.createElement("div");
-      divider.style.cssText = "text-align:center; color:var(--apm-text-disabled); font-size:11px; padding:6px 0; margin:4px 0; border-top:1px dashed var(--apm-border-strong); user-select:none;";
-      divider.textContent = "\u2500\u2500 Hidden \u2500\u2500";
-      colListContainer.appendChild(divider);
-      hiddenItems.forEach((c) => colListContainer.appendChild(createDragItem(c, true)));
-    }
-    if (isTabsMode) {
-      colListContainer.querySelectorAll(".apm-tab-hide-btn").forEach((btn) => {
-        btn.onclick = (e) => {
-          e.stopPropagation();
-          const tabName = btn.getAttribute("data-tab-name");
-          const p = getPresets();
-          const allHidden = { ...p.config.hiddenTabs || {} };
-          if (Array.isArray(p.config.hiddenTabs)) {
-            allHidden[funcName] = [...p.config.hiddenTabs];
-          }
-          const screenHidden = allHidden[funcName] || [];
-          if (!screenHidden.includes(tabName)) {
-            allHidden[funcName] = [...screenHidden, tabName];
-            updatePresetConfig({ hiddenTabs: allHidden });
-          }
-          renderDragList(state, colListContainer, itemsArray, emptyMsg);
-        };
-      });
-      colListContainer.querySelectorAll(".apm-tab-restore-btn").forEach((btn) => {
-        btn.onmousedown = (e) => e.stopPropagation();
-        btn.onclick = (e) => {
-          e.preventDefault();
-          e.stopPropagation();
-          const tabName = btn.getAttribute("data-tab-name");
-          const p = getPresets();
-          const allHidden = { ...p.config.hiddenTabs || {} };
-          if (Array.isArray(p.config.hiddenTabs)) {
-            allHidden[funcName] = p.config.hiddenTabs.filter((t) => t !== tabName);
-          } else {
-            allHidden[funcName] = (allHidden[funcName] || []).filter((t) => t !== tabName);
-          }
-          const tabOrders = { ...p.config.tabOrders || {} };
-          const siloOrder = tabOrders[funcName];
-          const orderArray = typeof siloOrder === "string" ? siloOrder.split(",").map((s) => s.trim()) : Array.isArray(siloOrder) ? [...siloOrder] : [];
-          if (!orderArray.includes(tabName)) {
-            orderArray.push(tabName);
-          }
-          tabOrders[funcName] = orderArray;
-          updatePresetConfig({
-            hiddenTabs: allHidden,
-            tabOrders
-          });
-          renderDragList(state, colListContainer, itemsArray, emptyMsg);
-        };
-      });
-    }
-    colListContainer.ondragover = (e) => {
-      e.preventDefault();
-      const dragging = _draggingEl;
-      if (!dragging) return;
-      const siblings = [...colListContainer.querySelectorAll(".apm-col-item:not(.dragging)")];
-      const nextSibling = siblings.find((sibling) => {
-        const box = sibling.getBoundingClientRect();
-        return e.clientY <= box.top + box.height / 2;
-      });
-      if (nextSibling) colListContainer.insertBefore(dragging, nextSibling);
-      else colListContainer.appendChild(dragging);
-    };
-  }
-  function getCurrentFormData() {
-    return {
-      keyword: document.getElementById("apm-c-keyword")?.value?.toLowerCase() || "",
-      org: document.getElementById("apm-c-org")?.value || "",
-      eq: document.getElementById("apm-c-eq")?.value || "",
-      type: document.getElementById("apm-c-type")?.value || "",
-      status: document.getElementById("apm-c-status")?.value || "",
-      exec: document.getElementById("apm-c-exec")?.value || "",
-      safety: document.getElementById("apm-c-safety")?.value || "",
-      lotoMode: document.getElementById("apm-c-loto-mode")?.value || "",
-      pmChecks: document.getElementById("apm-c-pm-checks")?.value ? parseInt(document.getElementById("apm-c-pm-checks").value, 10) : 0,
-      prob: document.getElementById("apm-c-prob")?.value || "",
-      fail: document.getElementById("apm-c-fail")?.value || "",
-      cause: document.getElementById("apm-c-cause")?.value || "",
-      assign: document.getElementById("apm-c-assign")?.value || "",
-      start: document.getElementById("apm-c-start")?.value || "",
-      end: document.getElementById("apm-c-end")?.value || "",
-      close: document.getElementById("apm-c-close")?.value || "",
-      laborHours: document.getElementById("apm-c-labor-hours")?.value || "",
-      isDefault: document.getElementById("apm-c-is-default")?.checked || false,
-      woTitle: document.getElementById("apm-c-wo-title")?.value || ""
-    };
   }
 
   // src/ui/toolbar-injection.js
@@ -16038,7 +16450,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
       }, { isIdle: true });
       APMScheduler.registerTask("session-heartbeat", 3e5, () => {
         SessionMonitor.refreshSession();
-      }, { isIdle: true });
+      });
       if (isLanding) {
         APMLogger.info("Boot", "Landing page detected. Skipping core UI initialization.");
         return;
