@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         APM Master: Unified Tools
 // @namespace    https://w.amazon.com/bin/view/Users/rosendah/APM-Master/
-// @version      14.8.2
+// @version      14.8.3
 // @description  Quality of life and automation tool that uses native EAM ExtJS Framework functions for high reliability and capability. This is actively supported tool so Slack me or submit bug report/feature request through the bug report button in the menu.
 // @author       Jacob Rosendahl
 // @icon         https://media.licdn.com/dms/image/v2/D5603AQGdCV0_LQKRfQ/profile-displayphoto-scale_100_100/B56ZyZLvQ5HgAg-/0/1772096519061?e=1773878400&v=beta&t=eWO1Jiy0-WbzG_yBv-SBrmmsVOPMexF57-q1Xh_VXCk
@@ -124,7 +124,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
       PRESET_STORAGE_KEY = "apm_v1_autofill_presets";
       STORAGE_KEY = "apm_v1_forecast_prefs";
       APM_GENERAL_STORAGE = "apm_v1_general_settings";
-      CURRENT_VERSION = "14.8.2";
+      CURRENT_VERSION = "14.8.3";
       VERSION_CHECK_URL = "https://raw.githubusercontent.com/jaker788-create/APM-Master/main/forecast.user.js";
       UPDATE_URL = "https://raw.githubusercontent.com/jaker788-create/APM-Master/main/forecast.user.js";
       LABOR_EMPS_STORAGE = "apm_v1_labor_employees";
@@ -2599,7 +2599,8 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
               const hrs = parseFloat(r.hrswork);
               if (!isNaN(hrs)) {
                 total += hrs;
-                breakdown[r.datework] = (breakdown[r.datework] || 0) + hrs;
+                const isoKey = getLocalIsoDate(rDate);
+                breakdown[isoKey] = (breakdown[isoKey] || 0) + hrs;
               }
             }
           });
@@ -3007,10 +3008,10 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
           try {
             const records = await LaborService.getData(employee);
             const now = /* @__PURE__ */ new Date();
-            const todayStr = formatToEamDate(getLocalIsoDate(now));
+            const todayIso = getLocalIsoDate(now);
             const yesterday = /* @__PURE__ */ new Date();
             yesterday.setDate(yesterday.getDate() - 1);
-            const yestStr = formatToEamDate(getLocalIsoDate(yesterday));
+            const yestIso = getLocalIsoDate(yesterday);
             let showYesterday = false;
             if (isNightShift) {
               const currentHour = (/* @__PURE__ */ new Date()).getHours();
@@ -3018,11 +3019,11 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
             }
             const { total, breakdown } = LaborService.calculateTally(records, showYesterday ? 2 : 1);
             content.innerHTML = "";
-            const datesToDisplay = showYesterday ? [todayStr, yestStr] : [todayStr];
+            const datesToDisplay = showYesterday ? [todayIso, yestIso] : [todayIso];
             datesToDisplay.forEach((d) => {
               const val = breakdown[d] || 0;
               const row = el("div", { className: "apm-lb-summary-row" }, [
-                el("span", { className: "apm-lb-summary-day" }, d === todayStr ? "Today" : "Yesterday"),
+                el("span", { className: "apm-lb-summary-day" }, d === todayIso ? "Today" : "Yesterday"),
                 win.document.createTextNode(" "),
                 el("strong", { className: "apm-lb-summary-hours" }, val.toFixed(2) + "h")
               ]);
@@ -13238,13 +13239,13 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
       unit.textContent = "hrs";
       sumBox.appendChild(unit);
       list.innerHTML = "";
-      const sortedDates = Object.keys(breakdown).sort((a, b) => new Date(b) - new Date(a));
+      const sortedDates = Object.keys(breakdown).sort((a, b) => b.localeCompare(a));
       if (sortedDates.length === 0) {
         list.appendChild(el("div", { className: "labor-empty" }, "No labor records found."));
       } else {
         sortedDates.forEach((d) => {
           const row = el("div", { className: "labor-row" }, [
-            el("span", {}, d),
+            el("span", {}, formatToEamDate(d)),
             document.createTextNode(" "),
             el("strong", {}, String(breakdown[d].toFixed(2)))
           ]);
