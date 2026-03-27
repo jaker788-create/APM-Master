@@ -1330,15 +1330,15 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
     }
     if (win) {
       try {
-        const initpath = win.EAM?.AppData?.getAppData?.()?.initpath;
-        if (initpath && !_GENERIC_FUNCS.has(initpath)) return initpath;
+        const userFunc = win.EAM?.FocusManager?.activeView?.screen?.userFunction;
+        if (userFunc && !_GENERIC_FUNCS.has(userFunc)) return userFunc;
       } catch (e) {
       }
     }
     if (win) {
       try {
-        const userFunc = win.EAM?.FocusManager?.activeView?.screen?.userFunction;
-        if (userFunc && !_GENERIC_FUNCS.has(userFunc)) return userFunc;
+        const initpath = win.EAM?.AppData?.getAppData?.()?.initpath;
+        if (initpath && !_GENERIC_FUNCS.has(initpath)) return initpath;
       } catch (e) {
       }
     }
@@ -1666,7 +1666,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
       GRID_CACHE_TTL = 5e3;
       _xhrUserFunc = null;
       _xhrSystemFunc = null;
-      _GENERIC_FUNCS = /* @__PURE__ */ new Set(["WSTABS", "WSFLTR", "GLOBAL", ""]);
+      _GENERIC_FUNCS = /* @__PURE__ */ new Set(["BSSTRT", "WSTABS", "WSFLTR", "GLOBAL", ""]);
       ExtUtils = {
         /**
          * Set a value on an ExtJS field and fire necessary events.
@@ -2649,6 +2649,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
         let laborObservers = /* @__PURE__ */ new Map();
         let hoursPresets = ["0.1", "0.25", "0.5", "0.75", "1", "1.5", "2", "2.5", "3"];
         const RATE_DATE_DEFAULT = "0.|01/01/2020|01/01/2035";
+        let _capturedDepartment = null;
         AjaxHooks.onBeforeRequest("labor-save", (win, conn, options) => {
           try {
             if (!FeatureFlags.isEnabled("laborBooker")) return;
@@ -2679,6 +2680,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
               ensureParam("traderate", "0.00");
               ensureParam("ratedate", RATE_DATE_DEFAULT);
               ensureParam("isdetailfieldchanged", "true");
+              if (_capturedDepartment) ensureParam("department", _capturedDepartment);
             }
           } catch (e) {
             APMLogger.error("LaborBooker", "labor-save hook error:", e);
@@ -3106,6 +3108,13 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
                   await waitForAjax(targetWin);
                 }
                 await delay(100);
+                const fDept = form.findField("department");
+                const cascadedDept = fDept?.getValue();
+                if (fDept && cascadedDept) {
+                  _capturedDepartment = cascadedDept;
+                  fDept.suspendEvents(false);
+                  APMLogger.debug("LaborBooker", `Captured department from activity cascade: ${cascadedDept}`);
+                }
                 if (employee) {
                   ExtUtils.setFieldValue(form, "employee", employee, true);
                   if (isWindowAccessible(targetWin)) {
@@ -3137,6 +3146,13 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
                       ExtUtils.setFieldValue(form, fRate.name, "0.00");
                       if (fRD) ExtUtils.setFieldValue(form, "ratedate", RATE_DATE_DEFAULT);
                     }
+                  }
+                }
+                if (fDept) {
+                  fDept.resumeEvents();
+                  if (!fDept.getValue() && _capturedDepartment) {
+                    ExtUtils.setFieldValue(form, "department", _capturedDepartment);
+                    APMLogger.debug("LaborBooker", `Restored department after cascade: ${_capturedDepartment}`);
                   }
                 }
                 const fDetail = form.findField("isdetailfieldchanged");
@@ -6944,14 +6960,17 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
       });
     };
     const waitForGridData = async (maxMs = 5e3) => {
-      const grid = getGridStore();
-      if (!grid || grid.getStore().getCount() > 0) return;
       let waited = 0;
-      while (grid.getStore().getCount() === 0 && waited < maxMs) {
-        if (waited > 100 && (!activeExt.Ajax || !activeExt.Ajax.isLoading())) break;
-        if (waited === 800) showToast("Waiting for Grid Data...", "#f39c12", true);
-        await delay(16);
-        waited += 16;
+      let toastShown = false;
+      while (waited < maxMs) {
+        const grid = getGridStore();
+        if (grid && grid.getStore().getCount() > 0) return;
+        if (!toastShown && waited >= 800) {
+          showToast("Waiting for Grid Data...", "#f39c12", true);
+          toastShown = true;
+        }
+        await delay(50);
+        waited += 50;
       }
     };
     if (!mainTabPanel.isDestroyed && mainTabPanel.getActiveTab() !== checklistContainer) {
@@ -10301,21 +10320,22 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
     }
     return "WSJOBS";
   }
+  var _FRAME_GENERIC = /* @__PURE__ */ new Set(["BSSTRT", "WSTABS", "WSFLTR", "GLOBAL", ""]);
   function getWinUserFunc(win) {
     try {
-      const initpath = win.EAM?.AppData?.getAppData?.()?.initpath;
-      if (initpath) return initpath;
+      const userFunc = win.EAM?.FocusManager?.activeView?.screen?.userFunction;
+      if (userFunc && !_FRAME_GENERIC.has(userFunc)) return userFunc;
     } catch (e) {
     }
     try {
-      const userFunc = win.EAM?.FocusManager?.activeView?.screen?.userFunction;
-      if (userFunc) return userFunc;
+      const initpath = win.EAM?.AppData?.getAppData?.()?.initpath;
+      if (initpath && !_FRAME_GENERIC.has(initpath)) return initpath;
     } catch (e) {
     }
     try {
       const params = new URLSearchParams(win.location.search);
       const fromUrl = params.get("USER_FUNCTION_NAME");
-      if (fromUrl) return fromUrl;
+      if (fromUrl && !_FRAME_GENERIC.has(fromUrl)) return fromUrl;
     } catch (e) {
     }
     return "";
@@ -10773,23 +10793,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
             if (gridTarget === "CTJOBS" && winUserFunc !== "CTJOBS") continue;
             if (gridTarget === "WSJOBS" && winUserFunc === "CTJOBS") continue;
           }
-          if (win !== window && win.parent) {
-            try {
-              const iframes = win.parent.document.querySelectorAll("iframe");
-              let isActive = false;
-              for (const iframe of iframes) {
-                try {
-                  if (iframe.contentWindow === win) {
-                    isActive = iframe.offsetWidth > 0 && iframe.offsetHeight > 0;
-                    break;
-                  }
-                } catch (e) {
-                }
-              }
-              if (!isActive) continue;
-            } catch (e) {
-            }
-          }
+          if (!isFrameVisible(win)) continue;
           const grids = win.Ext.ComponentQuery.query("gridpanel:not([destroyed=true])");
           foundFrame = grids.some((g) => {
             if (!g.rendered || !g.getStore) return false;
