@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         APM Master: Unified Tools
 // @namespace    https://w.amazon.com/bin/view/Users/rosendah/APM-Master/
-// @version      14.8.0
+// @version      14.8.1
 // @description  Quality of life and automation tool that uses native EAM ExtJS Framework functions for high reliability and capability. This is actively supported tool so Slack me or submit bug report/feature request through the bug report button in the menu.
 // @author       Jacob Rosendahl
 // @icon         https://media.licdn.com/dms/image/v2/D5603AQGdCV0_LQKRfQ/profile-displayphoto-scale_100_100/B56ZyZLvQ5HgAg-/0/1772096519061?e=1773878400&v=beta&t=eWO1Jiy0-WbzG_yBv-SBrmmsVOPMexF57-q1Xh_VXCk
@@ -124,7 +124,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
       PRESET_STORAGE_KEY = "apm_v1_autofill_presets";
       STORAGE_KEY = "apm_v1_forecast_prefs";
       APM_GENERAL_STORAGE = "apm_v1_general_settings";
-      CURRENT_VERSION = "14.8.0";
+      CURRENT_VERSION = "14.8.1";
       VERSION_CHECK_URL = "https://raw.githubusercontent.com/jaker788-create/APM-Master/main/forecast.user.js";
       UPDATE_URL = "https://raw.githubusercontent.com/jaker788-create/APM-Master/main/forecast.user.js";
       LABOR_EMPS_STORAGE = "apm_v1_labor_employees";
@@ -2276,7 +2276,8 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
          * @param {Window} win
          */
         install(win) {
-          if (!isWindowAccessible(win) || !win.Ext || !win.Ext.Ajax || win[FLAGS.AJAX_HOOK]) return;
+          if (!isWindowAccessible(win) || !win.Ext || !win.Ext.Ajax) return;
+          if (win[FLAGS.AJAX_HOOK] && win.Ext.Ajax.request._apmPatched) return;
           APMLogger.debug("AjaxHooks", "Installing global interceptors on window:", win.location?.pathname);
           win.Ext.Ajax.on({
             beforerequest: (conn, options) => {
@@ -2316,7 +2317,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
             }
           });
           const origRequest = win.Ext.Ajax.request.bind(win.Ext.Ajax);
-          win.Ext.Ajax.request = function(options) {
+          const patchedRequest = function(options) {
             if (!options._apmHooked) {
               options._apmHooked = true;
               handlers.beforerequest.forEach((fn, id) => {
@@ -2329,6 +2330,8 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
             }
             return origRequest(options);
           };
+          patchedRequest._apmPatched = true;
+          win.Ext.Ajax.request = patchedRequest;
           win[FLAGS.AJAX_HOOK] = true;
         }
       };
@@ -10195,102 +10198,6 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
 
   // src/core/maddon.js
   init_logger();
-  init_ajax_hooks();
-  function shiftFilters(existingParams, filters) {
-    const existingSeqKeys = Object.keys(existingParams).filter((k) => k.startsWith("MADDON_FILTER_SEQNUM_"));
-    const existingSeqs = existingSeqKeys.map((k) => parseInt(k.split("_").pop(), 10));
-    const maxSeq = existingSeqs.length > 0 ? Math.max(...existingSeqs) : 0;
-    const ourFilterKeys = Object.keys(filters).filter((k) => k.startsWith("MADDON_FILTER_ALIAS_NAME_"));
-    const ourSeqs = ourFilterKeys.map((k) => parseInt(k.split("_").pop(), 10)).sort((a, b) => a - b);
-    const shifted = {};
-    ourSeqs.forEach((origSeq, idx) => {
-      const newSeq = maxSeq + idx + 1;
-      shifted[`MADDON_FILTER_ALIAS_NAME_${newSeq}`] = filters[`MADDON_FILTER_ALIAS_NAME_${origSeq}`];
-      shifted[`MADDON_FILTER_OPERATOR_${newSeq}`] = filters[`MADDON_FILTER_OPERATOR_${origSeq}`];
-      shifted[`MADDON_FILTER_VALUE_${newSeq}`] = filters[`MADDON_FILTER_VALUE_${origSeq}`];
-      shifted[`MADDON_FILTER_SEQNUM_${newSeq}`] = newSeq.toString();
-      shifted[`MADDON_FILTER_JOINER_${newSeq}`] = filters[`MADDON_FILTER_JOINER_${origSeq}`];
-      if (filters[`MADDON_LPAREN_${origSeq}`] !== void 0) shifted[`MADDON_LPAREN_${newSeq}`] = filters[`MADDON_LPAREN_${origSeq}`];
-      if (filters[`MADDON_RPAREN_${origSeq}`] !== void 0) shifted[`MADDON_RPAREN_${newSeq}`] = filters[`MADDON_RPAREN_${origSeq}`];
-    });
-    return shifted;
-  }
-  var HOOK_ID = "maddon-inject";
-  function injectMaddonFilter(grid, filters) {
-    try {
-      const store = grid.getStore?.();
-      if (!store) return null;
-      const proxy = store.getProxy?.();
-      if (!proxy) return null;
-      if (typeof proxy.doRequest === "function") {
-        const origDoRequest = proxy.doRequest;
-        proxy.doRequest = function(operation) {
-          proxy.doRequest = origDoRequest;
-          try {
-            const extraParams = proxy.getExtraParams ? proxy.getExtraParams() : proxy.extraParams || {};
-            const shifted = shiftFilters(extraParams, filters);
-            const merged = { ...extraParams, ...shifted };
-            if (proxy.setExtraParams) proxy.setExtraParams(merged);
-            else proxy.extraParams = merged;
-            APMLogger.debug("Maddon", `doRequest: injected ${Object.keys(shifted).filter((k) => k.includes("ALIAS_NAME")).length} MADDON filters`);
-          } catch (e) {
-            APMLogger.error("Maddon", "Error injecting MADDON in doRequest:", e);
-          }
-          return origDoRequest.call(this, operation);
-        };
-        APMLogger.debug("Maddon", `Strategy 1: patched proxy.doRequest`);
-        return { proxy, restore: () => {
-          proxy.doRequest = origDoRequest;
-        } };
-      }
-      APMLogger.debug("Maddon", `Strategy 2: using AjaxHooks.onBeforeRequest (proxy type: ${proxy.$className || proxy.type || "unknown"})`);
-      AjaxHooks.onBeforeRequest(HOOK_ID, (_win, _conn, options) => {
-        AjaxHooks.remove(HOOK_ID);
-        try {
-          const params = options.params || {};
-          const shifted = shiftFilters(params, filters);
-          options.params = { ...params, ...shifted };
-          APMLogger.debug("Maddon", `beforerequest: injected ${Object.keys(shifted).filter((k) => k.includes("ALIAS_NAME")).length} MADDON filters into Ajax request`);
-        } catch (e) {
-          APMLogger.error("Maddon", "Error injecting MADDON in beforerequest:", e);
-        }
-      });
-      return { proxy, restore: () => {
-        AjaxHooks.remove(HOOK_ID);
-      } };
-    } catch (e) {
-      APMLogger.error("Maddon", "Failed to inject MADDON filter:", e);
-      return null;
-    }
-  }
-  function clearMaddonFilters(handle) {
-    if (!handle) return;
-    try {
-      if (handle.restore) handle.restore();
-      AjaxHooks.remove(HOOK_ID);
-      if (handle.proxy) {
-        const existing = handle.proxy.getExtraParams ? handle.proxy.getExtraParams() : handle.proxy.extraParams || {};
-        const cleaned = { ...existing };
-        let removed = 0;
-        for (const k of Object.keys(cleaned)) {
-          if (k.startsWith("MADDON_")) {
-            delete cleaned[k];
-            removed++;
-          }
-        }
-        if (removed > 0) {
-          if (handle.proxy.setExtraParams) {
-            handle.proxy.setExtraParams(cleaned);
-          } else {
-            handle.proxy.extraParams = cleaned;
-          }
-          APMLogger.debug("Maddon", `Cleaned ${removed} MADDON keys from proxy extraParams`);
-        }
-      }
-    } catch (e) {
-      APMLogger.error("Maddon", "Failed to clear MADDON filters:", e);
-    }
-  }
 
   // src/modules/forecast/forecast-engine.js
   var isRunning = false;
@@ -10302,6 +10209,81 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
   var OP_GTE = "fo_gte";
   var OP_CON = "fo_con";
   var OP_DNCON = "fo_dncon";
+  function installXhrMaddonIntercept(maddonParams, target) {
+    let consumed = false;
+    const patchedWindows = [];
+    const buildShiftedParams = (existingBody) => {
+      const existingSeqKeys = [];
+      const bodyStr = existingBody || "";
+      const seqPattern = /MADDON_FILTER_SEQNUM_(\d+)/g;
+      let m;
+      while ((m = seqPattern.exec(bodyStr)) !== null) {
+        existingSeqKeys.push(parseInt(m[1], 10));
+      }
+      const maxSeq = existingSeqKeys.length > 0 ? Math.max(...existingSeqKeys) : 0;
+      const ourFilterKeys = Object.keys(maddonParams).filter((k) => k.startsWith("MADDON_FILTER_ALIAS_NAME_"));
+      const ourSeqs = ourFilterKeys.map((k) => parseInt(k.split("_").pop(), 10)).sort((a, b) => a - b);
+      const shifted = {};
+      ourSeqs.forEach((origSeq, idx) => {
+        const s = maxSeq + idx + 1;
+        shifted[`MADDON_FILTER_ALIAS_NAME_${s}`] = maddonParams[`MADDON_FILTER_ALIAS_NAME_${origSeq}`];
+        shifted[`MADDON_FILTER_OPERATOR_${s}`] = maddonParams[`MADDON_FILTER_OPERATOR_${origSeq}`];
+        shifted[`MADDON_FILTER_VALUE_${s}`] = maddonParams[`MADDON_FILTER_VALUE_${origSeq}`];
+        shifted[`MADDON_FILTER_SEQNUM_${s}`] = s.toString();
+        shifted[`MADDON_FILTER_JOINER_${s}`] = maddonParams[`MADDON_FILTER_JOINER_${origSeq}`];
+        if (maddonParams[`MADDON_LPAREN_${origSeq}`] !== void 0) shifted[`MADDON_LPAREN_${s}`] = maddonParams[`MADDON_LPAREN_${origSeq}`];
+        if (maddonParams[`MADDON_RPAREN_${origSeq}`] !== void 0) shifted[`MADDON_RPAREN_${s}`] = maddonParams[`MADDON_RPAREN_${origSeq}`];
+      });
+      return shifted;
+    };
+    const patchWindow = (win) => {
+      try {
+        const proto = win.XMLHttpRequest.prototype;
+        const origSend = proto.send;
+        if (origSend._apmMaddonPatched) return;
+        proto.send = function(body) {
+          if (!consumed) {
+            const url2 = (this._apmUrl || this.__zone_symbol__xhrURL || "").toString();
+            const isMatch = url2.includes("WSJOBS.xmlhttp") || url2.includes("CTJOBS.xmlhttp");
+            const isCache = url2.includes("GETCACHE") || body && typeof body === "string" && body.includes("COMPONENT_INFO_TYPE_MODE=CACHE");
+            if (isMatch && !isCache) {
+              consumed = true;
+              if (body && typeof body === "string") {
+                const shifted = buildShiftedParams(body);
+                const extra = new URLSearchParams(shifted).toString();
+                body = body + "&" + extra;
+                APMLogger.debug("Forecast-XHR", `Injected ${Object.keys(shifted).filter((k) => k.includes("ALIAS_NAME")).length} MADDON filters via XHR intercept`);
+              }
+              cleanup();
+            }
+          }
+          return origSend.call(this, body);
+        };
+        proto.send._apmMaddonPatched = true;
+        patchedWindows.push({ win, origSend });
+      } catch (e) {
+      }
+    };
+    const cleanup = () => {
+      for (const { win, origSend } of patchedWindows) {
+        try {
+          win.XMLHttpRequest.prototype.send = origSend;
+        } catch (e) {
+        }
+      }
+      patchedWindows.length = 0;
+      consumed = true;
+    };
+    for (const win of getExtWindows()) {
+      patchWindow(win);
+    }
+    patchWindow(window);
+    APMLogger.debug("Forecast-XHR", `Armed XHR intercept on ${patchedWindows.length} windows`);
+    setTimeout(() => {
+      if (!consumed) cleanup();
+    }, 1e4);
+    return cleanup;
+  }
   function detectActiveTarget() {
     for (const win of getExtWindows()) {
       try {
@@ -10341,19 +10323,16 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
   AjaxHooks.onBeforeRequest("forecast-maddon", (win, conn, options) => {
     try {
       if (!FeatureFlags.isEnabled("forecast")) return;
-      if (!isRunning) {
-        APMLogger.debug("Forecast-MADDON", "Skipped: isRunning=false");
-        return;
-      }
       const url2 = options.url || "";
       const params = options.params || {};
       const isGridData = url2.includes("GRIDDATA") || url2.includes(".xmlhttp") || params.GRID_NAME;
       if (!isGridData) return;
+      const isWorkOrderSearch = url2.includes("WSJOBS.xmlhttp") || params.GRID_NAME === "WSJOBS";
+      const isCacheRequest = url2.includes("GETCACHE") || typeof params === "string" && params.includes("COMPONENT_INFO_TYPE_MODE=CACHE") || params.COMPONENT_INFO_TYPE_MODE === "CACHE";
+      if (!isRunning) return;
       const topDoc = window.top.document;
       const profSelect = topDoc.getElementById("eam-profile-select");
       const profId = profSelect?.value;
-      const isWorkOrderSearch = url2.includes("WSJOBS.xmlhttp") || params.GRID_NAME === "WSJOBS";
-      const isCacheRequest = url2.includes("GETCACHE") || typeof params === "string" && params.includes("COMPONENT_INFO_TYPE_MODE=CACHE") || params.COMPONENT_INFO_TYPE_MODE === "CACHE";
       APMLogger.debug("Forecast-MADDON", `Hook fired: isRunning=${isRunning}, profId=${profId}, isWO=${isWorkOrderSearch}, isCache=${isCacheRequest}, savedProfiles=${savedProfiles.length}, url=${url2.substring(0, 80)}`);
       if (isWorkOrderSearch && !isCacheRequest) {
         const winUserFunc = getWinUserFunc(win);
@@ -10783,14 +10762,33 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
     let foundFrame = false;
     const gridTarget = filterData.target || "WSJOBS";
     let targetWin = window;
+    APMLogger.debug("Forecast", `applyForecastFiltersExtJS: target=${gridTarget}`);
     for (let attempts = 0; attempts < 40; attempts++) {
-      for (const win of getExtWindows()) {
+      const allWins = getExtWindows();
+      for (const win of allWins) {
         try {
           if (!win.Ext || !win.Ext.ComponentQuery) continue;
           const winUserFunc = getWinUserFunc(win);
           if (winUserFunc) {
             if (gridTarget === "CTJOBS" && winUserFunc !== "CTJOBS") continue;
             if (gridTarget === "WSJOBS" && winUserFunc === "CTJOBS") continue;
+          }
+          if (win !== window && win.parent) {
+            try {
+              const iframes = win.parent.document.querySelectorAll("iframe");
+              let isActive = false;
+              for (const iframe of iframes) {
+                try {
+                  if (iframe.contentWindow === win) {
+                    isActive = iframe.offsetWidth > 0 && iframe.offsetHeight > 0;
+                    break;
+                  }
+                } catch (e) {
+                }
+              }
+              if (!isActive) continue;
+            } catch (e) {
+            }
           }
           const grids = win.Ext.ComponentQuery.query("gridpanel:not([destroyed=true])");
           foundFrame = grids.some((g) => {
@@ -10815,12 +10813,23 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
       if (!targetExt) targetExt = window.Ext;
       if (foundFrame && targetExt && targetExt.ComponentQuery) {
         const woFields = targetExt.ComponentQuery.query("[name=ff_workordernum]:not([destroyed=true])");
-        if (woFields && woFields.length > 0) break;
+        if (woFields && woFields.length > 0) {
+          break;
+        }
       }
       await delay(250);
     }
-    if (!targetExt || !targetExt.ComponentQuery) return;
+    if (!targetExt || !targetExt.ComponentQuery) {
+      APMLogger.debug("Forecast", "applyForecastFiltersExtJS: timed out");
+      return;
+    }
     AjaxHooks.install(targetWin);
+    for (const w of getExtWindows()) {
+      try {
+        AjaxHooks.install(w);
+      } catch (e) {
+      }
+    }
     let needsAjaxWait = false;
     const data = filterData;
     if (!data.isClearMode) {
@@ -10909,27 +10918,16 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
       const runBtns = targetExt.ComponentQuery.query("button[text=Run]:not([destroyed=true])");
       if (runBtns && runBtns.length > 0) {
         const runBtn = runBtns[0];
+        let xhrCleanup = null;
         if (data.profile && data.maddonParams) {
-          const grids = targetExt.ComponentQuery.query("gridpanel:not([destroyed=true])");
-          for (const grid of grids) {
-            const store = grid.getStore && grid.getStore();
-            if (!store) continue;
-            const sid = (store.storeId || "").toLowerCase();
-            if (!sid.includes("wsjobs") && !sid.includes("ctjobs")) continue;
-            const handle = injectMaddonFilter(grid, data.maddonParams);
-            if (handle) {
-              data._maddonHandle = handle;
-              break;
-            }
-          }
+          xhrCleanup = installXhrMaddonIntercept(data.maddonParams, data.target);
         }
         if (runBtn.handler) runBtn.handler.call(runBtn.scope || runBtn, runBtn);
         else runBtn.fireEvent("click", runBtn);
         await delay(300);
         await waitForAjax(targetWin);
-        if (data._maddonHandle) {
-          clearMaddonFilters(data._maddonHandle);
-        }
+        if (xhrCleanup) await delay(2e3);
+        if (xhrCleanup) xhrCleanup();
       }
     }
   }
