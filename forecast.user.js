@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         APM Master: Unified Tools
 // @namespace    https://w.amazon.com/bin/view/Users/rosendah/APM-Master/
-// @version      14.8.1
+// @version      14.8.2
 // @description  Quality of life and automation tool that uses native EAM ExtJS Framework functions for high reliability and capability. This is actively supported tool so Slack me or submit bug report/feature request through the bug report button in the menu.
 // @author       Jacob Rosendahl
 // @icon         https://media.licdn.com/dms/image/v2/D5603AQGdCV0_LQKRfQ/profile-displayphoto-scale_100_100/B56ZyZLvQ5HgAg-/0/1772096519061?e=1773878400&v=beta&t=eWO1Jiy0-WbzG_yBv-SBrmmsVOPMexF57-q1Xh_VXCk
@@ -124,7 +124,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
       PRESET_STORAGE_KEY = "apm_v1_autofill_presets";
       STORAGE_KEY = "apm_v1_forecast_prefs";
       APM_GENERAL_STORAGE = "apm_v1_general_settings";
-      CURRENT_VERSION = "14.8.1";
+      CURRENT_VERSION = "14.8.2";
       VERSION_CHECK_URL = "https://raw.githubusercontent.com/jaker788-create/APM-Master/main/forecast.user.js";
       UPDATE_URL = "https://raw.githubusercontent.com/jaker788-create/APM-Master/main/forecast.user.js";
       LABOR_EMPS_STORAGE = "apm_v1_labor_employees";
@@ -17510,12 +17510,20 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
       e.preventDefault();
       e.stopPropagation();
       const url2 = icon.getAttribute("data-wo-copy-url");
-      APMLogger.debug("Core", `Icon click detected: ${url2}`);
-      if (url2) {
-        navigator.clipboard.writeText(url2).then(() => {
+      const woNum = icon.closest("[data-wo-num]")?.getAttribute("data-wo-num") || "";
+      APMLogger.debug("Core", `Icon click detected: ${woNum} \u2192 ${url2}`);
+      if (url2 && woNum) {
+        const html = `<a href="${url2}">${woNum}</a>`;
+        const blob = new Blob([html], { type: "text/html" });
+        const textBlob = new Blob([woNum], { type: "text/plain" });
+        navigator.clipboard.write([
+          new ClipboardItem({ "text/html": blob, "text/plain": textBlob })
+        ]).then(() => {
           icon.classList.add("apm-copy-success");
           setTimeout(() => icon.classList.remove("apm-copy-success"), 1500);
         }).catch(() => {
+          navigator.clipboard.writeText(woNum).catch(() => {
+          });
         });
       }
       return;
