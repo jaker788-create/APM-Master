@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         APM Master: Unified Tools
 // @namespace    https://w.amazon.com/bin/view/Users/rosendah/APM-Master/
-// @version      14.8.3
+// @version      14.9.0
 // @description  Quality of life and automation tool that uses native EAM ExtJS Framework functions for high reliability and capability. This is actively supported tool so Slack me or submit bug report/feature request through the bug report button in the menu.
 // @author       Jacob Rosendahl
 // @icon         https://media.licdn.com/dms/image/v2/D5603AQGdCV0_LQKRfQ/profile-displayphoto-scale_100_100/B56ZyZLvQ5HgAg-/0/1772096519061?e=1773878400&v=beta&t=eWO1Jiy0-WbzG_yBv-SBrmmsVOPMexF57-q1Xh_VXCk
@@ -115,7 +115,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
   });
 
   // src/core/constants.js
-  var KEY_THEME, CC_STORAGE_RULES, CC_STORAGE_SET, PRESET_STORAGE_KEY, STORAGE_KEY, APM_GENERAL_STORAGE, CURRENT_VERSION, VERSION_CHECK_URL, UPDATE_URL, LABOR_EMPS_STORAGE, LABOR_ACTIVE_STORAGE, LABOR_DOCK_STORAGE, LABOR_PREFS_STORAGE, LABOR_NIGHT_SHIFT_KEY, LABOR_LAST_EMP_KEY, SESSION_STORAGE_KEY, PTP_HISTORY_KEY, UPDATE_CHECK_KEY, MIGRATIONS_DONE_KEY, WELCOME_SEEN_KEY, SNAPSHOT_STORAGE_PREFIX, BETA_VERSION_CHECK_URL, BETA_UPDATE_URL, LOG_LEVELS, DEFAULT_TENANT, SESSION_TIMEOUT_URL, LINK_CONFIG, MIN_GRID_COLUMNS, MIN_TAB_ITEMS, ENTITY_REGISTRY, SCREEN_TITLES;
+  var KEY_THEME, CC_STORAGE_RULES, CC_STORAGE_SET, PRESET_STORAGE_KEY, STORAGE_KEY, APM_GENERAL_STORAGE, CURRENT_VERSION, VERSION_CHECK_URL, UPDATE_URL, LABOR_EMPS_STORAGE, LABOR_ACTIVE_STORAGE, LABOR_DOCK_STORAGE, LABOR_PREFS_STORAGE, LABOR_NIGHT_SHIFT_KEY, LABOR_LAST_EMP_KEY, SESSION_STORAGE_KEY, PTP_HISTORY_KEY, UPDATE_CHECK_KEY, MIGRATIONS_DONE_KEY, WELCOME_SEEN_KEY, SNAPSHOT_STORAGE_PREFIX, SNAPSHOT_TTL, BETA_VERSION_CHECK_URL, BETA_UPDATE_URL, LOG_LEVELS, DEFAULT_TENANT, SESSION_TIMEOUT_URL, LINK_CONFIG, MIN_GRID_COLUMNS, MIN_TAB_ITEMS, ENTITY_REGISTRY, SCREEN_TITLES, AUTOFILL_SCREENS, AUTOFILL_SCREEN_LABELS;
   var init_constants = __esm({
     "src/core/constants.js"() {
       KEY_THEME = "apm_v1_ui_theme";
@@ -124,7 +124,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
       PRESET_STORAGE_KEY = "apm_v1_autofill_presets";
       STORAGE_KEY = "apm_v1_forecast_prefs";
       APM_GENERAL_STORAGE = "apm_v1_general_settings";
-      CURRENT_VERSION = "14.8.3";
+      CURRENT_VERSION = "14.10.1";
       VERSION_CHECK_URL = "https://raw.githubusercontent.com/jaker788-create/APM-Master/main/forecast.user.js";
       UPDATE_URL = "https://raw.githubusercontent.com/jaker788-create/APM-Master/main/forecast.user.js";
       LABOR_EMPS_STORAGE = "apm_v1_labor_employees";
@@ -139,6 +139,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
       MIGRATIONS_DONE_KEY = "apm_v1_migrations_done";
       WELCOME_SEEN_KEY = "apm_v1_welcome_seen";
       SNAPSHOT_STORAGE_PREFIX = "apm_v1_snapshot_";
+      SNAPSHOT_TTL = 18 * 60 * 60 * 1e3;
       BETA_VERSION_CHECK_URL = "https://raw.githubusercontent.com/jaker788-create/APM-Master/Beta/forecast.user.js";
       BETA_UPDATE_URL = "https://raw.githubusercontent.com/jaker788-create/APM-Master/Beta/forecast.user.js";
       LOG_LEVELS = {
@@ -197,10 +198,149 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
           pattern: null,
           screenTitle: "Parts",
           descriptionField: "partdescription"
+        },
+        SSRECV: {
+          label: "PO Receipt",
+          systemFunc: "SSRECV",
+          entityKey: "receiptcode",
+          dataIndex: "receiptcode",
+          drillbackFlag: null,
+          pattern: null,
+          screenTitle: "PO Receipts",
+          descriptionField: "receiptdescription"
+        },
+        OSOBJS: {
+          label: "Equipment System",
+          systemFunc: "OSOBJS",
+          entityKey: "equipmentno",
+          dataIndex: "equipmentno",
+          drillbackFlag: null,
+          pattern: null,
+          screenTitle: "Equipment Systems",
+          descriptionField: "equipmentdesc"
+        },
+        SSPINV: {
+          label: "Physical Inventory",
+          systemFunc: "SSPINV",
+          entityKey: "physicalinventorycode",
+          dataIndex: "physicalinventorycode",
+          drillbackFlag: null,
+          pattern: null,
+          screenTitle: "Physical Inventory",
+          descriptionField: "physicalinventorydescription"
+        },
+        SSSUPT: {
+          label: "Supplier Part",
+          systemFunc: "SSSUPT",
+          entityKey: "catreference",
+          dataIndex: "catreference",
+          drillbackFlag: null,
+          pattern: null,
+          screenTitle: "Supplier Part Numbers",
+          descriptionField: "suppartdec"
+        },
+        SSMANP: {
+          label: "Manufacturer Part",
+          systemFunc: "SSMANP",
+          entityKey: "manufactpart",
+          dataIndex: "manufactpart",
+          drillbackFlag: null,
+          pattern: null,
+          screenTitle: "Manufacturer Part Numbers",
+          descriptionField: "part_description"
+        },
+        EUPBS1: {
+          label: "Part by Store",
+          systemFunc: "EWSUSR",
+          entityKey: "ps_bis_part",
+          dataIndex: "ps_bis_part",
+          drillbackFlag: null,
+          pattern: null,
+          screenTitle: "Parts by Store",
+          descriptionField: "partdesc"
+        },
+        PSPORD: {
+          label: "Purchase Order",
+          systemFunc: "PSPORD",
+          entityKey: "ordercode",
+          dataIndex: "ordercode",
+          drillbackFlag: null,
+          pattern: null,
+          screenTitle: "Purchase Orders",
+          descriptionField: "description"
+        },
+        CTOBJS: {
+          label: "Compliance System",
+          systemFunc: "OSOBJS",
+          entityKey: "udfchar10",
+          dataIndex: "udfchar10",
+          drillbackFlag: null,
+          pattern: null,
+          screenTitle: "System Compliance",
+          descriptionField: "equipmentdesc"
+        },
+        OSOBJA: {
+          label: "Equipment Asset",
+          systemFunc: "OSOBJA",
+          entityKey: "equipmentno",
+          dataIndex: "equipmentno",
+          drillbackFlag: null,
+          pattern: null,
+          screenTitle: "Equipment Assets",
+          descriptionField: "equipmentdesc"
+        },
+        OSOBJP: {
+          label: "Equipment Position",
+          systemFunc: "OSOBJP",
+          entityKey: "equipmentno",
+          dataIndex: "equipmentno",
+          drillbackFlag: null,
+          pattern: null,
+          screenTitle: "Equipment Positions",
+          descriptionField: "equipmentdesc"
+        },
+        AUIRPR: {
+          label: "Repair Request",
+          systemFunc: "BSUDSC",
+          entityKey: "repairrequest",
+          dataIndex: "repairrequest",
+          drillbackFlag: null,
+          pattern: null,
+          screenTitle: "Repair Requests",
+          descriptionField: "description"
+        },
+        SHFRPT: {
+          label: "Shift Report",
+          systemFunc: "CSCASE",
+          entityKey: "caseid",
+          dataIndex: "caseid",
+          drillbackFlag: null,
+          pattern: null,
+          screenTitle: "Shift Reports",
+          descriptionField: "casedescription"
         }
       };
       SCREEN_TITLES = {
-        BSSTRT: "Start Screen"
+        BSSTRT: "Start Screen",
+        AUIRPR: "Repair Requests",
+        SHFRPT: "Shift Reports",
+        BSUDSC: "Repair Requests",
+        CSCASE: "Shift Reports"
+      };
+      AUTOFILL_SCREENS = {
+        WSJOBS: "wo",
+        CTJOBS: "wo",
+        AUIRPR: "repair",
+        BSUDSC: "repair",
+        // system function for AUIRPR
+        SHFRPT: "shiftReport",
+        CSCASE: "shiftReport"
+        // system function for SHFRPT
+      };
+      AUTOFILL_SCREEN_LABELS = {
+        wo: "Work Orders",
+        repair: "Repair",
+        shiftReport: "Shift Report"
       };
     }
   });
@@ -480,8 +620,9 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
           // Last 20 durations
           eamQuery: [],
           // Last 20 latencies
-          scheduler: {}
+          scheduler: {},
           // { [taskName]: avgDuration }
+          autofill: { wipeGuardRecoveries: 0, flowDurations: [] }
         },
         errors: [],
         // last 50 errors with timestamps
@@ -516,6 +657,21 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
           m.count++;
           m.total += duration;
           m.max = Math.max(m.max, duration);
+        },
+        /**
+         * Records autofill wipe guard recovery event.
+         */
+        recordWipeGuardRecovery() {
+          this.perfMetrics.autofill.wipeGuardRecoveries++;
+        },
+        /**
+         * Records an autofill flow execution duration.
+         * @param {number} durationMs
+         */
+        recordAutofillFlow(durationMs) {
+          if (!this.perfMetrics.autofill.flowDurations) this.perfMetrics.autofill.flowDurations = [];
+          this.perfMetrics.autofill.flowDurations.unshift(durationMs);
+          if (this.perfMetrics.autofill.flowDurations.length > 20) this.perfMetrics.autofill.flowDurations.pop();
         },
         /**
          * Add an error to the circular buffer.
@@ -621,6 +777,10 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
             boot: this.bootTimings,
             colorCode: this.calculateStats(this.perfMetrics.colorCode),
             eamQuery: this.calculateStats(this.perfMetrics.eamQuery),
+            autofill: {
+              wipeGuardRecoveries: this.perfMetrics.autofill.wipeGuardRecoveries,
+              flowDurations: this.calculateStats(this.perfMetrics.autofill.flowDurations || [])
+            },
             scheduler: Object.entries(this.perfMetrics.scheduler).map(([name, data]) => ({
               name,
               avg: (data.total / data.count).toFixed(2),
@@ -1023,6 +1183,13 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
     return apmGeneralSettings;
   }
   function saveGeneralSettings() {
+    if (apmGeneralSettings.flags) {
+      const flagKeys = Object.keys(apmGeneralSettings.flags);
+      if (flagKeys.length > 0 && flagKeys.every((k) => !apmGeneralSettings.flags[k])) {
+        APMLogger.warn("State", "All flags disabled at save time \u2014 repairing before persist");
+        for (const k of flagKeys) apmGeneralSettings.flags[k] = true;
+      }
+    }
     apmGeneralSettings._v = 1;
     APMStorage.set(APM_GENERAL_STORAGE, apmGeneralSettings);
     try {
@@ -1063,7 +1230,11 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
         autofill: {
           isAutoFillRunning: false,
           presets: {
-            autofill: {},
+            autofill: {
+              wo: {},
+              repair: {},
+              shiftReport: {}
+            },
             config: {
               columnOrders: {},
               // Keyed by SYSTEM_FUNCTION_NAME
@@ -1304,6 +1475,40 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
   }
   function getXhrScreenContext() {
     return { userFunc: _xhrUserFunc, systemFunc: _xhrSystemFunc };
+  }
+  function detectActiveScreen() {
+    const mw = apmGetGlobalWindow();
+    let topFrameFunc = "";
+    let visibleIframeFunc = "";
+    for (const win of getExtWindows()) {
+      try {
+        const uf = win.EAM?.FocusManager?.activeView?.screen?.userFunction;
+        if (!uf) continue;
+        if (win === win.top) {
+          topFrameFunc = uf;
+        } else if (isFrameVisible(win)) {
+          visibleIframeFunc = uf;
+        }
+      } catch (e) {
+      }
+    }
+    if (visibleIframeFunc) {
+      _focusManagerEverResolved = true;
+      return visibleIframeFunc;
+    }
+    if (topFrameFunc) {
+      _focusManagerEverResolved = true;
+      return topFrameFunc;
+    }
+    if (!_focusManagerEverResolved) {
+      try {
+        const params = new URLSearchParams(mw.location.search);
+        const uf = params.get("USER_FUNCTION_NAME");
+        if (uf) return uf;
+      } catch (e) {
+      }
+    }
+    return detectScreenFunction() || "";
   }
   function detectScreenFunction(win, grid) {
     if (!win) {
@@ -1651,7 +1856,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
     };
     return checkAndDoFetch();
   }
-  var delay, _extWinsCache, _extWinsCacheTime, EXT_WINS_CACHE_TTL, _mainGridCache, _lastGridCheck, GRID_CACHE_TTL, _xhrUserFunc, _xhrSystemFunc, _GENERIC_FUNCS, ExtUtils;
+  var delay, _extWinsCache, _extWinsCacheTime, EXT_WINS_CACHE_TTL, _mainGridCache, _lastGridCheck, GRID_CACHE_TTL, _xhrUserFunc, _xhrSystemFunc, _GENERIC_FUNCS, _focusManagerEverResolved, ExtUtils;
   var init_utils = __esm({
     "src/core/utils.js"() {
       init_state();
@@ -1667,6 +1872,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
       _xhrUserFunc = null;
       _xhrSystemFunc = null;
       _GENERIC_FUNCS = /* @__PURE__ */ new Set(["BSSTRT", "WSTABS", "WSFLTR", "GLOBAL", ""]);
+      _focusManagerEverResolved = false;
       ExtUtils = {
         /**
          * Set a value on an ExtJS field and fire necessary events.
@@ -2106,7 +2312,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
         },
         /**
          * Registers a feature flag with a default value and descriptive metadata.
-         * @param {string} flag 
+         * @param {string} flag
          * @param {Object} config - { default: boolean, label: string, description: string }
          */
         register(flag, config) {
@@ -2119,6 +2325,41 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
           if (!apmGeneralSettings.flags) apmGeneralSettings.flags = {};
           if (apmGeneralSettings.flags[flag] === void 0) {
             apmGeneralSettings.flags[flag] = this._registry.get(flag).default;
+          }
+        },
+        /**
+         * Register all known flags and repair if corrupted.
+         * Safe to call multiple times — register() is idempotent.
+         * Must run BEFORE any FeatureFlags.isEnabled() gating to prevent
+         * flag-corruption-based module lockout.
+         */
+        registerDefaults() {
+          this.register("colorCode", { label: "ColorCode Engine", description: "Real-time grid highlighting and nametags" });
+          this.register("forecast", { label: "Forecast Tools", description: "Site/Org filters and search" });
+          this.register("autoFill", { label: "AutoFill Profiles", description: "Automated form completion templates" });
+          this.register("laborBooker", { label: "Labor Booker", description: "Quick labor entry for WOs" });
+          this.register("ptpTimer", { label: "PTP Take-2 Timer", description: "Safety countdown on PTP screen" });
+          this.register("tabGridOrder", { label: "UI Customization", description: "Drag & drop reordering of grids/tabs" });
+          this.register("tabTitle", { label: "Tab Title", description: "Show current screen name in browser tab" });
+          this.register("sessionSnapshot", { label: "Session Snapshot", description: "Restore your screen and record after session timeout", default: true });
+          this.repairIfCorrupted();
+        },
+        /**
+         * Corruption guard: if ALL registered flags are disabled or missing, reset to defaults.
+         * No user would intentionally disable every feature — this indicates storage corruption.
+         * Checks for any falsy value (false, undefined, null, 0), not just strict false.
+         */
+        repairIfCorrupted() {
+          if (!apmGeneralSettings.flags || this._registry.size === 0) return;
+          const allDisabled = Array.from(this._registry.keys()).every(
+            (flag) => !apmGeneralSettings.flags[flag]
+          );
+          if (allDisabled) {
+            APMLogger.warn("FeatureFlags", "All flags are disabled/missing \u2014 resetting to defaults (corruption recovery)");
+            for (const [flag, config] of this._registry) {
+              apmGeneralSettings.flags[flag] = config.default;
+            }
+            setGeneralSetting("flags", apmGeneralSettings.flags);
           }
         },
         /**
@@ -2698,7 +2939,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
           if (!isWindowAccessible(win) || !win.Ext || !win.Ext.ComponentQuery) return;
           try {
             const tabs = win.Ext.ComponentQuery.query("uxtabcontainer[itemId=BOO]:not([destroyed=true])");
-            const booTab = tabs.find((t) => t.rendered && !t.isDestroyed && t.isVisible(true));
+            const booTab = tabs.find((t) => t.rendered && !t.isDestroyed);
             if (!booTab) {
               const existingCmp2 = win.Ext.getCmp("apm-quick-book-cmp");
               if (existingCmp2 && !existingCmp2.isDestroyed) existingCmp2.destroy();
@@ -3403,6 +3644,21 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
               if (!isWindowAccessible(targetWin)) return;
               fetchLaborSummary(targetWin);
             });
+            window.addEventListener("APM_VIEW_TRANSITION", (e) => {
+              if (e.detail?.view === "record") {
+                const transitionWin = e.detail?.win;
+                setTimeout(() => {
+                  if (transitionWin && isWindowAccessible(transitionWin)) {
+                    checkTabAndInject(transitionWin);
+                  }
+                  for (const w of getExtWindows()) {
+                    if (w !== transitionWin && isWindowAccessible(w)) {
+                      checkTabAndInject(w);
+                    }
+                  }
+                }, 300);
+              }
+            });
           },
           checkTabAndInject,
           checkAll: function() {
@@ -4022,7 +4278,8 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
         { id: "labor_v1", fn: () => this.migrateLabor() },
         { id: "rename_keys_v1", fn: () => this.renameKeys() },
         { id: "promote_v1", fn: () => this.promoteToGlobal() },
-        { id: "cleanup_legacy_v1", fn: () => this.cleanupLegacyKeys() }
+        { id: "cleanup_legacy_v1", fn: () => this.cleanupLegacyKeys() },
+        { id: "autofill_v2", fn: () => this.migrateAutofillV2() }
       ];
       if (migrations2.every((m) => completedIds.includes(m.id))) {
         APMLogger.info("Migration", "All migrations previously completed. Skipping.");
@@ -4227,6 +4484,32 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
       });
       APMLogger.info("Migration", `Cleaned up ${deleted} legacy storage keys.`);
     },
+    migrateAutofillV2() {
+      const raw = APMStorage.get(PRESET_STORAGE_KEY);
+      if (!raw) return;
+      if (raw.autofill?.wo !== void 0) {
+        APMLogger.info("Migration", "autofill_v2: already nested, skipping");
+        return;
+      }
+      const flatAutofill = raw.autofill || {};
+      const nested = { wo: {}, repair: {}, shiftReport: {} };
+      for (const [name, preset] of Object.entries(flatAutofill)) {
+        const migrated = { ...preset };
+        if ("pmChecks" in migrated) {
+          migrated.techChecks10 = migrated.pmChecks;
+          delete migrated.pmChecks;
+        } else {
+          migrated.techChecks10 = 0;
+        }
+        migrated.techChecks5 = migrated.techChecks5 || 0;
+        migrated.dept = migrated.dept || "";
+        nested.wo[name] = migrated;
+      }
+      raw.autofill = nested;
+      raw._v = 2;
+      APMStorage.set(PRESET_STORAGE_KEY, raw);
+      APMLogger.info("Migration", `autofill_v2: migrated ${Object.keys(flatAutofill).length} presets to nested wo namespace`);
+    },
     safeMigrate(legacyKey, v1Key, transform = (d) => d, options = {}) {
       try {
         const { force = false, merge = false } = options;
@@ -4418,12 +4701,16 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
   init_context();
   init_api();
   init_scheduler();
+  init_dom_helpers();
   var SessionMonitor = {
     _liveConfirmed: /* @__PURE__ */ new Set(),
     _lastActivity: Date.now(),
     _nextHeartbeat: 0,
     _ACTIVITY_TIMEOUT: 2 * 60 * 60 * 1e3,
     // 2 hours
+    _lastWallClock: Date.now(),
+    _probing: false,
+    _wakePromptShown: false,
     init() {
       if (typeof window === "undefined") return;
       if (AppContext.isTop) {
@@ -4573,6 +4860,16 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
       if (!AppContext.isTop) return;
       if (window.__apmRedirecting) return;
       if (!apmGeneralSettings.autoRedirect) return;
+      const now = Date.now();
+      const gap = now - this._lastWallClock;
+      this._lastWallClock = now;
+      if (gap > 6e4 && !this._probing && !this._wakePromptShown && AppContext.isEAM) {
+        APMLogger.info("APM Session", `Wake detected \u2014 ${(gap / 1e3).toFixed(0)}s gap. Probing session...`);
+        this._probing = true;
+        this.probeSession();
+        return;
+      }
+      if (this._wakePromptShown) return;
       const currentUrl = window.location.href.toLowerCase();
       const { isLanding } = AppContext;
       if (isLanding && !currentUrl.includes("logindisp")) {
@@ -4659,7 +4956,210 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
       } catch (e) {
         APMLogger.error("APM Session", "Session heartbeat error:", e);
       }
-      this._nextHeartbeat = Date.now() + 6e5 + Math.random() * 3e5;
+      this._nextHeartbeat = Date.now() + 12e5;
+    },
+    async probeSession() {
+      const session = AppState.session;
+      if (!session.eamid || !session.tenant) {
+        this._probing = false;
+        return;
+      }
+      try {
+        const body = new URLSearchParams({
+          COMPONENT_INFO_TYPE: "DATA_ONLY",
+          CURRENT_TAB_NAME: "HDR",
+          eamid: session.eamid,
+          tenant: session.tenant || DEFAULT_TENANT
+        });
+        const resp = await fetch("/web/base/BSSTRT.xmlhttp", {
+          method: "POST",
+          credentials: "same-origin",
+          headers: {
+            "Content-Type": "application/x-www-form-urlencoded",
+            "X-Requested-With": "XMLHttpRequest"
+          },
+          body: body.toString()
+        });
+        if (resp.status === 200 && !resp.redirected) {
+          const text = await resp.text();
+          if (text.includes("logindisp") || text.includes("<html")) {
+            APMLogger.info("APM Session", "Session probe: expired (login page in 200 response).");
+            this.showWakePrompt();
+            return;
+          }
+          APMLogger.info("APM Session", "Session probe: still alive.");
+        } else {
+          APMLogger.info("APM Session", `Session probe: expired (status=${resp.status}, redirected=${resp.redirected}).`);
+          this.showWakePrompt();
+          return;
+        }
+      } catch (e) {
+        APMLogger.warn("APM Session", "Session probe error (likely expired):", e);
+        this.showWakePrompt();
+        return;
+      } finally {
+        this._probing = false;
+      }
+    },
+    showWakePrompt() {
+      this._wakePromptShown = true;
+      const PROMPT_ID = "apm-wake-session-prompt";
+      const existing = document.getElementById(PROMPT_ID);
+      if (existing) existing.remove();
+      let hasSnapshot = false;
+      try {
+        const tabId = sessionStorage.getItem("apm_tab_id");
+        if (tabId) {
+          const snap = APMStorage.get(SNAPSHOT_STORAGE_PREFIX + tabId);
+          if (snap && snap.ts && Date.now() - snap.ts <= SNAPSHOT_TTL) {
+            hasSnapshot = true;
+          }
+        }
+      } catch (e) {
+      }
+      const font = "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif";
+      const btnBase = {
+        border: "none",
+        borderRadius: "var(--apm-radius-sm, 4px)",
+        fontWeight: "bold",
+        fontFamily: font,
+        fontSize: "var(--apm-text-base, 12px)",
+        cursor: "pointer",
+        padding: "6px 14px",
+        transition: "filter 0.15s, background 0.15s"
+      };
+      const dismiss = () => {
+        this._wakePromptShown = false;
+        const promptEl = document.getElementById(PROMPT_ID);
+        if (promptEl) {
+          promptEl.style.opacity = "0";
+          promptEl.style.transform = "translateX(-50%) translateY(-20px)";
+          setTimeout(() => promptEl.remove(), 300);
+        }
+      };
+      const prompt2 = el("div", {
+        id: PROMPT_ID,
+        style: {
+          position: "fixed",
+          top: "15px",
+          left: "50%",
+          transform: "translateX(-50%) translateY(-20px)",
+          zIndex: "2147483647",
+          padding: "14px 20px 12px",
+          borderRadius: "var(--apm-radius-lg, 10px)",
+          background: "var(--apm-surface-0, #35404a)",
+          border: "1px solid var(--apm-border, #45535e)",
+          boxShadow: "0 4px 10px rgba(0,0,0,0.5)",
+          fontFamily: font,
+          color: "var(--apm-text-primary, #fff)",
+          display: "flex",
+          flexDirection: "column",
+          gap: "10px",
+          minWidth: "300px",
+          maxWidth: "460px",
+          opacity: "0",
+          transition: "opacity 0.3s ease, transform 0.3s ease"
+        }
+      }, [
+        // Message row
+        el("div", {
+          style: {
+            display: "flex",
+            alignItems: "center",
+            gap: "8px",
+            fontSize: "var(--apm-text-md, 13px)",
+            lineHeight: "1.4"
+          }
+        }, [
+          el("span", {
+            style: {
+              fontSize: "16px",
+              color: "var(--apm-warning, #f39c12)",
+              flexShrink: "0"
+            }
+          }, ["\u23F0"]),
+          el("span", {}, ["Session expired while away"])
+        ]),
+        // Button row
+        el("div", {
+          style: {
+            display: "flex",
+            alignItems: "center",
+            gap: "8px"
+          }
+        }, [
+          el("button", {
+            style: {
+              ...btnBase,
+              background: hasSnapshot ? "var(--apm-accent, #3498db)" : "var(--apm-control-bg, #4a5a6a)",
+              color: hasSnapshot ? "var(--apm-text-on-accent, #fff)" : "var(--apm-text-disabled, #6b7b8b)",
+              cursor: hasSnapshot ? "pointer" : "default",
+              opacity: hasSnapshot ? "1" : "0.6"
+            },
+            title: hasSnapshot ? "" : "Snapshot expired",
+            disabled: !hasSnapshot,
+            onmouseenter(e) {
+              if (hasSnapshot) e.target.style.filter = "brightness(1.15)";
+            },
+            onmouseleave(e) {
+              e.target.style.filter = "";
+            },
+            onclick: () => {
+              if (!hasSnapshot) return;
+              dismiss();
+              try {
+                sessionStorage.setItem("apm_snapshot_auto_restore", "1");
+              } catch (e) {
+              }
+              this.forceRedirect();
+            }
+          }, [hasSnapshot ? "Restore" : "Restore (expired)"]),
+          el("button", {
+            style: {
+              ...btnBase,
+              background: "var(--apm-control-bg, #4a5a6a)",
+              color: "var(--apm-text-primary, #fff)"
+            },
+            onmouseenter(e) {
+              e.target.style.background = "var(--apm-control-bg-hover, #5c6d7e)";
+            },
+            onmouseleave(e) {
+              e.target.style.background = "var(--apm-control-bg, #4a5a6a)";
+            },
+            onclick: () => {
+              dismiss();
+              try {
+                sessionStorage.setItem("apm_snapshot_skip_restore", "1");
+              } catch (e) {
+              }
+              this.forceRedirect();
+            }
+          }, ["Redirect"]),
+          // Spacer
+          el("div", { style: { flex: "1" } }),
+          el("button", {
+            style: {
+              ...btnBase,
+              background: "transparent",
+              color: "var(--apm-text-muted, #95a5a6)",
+              padding: "6px 8px",
+              fontWeight: "600"
+            },
+            onmouseenter(e) {
+              e.target.style.color = "var(--apm-text-secondary, #b0bec5)";
+            },
+            onmouseleave(e) {
+              e.target.style.color = "var(--apm-text-muted, #95a5a6)";
+            },
+            onclick: () => dismiss()
+          }, ["Dismiss"])
+        ])
+      ]);
+      document.body.appendChild(prompt2);
+      setTimeout(() => {
+        prompt2.style.opacity = "1";
+        prompt2.style.transform = "translateX(-50%) translateY(0)";
+      }, 10);
     },
     forceRedirect() {
       if (window.__apmRedirecting) return;
@@ -5051,6 +5551,53 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
   init_logger();
   init_storage();
   init_utils();
+  init_diagnostics();
+  var _keywordIndex = null;
+  function rebuildKeywordIndex() {
+    const autofill = AppState.autofill.presets.autofill;
+    const map = /* @__PURE__ */ new Map();
+    for (const screen of ["wo", "shiftReport"]) {
+      const screenPresets = autofill[screen];
+      if (!screenPresets) continue;
+      for (const key in screenPresets) {
+        const kwString = screenPresets[key].keyword;
+        if (!kwString) continue;
+        for (const kw of kwString.split(",")) {
+          const trimmed = kw.trim().toLowerCase();
+          if (trimmed) map.set(trimmed, { screen, presetKey: key });
+        }
+      }
+    }
+    _keywordIndex = map;
+  }
+  function getKeywordIndex() {
+    if (!_keywordIndex) rebuildKeywordIndex();
+    return _keywordIndex;
+  }
+  function resolveAutofillScreen(funcName) {
+    return AUTOFILL_SCREENS[funcName] || "wo";
+  }
+  function getPresetsReadOnly() {
+    const config = AppState.autofill.presets.config;
+    if (Object.keys(config.tabOrders || {}).length === 0 && Object.keys(config.columnOrders || {}).length === 0 && Object.keys(config.hiddenTabs || {}).length === 0) {
+      try {
+        const stored = APMStorage.get(PRESET_STORAGE_KEY);
+        if (stored?.config) {
+          AppState.autofill.presets.config = { ...config, ...stored.config };
+        }
+        if (stored?.autofill) {
+          const local = AppState.autofill.presets.autofill;
+          const localEmpty = !local.wo || Object.keys(local.wo || {}).length === 0 && Object.keys(local.repair || {}).length === 0 && Object.keys(local.shiftReport || {}).length === 0;
+          if (localEmpty) {
+            AppState.autofill.presets.autofill = stored.autofill;
+          }
+        }
+      } catch (e) {
+        APMLogger.debug("AutoFill", "Storage operation failed:", e);
+      }
+    }
+    return AppState.autofill.presets;
+  }
   function normalizeColumnOrder(raw) {
     if (!raw) return null;
     if (typeof raw === "string") {
@@ -5082,9 +5629,10 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
         if (parsed.autofill || parsed.config) {
           if (parsed.autofill) AppState.autofill.presets.autofill = parsed.autofill;
           if (parsed.config) AppState.autofill.presets.config = parsed.config;
+          _keywordIndex = null;
         } else if (typeof parsed === "object" && Object.keys(parsed).length > 0) {
-          AppState.autofill.presets.autofill = parsed;
-          APMLogger.info("AutoFill", "Recovered unwrapped legacy presets.");
+          AppState.autofill.presets.autofill = { wo: parsed, repair: {}, shiftReport: {} };
+          APMLogger.info("AutoFill", "Recovered unwrapped legacy presets into wo namespace.");
           savePresets();
         }
       }
@@ -5093,35 +5641,45 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
     }
   }
   function savePresets() {
+    _keywordIndex = null;
     const profiles = AppState.autofill.presets.autofill;
     const config = AppState.autofill.presets.config;
     const localTabCount = Object.keys(config.tabOrders || {}).length;
     const localColCount = Object.keys(config.columnOrders || {}).length;
     const localHiddenCount = Object.keys(config.hiddenTabs || {}).length;
-    const needsRecovery = !profiles || Object.keys(profiles).length === 0 || localTabCount === 0 || localColCount === 0 || localHiddenCount === 0;
+    const profilesEmpty = !profiles || !profiles.wo && !profiles.repair && !profiles.shiftReport || Object.keys(profiles.wo || {}).length === 0 && Object.keys(profiles.repair || {}).length === 0 && Object.keys(profiles.shiftReport || {}).length === 0;
+    const needsRecovery = profilesEmpty || localTabCount === 0 || localColCount === 0 || localHiddenCount === 0;
     if (needsRecovery) {
       try {
         const stored = APMStorage.get(PRESET_STORAGE_KEY);
         if (stored) {
-          if ((!profiles || Object.keys(profiles).length === 0) && stored.autofill && Object.keys(stored.autofill).length > 0) {
+          let recovered = false;
+          if (profilesEmpty && stored.autofill && (stored.autofill.wo || stored.autofill.repair || stored.autofill.shiftReport)) {
             AppState.autofill.presets.autofill = stored.autofill;
+            recovered = true;
           }
           if (stored.config) {
             if (localTabCount === 0 && stored.config.tabOrders && Object.keys(stored.config.tabOrders).length > 0) {
               config.tabOrders = stored.config.tabOrders;
               APMLogger.debug("AutoFill", "Recovered stored tabOrders before save");
+              recovered = true;
             }
             if (localColCount === 0 && stored.config.columnOrders && Object.keys(stored.config.columnOrders).length > 0) {
               config.columnOrders = stored.config.columnOrders;
               APMLogger.debug("AutoFill", "Recovered stored columnOrders before save");
+              recovered = true;
             }
             if (localHiddenCount === 0 && stored.config.hiddenTabs) {
               const storedHidden = stored.config.hiddenTabs;
               if (Array.isArray(storedHidden) && storedHidden.length > 0 || !Array.isArray(storedHidden) && Object.keys(storedHidden).length > 0) {
                 config.hiddenTabs = storedHidden;
                 APMLogger.debug("AutoFill", "Recovered stored hiddenTabs before save");
+                recovered = true;
               }
             }
+          }
+          if (recovered) {
+            Diagnostics.recordWipeGuardRecovery();
           }
         }
       } catch (e) {
@@ -5140,8 +5698,12 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
           AppState.autofill.presets.config = { ...config, ...stored.config };
           APMLogger.debug("AutoFill", "Hydrated config from storage for getPresets()");
         }
-        if (stored?.autofill && Object.keys(AppState.autofill.presets.autofill || {}).length === 0) {
-          AppState.autofill.presets.autofill = stored.autofill;
+        if (stored?.autofill) {
+          const local = AppState.autofill.presets.autofill;
+          const localEmpty = !local.wo || Object.keys(local.wo || {}).length === 0 && Object.keys(local.repair || {}).length === 0 && Object.keys(local.shiftReport || {}).length === 0;
+          if (localEmpty) {
+            AppState.autofill.presets.autofill = stored.autofill;
+          }
         }
       } catch (e) {
         APMLogger.debug("AutoFill", "Storage operation failed:", e);
@@ -5149,7 +5711,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
     }
     const cfg = AppState.autofill.presets.config;
     if (cfg) {
-      const funcName = detectScreenFunction() || "GLOBAL";
+      const funcName = detectActiveScreen() || "GLOBAL";
       if (Array.isArray(cfg.hiddenTabs)) {
         cfg.hiddenTabs = normalizeHiddenTabs(cfg.hiddenTabs, funcName);
       }
@@ -5176,19 +5738,24 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
     savePresets();
     window.dispatchEvent(new CustomEvent("APM_PRESETS_SYNC_REQUIRED"));
   }
-  function updatePresetAutofill(name, data) {
+  function updatePresetAutofill(name, data, screen = "wo") {
+    _keywordIndex = null;
+    if (!AppState.autofill.presets.autofill[screen]) {
+      AppState.autofill.presets.autofill[screen] = {};
+    }
     if (data === null) {
-      delete AppState.autofill.presets.autofill[name];
+      delete AppState.autofill.presets.autofill[screen][name];
     } else {
-      AppState.autofill.presets.autofill[name] = data;
+      AppState.autofill.presets.autofill[screen][name] = data;
     }
     savePresets();
     window.dispatchEvent(new CustomEvent("APM_PRESETS_SYNC_REQUIRED"));
   }
-  function getDefaultProfiles() {
+  function getDefaultProfiles(screen = "wo") {
     const presets = getPresets();
-    if (!presets?.autofill) return [];
-    return Object.entries(presets.autofill).filter(([, data]) => data.isDefault).map(([name, data]) => ({ name, ...data }));
+    const screenPresets = presets.autofill?.[screen];
+    if (!screenPresets) return [];
+    return Object.entries(screenPresets).filter(([, data]) => data.isDefault).map(([name, data]) => ({ name, ...data }));
   }
   function getIsAutoFillRunning() {
     return AppState.autofill.isAutoFillRunning;
@@ -5420,6 +5987,18 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
   var _entityColumnId = null;
   var _activeEntityConfig = null;
   var _activeUserFunc = null;
+  var _subGridColumns = /* @__PURE__ */ new Map();
+  var SUB_GRID_ENTITY_COLUMNS = {
+    "par_part": "SSPART",
+    "partcode": "SSPART",
+    "wspf_10_repr_part": "SSPART",
+    "workorder": "WSJOBS",
+    "workordernum": "WSJOBS",
+    "wspf_10_repr_issevent": "WSJOBS"
+  };
+  var HEADER_FIELD_ENTITIES = {
+    "workordernum": "WSJOBS"
+  };
   AjaxHooks.onBeforeRequest("entity-detect", (win, conn, options) => {
     const url2 = options.url || "";
     if (!url2.includes("FUNCTION_CLASS=WEBL")) return;
@@ -5457,8 +6036,11 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
     }
   });
   function resolveEntityColumn(doc) {
-    const xhr = getXhrScreenContext();
-    let userFunc = xhr.userFunc;
+    let userFunc = detectActiveScreen();
+    if (!userFunc) {
+      const xhr = getXhrScreenContext();
+      userFunc = xhr.userFunc;
+    }
     if (!userFunc) {
       const fromFrames = apmGetActiveFunctionNames();
       userFunc = fromFrames.userFunc;
@@ -5490,6 +6072,8 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
     _activeEntityConfig = config;
     APMLogger.debug("ColorCode", `Entity resolved: userFunc=${_activeUserFunc}, label=${config.label}, dataIndex=${config.dataIndex}`);
     _entityColumnId = null;
+    _subGridColumns.clear();
+    _nametagExcludedColIds = /* @__PURE__ */ new Set();
     try {
       const win = doc.defaultView || window;
       if (win.Ext && win.Ext.ComponentQuery) {
@@ -5497,13 +6081,28 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
         for (const g of grids) {
           if (!g.rendered || g.isDestroyed || !g.headerCt) continue;
           if (g.getEl()?.dom?.ownerDocument !== doc) continue;
-          const col = g.headerCt.items.items.find(
-            (c) => c.dataIndex === config.dataIndex && c.rendered
-          );
-          if (col?.id) {
-            _entityColumnId = col.id;
-            APMLogger.debug("ColorCode", `Entity column found: ${col.id} (dataIndex=${config.dataIndex})`);
-            break;
+          if (!_entityColumnId && config.drillbackFlag) {
+            const col = g.headerCt.items.items.find(
+              (c) => c.dataIndex === config.dataIndex && c.rendered
+            );
+            if (col?.id) {
+              _entityColumnId = col.id;
+              APMLogger.debug("ColorCode", `Entity column found: ${col.id} (dataIndex=${config.dataIndex})`);
+            }
+          }
+          for (const col of g.headerCt.items.items) {
+            if (!col.rendered || !col.dataIndex) continue;
+            if (NAMETAG_EXCLUDED_DATAINDEXES.has(col.dataIndex)) {
+              _nametagExcludedColIds.add(col.id);
+            }
+            if (col.id === _entityColumnId) continue;
+            const entityKey = SUB_GRID_ENTITY_COLUMNS[col.dataIndex];
+            if (!entityKey) continue;
+            const subConfig = ENTITY_REGISTRY[entityKey];
+            if (subConfig) {
+              _subGridColumns.set(col.id, { config: subConfig, userFunc: entityKey });
+              APMLogger.debug("ColorCode", `Sub-grid entity column: ${col.id} (dataIndex=${col.dataIndex}) \u2192 ${subConfig.label}`);
+            }
           }
         }
       }
@@ -5515,10 +6114,10 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
     const tenant = window.EAM && window.EAM.AppData && window.EAM.AppData.tenant ? window.EAM.AppData.tenant : LINK_CONFIG.tenant;
     const params = new URLSearchParams({
       tenant,
-      [config.drillbackFlag]: "YES",
       SYSTEM_FUNCTION_NAME: config.systemFunc,
       USER_FUNCTION_NAME: userFunc
     });
+    if (config.drillbackFlag) params.set(config.drillbackFlag, "YES");
     params.set(config.entityKey, entityId);
     return `https://${window.location.hostname}/web/base/logindisp?${params.toString()}`;
   }
@@ -5530,13 +6129,28 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
     const linkSettingChanged = existingLink && existingLink.getAttribute("target") === "_blank" !== !!apmGeneralSettings?.openLinksInNewTab;
     if (!hasLinkAttr || physicalLinkMissing || linkSettingChanged) {
       let entityId = null;
-      const config = entityConfig || ENTITY_REGISTRY.WSJOBS;
-      const userFunc = _activeUserFunc || "WSJOBS";
+      let config = entityConfig || ENTITY_REGISTRY.WSJOBS;
+      let userFunc = _activeUserFunc || "WSJOBS";
       if (_entityColumnId) {
         const gridCell = cell.closest(".x-grid-cell");
         if (gridCell && gridCell.getAttribute("data-columnid") === _entityColumnId) {
           const trimmed = cellText.trim();
           if (trimmed) entityId = trimmed;
+        }
+      }
+      if (!entityId && _subGridColumns.size > 0) {
+        const gridCell = cell.closest(".x-grid-cell");
+        if (gridCell) {
+          const colId = gridCell.getAttribute("data-columnid");
+          const subEntry = _subGridColumns.get(colId);
+          if (subEntry) {
+            const trimmed = cellText.trim();
+            if (trimmed) {
+              entityId = trimmed;
+              config = subEntry.config;
+              userFunc = subEntry.userFunc;
+            }
+          }
         }
       }
       if (!entityId && config.pattern) {
@@ -5597,7 +6211,13 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
       cell.querySelector(".apm-ptp-status-tag")?.remove();
     }
   }
+  var NAMETAG_EXCLUDED_DATAINDEXES = /* @__PURE__ */ new Set(["udfnote01"]);
+  var _nametagExcludedColIds = /* @__PURE__ */ new Set();
   function applyNametags(cell, rowMatches) {
+    if (_nametagExcludedColIds.size > 0) {
+      const gridCell = cell.closest(".x-grid-cell");
+      if (gridCell && _nametagExcludedColIds.has(gridCell.getAttribute("data-columnid"))) return;
+    }
     const lowerCellText = cell.textContent.toLowerCase();
     cell.querySelectorAll(".apm-nametag").forEach((tag) => {
       const raw = tag.getAttribute("data-cc-id");
@@ -5712,6 +6332,36 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
     } catch (e) {
       APMLogger.error("ColorCode", "Record view processing error:", e);
     }
+    try {
+      for (const [fieldName, entityKey] of Object.entries(HEADER_FIELD_ENTITIES)) {
+        const fieldConfig = ENTITY_REGISTRY[entityKey];
+        if (!fieldConfig || entityKey === _activeUserFunc) continue;
+        const input = doc.querySelector(`input[name="${fieldName}"]`);
+        if (!input) continue;
+        const value = input.value?.trim();
+        if (!value) continue;
+        const triggerWrap = input.closest(".x-form-trigger-wrap");
+        const container = triggerWrap?.parentElement || input.parentElement;
+        if (!container || container.querySelector(".apm-copy-icon")) continue;
+        const url2 = buildEntityUrl(value, fieldConfig, entityKey);
+        container.style.setProperty("display", "flex", "important");
+        container.style.setProperty("align-items", "center", "important");
+        container.style.setProperty("overflow", "visible", "important");
+        const wrapper = el("span", {
+          style: { display: "inline-flex", alignItems: "center", marginLeft: "4px", whiteSpace: "nowrap" },
+          dataset: { woNum: value }
+        }, [
+          el("span", { className: "apm-copy-icon", title: `Copy ${fieldConfig.label} link`, dataset: { woCopyUrl: url2 } })
+        ]);
+        if (triggerWrap) {
+          triggerWrap.after(wrapper);
+        } else {
+          container.appendChild(wrapper);
+        }
+      }
+    } catch (e) {
+      APMLogger.error("ColorCode", "Header field linkification error:", e);
+    }
   }
   function processColorCodeGrid(targetDoc) {
     const doc = targetDoc && targetDoc.querySelectorAll ? targetDoc : document;
@@ -5793,7 +6443,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
         const fillRule = rowMatches.find((r) => r.fill);
         const tagRulesCount = rowMatches.filter((r) => r.showTag).length;
         const entityConfig = _activeEntityConfig || ENTITY_REGISTRY.WSJOBS;
-        const hasEntity = _entityColumnId ? true : !!entityConfig.pattern;
+        const hasEntity = !!_entityColumnId || _subGridColumns.size > 0 || !!entityConfig.pattern;
         _rowCache.set(row, {
           len: textLen,
           textRaw: rawText,
@@ -6654,11 +7304,67 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
   init_logger();
   init_toast();
   init_state();
+  init_constants();
   init_scheduler();
   init_feature_flags();
   init_eam_query();
+  init_diagnostics();
+  init_context();
   var _autofillLock = false;
   var _lastKnownTitle = "";
+  function createFlowContext() {
+    return { wins: getExtWindows(), activeWin: null, activeExt: null, mainForm: null };
+  }
+  function refreshFlowWins(ctx) {
+    ctx.wins = getExtWindows();
+  }
+  async function waitForSettled(win, maxMs = 5e3, minBufferMs = 50) {
+    const ext = win?.Ext;
+    if (!ext?.Ajax) {
+      await delay(minBufferMs);
+      return;
+    }
+    if (!ext.Ajax.isLoading()) {
+      await delay(minBufferMs);
+      return;
+    }
+    return new Promise((resolve) => {
+      const cleanup = () => {
+        ext.Ajax.un("requestcomplete", onDone);
+        ext.Ajax.un("requestexception", onDone);
+      };
+      const onDone = () => {
+        if (!ext.Ajax.isLoading()) {
+          cleanup();
+          clearTimeout(timer);
+          setTimeout(resolve, minBufferMs);
+        }
+      };
+      ext.Ajax.on("requestcomplete", onDone);
+      ext.Ajax.on("requestexception", onDone);
+      const timer = setTimeout(() => {
+        cleanup();
+        resolve();
+      }, maxMs);
+    });
+  }
+  function verifyFieldValue(activeExt, formPanel, fieldName, expectedValue, label) {
+    const field = activeExt.ComponentQuery.query(`[name="${fieldName}"]`, formPanel)[0] || activeExt.ComponentQuery.query(`[name="${fieldName}"]`)[0];
+    if (!field) return true;
+    const actualValue = String(field.getValue() || "").trim();
+    const expected = String(expectedValue || "").trim();
+    if (actualValue && expected && actualValue !== expected) {
+      APMLogger.warn("AutoFill", `${label} value rejected: set "${expected}", got "${actualValue}"`);
+      showToast(`Warning: ${label} "${expected}" was not accepted by EAM`, "#e67e22");
+      return false;
+    }
+    return true;
+  }
+  function normalizeActivity(v) {
+    const s = String(v ?? "").trim().replace(/[\u00A0\t]/g, " ");
+    const match = s.match(/^(\d+)/);
+    return match ? parseInt(match[1], 10) : NaN;
+  }
   function setExtModelDirect(activeExt, formPanel, fieldName, value) {
     if (!formPanel || value === void 0 || value === null) return false;
     const field = activeExt.ComponentQuery.query(`[name="${fieldName}"]`, formPanel)[0] || activeExt.ComponentQuery.query(`[name="${fieldName}"]`)[0];
@@ -6794,12 +7500,16 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
         if (btn.handler) btn.handler.call(btn.scope || btn, btn);
         else btn.fireEvent("click", btn);
         await delay(300);
-        dismissed = true;
+        if (!box.isDestroyed && box.isVisible?.()) {
+          APMLogger.warn("AutoFill", `Popup "${box.title || "Untitled"}" persisted after auto-dismiss \u2014 may be a validation error`);
+        } else {
+          dismissed = true;
+        }
       }
     }
     return dismissed;
   }
-  async function injectExtJSFieldsNative(data) {
+  async function injectExtJSFieldsNative(data, ctx = null) {
     if (_autofillLock) {
       APMLogger.warn("AutoFill", "Skipping concurrent autofill invocation");
       return;
@@ -6811,7 +7521,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
       let mainForm = null;
       let laborResult = null;
       for (let i = 0; i < 20; i++) {
-        const allDocs = getExtWindows();
+        const allDocs = ctx?.wins || getExtWindows();
         for (const win of allDocs) {
           if (win && win.Ext && win.Ext.ComponentQuery) {
             const forms = win.Ext.ComponentQuery.query("form");
@@ -6830,14 +7540,27 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
         showToast("Error: Visible WO Form not found.", "#e74c3c");
         return;
       }
+      if (ctx) {
+        ctx.activeWin = activeWin;
+        ctx.activeExt = activeWin.Ext;
+        ctx.mainForm = mainForm;
+      }
       const activeExt = activeWin.Ext;
       if (data.org) {
         showToast("Setting Organization...", "#f1c40f", true);
         await setEamLovFieldDirect(activeExt, mainForm, "organization", data.org);
-        await waitForAjax(activeWin);
+        await waitForSettled(activeWin);
         await handleEamPopups(activeWin);
-        await waitForAjax(activeWin);
-        await delay(150);
+        await waitForSettled(activeWin);
+        verifyFieldValue(activeExt, mainForm, "organization", data.org, "Organization");
+      }
+      if (data.dept) {
+        showToast("Setting Department...", "#f1c40f", true);
+        await setEamLovFieldDirect(activeExt, mainForm, "department", data.dept);
+        await waitForSettled(activeWin);
+        await handleEamPopups(activeWin);
+        await waitForSettled(activeWin);
+        verifyFieldValue(activeExt, mainForm, "department", data.dept, "Department");
       }
       if (data.woTitle) {
         await setEamLovFieldDirect(activeExt, mainForm, "description", data.woTitle);
@@ -6845,40 +7568,69 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
       if (data.type) {
         showToast("Setting Work Order Type...", "#f1c40f", true);
         await setEamLovFieldDirect(activeExt, mainForm, "workordertype", data.type);
-        await waitForAjax(activeWin);
+        await waitForSettled(activeWin);
         await handleEamPopups(activeWin);
-        await waitForAjax(activeWin);
-        await delay(150);
+        await waitForSettled(activeWin);
+        verifyFieldValue(activeExt, mainForm, "workordertype", data.type, "WO Type");
       }
       if (data.eq) {
         showToast("Searching Equipment Database...", "#f1c40f", true);
         let finalEquipment = await searchEquipmentNative(data.eq, activeWin);
         showToast("Setting Equipment...", "#f1c40f", true);
         await setEamLovFieldDirect(activeExt, mainForm, "equipment", finalEquipment);
-        await waitForAjax(activeWin);
+        await waitForSettled(activeWin);
         await handleEamPopups(activeWin);
-        await waitForAjax(activeWin);
-        await delay(150);
+        await waitForSettled(activeWin);
+        verifyFieldValue(activeExt, mainForm, "equipment", finalEquipment, "Equipment");
       }
       showToast("Injecting Data Model...", "#f1c40f", true);
       const FIELD_MAP = { exec: "udfchar13", safety: "udfchar24", close: "udfnote01" };
-      if (data.exec) setExtModelDirect(activeExt, mainForm, FIELD_MAP.exec, data.exec);
-      if (data.safety) setExtModelDirect(activeExt, mainForm, FIELD_MAP.safety, data.safety);
-      if (data.close) setExtModelDirect(activeExt, mainForm, FIELD_MAP.close, data.close);
-      if (data.prob) setExtModelDirect(activeExt, mainForm, "problemcode", data.prob);
-      if (data.fail) setExtModelDirect(activeExt, mainForm, "failurecode", data.fail);
-      if (data.cause) setExtModelDirect(activeExt, mainForm, "causecode", data.cause);
-      if (data.assign) setExtModelDirect(activeExt, mainForm, "assignedto", data.assign);
-      if (data.start) setExtModelDirect(activeExt, mainForm, "schedstartdate", formatToEamDate(data.start));
-      if (data.end) setExtModelDirect(activeExt, mainForm, "schedenddate", formatToEamDate(data.end));
+      const modelFields = [
+        [FIELD_MAP.exec, data.exec],
+        [FIELD_MAP.safety, data.safety],
+        [FIELD_MAP.close, data.close],
+        ["problemcode", data.prob],
+        ["failurecode", data.fail],
+        ["causecode", data.cause],
+        ["assignedto", data.assign],
+        ["schedstartdate", data.start ? formatToEamDate(data.start) : null],
+        ["schedenddate", data.end ? formatToEamDate(data.end) : null]
+      ].filter(([, v]) => v !== void 0 && v !== null && v !== "");
+      if (modelFields.length > 0) {
+        const formPanel = mainForm;
+        const record = formPanel.getRecord?.();
+        for (const [fieldName, value] of modelFields) {
+          const field = activeExt.ComponentQuery.query(`[name="${fieldName}"]`, formPanel)[0] || activeExt.ComponentQuery.query(`[name="${fieldName}"]`)[0];
+          if (!field) continue;
+          if (field.readOnly || field.disabled) APMLogger.debug("AutoFill", "Overriding protected field:", field.name || field.itemId);
+          if (typeof field.setReadOnly === "function") field.setReadOnly(false);
+          if (typeof field.setDisabled === "function") field.setDisabled(false);
+          field.suspendEvents();
+          field.setValue(value);
+          field.resumeEvents();
+        }
+        if (record) {
+          record.beginEdit();
+          for (const [fieldName, value] of modelFields) {
+            record.set(fieldName, value);
+          }
+          record.endEdit();
+        }
+        for (const [fieldName, value] of modelFields) {
+          const field = activeExt.ComponentQuery.query(`[name="${fieldName}"]`, formPanel)[0] || activeExt.ComponentQuery.query(`[name="${fieldName}"]`)[0];
+          if (field) {
+            field.fireEvent("change", field, value);
+            field.fireEvent("blur", field);
+          }
+        }
+      }
       if (data.status) {
         showToast("Updating Work Order Status...", "#f1c40f", true);
         await setEamLovFieldDirect(activeExt, mainForm, "workorderstatus", data.status);
-        await waitForAjax(activeWin);
-        await handleEamPopups(activeWin);
+        await waitForSettled(activeWin);
+        verifyFieldValue(activeExt, mainForm, "workorderstatus", data.status, "Status");
       }
-      await handleEamPopups(activeWin);
-      await delay(500);
+      await waitForSettled(activeWin, 2e3, 100);
       showToast("Dispatching Save Request...", "#2ecc71", true);
       const saveBtns = activeExt.ComponentQuery.query("button[action=saveRec], button[action=saverecord], button.uft-id-saverec");
       const targetBtn = saveBtns.find((b) => b.rendered && !(typeof b.isHidden === "function" && b.isHidden())) || saveBtns[0];
@@ -6890,8 +7642,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
         }
         if (data.laborHours && parseFloat(data.laborHours) > 0) {
           showToast("Saving WO before Labor...", "#f1c40f", true);
-          await waitForAjax(activeWin);
-          await delay(1500);
+          await waitForSettled(activeWin, 5e3, 500);
           showToast(`Auto-Booking ${data.laborHours}h Labor...`, "#1abc9c", true);
           laborResult = await executeLaborBookingNative(parseFloat(data.laborHours), activeWin, { silent: true });
         }
@@ -6905,18 +7656,20 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
       _autofillLock = false;
     }
   }
-  async function executeChecklistsNative(data, currentActivity = null) {
+  async function executeChecklistsNative(data, currentActivity = null, ctx = null, { comboName = "activity" } = {}) {
     const lotoMode = data.lotoMode;
-    const pmChecks = data.pmChecks || 0;
-    if ((!lotoMode || lotoMode === "none") && pmChecks === 0) return;
+    const techChecks5 = data.techChecks5 || 0;
+    let techChecks10 = data.techChecks10 || data.pmChecks || 0;
+    const hasTasks = data._tasks && data._tasks.some((t) => t.count > 0);
+    if (!hasTasks && (!lotoMode || lotoMode === "none") && techChecks5 === 0 && techChecks10 === 0) return;
     showToast("Navigating to Checklist...", "#9b59b6", true);
     let activeExt = null;
     let checklistContainer = null;
     let mainTabPanel = null;
     let activeWin = null;
     for (let i = 0; i < 15; i++) {
-      const allDocs = getExtWindows();
-      for (const win of allDocs) {
+      const searchOrder = ctx?.activeWin ? [ctx.activeWin, ...(ctx.wins || getExtWindows()).filter((w) => w !== ctx.activeWin)] : ctx?.wins || getExtWindows();
+      for (const win of searchOrder) {
         if (win.Ext && win.Ext.ComponentQuery) {
           const containers = win.Ext.ComponentQuery.query("uxtabcontainer[itemId=ACK]");
           if (containers.length > 0) {
@@ -6939,27 +7692,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
       const grids = activeExt.ComponentQuery.query("gridpanel", checklistContainer);
       return grids.length > 0 ? grids[0] : null;
     };
-    const localWaitForAjax = async (maxMs = 1e4) => {
-      if (!activeExt.Ajax || !activeExt.Ajax.isLoading()) return;
-      return new Promise((resolve) => {
-        const cleanup = () => {
-          activeExt.Ajax.un("requestcomplete", onDone);
-          activeExt.Ajax.un("requestexception", onDone);
-        };
-        const onDone = () => {
-          if (!activeExt.Ajax.isLoading()) {
-            cleanup();
-            resolve();
-          }
-        };
-        activeExt.Ajax.on("requestcomplete", onDone);
-        activeExt.Ajax.on("requestexception", onDone);
-        setTimeout(() => {
-          cleanup();
-          resolve();
-        }, maxMs);
-      });
-    };
+    const localWaitForAjax = (maxMs = 1e4) => waitForSettled(activeWin, maxMs, 0);
     const waitForGridData = async (maxMs = 5e3) => {
       let waited = 0;
       let toastShown = false;
@@ -6994,9 +7727,10 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
         else targetBtn.fireEvent("click", targetBtn);
       }
       await localWaitForAjax();
+      await handleEamPopups(activeWin);
     };
     const switchActivity = async (targetValue) => {
-      const combos = activeExt.ComponentQuery.query("combobox[name=activity]", checklistContainer);
+      const combos = activeExt.ComponentQuery.query(`combobox[name=${comboName}]`, checklistContainer);
       if (!combos || combos.length === 0) return false;
       const actCombo = combos[0];
       const actStore = actCombo.getStore();
@@ -7006,27 +7740,50 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
       }
       const currentVal = String(actCombo.getValue() || "").trim();
       const currentDisp = String(actCombo.getRawValue() || "").trim();
-      const isAlreadyOnTarget = currentVal === targetValue || currentDisp === targetValue || currentVal.startsWith(targetValue + " ") || currentVal.startsWith(targetValue + "-") || currentDisp.startsWith(targetValue + " ") || currentDisp.startsWith(targetValue + "-");
+      const targetNum = normalizeActivity(targetValue);
+      const isAlreadyOnTarget = normalizeActivity(currentVal) === targetNum || normalizeActivity(currentDisp) === targetNum;
       if (isAlreadyOnTarget) {
         APMLogger.debug("AutoFill", `switchActivity: already on '${targetValue}' (val='${currentVal}', disp='${currentDisp}')`);
-        await waitForGridData(3e3);
+        const existingGrid = getGridStore();
+        if (!existingGrid || existingGrid.getStore().getCount() === 0) {
+          await waitForGridData(3e3);
+        }
         return true;
       }
       let targetRec = null;
       actStore.each((rec) => {
-        const val = String(rec.get(actCombo.valueField) || "");
-        const disp = String(rec.get(actCombo.displayField) || "").trim();
-        if (val === targetValue || disp === targetValue || disp.startsWith(targetValue + " -") || disp.startsWith(targetValue + "-")) {
+        if (normalizeActivity(rec.get(actCombo.valueField)) === targetNum || normalizeActivity(rec.get(actCombo.displayField)) === targetNum) {
           targetRec = rec;
+          return false;
         }
       });
       if (targetRec) {
         showToast(`Switching to Activity ${targetValue}...`, "#3498db", true);
+        const gridBefore = getGridStore();
+        const countBefore = gridBefore?.getStore()?.getCount() || 0;
+        const firstIdBefore = gridBefore?.getStore()?.getAt(0)?.id || null;
         actCombo.setValue(targetRec.get(actCombo.valueField));
-        actCombo.fireEvent("select", actCombo, [targetRec]);
+        if (comboName === "activity") {
+          actCombo.fireEvent("select", actCombo, [targetRec]);
+        }
         actCombo.fireEvent("change", actCombo, targetRec.get(actCombo.valueField));
+        await delay(500);
+        await handleEamPopups(activeWin);
         await localWaitForAjax();
-        await waitForGridData(5e3);
+        for (let waited = 0; waited < 8e3; waited += 100) {
+          const grid = getGridStore();
+          if (grid) {
+            const store = grid.getStore();
+            const count = store.getCount();
+            const firstId = store.getAt(0)?.id || null;
+            if (count > 0 && firstId !== firstIdBefore || count > 0 && countBefore === 0) break;
+            if (count === 0 && countBefore > 0) {
+              await waitForGridData(5e3);
+              break;
+            }
+          }
+          await delay(100);
+        }
         return true;
       }
       APMLogger.warn("AutoFill", `switchActivity: could not find activity '${targetValue}' in combo store (${actStore.getCount()} records)`);
@@ -7117,6 +7874,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
             }
           }
           globalProcessed++;
+          if (globalProcessed % 10 === 0) await delay(0);
           if (batchModified >= BATCH_SIZE) {
             try {
               store.resumeEvents();
@@ -7185,9 +7943,28 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
       if (!isReady) return;
       const chkGrid = getGridStore();
       if (!chkGrid || chkGrid.getStore().getCount() === 0) return;
+      const chkStore = chkGrid.getStore();
+      let anyNeedWork = false;
+      chkStore.each((record) => {
+        const { yesField, noField } = resolveCheckboxFields(record);
+        if (lotoMode === "yes" && record.get(yesField) !== "-1") {
+          anyNeedWork = true;
+          return false;
+        }
+        if (lotoMode === "no" && record.get(noField) !== "-1") {
+          anyNeedWork = true;
+          return false;
+        }
+      });
+      if (!anyNeedWork) {
+        APMLogger.debug("AutoFill", "1-Tech: all items already in target state");
+        showToast("1-Tech checklist already complete.", "#2ecc71", true);
+        return;
+      }
       let modifiedCount = 0;
       let needsSaving = false;
-      const chkStore = chkGrid.getStore();
+      const records = [];
+      chkStore.each((rec) => records.push(rec));
       let layoutsSuspended = false;
       try {
         activeExt.suspendLayouts();
@@ -7198,7 +7975,8 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
         chkStore.suspendEvents();
       } catch (e) {
       }
-      chkStore.each((record) => {
+      for (let i = 0; i < records.length; i++) {
+        const record = records[i];
         const { yesField, noField } = resolveCheckboxFields(record);
         const currentYes = record.get(yesField);
         const currentNo = record.get(noField);
@@ -7211,7 +7989,8 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
           needsSaving = true;
           modifiedCount++;
         }
-      });
+        if (i > 0 && i % 10 === 0) await delay(0);
+      }
       try {
         chkStore.resumeEvents();
       } catch (e) {
@@ -7229,9 +8008,10 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
         await saveGridData();
       }
     };
-    const do10Tech = async () => {
-      if (pmChecks <= 0) return;
-      const isReady = await switchActivity("10");
+    const do10Tech = async (overrideActivity) => {
+      if (techChecks10 <= 0) return;
+      const targetActivity = overrideActivity || "10";
+      const isReady = await switchActivity(targetActivity);
       if (!isReady) return;
       const pmGrid = getGridStore();
       if (!pmGrid || pmGrid.getStore().getCount() === 0) {
@@ -7242,13 +8022,22 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
         const { yesField } = resolveCheckboxFields(record);
         return record.data.hasOwnProperty("completed") && record.get("completed") === "-1" || record.get(yesField) === "-1";
       };
+      let alreadyCompleted = 0;
+      pmGrid.getStore().each((record) => {
+        if (isCompleted(record)) alreadyCompleted++;
+      });
+      if (alreadyCompleted >= techChecks10) {
+        APMLogger.debug("AutoFill", `10-Tech: ${alreadyCompleted} already completed (target: ${techChecks10})`);
+        showToast(`${alreadyCompleted} PM Checks already completed.`, "#2ecc71", true);
+        return;
+      }
       const { modified, alreadyDone } = await processInBatches(pmGrid, (record) => {
         const { yesField, noField } = resolveCheckboxFields(record);
         const updates = { [yesField]: "-1", [noField]: "0" };
         if (record.data.hasOwnProperty("completed")) updates.completed = "-1";
         record.set(updates);
         return true;
-      }, isCompleted, pmChecks);
+      }, isCompleted, techChecks10);
       if (modified > 0) {
         const parts = [`Synced ${modified} PM Checks`];
         if (alreadyDone > 0) parts.push(`${alreadyDone} already done`);
@@ -7259,13 +8048,105 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
         showToast("No items found on 10-Tech.", "#e74c3c");
       }
     };
-    if (currentActivity === "10") {
-      APMLogger.info("AutoFill", "Starting from 10-Tech (context-aware)");
-      await do10Tech();
-      await do1Tech();
-    } else {
-      await do1Tech();
-      await do10Tech();
+    const do5Tech = async () => {
+      if (techChecks5 <= 0) return;
+      const isReady = await switchActivity("5");
+      if (!isReady) return;
+      const grid5 = getGridStore();
+      if (!grid5 || grid5.getStore().getCount() === 0) {
+        showToast("No items found on 5-Tech.", "#e74c3c");
+        return;
+      }
+      const isCompleted = (record) => {
+        const { yesField } = resolveCheckboxFields(record);
+        return record.data.hasOwnProperty("completed") && record.get("completed") === "-1" || record.get(yesField) === "-1";
+      };
+      let alreadyCompleted = 0;
+      grid5.getStore().each((record) => {
+        if (isCompleted(record)) alreadyCompleted++;
+      });
+      if (alreadyCompleted >= techChecks5) {
+        showToast(`${alreadyCompleted} 5-Tech items already completed.`, "#2ecc71", true);
+        return;
+      }
+      const { modified, alreadyDone } = await processInBatches(grid5, (record) => {
+        const { yesField, noField } = resolveCheckboxFields(record);
+        const updates = { [yesField]: "-1", [noField]: "0" };
+        if (record.data.hasOwnProperty("completed")) updates.completed = "-1";
+        record.set(updates);
+        return true;
+      }, isCompleted, techChecks5);
+      if (modified > 0) {
+        const parts = [`Synced ${modified} 5-Tech Checks`];
+        if (alreadyDone > 0) parts.push(`${alreadyDone} already done`);
+        showToast(parts.join(" \u2014 ") + ".", "#2ecc71", true);
+      } else if (alreadyDone > 0) {
+        showToast(`${alreadyDone} 5-Tech items already completed.`, "#2ecc71", true);
+      }
+    };
+    const maskId = "apm-checklist-mask";
+    try {
+      const topDoc = window.top?.document || document;
+      if (!topDoc.getElementById(maskId)) {
+        const mask = topDoc.createElement("div");
+        mask.id = maskId;
+        mask.innerHTML = `
+                <div style="display:flex;flex-direction:column;align-items:center;gap:12px">
+                    <div style="display:flex;align-items:end;gap:3px;height:24px">
+                        ${[0, 1, 2, 3, 4].map((i) => `<div style="width:4px;height:24px;background:#fff;border-radius:2px;transform-origin:bottom;will-change:transform;animation:apmChkBar .8s ${i * 0.1}s ease-in-out infinite"></div>`).join("")}
+                    </div>
+                    <div style="color:#fff;font:600 13px/1 system-ui,sans-serif;text-shadow:0 1px 2px rgba(0,0,0,.4)">Processing Checklist\u2026</div>
+                </div>`;
+        Object.assign(mask.style, {
+          position: "fixed",
+          inset: "0",
+          zIndex: "1000000",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          background: "rgba(0,0,0,.35)",
+          backdropFilter: "blur(1px)"
+        });
+        if (!topDoc.getElementById("apm-chk-mask-css")) {
+          const style = topDoc.createElement("style");
+          style.id = "apm-chk-mask-css";
+          style.textContent = `@keyframes apmChkBar{0%,40%,100%{transform:scaleY(.33)}20%{transform:scaleY(1)}}`;
+          topDoc.head.appendChild(style);
+        }
+        topDoc.body.appendChild(mask);
+      }
+    } catch (e) {
+    }
+    try {
+      if (data._tasks) {
+        for (const task of data._tasks) {
+          if (task.count > 0) {
+            showToast(`Processing Task ${task.activity}...`, "#9b59b6", true);
+            const savedChecks = techChecks10;
+            techChecks10 = task.count;
+            await do10Tech(task.activity);
+            techChecks10 = savedChecks;
+          }
+        }
+      } else if (currentActivity === "10") {
+        APMLogger.info("AutoFill", "Starting from 10-Tech (context-aware)");
+        await do10Tech();
+        await do5Tech();
+        await do1Tech();
+      } else if (currentActivity === "5") {
+        await do5Tech();
+        await do1Tech();
+        await do10Tech();
+      } else {
+        await do1Tech();
+        await do5Tech();
+        await do10Tech();
+      }
+    } finally {
+      try {
+        (window.top?.document || document).getElementById(maskId)?.remove();
+      } catch (e) {
+      }
     }
     try {
       const hdrContainers = activeExt.ComponentQuery.query("uxtabcontainer[itemId=HDR]");
@@ -7326,10 +8207,11 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
           const combos = win.Ext.ComponentQuery.query("combobox[name=activity]");
           if (combos.length > 0) {
             const rawVal = String(combos[0].getValue() || "").trim();
-            const dispVal = String(combos[0].getRawValue() || "").trim();
-            if (rawVal === "10" || dispVal.startsWith("10 ") || dispVal.startsWith("10-") || dispVal.startsWith("10 -")) activity = "10";
-            else if (rawVal === "1" || dispVal.startsWith("1 ") || dispVal.startsWith("1-") || dispVal.startsWith("1 -")) activity = "1";
-            APMLogger.debug("AutoFill", `Activity detected: val="${rawVal}", disp="${dispVal}" \u2192 ${activity}`);
+            const norm = normalizeActivity(rawVal);
+            if (norm === 10) activity = "10";
+            else if (norm === 1) activity = "1";
+            else activity = String(norm);
+            APMLogger.debug("AutoFill", `Activity detected: val="${rawVal}" \u2192 normalized=${norm} \u2192 ${activity}`);
             break;
           }
         } catch (e) {
@@ -7373,7 +8255,13 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
           };
           btn.onclick = () => {
             overlay.remove();
-            executeAutoFillFlow("", prof);
+            const funcName = detectScreenFunction() || "";
+            const sType = AUTOFILL_SCREENS[funcName] || "wo";
+            if (sType === "repair") {
+              executeRepairFlow(prof);
+            } else {
+              executeAutoFillFlow("", prof);
+            }
           };
           return btn;
         })
@@ -7389,10 +8277,432 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
     document.body.appendChild(overlay);
     overlay.focus();
   }
+  async function executeRepairFlow(preselectedProfile) {
+    if (getIsAutoFillRunning()) return;
+    setIsAutoFillRunning(true);
+    try {
+      const matchedData = preselectedProfile;
+      if (!matchedData) {
+        showToast("Error: No repair template provided.", "#e74c3c");
+        return;
+      }
+      showToast(`Auto-Filling Repair: ${matchedData.name || "template"}`, "#f1c40f", true);
+      const ctx = createFlowContext();
+      let activeWin = null;
+      let mainForm = null;
+      for (let i = 0; i < 20; i++) {
+        for (const win of ctx.wins) {
+          if (win?.Ext?.ComponentQuery) {
+            const forms = win.Ext.ComponentQuery.query("form");
+            const targetForm = forms.find((f) => f.rendered && f.id.includes("recordview"));
+            if (targetForm) {
+              activeWin = win;
+              mainForm = targetForm.getForm();
+              break;
+            }
+          }
+        }
+        if (activeWin && mainForm) break;
+        await delay(250);
+      }
+      if (!activeWin || !mainForm) {
+        showToast("Error: Repair form not found.", "#e74c3c");
+        return;
+      }
+      const activeExt = activeWin.Ext;
+      if (matchedData.org) {
+        showToast("Setting Organization...", "#f1c40f", true);
+        await setEamLovFieldDirect(activeExt, mainForm, "organization", matchedData.org);
+        await waitForSettled(activeWin);
+        await handleEamPopups(activeWin);
+        await waitForSettled(activeWin);
+        verifyFieldValue(activeExt, mainForm, "organization", matchedData.org, "Organization");
+      }
+      if (matchedData.repairablePart) {
+        showToast("Setting Repairable Part...", "#f1c40f", true);
+        await setEamLovFieldDirect(activeExt, mainForm, "part", matchedData.repairablePart);
+        await waitForSettled(activeWin);
+        await handleEamPopups(activeWin);
+        await waitForSettled(activeWin);
+      }
+      showToast("Searching Issued Work Order...", "#f1c40f", true);
+      try {
+        const { records } = await eamQuery({
+          endpoint: "OSEQPP.xmlhttp",
+          gridName: "LVOBJL",
+          userFunction: "AUIRPR",
+          systemFunction: "OSEQPP",
+          includePagination: false,
+          extraParams: {
+            LOV_TAGNAME: "issuedrepairwo",
+            filterfields: "workordernum",
+            filteroperator: "CONTAINS",
+            filtervalue: ""
+          }
+        });
+        if (records?.length > 0) {
+          const woNum = records[0].workordernum || records[0].code || Object.values(records[0])[0];
+          if (woNum) {
+            await setEamLovFieldDirect(activeExt, mainForm, "issuedrepairwo", woNum);
+            await waitForSettled(activeWin);
+            await handleEamPopups(activeWin);
+            await waitForSettled(activeWin);
+          }
+        }
+      } catch (e) {
+        APMLogger.warn("AutoFill", "Issued WO search failed:", e);
+      }
+      if (matchedData.requestedBy) {
+        await setEamLovFieldDirect(activeExt, mainForm, "requestedby", matchedData.requestedBy);
+        await waitForSettled(activeWin);
+      }
+      if (matchedData.qty) {
+        setExtModelDirect(activeExt, mainForm, "quantity", String(matchedData.qty));
+      }
+      await waitForSettled(activeWin, 2e3, 100);
+      showToast("Saving Repair Request...", "#2ecc71", true);
+      const saveBtns = activeExt.ComponentQuery.query("button[action=saveRec], button[action=saverecord], button.uft-id-saverec");
+      const saveBtn = saveBtns.find((b) => b.rendered && !(typeof b.isHidden === "function" && b.isHidden())) || saveBtns[0];
+      if (saveBtn) {
+        if (saveBtn.handler) saveBtn.handler.call(saveBtn.scope || saveBtn, saveBtn);
+        else saveBtn.fireEvent("click", saveBtn);
+        await waitForSettled(activeWin, 5e3, 500);
+      }
+      showToast("Initiating Repair...", "#3498db", true);
+      const repairBtns = activeExt.ComponentQuery.query("button[text*=Initiate], button[tooltip*=Initiate]");
+      const repairBtn = repairBtns.find((b) => b.rendered && !(typeof b.isHidden === "function" && b.isHidden()));
+      if (repairBtn) {
+        if (repairBtn.handler) repairBtn.handler.call(repairBtn.scope || repairBtn, repairBtn);
+        else repairBtn.fireEvent("click", repairBtn);
+        await waitForSettled(activeWin, 3e3, 200);
+        await handleEamPopups(activeWin);
+        showToast("Repair initiated!", "#2ecc71");
+      } else {
+        showToast("Warning: Initiate Repair button not found.", "#e67e22");
+      }
+    } finally {
+      setIsAutoFillRunning(false);
+    }
+  }
+  async function executeShiftReportChecklists(tasks, ctx) {
+    const chkWin = ctx.activeWin;
+    const chkExt = ctx.activeExt;
+    if (!chkWin || !chkExt) return;
+    showToast("Navigating to Checklist...", "#9b59b6", true);
+    let ackContainer = null;
+    let tabPanel = null;
+    for (let i = 0; i < 15; i++) {
+      const containers = chkExt.ComponentQuery.query("uxtabcontainer[itemId=ACK]");
+      if (containers.length > 0) {
+        ackContainer = containers[0];
+        tabPanel = ackContainer.up("tabpanel");
+        break;
+      }
+      await delay(200);
+    }
+    if (!ackContainer || !tabPanel) {
+      showToast("Checklist tab not found.", "#e74c3c");
+      return;
+    }
+    if (!tabPanel.isDestroyed && tabPanel.getActiveTab() !== ackContainer) {
+      tabPanel.setActiveTab(ackContainer);
+    }
+    await waitForSettled(chkWin, 3e3, 100);
+    const getGrid = () => {
+      const grids = chkExt.ComponentQuery.query("gridpanel", ackContainer);
+      return grids.length > 0 ? grids[0] : null;
+    };
+    const waitForGrid = async (maxMs = 5e3) => {
+      for (let w = 0; w < maxMs; w += 100) {
+        const g = getGrid();
+        if (g && g.getStore().getCount() > 0) return g;
+        await delay(100);
+      }
+      return getGrid();
+    };
+    const saveChecklist = async () => {
+      const btns = chkExt.ComponentQuery.query("button[tooltip=Submit], button[text=Submit]");
+      const btn = btns.find((b) => b.rendered && !(typeof b.isHidden === "function" && b.isHidden())) || chkExt.ComponentQuery.query("button[action=saveRec], button[action=saverecord]")[0];
+      if (btn) {
+        if (btn.handler) btn.handler.call(btn.scope || btn, btn);
+        else btn.fireEvent("click", btn);
+        await waitForSettled(chkWin, 5e3, 200);
+        await handleEamPopups(chkWin);
+      }
+    };
+    await waitForGrid(5e3);
+    for (let ti = 0; ti < tasks.length; ti++) {
+      const { target, count } = tasks[ti];
+      showToast(`Processing Task ${target}...`, "#9b59b6", true);
+      const combos = chkExt.ComponentQuery.query("combobox[name=casemanagementtasksequence]", ackContainer);
+      if (!combos || combos.length === 0) {
+        APMLogger.warn("AutoFill", "Task sequence combo not found");
+        continue;
+      }
+      const combo = combos[0];
+      const comboStore = combo.getStore();
+      if (comboStore.getCount() === 0) {
+        await ExtUtils.ensureStoreLoaded(combo, chkWin);
+        await waitForSettled(chkWin, 3e3, 0);
+      }
+      let targetRec = null;
+      comboStore.each((rec) => {
+        const display = String(rec.get(combo.displayField) || "");
+        const leadingNum = parseInt(display.match(/^(\d+)/)?.[1], 10);
+        if (leadingNum === target) {
+          targetRec = rec;
+          return false;
+        }
+      });
+      if (!targetRec) {
+        showToast(`Task ${target} not found.`, "#e74c3c");
+        continue;
+      }
+      const targetValue = targetRec.get(combo.valueField);
+      let gridVerified = false;
+      const currentGrid = getGrid();
+      if (currentGrid && currentGrid.getStore().getCount() > 0) {
+        const firstRec = currentGrid.getStore().getAt(0);
+        const recTaskSeq = firstRec?.get("casemanagementtasksequence");
+        if (recTaskSeq && String(recTaskSeq) === String(targetValue)) {
+          gridVerified = true;
+          APMLogger.debug("AutoFill", `Grid already has task ${target} data \u2014 skipping combo switch`);
+        }
+      }
+      if (!gridVerified) {
+        showToast(`Switching to Task ${target}...`, "#3498db", true);
+        combo.setValue(targetValue);
+        try {
+          combo.fireEvent("select", combo, targetRec);
+        } catch (e) {
+          APMLogger.debug("AutoFill", `select event failed for task ${target}: ${e.message}`);
+        }
+        combo.fireEvent("change", combo, targetValue);
+        combo.fireEvent("blur", combo);
+        await delay(500);
+        await handleEamPopups(chkWin);
+        await waitForSettled(chkWin, 5e3, 0);
+        for (let w = 0; w < 8e3; w += 200) {
+          const g = getGrid();
+          if (g && g.getStore().getCount() > 0) {
+            const firstRec = g.getStore().getAt(0);
+            const recTaskSeq = firstRec?.get("casemanagementtasksequence");
+            if (recTaskSeq && String(recTaskSeq) === String(targetValue)) {
+              gridVerified = true;
+              break;
+            }
+          }
+          await delay(200);
+        }
+        if (!gridVerified) {
+          APMLogger.info("AutoFill", `Grid not verified for task ${target} \u2014 toggling ACK tab`);
+          try {
+            if (tabPanel && !tabPanel.isDestroyed) {
+              const hdrTabs = chkExt.ComponentQuery.query("uxtabcontainer[itemId=HDR]");
+              if (hdrTabs.length > 0) {
+                tabPanel.setActiveTab(hdrTabs[0]);
+                await delay(500);
+                tabPanel.setActiveTab(ackContainer);
+                await waitForSettled(chkWin, 5e3, 200);
+              }
+            }
+          } catch (e) {
+          }
+          for (let w = 0; w < 5e3; w += 200) {
+            const g = getGrid();
+            if (g && g.getStore().getCount() > 0) {
+              const firstRec = g.getStore().getAt(0);
+              const recTaskSeq = firstRec?.get("casemanagementtasksequence");
+              if (recTaskSeq && String(recTaskSeq) === String(targetValue)) {
+                gridVerified = true;
+                break;
+              }
+            }
+            await delay(200);
+          }
+        }
+        if (!gridVerified) {
+          showToast(`Task ${target}: grid did not reload.`, "#e74c3c");
+          continue;
+        }
+      }
+      const grid = getGrid();
+      if (!grid || grid.getStore().getCount() === 0) {
+        showToast(`No checklist items for Task ${target}.`, "#e74c3c");
+        continue;
+      }
+      const store = grid.getStore();
+      let alreadyDone = 0;
+      store.each((rec) => {
+        if (rec.get("yes") === "-1") alreadyDone++;
+      });
+      if (alreadyDone >= count) {
+        showToast(`Task ${target}: ${alreadyDone} items already done.`, "#2ecc71", true);
+        continue;
+      }
+      let modified = 0;
+      const records = [];
+      store.each((rec) => records.push(rec));
+      let layoutsSuspended = false;
+      try {
+        chkExt.suspendLayouts();
+        layoutsSuspended = true;
+      } catch (e) {
+      }
+      try {
+        store.suspendEvents();
+      } catch (e) {
+      }
+      for (const rec of records) {
+        if (alreadyDone + modified >= count) break;
+        if (rec.get("yes") === "-1") {
+          alreadyDone++;
+          continue;
+        }
+        rec.set({ yes: "-1", no: "0" });
+        modified++;
+      }
+      try {
+        store.resumeEvents();
+      } catch (e) {
+      }
+      try {
+        if (layoutsSuspended) chkExt.resumeLayouts(true);
+      } catch (e) {
+      }
+      if (modified > 0) {
+        try {
+          grid.getView().refresh();
+        } catch (e) {
+        }
+        showToast(`Task ${target}: checked ${modified} items. Saving...`, "#2ecc71", true);
+        await saveChecklist();
+      }
+    }
+    try {
+      await handleEamPopups(chkWin);
+      await delay(200);
+      const hdrContainers = chkExt.ComponentQuery.query("uxtabcontainer[itemId=HDR]");
+      if (hdrContainers.length > 0) {
+        const tp = hdrContainers[0].up("tabpanel");
+        if (tp && !tp.isDestroyed) {
+          tp.setActiveTab(hdrContainers[0]);
+          await waitForSettled(chkWin, 2e3, 100);
+          await handleEamPopups(chkWin);
+        }
+      }
+    } catch (e) {
+    }
+  }
+  async function executeShiftReportFlow(fallbackTitle, preselectedProfile) {
+    if (getIsAutoFillRunning()) return;
+    setIsAutoFillRunning(true);
+    try {
+      const ctx = createFlowContext();
+      let activeWin = null;
+      let mainForm = null;
+      for (let i = 0; i < 20; i++) {
+        for (const win of ctx.wins) {
+          if (win?.Ext?.ComponentQuery) {
+            const forms = win.Ext.ComponentQuery.query("form");
+            const targetForm = forms.find((f) => f.rendered && f.id.includes("recordview"));
+            if (targetForm) {
+              activeWin = win;
+              mainForm = targetForm.getForm();
+              break;
+            }
+          }
+        }
+        if (activeWin && mainForm) break;
+        await delay(250);
+      }
+      if (!activeWin || !mainForm) {
+        showToast("Error: Shift Report form not found.", "#e74c3c");
+        return;
+      }
+      ctx.activeWin = activeWin;
+      ctx.activeExt = activeWin.Ext;
+      ctx.mainForm = mainForm;
+      const activeExt = activeWin.Ext;
+      let matchedData = preselectedProfile || null;
+      if (!matchedData) {
+        const allDocs = getAccessibleDocs();
+        let activeTitle = "";
+        for (const d of allDocs) {
+          if (!d) continue;
+          const descInputs = Array.from(d.querySelectorAll('input[name="description"]')).filter((el2) => {
+            const style = window.getComputedStyle(el2);
+            return style.display !== "none" && style.visibility !== "hidden" && el2.offsetParent !== null;
+          });
+          if (descInputs.length > 0 && descInputs[0].value) {
+            activeTitle = descInputs[0].value.trim();
+            break;
+          }
+        }
+        if (!activeTitle && fallbackTitle) activeTitle = fallbackTitle;
+        const titleLower = activeTitle.toLowerCase();
+        const presets = getPresets();
+        const kwIndex = getKeywordIndex();
+        for (const [kw, entry] of kwIndex) {
+          if (entry.screen !== "shiftReport") continue;
+          if (titleLower.includes(kw)) {
+            matchedData = presets.autofill?.shiftReport?.[entry.presetKey];
+            break;
+          }
+        }
+        if (!matchedData) {
+          showToast("No shift report template matched.", "#e74c3c");
+          return;
+        }
+      }
+      showToast(`Auto-Filling Shift Report: ${matchedData.keyword || matchedData.name || "template"}`, "#f1c40f", true);
+      const user = AppState.session.user;
+      if (user) {
+        showToast("Setting User Login...", "#f1c40f", true);
+        await setEamLovFieldDirect(activeExt, mainForm, "reportedby", user);
+        await waitForSettled(activeWin);
+      }
+      if (matchedData.status) {
+        showToast("Setting Status...", "#f1c40f", true);
+        await setEamLovFieldDirect(activeExt, mainForm, "casestatus", matchedData.status);
+        await waitForSettled(activeWin);
+        await handleEamPopups(activeWin);
+        await waitForSettled(activeWin);
+      }
+      showToast("Saving Shift Report...", "#2ecc71", true);
+      const saveBtns = activeExt.ComponentQuery.query("button[action=saveRec], button[action=saverecord], button.uft-id-saverec");
+      const saveBtn = saveBtns.find((b) => b.rendered && !(typeof b.isHidden === "function" && b.isHidden())) || saveBtns[0];
+      if (saveBtn) {
+        if (saveBtn.handler) saveBtn.handler.call(saveBtn.scope || saveBtn, saveBtn);
+        else saveBtn.fireEvent("click", saveBtn);
+        await waitForSettled(activeWin, 5e3, 500);
+      }
+      const srTasks = [];
+      if (matchedData.actChecks10 > 0) srTasks.push({ target: 10, count: matchedData.actChecks10 });
+      if (matchedData.actChecks20 > 0) srTasks.push({ target: 20, count: matchedData.actChecks20 });
+      if (srTasks.length > 0) {
+        await executeShiftReportChecklists(srTasks, ctx);
+      }
+      showToast("Shift Report complete!", "#2ecc71");
+    } finally {
+      setIsAutoFillRunning(false);
+    }
+  }
   async function executeAutoFillFlow(fallbackTitle, preselectedProfile) {
     if (getIsAutoFillRunning()) return;
     setIsAutoFillRunning(true);
     try {
+      const funcName = detectActiveScreen();
+      const screenType = AUTOFILL_SCREENS[funcName] || "wo";
+      if (screenType === "repair") {
+        setIsAutoFillRunning(false);
+        return executeRepairFlow(preselectedProfile);
+      }
+      if (screenType === "shiftReport") {
+        setIsAutoFillRunning(false);
+        return executeShiftReportFlow(fallbackTitle, preselectedProfile);
+      }
+      const flowStart = performance.now();
       let gridNavWin = null;
       for (const win of getExtWindows()) {
         if (gridNavWin) break;
@@ -7440,7 +8750,9 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
       } else {
         APMLogger.info("AutoFill", "No visible WO grid with selection \u2014 assuming record view");
       }
+      const ctx = createFlowContext();
       const context = gridNavWin ? { tab: "HDR", activity: null, win: gridNavWin, tabPanel: null } : detectActiveTab();
+      if (context.win) ctx.activeWin = context.win;
       APMLogger.info("AutoFill", `Context: tab=${context.tab}, activity=${context.activity}${gridNavWin ? " (post-grid-nav, forced HDR)" : ""}`);
       loadPresets();
       let activeTitle = "";
@@ -7467,18 +8779,17 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
       }
       const presets = getPresets();
       if (!matchedData) {
-        for (const key in presets.autofill) {
-          const kwString = presets.autofill[key].keyword;
-          if (!kwString) continue;
-          const keywords = kwString.split(",").map((k) => k.trim().toLowerCase()).filter((k) => k.length > 0);
-          if (keywords.some((k) => titleLower.includes(k))) {
-            matchedData = presets.autofill[key];
+        const kwIndex = getKeywordIndex();
+        for (const [kw, entry] of kwIndex) {
+          if (entry.screen !== screenType) continue;
+          if (titleLower.includes(kw)) {
+            matchedData = presets.autofill?.[entry.screen]?.[entry.presetKey];
             break;
           }
         }
       }
       if (!matchedData && !titleLower) {
-        const defaults = getDefaultProfiles();
+        const defaults = getDefaultProfiles(screenType);
         if (defaults.length === 1) {
           matchedData = defaults[0];
           APMLogger.info("AutoFill", `Using default profile "${defaults[0].name}" for blank record`);
@@ -7496,19 +8807,20 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
       }
       showToast(`Auto-Filling Template: ${matchedData.keyword || matchedData.woTitle || matchedData.name}`, "#f1c40f", true);
       const needsRecordFill = !!(matchedData.org || matchedData.type || matchedData.eq || matchedData.exec || matchedData.safety || matchedData.close || matchedData.prob || matchedData.fail || matchedData.cause || matchedData.assign || matchedData.status || matchedData.start || matchedData.end || matchedData.laborHours && parseFloat(matchedData.laborHours) > 0);
-      const needsChecklist = matchedData.lotoMode && matchedData.lotoMode !== "none" || matchedData.pmChecks > 0;
+      const needsChecklist = matchedData.lotoMode && matchedData.lotoMode !== "none" || matchedData.techChecks5 > 0 || matchedData.techChecks10 > 0 || matchedData.pmChecks > 0;
       const hasLaborHours = matchedData.laborHours && parseFloat(matchedData.laborHours) > 0;
       let _lastLaborResult = null;
       if (context.tab === "ACK") {
         APMLogger.info("AutoFill", `Starting from checklist tab, activity=${context.activity} (context-aware)`);
         if (needsChecklist) {
-          await executeChecklistsNative(matchedData, context.activity);
+          await executeChecklistsNative(matchedData, context.activity, ctx);
         }
         if (needsRecordFill) {
           APMLogger.info("AutoFill", "Switching to HDR for record fill after checklists");
-          await ensureHDRTab();
-          await delay(300);
-          _lastLaborResult = await injectExtJSFieldsNative(matchedData);
+          await ensureHDRTab(ctx);
+          await waitForSettled(ctx.activeWin || ctx.wins[0], 3e3, 100);
+          refreshFlowWins(ctx);
+          _lastLaborResult = await injectExtJSFieldsNative(matchedData, ctx);
         }
       } else if (context.tab === "LABOR" && hasLaborHours) {
         APMLogger.info("AutoFill", "Starting from Book Labor tab \u2014 booking labor first");
@@ -7517,24 +8829,26 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
         const dataWithoutLabor = { ...matchedData, laborHours: 0 };
         if (needsRecordFill) {
           APMLogger.info("AutoFill", "Switching to HDR for record fill after labor");
-          await ensureHDRTab();
-          await delay(300);
-          await injectExtJSFieldsNative(dataWithoutLabor);
+          await ensureHDRTab(ctx);
+          await waitForSettled(ctx.activeWin || ctx.wins[0], 3e3, 100);
+          refreshFlowWins(ctx);
+          await injectExtJSFieldsNative(dataWithoutLabor, ctx);
         }
         if (needsChecklist) {
-          await executeChecklistsNative(matchedData);
+          await executeChecklistsNative(matchedData, null, ctx);
         }
       } else {
         APMLogger.info("AutoFill", `Starting from ${context.tab} tab`);
         if (needsRecordFill) {
           if (context.tab !== "HDR") {
-            await ensureHDRTab();
-            await delay(300);
+            await ensureHDRTab(ctx);
+            await waitForSettled(ctx.activeWin || ctx.wins[0], 3e3, 100);
+            refreshFlowWins(ctx);
           }
-          _lastLaborResult = await injectExtJSFieldsNative(matchedData);
+          _lastLaborResult = await injectExtJSFieldsNative(matchedData, ctx);
         }
         if (needsChecklist) {
-          await executeChecklistsNative(matchedData);
+          await executeChecklistsNative(matchedData, null, ctx);
         }
       }
       if (_lastLaborResult?.result === "failed") {
@@ -7546,6 +8860,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
       } else {
         showToast("Auto-Fill Complete.", "#1abc9c");
       }
+      Diagnostics.recordAutofillFlow(Math.round(performance.now() - flowStart));
     } catch (e) {
       APMLogger.error("AutoFill", "Critical Error in executeAutoFillFlow:", e);
       showToast("Script Error (See Console)", "#e74c3c");
@@ -7553,8 +8868,8 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
       setIsAutoFillRunning(false);
     }
   }
-  async function ensureHDRTab() {
-    const wins = getExtWindows();
+  async function ensureHDRTab(ctx = null) {
+    const wins = ctx?.wins || getExtWindows();
     for (const win of wins) {
       try {
         if (!win.Ext || !win.Ext.ComponentQuery) continue;
@@ -7565,8 +8880,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
           if (tabPanel && tabPanel.getActiveTab() !== hdrTab) {
             APMLogger.info("AutoFill", "Switching to Record View (HDR) tab...");
             tabPanel.setActiveTab(hdrTab);
-            await delay(250);
-            await waitForAjax(win);
+            await waitForSettled(win, 3e3, 100);
           }
           break;
         }
@@ -7583,7 +8897,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
           if (tabPanel && tabPanel.getActiveTab() !== tabItem) {
             APMLogger.info("AutoFill", `Switching to Record View tab (${tabItem.id})...`);
             tabPanel.setActiveTab(tabItem);
-            await delay(250);
+            await waitForSettled(win, 3e3, 100);
           }
         }
       } catch (e) {
@@ -7597,29 +8911,38 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
       APMLogger.debug("AutoFill", "Scan skipped: AutoFill is currently running");
       return;
     }
+    const funcName = detectActiveScreen();
+    const screenType = AUTOFILL_SCREENS[funcName] || null;
+    if (!screenType) {
+      APMLogger.debug("AutoFill", `Screen "${funcName}" is not an autofill-enabled screen`);
+      return;
+    }
     APMLogger.debug("AutoFill", "--- Starting Scan ---");
     const allDocs = getAccessibleDocs();
-    const presets = getPresets();
+    const presets = getPresetsReadOnly();
     allDocs.forEach((d) => {
       try {
         if (!d || !d.body) return;
         const win = d.defaultView;
         if (!win || !win.Ext) return;
-        const rvForms = win.Ext.ComponentQuery.query("form[id*=recordview]") || win.Ext.ComponentQuery.query("form[name=recordview]");
+        let rvForms = win.Ext.ComponentQuery.query("form[id*=recordview]") || win.Ext.ComponentQuery.query("form[name=recordview]");
+        if ((!rvForms || rvForms.length === 0) && screenType !== "wo") {
+          rvForms = win.Ext.ComponentQuery.query("form");
+        }
         let foundTitleLocal = "";
         const rvForm = rvForms.find((f) => f.rendered && !f.isDestroyed && f.isVisible?.(true));
         APMLogger.debug("AutoFill", `[${d.location?.pathname}] Forms found: ${rvForms?.length || 0}, visible form: ${rvForm ? rvForm.id : "NONE"}`);
         if (rvForm) {
           const record = rvForm.getRecord?.();
           if (record) {
-            foundTitleLocal = (record.get("description") || "").trim().toLowerCase();
+            foundTitleLocal = (record.get("description") || record.get("casedescription") || "").trim().toLowerCase();
           }
           if (!foundTitleLocal) {
-            const descField = rvForm.getForm?.().findField?.("description");
+            const descField = rvForm.getForm?.().findField?.("description") || rvForm.getForm?.().findField?.("casedescription");
             if (descField) foundTitleLocal = (descField.getValue() || "").trim().toLowerCase();
           }
         }
-        if (!foundTitleLocal) {
+        if (!foundTitleLocal && !rvForm) {
           const grids = win.Ext.ComponentQuery.query("gridpanel");
           for (const grid of grids) {
             if (grid.isDestroyed || !grid.rendered) continue;
@@ -7637,7 +8960,14 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
           }
         }
         APMLogger.debug("AutoFill", `[${d.location?.pathname}] Title resolved: "${foundTitleLocal}"`);
-        if (foundTitleLocal) _lastKnownTitle = foundTitleLocal;
+        if (!foundTitleLocal && _lastKnownTitle && !rvForm) {
+          foundTitleLocal = _lastKnownTitle;
+        }
+        if (foundTitleLocal) {
+          _lastKnownTitle = foundTitleLocal;
+        } else if (rvForm) {
+          _lastKnownTitle = "";
+        }
         const existingCmp = win.Ext.getCmp("apm-btn-do-autofill");
         const existingDomBtn = d.getElementById("apm-btn-do-autofill");
         const removeExisting = () => {
@@ -7650,22 +8980,25 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
           return false;
         };
         let hasMatch = false;
-        if (foundTitleLocal) {
-          for (const key in presets.autofill) {
-            const kwString = presets.autofill[key].keyword;
-            if (!kwString) continue;
-            const keywords = kwString.split(",").map((k) => k.trim().toLowerCase()).filter(Boolean);
-            if (keywords.some((k) => foundTitleLocal === k || foundTitleLocal.includes(k))) {
-              hasMatch = true;
-              break;
+        if (screenType === "repair") {
+          hasMatch = !!rvForm || !!(existingCmp || existingDomBtn);
+        } else {
+          if (foundTitleLocal) {
+            const kwIndex = getKeywordIndex();
+            for (const [kw, entry] of kwIndex) {
+              if (entry.screen !== screenType) continue;
+              if (foundTitleLocal === kw || foundTitleLocal.includes(kw)) {
+                hasMatch = true;
+                break;
+              }
             }
           }
-        }
-        if (!hasMatch && !foundTitleLocal && rvForm) {
-          const defaults = getDefaultProfiles();
-          if (defaults.length > 0) {
-            hasMatch = true;
-            APMLogger.debug("AutoFill", `Blank record detected \u2014 ${defaults.length} default profile(s) available`);
+          if (!hasMatch && !foundTitleLocal && rvForm && screenType === "wo") {
+            const defaults = getDefaultProfiles("wo");
+            if (defaults.length > 0) {
+              hasMatch = true;
+              APMLogger.debug("AutoFill", `Blank record detected \u2014 ${defaults.length} default profile(s) available`);
+            }
           }
         }
         if (!hasMatch) {
@@ -7736,7 +9069,21 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
           btn.style.transform = "translateY(-50%)";
           btn.addEventListener("click", (e) => {
             e.preventDefault();
-            executeAutoFillFlow(foundTitleLocal);
+            const fName = detectScreenFunction() || "";
+            const sType = AUTOFILL_SCREENS[fName] || "wo";
+            if (sType === "repair") {
+              const rPresets = getPresetsReadOnly()?.autofill?.repair || {};
+              const rProfiles = Object.entries(rPresets).map(([name, data]) => ({ name, ...data }));
+              if (rProfiles.length === 1) {
+                executeRepairFlow(rProfiles[0]);
+              } else if (rProfiles.length > 1) {
+                showDefaultProfilePicker(rProfiles);
+              } else {
+                showToast("No repair templates configured.", "#e74c3c");
+              }
+            } else {
+              executeAutoFillFlow(foundTitleLocal);
+            }
           });
           if (win.getComputedStyle(tabBarEl).position === "static") tabBarEl.style.position = "relative";
           tabBarEl.appendChild(btn);
@@ -7755,7 +9102,21 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
               if (!btn) return;
               btn.addEventListener("click", (e) => {
                 e.preventDefault();
-                executeAutoFillFlow(foundTitleLocal);
+                const fName = detectScreenFunction() || "";
+                const sType = AUTOFILL_SCREENS[fName] || "wo";
+                if (sType === "repair") {
+                  const rPresets = getPresetsReadOnly()?.autofill?.repair || {};
+                  const rProfiles = Object.entries(rPresets).map(([name, data]) => ({ name, ...data }));
+                  if (rProfiles.length === 1) {
+                    executeRepairFlow(rProfiles[0]);
+                  } else if (rProfiles.length > 1) {
+                    showDefaultProfilePicker(rProfiles);
+                  } else {
+                    showToast("No repair templates configured.", "#e74c3c");
+                  }
+                } else {
+                  executeAutoFillFlow(foundTitleLocal);
+                }
               });
             }
           }
@@ -7783,18 +9144,32 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
           if (!rvForm) continue;
           let currentTitle = "";
           const record = rvForm.getRecord?.();
-          if (record) currentTitle = (record.get("description") || "").trim().toLowerCase();
+          if (record) currentTitle = (record.get("description") || record.get("casedescription") || "").trim().toLowerCase();
           if (!currentTitle) {
             const descField = rvForm.getForm?.().findField?.("description");
             if (descField) currentTitle = (descField.getValue() || "").trim().toLowerCase();
           }
-          if (currentTitle && currentTitle !== _lastKnownTitle) {
+          if (currentTitle !== _lastKnownTitle) {
             APMLogger.debug("AutoFill", `Title changed: "${_lastKnownTitle}" \u2192 "${currentTitle}"`);
             injectAutoFillTriggers();
           }
           return;
         } catch (e) {
         }
+      }
+    }, { isIdle: false });
+    let _lastKnownScreen = "";
+    let _retryUntil = 0;
+    APMScheduler.registerTask("autofill-screen-watch", 500, () => {
+      if (!FeatureFlags.isEnabled("autoFill")) return;
+      const currentScreen = detectActiveScreen();
+      if (currentScreen && currentScreen !== _lastKnownScreen) {
+        APMLogger.debug("AutoFill", `Screen changed: "${_lastKnownScreen}" \u2192 "${currentScreen}"`);
+        _lastKnownScreen = currentScreen;
+        _retryUntil = Date.now() + 8e3;
+        injectAutoFillTriggers();
+      } else if (Date.now() < _retryUntil) {
+        injectAutoFillTriggers();
       }
     }, { isIdle: false });
     APMScheduler.registerTask("autofill-button-poll", 3e4, () => {
@@ -8745,6 +10120,107 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
 .apm-info-bubble .apm-tip-good { color: var(--apm-success-bright); }
 .apm-info-bubble .apm-tip-warn { color: var(--apm-warning); }
 .apm-info-bubble .apm-tip-bad { color: var(--apm-danger); }
+
+/* \u2500\u2500 Autofill Screen Pill Bar \u2500\u2500 */
+.apm-screen-pills {
+    display: flex;
+    background: var(--apm-surface-sunken);
+    border: 1px solid var(--apm-border);
+    border-radius: var(--apm-radius-sm);
+    overflow: hidden;
+    margin-bottom: 8px;
+}
+.apm-screen-pill {
+    flex: 1;
+    padding: 5px 0;
+    text-align: center;
+    font-size: var(--apm-text-sm);
+    font-weight: 600;
+    color: var(--apm-text-disabled);
+    cursor: pointer;
+    transition: all 0.15s;
+    border: none;
+    background: transparent;
+    outline: none;
+}
+.apm-screen-pill:hover:not(.apm-screen-pill-active) {
+    background: rgba(255,255,255,0.08);
+    color: var(--apm-text-secondary);
+}
+.apm-screen-pill-active {
+    background: var(--apm-accent);
+    color: var(--apm-text-on-accent);
+}
+.apm-screen-pill-active:hover {
+    filter: brightness(1.15);
+}
+
+/* \u2500\u2500 Inline Popover \u2500\u2500 */
+.apm-popover {
+    position: absolute;
+    z-index: 100;
+    background: var(--apm-surface-raised);
+    border: 1px solid var(--apm-border-strong);
+    border-radius: var(--apm-radius);
+    padding: 10px;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+    min-width: 200px;
+}
+.apm-popover-input {
+    width: 100%;
+    height: 28px;
+    padding: 0 8px;
+    margin-bottom: 6px;
+    background: var(--apm-input-bg);
+    border: 1px solid var(--apm-input-border);
+    border-radius: var(--apm-radius-sm);
+    color: var(--apm-input-text);
+    font-size: var(--apm-text-base);
+    outline: none;
+    box-sizing: border-box;
+}
+.apm-popover-input:focus {
+    box-shadow: 0 0 0 2px var(--apm-input-focus);
+}
+.apm-popover-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: 6px;
+}
+.apm-popover-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 6px;
+    margin-top: 8px;
+}
+
+/* \u2500\u2500 Collapsible Details \u2500\u2500 */
+.apm-details-schedule summary {
+    cursor: pointer;
+    font-size: var(--apm-text-xs);
+    font-weight: 600;
+    color: var(--apm-text-muted);
+    letter-spacing: 0.6px;
+    text-transform: uppercase;
+    padding: 4px 0;
+    list-style: none;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+.apm-details-schedule summary::-webkit-details-marker { display: none; }
+.apm-details-schedule summary::before {
+    content: '\u25B6';
+    font-size: 8px;
+    transition: transform 0.15s;
+}
+.apm-details-schedule[open] summary::before {
+    transform: rotate(90deg);
+}
+.apm-details-schedule .apm-details-body {
+    padding: 4px 0 0 0;
+}
 `;
   function injectStaticStyles() {
     if (document.getElementById("apm-static-styles")) return;
@@ -8779,6 +10255,35 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
   // src/core/frame-manager.js
   var _gridObservers = /* @__PURE__ */ new Map();
   var _discoveryBurstRegistered = false;
+  var _hookedLayouts = /* @__PURE__ */ new WeakSet();
+  function hookViewTransitions(win) {
+    try {
+      if (!win.Ext?.ComponentQuery) return;
+      const ldvs = win.Ext.ComponentQuery.query("listdetailview:not([destroyed=true])");
+      for (const ldv of ldvs) {
+        if (!ldv || ldv.isDestroyed || !ldv.rendered) continue;
+        const layout = ldv.getLayout?.();
+        if (!layout || typeof layout.setActiveItem !== "function") continue;
+        if (_hookedLayouts.has(layout)) continue;
+        _hookedLayouts.add(layout);
+        const original = layout.setActiveItem.bind(layout);
+        layout.setActiveItem = function(item) {
+          const result = original(item);
+          try {
+            const active = layout.getActiveItem?.();
+            const hasGrid = active?.down?.("gridpanel") || active?.xtype === "gridpanel";
+            const hasForm = active?.down?.("form[id*=recordview]") || active?.xtype === "form";
+            const view = hasForm ? "record" : hasGrid ? "list" : "unknown";
+            APMLogger.debug("FrameManager", `View transition: ${view}`);
+            window.dispatchEvent(new CustomEvent("APM_VIEW_TRANSITION", { detail: { view, win } }));
+          } catch (e) {
+          }
+          return result;
+        };
+      }
+    } catch (e) {
+    }
+  }
   function injectStylesIntoDoc(doc) {
     if (!doc || doc.getElementById("apm-static-styles")) return;
     const style = doc.createElement("style");
@@ -8858,6 +10363,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
     }
     attachObserverToDoc(document, window);
     AjaxHooks.install(window);
+    hookViewTransitions(window);
     document.querySelectorAll("iframe").forEach((f) => {
       if (f.hasApmLoadBound) return;
       f.addEventListener("load", () => {
@@ -8906,6 +10412,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
           }
           const triggerConsistency = () => {
             if (typeof setupExtGridListeners === "function") setupExtGridListeners(fw);
+            hookViewTransitions(fw);
             processColorCodeGrid(fd);
             attachObserverToDoc(fd, fw);
           };
@@ -8984,7 +10491,13 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
   function handleGeneralSettingsSync(data) {
     try {
       const next = JSON.parse(data);
+      const existingFlags = apmGeneralSettings.flags ? { ...apmGeneralSettings.flags } : {};
       Object.assign(apmGeneralSettings, next);
+      if (next.flags && typeof next.flags === "object" && Object.keys(next.flags).length > 0) {
+        apmGeneralSettings.flags = { ...existingFlags, ...next.flags };
+      } else {
+        apmGeneralSettings.flags = existingFlags;
+      }
       const invalidate = APMApi.get("invalidateColorCodeCache");
       if (typeof invalidate === "function") invalidate();
     } catch (err) {
@@ -10224,6 +11737,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
   var isStopped = false;
   var currentMode = "normal";
   var currentTarget = "WSJOBS";
+  var filtersActive = false;
   var OP_EQ = "fo_eq";
   var OP_LTE = "fo_lte";
   var OP_GTE = "fo_gte";
@@ -10348,9 +11862,9 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
       const params = options.params || {};
       const isGridData = url2.includes("GRIDDATA") || url2.includes(".xmlhttp") || params.GRID_NAME;
       if (!isGridData) return;
-      const isWorkOrderSearch = url2.includes("WSJOBS.xmlhttp") || params.GRID_NAME === "WSJOBS";
+      const isWorkOrderSearch = url2.includes("WSJOBS.xmlhttp") || url2.includes("CTJOBS.xmlhttp") || params.GRID_NAME === "WSJOBS" || params.GRID_NAME === "CTJOBS";
       const isCacheRequest = url2.includes("GETCACHE") || typeof params === "string" && params.includes("COMPONENT_INFO_TYPE_MODE=CACHE") || params.COMPONENT_INFO_TYPE_MODE === "CACHE";
-      if (!isRunning) return;
+      if (!isRunning && !filtersActive) return;
       const topDoc = window.top.document;
       const profSelect = topDoc.getElementById("eam-profile-select");
       const profId = profSelect?.value;
@@ -11097,6 +12611,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
         endOpClass
       };
       await applyForecastFiltersExtJS(extjsFilterData);
+      filtersActive = mode !== "clear" && mode !== "quick";
       if (mode === "quick") {
         let woGrid = null;
         let woGridWin = null;
@@ -13288,13 +14803,20 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
   init_logger();
   init_utils();
   init_constants();
+  var _desiredTitle = null;
+  var _titleGuardActive = false;
   function getRecordDescription() {
     const wins = getExtWindows();
     for (const win of wins) {
       try {
         if (!win.Ext?.ComponentQuery) continue;
         const rvForms = win.Ext.ComponentQuery.query("form[id*=recordview]");
-        const rvForm = rvForms.find((f) => f.rendered && !f.isDestroyed && f.isVisible?.());
+        const rvForm = rvForms.find((f) => {
+          if (!f.rendered || f.isDestroyed) return false;
+          if (f.isVisible?.(true)) return true;
+          const tp = f.up?.("tabpanel");
+          return tp?.isVisible?.(true);
+        });
         if (!rvForm) continue;
         const record = rvForm.getRecord?.();
         if (record) {
@@ -13311,15 +14833,33 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
     }
     return null;
   }
+  function installTitleGuard() {
+    if (_titleGuardActive) return;
+    const titleEl = document.querySelector("title");
+    if (!titleEl) return;
+    let _suppressing = false;
+    const observer = new MutationObserver(() => {
+      if (_suppressing) return;
+      if (_desiredTitle && document.title !== _desiredTitle) {
+        _suppressing = true;
+        document.title = _desiredTitle;
+        _suppressing = false;
+      }
+    });
+    observer.observe(titleEl, { childList: true, characterData: true, subtree: true });
+    _titleGuardActive = true;
+    APMLogger.debug("TabTitle", "Title guard installed");
+  }
   function updateTabTitle() {
     try {
-      const userFunc = detectScreenFunction();
+      const userFunc = detectActiveScreen();
       if (!userFunc || userFunc === "GLOBAL") return;
       const entity = ENTITY_REGISTRY[userFunc];
       const screenTitle = entity?.screenTitle || SCREEN_TITLES[userFunc];
       if (entity) {
         const desc = getRecordDescription();
         if (desc) {
+          _desiredTitle = desc;
           if (document.title !== desc) {
             document.title = desc;
             APMLogger.debug("TabTitle", `Set title to record description: "${desc}"`);
@@ -13328,6 +14868,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
         }
       }
       if (screenTitle) {
+        _desiredTitle = screenTitle;
         if (document.title !== screenTitle) {
           document.title = screenTitle;
           APMLogger.debug("TabTitle", `Set title to screen: "${screenTitle}"`);
@@ -13349,7 +14890,6 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
   init_toast();
   init_dom_helpers();
   init_feature_flags();
-  var SNAPSHOT_TTL = 4 * 60 * 60 * 1e3;
   var CAPTURE_INTERVAL = 3e3;
   var RESTORE_GRID_TIMEOUT = 1e4;
   var PROMPT_AUTO_DISMISS = 15e3;
@@ -13519,6 +15059,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
   var _lastRecordType = null;
   var _lastRecordId = null;
   var _lastGridStateHash = null;
+  var _lastActiveTab = null;
   function detectRecordView() {
     for (const w of getExtWindows()) {
       try {
@@ -13526,19 +15067,29 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
         const forms = w.Ext.ComponentQuery.query("form[id*=recordview]");
         for (const form of forms) {
           if (!form.rendered || form.isDestroyed) continue;
+          if (typeof form.isVisible === "function" && !form.isVisible(true)) {
+            const tabPanel = form.up?.("tabpanel");
+            if (!tabPanel || typeof tabPanel.isVisible !== "function" || !tabPanel.isVisible(true)) continue;
+          }
           const screen = detectScreenFunction(w, null);
           const entityConfig = ENTITY_REGISTRY[screen];
           if (!entityConfig) continue;
+          let activeTab = null;
+          const tp = form.up?.("tabpanel");
+          if (tp) {
+            const at = tp.getActiveTab?.();
+            if (at?.itemId) activeTab = at.itemId;
+          }
           const field = form.down?.(`field[name=${entityConfig.entityKey}]`);
           const val = field?.getValue?.();
           if (val) {
-            return { entityType: screen, entityId: String(val) };
+            return { entityType: screen, entityId: String(val), activeTab };
           }
           const basicForm = form.getForm?.();
           if (basicForm) {
             const fVal = basicForm.findField?.(entityConfig.entityKey)?.getValue?.();
             if (fVal) {
-              return { entityType: screen, entityId: String(fVal) };
+              return { entityType: screen, entityId: String(fVal), activeTab };
             }
           }
           const ctx = findMainGrid();
@@ -13547,7 +15098,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
             if (sel && sel.length > 0) {
               const selVal = sel[0].get(entityConfig.entityKey);
               if (selVal) {
-                return { entityType: screen, entityId: String(selVal) };
+                return { entityType: screen, entityId: String(selVal), activeTab };
               }
             }
           }
@@ -13560,7 +15111,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
   function captureState(tabId) {
     if (!isTopFrame()) return;
     const ctx = findMainGrid();
-    const screen = ctx ? detectScreenFunction(ctx.win, ctx.grid) : null;
+    const screen = detectActiveScreen() || (ctx ? detectScreenFunction(ctx.win, ctx.grid) : null);
     const record = detectRecordView();
     const gridState = captureGridState(ctx?.win);
     const gridStateHash = gridState ? JSON.stringify(gridState) : null;
@@ -13568,11 +15119,13 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
     const forecastProfileId = profSelect?.value && profSelect.value !== "manual" ? profSelect.value : null;
     const screenChanged = screen !== _lastScreen;
     const recordChanged = record?.entityType !== _lastRecordType || record?.entityId !== _lastRecordId;
+    const tabChanged = (record?.activeTab || null) !== _lastActiveTab;
     const gridChanged = gridStateHash !== _lastGridStateHash;
-    if (!screenChanged && !recordChanged && !gridChanged) return;
+    if (!screenChanged && !recordChanged && !tabChanged && !gridChanged) return;
     _lastScreen = screen;
     _lastRecordType = record?.entityType || null;
     _lastRecordId = record?.entityId || null;
+    _lastActiveTab = record?.activeTab || null;
     _lastGridStateHash = gridStateHash;
     if (!screen) return;
     const snapshot = {
@@ -13580,7 +15133,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
       tabId,
       ts: Date.now(),
       screen,
-      record: record ? { entityType: record.entityType, entityId: record.entityId } : null,
+      record: record ? { entityType: record.entityType, entityId: record.entityId, activeTab: record.activeTab || null } : null,
       gridState: gridState || null,
       forecastProfileId: forecastProfileId || null
     };
@@ -13802,6 +15355,27 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
     }
     return true;
   }
+  async function restoreActiveTab(activeTab) {
+    if (!activeTab || activeTab === "HDR") return;
+    await delay(500);
+    for (const w of getExtWindows()) {
+      try {
+        if (!w.Ext?.ComponentQuery) continue;
+        const tps = w.Ext.ComponentQuery.query("tabpanel:not([destroyed=true]), uxtabpanel:not([destroyed=true])");
+        for (const tp of tps) {
+          if (!tp.rendered || tp.isDestroyed) continue;
+          if (!tp.items?.items?.some((t) => t.itemId === "HDR")) continue;
+          const tab = tp.items.items.find((t) => t.itemId === activeTab);
+          if (tab) {
+            tp.setActiveTab(tab);
+            APMLogger.debug("Snapshot", `Restored active tab: ${activeTab}`);
+            return;
+          }
+        }
+      } catch (e) {
+      }
+    }
+  }
   async function executeRestore(snapshot) {
     APMLogger.info("Snapshot", `Restoring: navigating to ${snapshot.screen}`);
     if (snapshot.forecastProfileId) {
@@ -13822,6 +15396,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
             if (ctx2 && ctx2.grid.getStore().getCount() > 0) {
               const result2 = await openMatchingGridRecord(ctx2.grid, ctx2.win, entry2.dataIndex, snapshot.record.entityId);
               if (result2.success) {
+                await restoreActiveTab(snapshot.record?.activeTab);
                 showToast(`Restored ${entry2.label} ${snapshot.record.entityId} (profile)`, "var(--apm-success, #27ae60)", false);
                 return;
               }
@@ -13865,6 +15440,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
           if (ctx2 && ctx2.grid.getStore().getCount() > 0) {
             const result2 = await openMatchingGridRecord(ctx2.grid, ctx2.win, entry2.dataIndex, snapshot.record.entityId);
             if (result2.success) {
+              await restoreActiveTab(snapshot.record?.activeTab);
               showToast(`Restored ${entry2.label} ${snapshot.record.entityId}`, "var(--apm-success, #27ae60)", false);
             } else {
               showToast(`Restored filters \u2014 could not open ${snapshot.record.entityId}`, "#f39c12", false);
@@ -13939,6 +15515,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
     }
     const result = await openMatchingGridRecord(ctx.grid, ctx.win, entry.dataIndex, snapshot.record.entityId);
     if (result.success) {
+      await restoreActiveTab(snapshot.record?.activeTab);
       showToast(`Restored ${entry.label} ${snapshot.record.entityId}`, "var(--apm-success, #27ae60)", false);
     } else {
       showToast(`Could not open ${entry.label} ${snapshot.record.entityId}`, "#e74c3c", false);
@@ -13975,6 +15552,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
                 APMLogger.info("Snapshot", `Opening from grid: ${store.getCount()} results`);
                 const result = await openMatchingGridRecord(g, w, entry.dataIndex, snapshot.record.entityId);
                 if (result.success) {
+                  await restoreActiveTab(snapshot.record?.activeTab);
                   showToast(`Restored ${entry.label} ${snapshot.record.entityId}`, "var(--apm-success, #27ae60)", false);
                   return true;
                 }
@@ -14001,6 +15579,15 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
       purgeExpiredSnapshots();
       if (!_restoreHandled) {
         _restoreHandled = true;
+        let autoRestore = false;
+        let skipRestore = false;
+        try {
+          autoRestore = sessionStorage.getItem("apm_snapshot_auto_restore") === "1";
+          skipRestore = sessionStorage.getItem("apm_snapshot_skip_restore") === "1";
+          sessionStorage.removeItem("apm_snapshot_auto_restore");
+          sessionStorage.removeItem("apm_snapshot_skip_restore");
+        } catch (e) {
+        }
         const params = new URLSearchParams(window.location.search);
         const hasDrillback = Object.values(ENTITY_REGISTRY).some(
           (entry) => params.get(entry.drillbackFlag) === "YES" && params.get(entry.entityKey)
@@ -14009,10 +15596,17 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
           const snapshot = APMStorage.get(snapshotKey(tabId));
           if (snapshot && snapshot.ts && Date.now() - snapshot.ts <= SNAPSHOT_TTL) {
             APMLogger.info("Snapshot", `Found restorable snapshot: ${snapshot.screen}${snapshot.record ? " / " + snapshot.record.entityId : ""}${snapshot.gridState?.dataspyId ? " (dataspy:" + snapshot.gridState.dataspyId + ")" : ""}${snapshot.gridState?.filterFields ? " +filters" : ""}`);
-            const choice = await showRestorePrompt(snapshot);
-            await delay(350);
-            if (choice === "restore") {
+            if (skipRestore) {
+              APMLogger.info("Snapshot", "Skipping restore \u2014 user chose Redirect from wake prompt.");
+            } else if (autoRestore) {
+              APMLogger.info("Snapshot", "Auto-restoring \u2014 user chose Restore from wake prompt.");
               await executeRestore(snapshot);
+            } else {
+              const choice = await showRestorePrompt(snapshot);
+              await delay(350);
+              if (choice === "restore") {
+                await executeRestore(snapshot);
+              }
             }
             APMStorage.remove(snapshotKey(tabId));
           }
@@ -14021,6 +15615,9 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
       setTimeout(() => {
         APMScheduler.registerTask("session-snapshot", CAPTURE_INTERVAL, () => {
           captureState(tabId);
+        });
+        window.addEventListener("APM_VIEW_TRANSITION", () => {
+          setTimeout(() => captureState(tabId), 300);
         });
       }, 3e4);
     }
@@ -14473,132 +16070,160 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
   init_state();
   init_constants();
   init_feature_flags();
-  function buildAutoFillTab() {
-    return el("div", { id: "apm-main-fields", className: "apm-panel-section" }, [
-      el("div", { className: "apm-tab-content-scroll" }, [
-        // ── Template Selector ──
-        el("div", { className: "apm-template-box" }, [
-          el("div", { className: "apm-template-label" }, "Saved Templates:"),
-          el("div", { className: "apm-template-row" }, [
-            el("select", { id: "apm-c-preset-select", className: "apm-template-select" }),
-            el("button", { id: "apm-c-btn-save", className: "creator-btn apm-template-btn-update", title: "Update selection" }, "Update"),
-            el("button", { id: "apm-c-btn-new", className: "creator-btn apm-template-btn-new", title: "Create a fresh template" }, "New Template"),
-            el("button", { id: "apm-c-btn-del", className: "creator-btn apm-template-btn-del", title: "Delete template" }, "\u2716")
+  init_utils();
+  function buildScreenPills() {
+    const funcName = detectActiveScreen() || "";
+    const activeScreen = resolveAutofillScreen(funcName);
+    const pills = el(
+      "div",
+      { className: "apm-screen-pills", id: "apm-screen-pills" },
+      Object.entries(AUTOFILL_SCREEN_LABELS).map(
+        ([key, label]) => el("button", {
+          className: `apm-screen-pill${key === activeScreen ? " apm-screen-pill-active" : ""}`,
+          "data-screen": key
+        }, label)
+      )
+    );
+    return pills;
+  }
+  function buildTemplateSelector() {
+    return el("div", { className: "apm-template-box" }, [
+      el("div", { className: "apm-template-label" }, "Saved Templates:"),
+      el("div", { className: "apm-template-row" }, [
+        el("select", { id: "apm-c-preset-select", className: "apm-template-select" }),
+        el("button", { id: "apm-c-btn-save", className: "creator-btn apm-template-btn-update", title: "Save template" }, "Save"),
+        el("button", { id: "apm-c-btn-new", className: "creator-btn apm-template-btn-new", title: "Create a fresh template" }, "New Template"),
+        el("button", { id: "apm-c-btn-del", className: "creator-btn apm-template-btn-del", title: "Delete template" }, "\u2716")
+      ])
+    ]);
+  }
+  function buildWOFields() {
+    return el("div", { id: "apm-fields-wo", className: "apm-fields-wrapper" }, [
+      // ── Trigger Keywords / New Record Default ──
+      el("div", { className: "apm-section-group", style: { marginBottom: "8px" } }, [
+        el("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "center" } }, [
+          el("div", { id: "apm-c-keyword-label", className: "apm-section-label", style: { color: "var(--apm-warning)", margin: "0" } }, "Auto-Match Keywords"),
+          el("label", { style: { display: "flex", alignItems: "center", gap: "5px", cursor: "pointer" } }, [
+            el("input", { type: "checkbox", id: "apm-c-is-default", style: { cursor: "pointer" } }),
+            el("span", { style: { fontSize: "var(--apm-text-xs)", color: "var(--apm-text-muted)" } }, "New record template")
           ])
         ]),
-        el("div", { className: "apm-fields-wrapper" }, [
-          // ── Trigger Keywords / New Record Default ──
-          el("div", { className: "apm-section-group", style: { marginBottom: "8px" } }, [
-            el("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "center" } }, [
-              el("div", { id: "apm-c-keyword-label", className: "apm-section-label", style: { color: "var(--apm-warning)", margin: "0" } }, "Auto-Match Keywords"),
-              el("label", { style: { display: "flex", alignItems: "center", gap: "5px", cursor: "pointer" } }, [
-                el("input", { type: "checkbox", id: "apm-c-is-default", style: { cursor: "pointer" } }),
-                el("span", { style: { fontSize: "var(--apm-text-xs)", color: "var(--apm-text-muted)" } }, "New record template")
-              ])
-            ]),
-            el("div", { id: "apm-c-keyword-row", className: "field-row", style: { margin: "0" } }, [
-              el("input", { type: "text", id: "apm-c-keyword", className: "field-input apm-field-highlight", title: "Keywords to match WO title \u2014 separate multiple with comma", placeholder: "e.g., pre-sort, repair, jam", style: { fontFamily: "var(--apm-font-mono)", height: "28px", padding: "0 8px" } })
-            ]),
-            el("div", { id: "apm-c-wo-title-row", className: "field-row", style: { margin: "0", display: "none" } }, [
-              el("input", { type: "text", id: "apm-c-wo-title", className: "field-input", title: "Title to set on the new work order", placeholder: "e.g., 13 Week PM \u2014 Line 1", style: { height: "28px", padding: "0 8px" } })
-            ]),
-            el("div", { id: "apm-c-keyword-hint", style: { fontSize: "var(--apm-text-xs)", color: "var(--apm-text-muted)", marginTop: "3px" } }, "When a WO title contains these words, this template is suggested automatically."),
-            el("div", { id: "apm-c-wo-title-hint", style: { fontSize: "var(--apm-text-xs)", color: "var(--apm-text-muted)", marginTop: "3px", display: "none" } }, "This template appears on new blank records. The title above will fill the WO description.")
+        el("div", { id: "apm-c-keyword-row", className: "field-row", style: { margin: "0" } }, [
+          el("input", { type: "text", id: "apm-c-keyword", className: "field-input apm-field-highlight", title: "Keywords to match WO title \u2014 separate multiple with comma", placeholder: "e.g., pre-sort, repair, jam", style: { fontFamily: "var(--apm-font-mono)", height: "28px", padding: "0 8px" } })
+        ]),
+        el("div", { id: "apm-c-wo-title-row", className: "field-row", style: { margin: "0", display: "none" } }, [
+          el("input", { type: "text", id: "apm-c-wo-title", className: "field-input", title: "Title to set on the new work order", placeholder: "e.g., 13 Week PM \u2014 Line 1", style: { height: "28px", padding: "0 8px" } })
+        ]),
+        el("div", { id: "apm-c-keyword-hint", style: { fontSize: "var(--apm-text-xs)", color: "var(--apm-text-muted)", marginTop: "3px" } }, "When a WO title contains these words, this template is suggested automatically."),
+        el("div", { id: "apm-c-wo-title-hint", style: { fontSize: "var(--apm-text-xs)", color: "var(--apm-text-muted)", marginTop: "3px", display: "none" } }, "This template appears on new blank records. The title above will fill the WO description.")
+      ]),
+      // ── Work Order Fields ──
+      el("div", { className: "apm-section-group" }, [
+        el("div", { className: "apm-section-label" }, "Work Order Fields"),
+        el("div", { style: { display: "flex", gap: "6px", marginBottom: "4px" } }, [
+          el("div", { className: "field-row", style: { width: "105px", flexShrink: "0", margin: "0" } }, [
+            el("div", { className: "field-label", style: { width: "35px", textAlign: "left" } }, "Dept:"),
+            el("input", { type: "text", id: "apm-c-dept", className: "field-input upper", placeholder: "Ignore", style: { height: "28px", padding: "0 6px" } })
           ]),
-          // ── Work Order Fields ──
-          el("div", { className: "apm-section-group" }, [
-            el("div", { className: "apm-section-label" }, "Work Order Fields"),
-            el("div", { style: { display: "flex", gap: "6px", marginBottom: "4px" } }, [
-              el("div", { className: "field-row", style: { width: "105px", flexShrink: "0", margin: "0" } }, [
-                el("div", { className: "field-label", style: { width: "35px", textAlign: "left" } }, "Org:"),
-                el("input", { type: "text", id: "apm-c-org", className: "field-input upper", placeholder: "Ignore", style: { height: "28px", padding: "0 6px" } })
-              ]),
-              el("div", { className: "field-row", style: { flexGrow: "1", margin: "0" } }, [
-                el("div", { className: "field-label", title: "Partial match \u2014 grabs first search result", style: { width: "70px", textAlign: "left" } }, "Equipment:"),
-                el("input", { type: "text", id: "apm-c-eq", className: "field-input upper", title: "Partial match \u2014 grabs first search result", placeholder: "Leave blank to ignore", style: { height: "28px", padding: "0 6px" } })
-              ])
-            ]),
-            el("div", { style: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: "4px 10px" } }, [
-              el("div", { className: "field-row", style: { margin: "0" } }, [
-                el("div", { className: "field-label", style: { width: "40px", textAlign: "left" } }, "Type:"),
-                el("select", { id: "apm-c-type", className: "field-input", style: { height: "28px", padding: "0 4px" } }, [
-                  el("option", { value: "" }, "- Ignore -"),
-                  el("option", { value: "Breakdown" }, "Breakdown"),
-                  el("option", { value: "Corrective" }, "Corrective"),
-                  el("option", { value: "Project" }, "Project")
-                ])
-              ]),
-              el("div", { className: "field-row", style: { margin: "0" } }, [
-                el("div", { className: "field-label", style: { width: "40px", textAlign: "left" } }, "Status:"),
-                el("select", { id: "apm-c-status", className: "field-input", style: { height: "28px", padding: "0 4px" } }, [
-                  el("option", { value: "" }, "- Ignore -"),
-                  el("option", { value: "Open" }, "Open"),
-                  el("option", { value: "In Progress" }, "In Progress")
-                ])
-              ]),
-              el("div", { className: "field-row", style: { margin: "0" } }, [
-                el("div", { className: "field-label", style: { width: "40px", textAlign: "left" } }, "Exec:"),
-                el("select", { id: "apm-c-exec", className: "field-input", style: { height: "28px", padding: "0 4px" } }, [
-                  el("option", { value: "" }, "- Ignore -"),
-                  el("option", { value: "EXDN" }, "EXDN - No Shutdown"),
-                  el("option", { value: "EXDB" }, "EXDB - During Break"),
-                  el("option", { value: "EXMW" }, "EXMW - Maint Window"),
-                  el("option", { value: "EXOPS" }, "EXOPS - OPS Agreement"),
-                  el("option", { value: "EXSHUT" }, "EXSHUT - Shutdown")
-                ])
-              ]),
-              el("div", { className: "field-row", style: { margin: "0" } }, [
-                el("div", { className: "field-label", style: { width: "40px", textAlign: "left" } }, "Safety:"),
-                el("select", { id: "apm-c-safety", className: "field-input", style: { height: "28px", padding: "0 4px" } }, [
-                  el("option", { value: "" }, "- Ignore -"),
-                  el("option", { value: "No" }, "No"),
-                  el("option", { value: "Yes" }, "Yes")
-                ])
-              ])
+          el("div", { className: "field-row", style: { flexGrow: "1", margin: "0" } }, [
+            el("div", { className: "field-label", title: "Partial match \u2014 grabs first search result", style: { width: "70px", textAlign: "left" } }, "Equipment:"),
+            el("input", { type: "text", id: "apm-c-eq", className: "field-input upper", title: "Partial match \u2014 grabs first search result", placeholder: "Leave blank to ignore", style: { height: "28px", padding: "0 6px" } })
+          ])
+        ]),
+        // Org row — only visible for new record templates
+        el("div", { id: "apm-c-org-row", style: { display: "none", marginBottom: "4px" } }, [
+          el("div", { className: "field-row", style: { margin: "0" } }, [
+            el("div", { className: "field-label", style: { width: "35px", textAlign: "left" } }, "Org:"),
+            el("input", { type: "text", id: "apm-c-org", className: "field-input upper", placeholder: "Ignore", style: { height: "28px", padding: "0 6px", width: "105px" } })
+          ])
+        ]),
+        el("div", { style: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: "4px 10px" } }, [
+          el("div", { className: "field-row", style: { margin: "0" } }, [
+            el("div", { className: "field-label", style: { width: "40px", textAlign: "left" } }, "Type:"),
+            el("select", { id: "apm-c-type", className: "field-input", style: { height: "28px", padding: "0 4px" } }, [
+              el("option", { value: "" }, "- Ignore -"),
+              el("option", { value: "Breakdown" }, "Breakdown"),
+              el("option", { value: "Corrective" }, "Corrective"),
+              el("option", { value: "Project" }, "Project")
             ])
           ]),
-          // ── Automated Checklists ──
-          el("div", { className: "apm-checklist-box", style: { marginBottom: "8px" } }, [
-            el("div", { className: "apm-checklist-title" }, "Automated Checklists"),
-            el("div", { className: "apm-checklist-row" }, [
-              el("div", { className: "field-label", title: "Select y/n to fill out during autofill", style: { width: "40px", textAlign: "left", color: "var(--apm-text-bright)" } }, "1-Tech:"),
-              el("select", { id: "apm-c-loto-mode", className: "field-input", title: "Select y/n to fill out during autofill", style: { width: "115px", height: "28px", padding: "0 4px" } }, [
-                el("option", { value: "none" }, "- Ignore -"),
-                el("option", { value: "yes" }, "(Check YES)"),
-                el("option", { value: "no" }, "(Check NO)")
-              ]),
-              el("div", { className: "field-label", title: "How many checkboxes to fill during autofill", style: { flexGrow: "1", textAlign: "right", color: "var(--apm-text-bright)", marginRight: "5px" } }, "10-Tech PM:"),
-              el("input", { type: "number", id: "apm-c-pm-checks", className: "field-input", title: "How many checkboxes to fill during autofill", min: "0", placeholder: "0", onblur: (e) => {
-                if (e.target.value === "") e.target.value = "0";
-              }, style: { width: "55px", height: "28px", padding: "0 4px", textAlign: "center" } })
+          el("div", { className: "field-row", style: { margin: "0" } }, [
+            el("div", { className: "field-label", style: { width: "40px", textAlign: "left" } }, "Status:"),
+            el("select", { id: "apm-c-status", className: "field-input", style: { height: "28px", padding: "0 4px" } }, [
+              el("option", { value: "" }, "- Ignore -"),
+              el("option", { value: "Open" }, "Open"),
+              el("option", { value: "In Progress" }, "In Progress")
             ])
           ]),
-          // ── Trouble Codes & Assignment ──
-          el("div", { className: "apm-section-group" }, [
-            el("div", { className: "apm-section-label" }, "Trouble Codes & Assignment"),
-            el("div", { style: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: "4px 10px" } }, [
-              el("div", { className: "field-row", style: { margin: "0" } }, [
-                el("div", { className: "field-label", style: { width: "50px", textAlign: "left" } }, "Problem:"),
-                el("input", { type: "text", id: "apm-c-prob", className: "field-input upper" })
-              ]),
-              el("div", { className: "field-row", style: { margin: "0" } }, [
-                el("div", { className: "field-label", style: { width: "40px", textAlign: "left" } }, "Failure:"),
-                el("input", { type: "text", id: "apm-c-fail", className: "field-input upper" })
-              ]),
-              el("div", { className: "field-row", style: { margin: "0" } }, [
-                el("div", { className: "field-label", style: { width: "50px", textAlign: "left" } }, "Cause:"),
-                el("input", { type: "text", id: "apm-c-cause", className: "field-input upper" })
-              ]),
-              el("div", { className: "field-row", style: { margin: "0" } }, [
-                el("div", { className: "field-label", style: { width: "40px", textAlign: "left" } }, "Assign:"),
-                el("input", { type: "text", id: "apm-c-assign", className: "field-input upper" })
-              ])
+          el("div", { className: "field-row", style: { margin: "0" } }, [
+            el("div", { className: "field-label", style: { width: "40px", textAlign: "left" } }, "Exec:"),
+            el("select", { id: "apm-c-exec", className: "field-input", style: { height: "28px", padding: "0 4px" } }, [
+              el("option", { value: "" }, "- Ignore -"),
+              el("option", { value: "EXDN" }, "EXDN - No Shutdown"),
+              el("option", { value: "EXDB" }, "EXDB - During Break"),
+              el("option", { value: "EXMW" }, "EXMW - Maint Window"),
+              el("option", { value: "EXOPS" }, "EXOPS - OPS Agreement"),
+              el("option", { value: "EXSHUT" }, "EXSHUT - Shutdown")
             ])
           ]),
-          // ── Schedule & Labor ──
-          el("div", { className: "apm-section-group" }, [
-            el("div", { className: "apm-section-label" }, "Schedule & Labor"),
-            el("div", { style: { display: "flex", gap: "6px", marginBottom: "4px" } }, [
+          el("div", { className: "field-row", style: { margin: "0" } }, [
+            el("div", { className: "field-label", style: { width: "40px", textAlign: "left" } }, "Safety:"),
+            el("select", { id: "apm-c-safety", className: "field-input", style: { height: "28px", padding: "0 4px" } }, [
+              el("option", { value: "" }, "- Ignore -"),
+              el("option", { value: "No" }, "No"),
+              el("option", { value: "Yes" }, "Yes")
+            ])
+          ])
+        ])
+      ]),
+      // ── Automated Checklists (LOTO + 5-Tech + 10-Tech on one row) ──
+      el("div", { className: "apm-checklist-box", style: { marginBottom: "8px" } }, [
+        el("div", { className: "apm-checklist-title" }, "Automated Checklists"),
+        el("div", { className: "apm-checklist-row" }, [
+          el("div", { className: "field-label", title: "LOTO checklist \u2014 select YES/NO to fill", style: { display: "inline-block", width: "35px", textAlign: "left", color: "var(--apm-text-bright)" } }, "LOTO:"),
+          el("select", { id: "apm-c-loto-mode", className: "field-input", title: "LOTO checklist \u2014 select YES/NO to fill", style: { display: "inline-block", width: "108px", height: "28px", padding: "0 4px", verticalAlign: "middle" } }, [
+            el("option", { value: "none" }, "- Ignore -"),
+            el("option", { value: "yes" }, "YES"),
+            el("option", { value: "no" }, "NO")
+          ]),
+          el("div", { className: "field-label", title: "How many 5-Tech items to check YES", style: { display: "inline-block", textAlign: "right", color: "var(--apm-text-bright)", marginLeft: "6px" } }, "5-Tech:"),
+          el("input", { type: "number", id: "apm-c-tech-checks-5", className: "field-input", title: "How many 5-Tech items to check YES", min: "0", placeholder: "0", onblur: (e) => {
+            if (e.target.value === "") e.target.value = "0";
+          }, style: { display: "inline-block", width: "64px", height: "28px", padding: "0 2px", textAlign: "center", verticalAlign: "middle" } }),
+          el("div", { className: "field-label", title: "How many 10-Tech items to check YES", style: { display: "inline-block", textAlign: "right", color: "var(--apm-text-bright)", marginLeft: "2px" } }, "10-Tech:"),
+          el("input", { type: "number", id: "apm-c-tech-checks-10", className: "field-input", title: "How many 10-Tech items to check YES", min: "0", placeholder: "0", onblur: (e) => {
+            if (e.target.value === "") e.target.value = "0";
+          }, style: { display: "inline-block", width: "64px", height: "28px", padding: "0 2px", textAlign: "center", verticalAlign: "middle" } })
+        ])
+      ]),
+      // ── Trouble Codes & Assignment ──
+      el("div", { className: "apm-section-group" }, [
+        el("div", { className: "apm-section-label" }, "Trouble Codes & Assignment"),
+        el("div", { style: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: "4px 10px" } }, [
+          el("div", { className: "field-row", style: { margin: "0" } }, [
+            el("div", { className: "field-label", style: { width: "50px", textAlign: "left" } }, "Problem:"),
+            el("input", { type: "text", id: "apm-c-prob", className: "field-input upper" })
+          ]),
+          el("div", { className: "field-row", style: { margin: "0" } }, [
+            el("div", { className: "field-label", style: { width: "40px", textAlign: "left" } }, "Failure:"),
+            el("input", { type: "text", id: "apm-c-fail", className: "field-input upper" })
+          ]),
+          el("div", { className: "field-row", style: { margin: "0" } }, [
+            el("div", { className: "field-label", style: { width: "50px", textAlign: "left" } }, "Cause:"),
+            el("input", { type: "text", id: "apm-c-cause", className: "field-input upper" })
+          ]),
+          el("div", { className: "field-row", style: { margin: "0" } }, [
+            el("div", { className: "field-label", style: { width: "40px", textAlign: "left" } }, "Assign:"),
+            el("input", { type: "text", id: "apm-c-assign", className: "field-input upper" })
+          ])
+        ])
+      ]),
+      // ── Schedule & Labor (collapsible dates in section header) ──
+      el("div", { className: "apm-section-group" }, [
+        el("details", { className: "apm-details-schedule" }, [
+          el("summary", { className: "apm-section-label", style: { margin: "0", cursor: "pointer" } }, "Schedule & Labor"),
+          el("div", { className: "apm-details-body" }, [
+            el("div", { style: { display: "flex", gap: "6px" } }, [
               el("div", { className: "field-row", style: { flex: "1", margin: "0" } }, [
                 el("div", { className: "field-label", style: { width: "35px", textAlign: "left" } }, "Start:"),
                 el("input", { type: "date", id: "apm-c-start", className: "field-input", style: { height: "28px", padding: "0 4px" } })
@@ -14607,18 +16232,101 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
                 el("div", { className: "field-label", style: { width: "30px", textAlign: "left" } }, "End:"),
                 el("input", { type: "date", id: "apm-c-end", className: "field-input", style: { height: "28px", padding: "0 4px" } })
               ])
-            ]),
-            el("div", { className: "field-row", style: { margin: "0" } }, [
-              el("div", { className: "field-label", title: "Hours to book during autofill", style: { width: "65px", textAlign: "left", color: "var(--apm-success)", fontWeight: "bold" } }, "Book Labor:"),
-              el("input", { type: "text", id: "apm-c-labor-hours", className: "field-input apm-field-accent", title: "Hours to book during autofill", placeholder: "0 hours", style: { height: "28px", padding: "0 8px", width: "80px", flexGrow: "0" } })
             ])
+          ])
+        ]),
+        el("div", { className: "field-row", style: { margin: "4px 0 0 0" } }, [
+          el("div", { className: "field-label", title: "Hours to book during autofill", style: { width: "65px", textAlign: "left", color: "var(--apm-success)", fontWeight: "bold" } }, "Book Labor:"),
+          el("input", { type: "text", id: "apm-c-labor-hours", className: "field-input apm-field-accent", title: "Hours to book during autofill", placeholder: "0 hours", style: { height: "28px", padding: "0 8px", width: "80px", flexGrow: "0" } })
+        ])
+      ]),
+      // ── Closing Comments ──
+      el("div", { className: "field-row", style: { margin: "0", alignItems: "flex-start" } }, [
+        el("div", { className: "field-label", style: { width: "65px", textAlign: "left", marginTop: "5px" } }, "Closing:"),
+        el("textarea", { id: "apm-c-close", className: "field-input apm-textarea-input", placeholder: "Closing comments..." })
+      ])
+    ]);
+  }
+  function buildRepairFields() {
+    return el("div", { id: "apm-fields-repair", className: "apm-fields-wrapper" }, [
+      el("div", { className: "apm-section-group" }, [
+        el("div", { className: "apm-section-label" }, "Repair Fields"),
+        el("div", { style: { display: "flex", gap: "6px", marginBottom: "4px" } }, [
+          el("div", { className: "field-row", style: { flex: "1", margin: "0" } }, [
+            el("div", { className: "field-label", style: { width: "30px", textAlign: "left" } }, "Org:"),
+            el("input", { type: "text", id: "apm-c-repair-org", className: "field-input upper", placeholder: "Ignore", style: { height: "28px", padding: "0 6px" } })
           ]),
-          // ── Closing Comments ──
-          el("div", { className: "field-row", style: { margin: "0", alignItems: "flex-start" } }, [
-            el("div", { className: "field-label", style: { width: "65px", textAlign: "left", marginTop: "5px" } }, "Closing:"),
-            el("textarea", { id: "apm-c-close", className: "field-input apm-textarea-input", placeholder: "Closing comments..." })
+          el("div", { className: "field-row", style: { width: "90px", flexShrink: "0", margin: "0" } }, [
+            el("div", { className: "field-label", style: { width: "25px", textAlign: "left" } }, "Qty:"),
+            el("input", { type: "number", id: "apm-c-repair-qty", className: "field-input", min: "1", placeholder: "1", style: { height: "28px", padding: "0 4px", textAlign: "center" } })
+          ])
+        ]),
+        el("div", { className: "field-row", style: { margin: "0 0 4px 0" } }, [
+          el("div", { className: "field-label", style: { width: "85px", textAlign: "left" } }, "Repairable Part:"),
+          el("input", { type: "text", id: "apm-c-repair-part", className: "field-input upper", placeholder: "Part code", style: { height: "28px", padding: "0 6px" } })
+        ]),
+        el("div", { className: "field-row", style: { margin: "0" } }, [
+          el("div", { className: "field-label", style: { width: "85px", textAlign: "left" } }, "Requested By:"),
+          el("input", { type: "text", id: "apm-c-repair-requested-by", className: "field-input upper", placeholder: "Leave blank to ignore", style: { height: "28px", padding: "0 6px" } })
+        ])
+      ]),
+      el(
+        "div",
+        { style: { fontSize: "var(--apm-text-xs)", color: "var(--apm-text-muted)", marginTop: "6px" } },
+        "Repair templates always show the autofill button. Store auto-fills after org. Issued WO grabs first search result automatically."
+      )
+    ]);
+  }
+  function buildShiftReportFields() {
+    return el("div", { id: "apm-fields-shiftReport", className: "apm-fields-wrapper" }, [
+      // ── Trigger Keywords ──
+      el("div", { className: "apm-section-group", style: { marginBottom: "8px" } }, [
+        el("div", { className: "apm-section-label", style: { color: "var(--apm-warning)", margin: "0 0 4px 0" } }, "Auto-Match Keywords"),
+        el("div", { className: "field-row", style: { margin: "0" } }, [
+          el("input", { type: "text", id: "apm-c-sr-keyword", className: "field-input apm-field-highlight", title: "Keywords to match shift report title", placeholder: "e.g., night, day, ns", style: { fontFamily: "var(--apm-font-mono)", height: "28px", padding: "0 8px" } })
+        ]),
+        el("div", { style: { fontSize: "var(--apm-text-xs)", color: "var(--apm-text-muted)", marginTop: "3px" } }, "When a shift report title contains these words, this template is suggested automatically.")
+      ]),
+      // ── Shift Report Fields ──
+      el("div", { className: "apm-section-group", style: { marginBottom: "8px" } }, [
+        el("div", { className: "apm-section-label" }, "Shift Report Fields"),
+        el("div", { className: "field-row", style: { margin: "0 0 4px 0" } }, [
+          el("div", { className: "field-label", style: { width: "65px", textAlign: "left" } }, "User Login:"),
+          el("input", { type: "text", id: "apm-c-sr-user", className: "field-input", readOnly: true, placeholder: "Auto (current user)", style: { height: "28px", padding: "0 6px", fontStyle: "italic", color: "var(--apm-text-muted)" } })
+        ]),
+        el("div", { className: "field-row", style: { margin: "0" } }, [
+          el("div", { className: "field-label", style: { width: "65px", textAlign: "left" } }, "Status:"),
+          el("select", { id: "apm-c-sr-status", className: "field-input", style: { height: "28px", padding: "0 4px", width: "120px" } }, [
+            el("option", { value: "" }, "- Ignore -"),
+            el("option", { value: "Closed" }, "Closed")
           ])
         ])
+      ]),
+      // ── Automated Checklists ──
+      el("div", { className: "apm-checklist-box" }, [
+        el("div", { className: "apm-checklist-title" }, "Automated Checklists"),
+        el("div", { className: "apm-checklist-row", style: { display: "flex", alignItems: "center", gap: "10px" } }, [
+          el("div", { className: "field-label", title: "Activity 10 items to check YES", style: { color: "var(--apm-text-bright)", flexShrink: "0" } }, "10-Act:"),
+          el("input", { type: "number", id: "apm-c-sr-act-10", className: "field-input", min: "0", placeholder: "0", onblur: (e) => {
+            if (e.target.value === "") e.target.value = "0";
+          }, style: { width: "55px", height: "28px", padding: "0 4px", textAlign: "center" } }),
+          el("div", { className: "field-label", title: "Activity 20 items to check YES", style: { color: "var(--apm-text-bright)", flexShrink: "0" } }, "20-Act:"),
+          el("input", { type: "number", id: "apm-c-sr-act-20", className: "field-input", min: "0", placeholder: "0", onblur: (e) => {
+            if (e.target.value === "") e.target.value = "0";
+          }, style: { width: "55px", height: "28px", padding: "0 4px", textAlign: "center" } })
+        ])
+      ])
+    ]);
+  }
+  function buildAutoFillTab() {
+    return el("div", { id: "apm-main-fields", className: "apm-panel-section" }, [
+      el("div", { className: "apm-tab-content-scroll" }, [
+        buildScreenPills(),
+        buildTemplateSelector(),
+        // All three field containers — only one visible at a time
+        buildWOFields(),
+        buildRepairFields(),
+        buildShiftReportFields()
       ])
     ]);
   }
@@ -15135,7 +16843,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
     const isTabsMode = state.settingsMode === "tabs";
     let visibleItems = itemsArray;
     let hiddenItems = [];
-    const funcName = detectScreenFunction();
+    const funcName = detectActiveScreen();
     const autoSaveOrder = () => {
       const items = [...colListContainer.querySelectorAll(".apm-col-item")];
       const visItems = items.filter((el2) => el2.dataset.hidden !== "true");
@@ -15300,6 +17008,15 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
   }
 
   // src/ui/settings-panel-autofill.js
+  init_state();
+  var _activeScreen = "wo";
+  var _loadedPresetData = null;
+  function getActiveScreen() {
+    return _activeScreen;
+  }
+  function setActiveScreen(screen) {
+    _activeScreen = screen;
+  }
   function syncDefaultToggle() {
     const checked = document.getElementById("apm-c-is-default")?.checked;
     const kwRow = document.getElementById("apm-c-keyword-row");
@@ -15307,50 +17024,79 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
     const kwLabel = document.getElementById("apm-c-keyword-label");
     const titleRow = document.getElementById("apm-c-wo-title-row");
     const titleHint = document.getElementById("apm-c-wo-title-hint");
+    const orgRow = document.getElementById("apm-c-org-row");
     if (kwRow) kwRow.style.display = checked ? "none" : "";
     if (kwHint) kwHint.style.display = checked ? "none" : "";
     if (kwLabel) kwLabel.textContent = checked ? "WO Description" : "Auto-Match Keywords";
     if (titleRow) titleRow.style.display = checked ? "" : "none";
     if (titleHint) titleHint.style.display = checked ? "" : "none";
+    if (orgRow) orgRow.style.display = checked ? "" : "none";
   }
-  function applyPresetData(data) {
+  function applyPresetData(data, screen) {
+    screen = screen || _activeScreen;
     if (!data) data = {};
-    const fields = [
-      "keyword",
-      "org",
-      "eq",
-      "type",
-      "status",
-      "exec",
-      "safety",
-      "loto-mode",
-      "pm-checks",
-      "prob",
-      "fail",
-      "cause",
-      "assign",
-      "start",
-      "end",
-      "close",
-      "labor-hours"
-    ];
-    fields.forEach((f) => {
-      const el2 = document.getElementById(`apm-c-${f}`);
-      if (el2) {
-        const key = f.replace(/-([a-z])/g, (g) => g[1].toUpperCase());
-        el2.value = data[key] || (f === "loto-mode" ? "none" : "");
-      }
-    });
-    const defaultCb = document.getElementById("apm-c-is-default");
-    if (defaultCb) defaultCb.checked = !!data.isDefault;
-    const woTitleEl = document.getElementById("apm-c-wo-title");
-    if (woTitleEl) woTitleEl.value = data.woTitle || "";
-    syncDefaultToggle();
+    if (screen === "wo") {
+      const fields = [
+        "keyword",
+        "dept",
+        "org",
+        "eq",
+        "type",
+        "status",
+        "exec",
+        "safety",
+        "loto-mode",
+        "tech-checks-5",
+        "tech-checks-10",
+        "prob",
+        "fail",
+        "cause",
+        "assign",
+        "start",
+        "end",
+        "close",
+        "labor-hours"
+      ];
+      fields.forEach((f) => {
+        const el2 = document.getElementById(`apm-c-${f}`);
+        if (el2) {
+          const key = f.replace(/-([a-z0-9])/g, (g) => g[1].toUpperCase());
+          el2.value = data[key] || (f === "loto-mode" ? "none" : "");
+        }
+      });
+      const defaultCb = document.getElementById("apm-c-is-default");
+      if (defaultCb) defaultCb.checked = !!data.isDefault;
+      const woTitleEl = document.getElementById("apm-c-wo-title");
+      if (woTitleEl) woTitleEl.value = data.woTitle || "";
+      syncDefaultToggle();
+    } else if (screen === "repair") {
+      const setVal = (id, key) => {
+        const el2 = document.getElementById(id);
+        if (el2) el2.value = data[key] || "";
+      };
+      setVal("apm-c-repair-org", "org");
+      setVal("apm-c-repair-qty", "qty");
+      setVal("apm-c-repair-part", "repairablePart");
+      setVal("apm-c-repair-requested-by", "requestedBy");
+    } else if (screen === "shiftReport") {
+      const setVal = (id, key) => {
+        const el2 = document.getElementById(id);
+        if (el2) el2.value = data[key] || "";
+      };
+      setVal("apm-c-sr-keyword", "keyword");
+      setVal("apm-c-sr-status", "status");
+      setVal("apm-c-sr-act-10", "actChecks10");
+      setVal("apm-c-sr-act-20", "actChecks20");
+      const userEl = document.getElementById("apm-c-sr-user");
+      if (userEl) userEl.value = AppState.session.user || "Auto (current user)";
+    }
+    _loadedPresetData = getCurrentFormData(screen);
   }
-  function renderPresetOptions(selectEl) {
+  function renderPresetOptions(selectEl, screen) {
+    screen = screen || _activeScreen;
     const presets = getPresets();
     selectEl.replaceChildren();
-    const targetList = presets.autofill;
+    const targetList = presets.autofill?.[screen] || {};
     for (const pName in targetList) {
       const opt = document.createElement("option");
       opt.value = pName;
@@ -15358,33 +17104,107 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
       selectEl.appendChild(opt);
     }
     if (Object.keys(targetList).length > 0) {
-      applyPresetData(targetList[Object.keys(targetList)[0]]);
+      applyPresetData(targetList[Object.keys(targetList)[0]], screen);
     } else {
-      applyPresetData({});
+      applyPresetData({}, screen);
     }
   }
-  function getCurrentFormData() {
-    return {
-      keyword: document.getElementById("apm-c-keyword")?.value?.toLowerCase() || "",
-      org: document.getElementById("apm-c-org")?.value || "",
-      eq: document.getElementById("apm-c-eq")?.value || "",
-      type: document.getElementById("apm-c-type")?.value || "",
-      status: document.getElementById("apm-c-status")?.value || "",
-      exec: document.getElementById("apm-c-exec")?.value || "",
-      safety: document.getElementById("apm-c-safety")?.value || "",
-      lotoMode: document.getElementById("apm-c-loto-mode")?.value || "",
-      pmChecks: document.getElementById("apm-c-pm-checks")?.value ? parseInt(document.getElementById("apm-c-pm-checks").value, 10) : 0,
-      prob: document.getElementById("apm-c-prob")?.value || "",
-      fail: document.getElementById("apm-c-fail")?.value || "",
-      cause: document.getElementById("apm-c-cause")?.value || "",
-      assign: document.getElementById("apm-c-assign")?.value || "",
-      start: document.getElementById("apm-c-start")?.value || "",
-      end: document.getElementById("apm-c-end")?.value || "",
-      close: document.getElementById("apm-c-close")?.value || "",
-      laborHours: document.getElementById("apm-c-labor-hours")?.value || "",
-      isDefault: document.getElementById("apm-c-is-default")?.checked || false,
-      woTitle: document.getElementById("apm-c-wo-title")?.value || ""
+  function getCurrentFormData(screen) {
+    screen = screen || _activeScreen;
+    if (screen === "wo") {
+      return {
+        keyword: document.getElementById("apm-c-keyword")?.value?.toLowerCase() || "",
+        dept: document.getElementById("apm-c-dept")?.value || "",
+        org: document.getElementById("apm-c-org")?.value || "",
+        eq: document.getElementById("apm-c-eq")?.value || "",
+        type: document.getElementById("apm-c-type")?.value || "",
+        status: document.getElementById("apm-c-status")?.value || "",
+        exec: document.getElementById("apm-c-exec")?.value || "",
+        safety: document.getElementById("apm-c-safety")?.value || "",
+        lotoMode: document.getElementById("apm-c-loto-mode")?.value || "",
+        techChecks5: parseInt(document.getElementById("apm-c-tech-checks-5")?.value, 10) || 0,
+        techChecks10: parseInt(document.getElementById("apm-c-tech-checks-10")?.value, 10) || 0,
+        prob: document.getElementById("apm-c-prob")?.value || "",
+        fail: document.getElementById("apm-c-fail")?.value || "",
+        cause: document.getElementById("apm-c-cause")?.value || "",
+        assign: document.getElementById("apm-c-assign")?.value || "",
+        start: document.getElementById("apm-c-start")?.value || "",
+        end: document.getElementById("apm-c-end")?.value || "",
+        close: document.getElementById("apm-c-close")?.value || "",
+        laborHours: document.getElementById("apm-c-labor-hours")?.value || "",
+        isDefault: document.getElementById("apm-c-is-default")?.checked || false,
+        woTitle: document.getElementById("apm-c-wo-title")?.value || ""
+      };
+    }
+    if (screen === "repair") {
+      return {
+        org: document.getElementById("apm-c-repair-org")?.value || "",
+        qty: parseInt(document.getElementById("apm-c-repair-qty")?.value, 10) || 1,
+        repairablePart: document.getElementById("apm-c-repair-part")?.value || "",
+        requestedBy: document.getElementById("apm-c-repair-requested-by")?.value || ""
+      };
+    }
+    if (screen === "shiftReport") {
+      return {
+        keyword: document.getElementById("apm-c-sr-keyword")?.value?.toLowerCase() || "",
+        status: document.getElementById("apm-c-sr-status")?.value || "",
+        actChecks10: parseInt(document.getElementById("apm-c-sr-act-10")?.value, 10) || 0,
+        actChecks20: parseInt(document.getElementById("apm-c-sr-act-20")?.value, 10) || 0
+      };
+    }
+    return {};
+  }
+  function getEmptyPresetData(screen) {
+    if (screen === "wo") {
+      return {
+        keyword: "",
+        dept: "",
+        org: "",
+        eq: "",
+        type: "",
+        status: "",
+        exec: "",
+        safety: "",
+        lotoMode: "none",
+        techChecks5: 0,
+        techChecks10: 0,
+        prob: "",
+        fail: "",
+        cause: "",
+        assign: "",
+        start: "",
+        end: "",
+        close: "",
+        laborHours: "",
+        isDefault: false,
+        woTitle: ""
+      };
+    }
+    if (screen === "repair") {
+      return { org: "", qty: 1, repairablePart: "", requestedBy: "" };
+    }
+    if (screen === "shiftReport") {
+      return { keyword: "", status: "", actChecks10: 0, actChecks20: 0 };
+    }
+    return {};
+  }
+  function hasUnsavedChanges(screen) {
+    if (!_loadedPresetData) return false;
+    const current = getCurrentFormData(screen);
+    return JSON.stringify(current) !== JSON.stringify(_loadedPresetData);
+  }
+  function markClean(screen) {
+    _loadedPresetData = getCurrentFormData(screen);
+  }
+  function showScreenFields(screen) {
+    const containers = {
+      wo: document.getElementById("apm-fields-wo"),
+      repair: document.getElementById("apm-fields-repair"),
+      shiftReport: document.getElementById("apm-fields-shiftReport")
     };
+    for (const [key, el2] of Object.entries(containers)) {
+      if (el2) el2.style.display = key === screen ? "" : "none";
+    }
   }
 
   // src/ui/settings-panel.js
@@ -15515,7 +17335,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
       }
       const resetBtn = document.getElementById("apm-s-btn-reset");
       const titleEl = document.getElementById("apm-s-title");
-      const screenLabel = detectScreenFunction() || "Unknown";
+      const screenLabel = detectActiveScreen() || "Unknown";
       let hintEl = document.getElementById("apm-s-width-hint");
       if (state.settingsMode === "cols") {
         togCols.className = "apm-ui-settings-btn active";
@@ -16013,70 +17833,171 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
       };
     }
     function bindPresetActions() {
+      const screen = () => getActiveScreen();
       const defaultCb = document.getElementById("apm-c-is-default");
       if (defaultCb) defaultCb.addEventListener("change", syncDefaultToggle);
+      const pillContainer = document.getElementById("apm-screen-pills");
+      if (pillContainer) {
+        pillContainer.addEventListener("click", (e) => {
+          const pill = e.target.closest(".apm-screen-pill");
+          if (!pill || pill.classList.contains("apm-screen-pill-active")) return;
+          const targetScreen = pill.dataset.screen;
+          const doSwitch = () => {
+            pillContainer.querySelectorAll(".apm-screen-pill").forEach((p) => p.classList.remove("apm-screen-pill-active"));
+            pill.classList.add("apm-screen-pill-active");
+            setActiveScreen(targetScreen);
+            showScreenFields(targetScreen);
+            renderPresetOptions(selectEl, targetScreen);
+          };
+          if (hasUnsavedChanges()) {
+            showDirtyWarning(selectEl.value, doSwitch);
+          } else {
+            doSwitch();
+          }
+        });
+      }
+      showScreenFields(getActiveScreen());
+      renderPresetOptions(selectEl, getActiveScreen());
       selectEl.addEventListener("change", () => {
         const presets = getPresets();
         const selected = selectEl.value;
-        if (selected && presets.autofill[selected]) {
-          applyPresetData(presets.autofill[selected]);
+        const screenPresets = presets.autofill?.[screen()] || {};
+        const doLoad = () => {
+          if (selected && screenPresets[selected]) {
+            applyPresetData(screenPresets[selected], screen());
+          }
+        };
+        if (hasUnsavedChanges()) {
+          showDirtyWarning(selectEl.value, doLoad);
+        } else {
+          doLoad();
         }
       });
       document.getElementById("apm-c-btn-save").onclick = () => {
         if (selectEl.value) {
-          updatePresetAutofill(selectEl.value, getCurrentFormData());
-          showToast(`Template "${selectEl.value}" Updated!`, "var(--apm-success-bright)");
+          updatePresetAutofill(selectEl.value, getCurrentFormData(), screen());
+          markClean();
+          showToast(`Template "${selectEl.value}" Saved!`, "var(--apm-success-bright)");
         } else {
-          showToast("No template selected to update.", "var(--apm-danger)");
+          showToast("No template selected to save.", "var(--apm-danger)");
         }
       };
-      document.getElementById("apm-c-btn-new").onclick = () => {
-        const name = prompt("Enter a name for the new template:");
-        if (name && name.trim()) {
-          const safeName = name.trim();
-          const emptyData = {
-            keyword: "",
-            org: "",
-            eq: "",
-            type: "",
-            status: "",
-            exec: "",
-            safety: "",
-            lotoMode: "none",
-            pmChecks: 0,
-            prob: "",
-            fail: "",
-            cause: "",
-            assign: "",
-            start: "",
-            end: "",
-            close: "",
-            laborHours: "",
-            isDefault: false,
-            woTitle: ""
-          };
-          updatePresetAutofill(safeName, emptyData);
-          renderPresetOptions(selectEl);
-          selectEl.value = safeName;
-          applyPresetData(emptyData);
-          showToast(`Template "${safeName}" Created!`, "var(--apm-accent)");
-        }
+      document.getElementById("apm-c-btn-new").onclick = (e) => {
+        showNewTemplatePopover(e.target, selectEl);
       };
       document.getElementById("apm-c-btn-del").onclick = () => {
         if (selectEl.value && confirm(`Delete template "${selectEl.value}"?`)) {
           const deletedName = selectEl.value;
-          updatePresetAutofill(deletedName, null);
-          renderPresetOptions(selectEl);
+          updatePresetAutofill(deletedName, null, screen());
+          renderPresetOptions(selectEl, screen());
           showToast(`Template "${deletedName}" Deleted.`, "var(--apm-danger)");
         }
       };
+    }
+    function showNewTemplatePopover(anchor, selectEl2) {
+      document.getElementById("apm-new-template-popover")?.remove();
+      const screen = getActiveScreen();
+      const popover = el("div", { id: "apm-new-template-popover", className: "apm-popover" }, [
+        el("input", { type: "text", id: "apm-popover-name", className: "apm-popover-input", placeholder: "Template name" }),
+        el("div", { className: "apm-popover-row" }, [
+          el("label", { style: { display: "flex", alignItems: "center", gap: "5px", cursor: "pointer", fontSize: "var(--apm-text-xs)", color: "var(--apm-text-muted)" } }, [
+            el("input", { type: "checkbox", id: "apm-popover-copy" }),
+            "Copy from current"
+          ])
+        ]),
+        el("div", { className: "apm-popover-actions" }, [
+          el("button", {
+            id: "apm-popover-create",
+            className: "creator-btn apm-template-btn-new",
+            style: { padding: "4px 10px" }
+          }, "Create")
+        ])
+      ]);
+      const rect = anchor.getBoundingClientRect();
+      const panelRect = anchor.closest(".apm-settings-container")?.getBoundingClientRect() || { left: 0, top: 0 };
+      popover.style.top = rect.bottom - panelRect.top + 4 + "px";
+      popover.style.right = "10px";
+      anchor.closest(".apm-settings-container")?.appendChild(popover);
+      const nameInput = document.getElementById("apm-popover-name");
+      nameInput.focus();
+      const doCreate = () => {
+        const name = nameInput.value.trim();
+        if (!name) return;
+        const copyChecked = document.getElementById("apm-popover-copy")?.checked;
+        const data = copyChecked ? getCurrentFormData() : getEmptyPresetData(screen);
+        updatePresetAutofill(name, data, screen);
+        renderPresetOptions(selectEl2, screen);
+        selectEl2.value = name;
+        applyPresetData(data, screen);
+        showToast(`Template "${name}" Created!`, "var(--apm-accent)");
+        popover.remove();
+      };
+      document.getElementById("apm-popover-create").onclick = doCreate;
+      nameInput.addEventListener("keydown", (e) => {
+        if (e.key === "Enter") doCreate();
+        if (e.key === "Escape") popover.remove();
+      });
+      setTimeout(() => {
+        const dismissHandler = (e) => {
+          if (!popover.contains(e.target) && e.target !== anchor) {
+            popover.remove();
+            document.removeEventListener("mousedown", dismissHandler);
+          }
+        };
+        document.addEventListener("mousedown", dismissHandler);
+      }, 0);
+    }
+    function showDirtyWarning(templateName, onDiscard) {
+      document.getElementById("apm-dirty-popover")?.remove();
+      const screen = getActiveScreen();
+      const popover = el("div", { id: "apm-dirty-popover", className: "apm-popover", style: { left: "50%", transform: "translateX(-50%)", top: "60px" } }, [
+        el(
+          "div",
+          { style: { fontSize: "var(--apm-text-sm)", color: "var(--apm-text-bright)", marginBottom: "8px" } },
+          `Unsaved changes to "${templateName}"`
+        ),
+        el("div", { className: "apm-popover-actions" }, [
+          el("button", {
+            id: "apm-dirty-discard",
+            className: "creator-btn",
+            style: { padding: "4px 10px", background: "var(--apm-control-bg)" }
+          }, "Discard"),
+          el("button", {
+            id: "apm-dirty-save",
+            className: "creator-btn apm-template-btn-update",
+            style: { padding: "4px 10px" }
+          }, "Save")
+        ])
+      ]);
+      const selectEl2 = document.getElementById("apm-c-preset-select");
+      selectEl2?.closest(".apm-settings-container")?.appendChild(popover);
+      document.getElementById("apm-dirty-discard").onclick = () => {
+        popover.remove();
+        onDiscard();
+      };
+      document.getElementById("apm-dirty-save").onclick = () => {
+        if (selectEl2?.value) {
+          updatePresetAutofill(selectEl2.value, getCurrentFormData(), screen);
+          markClean();
+          showToast(`Template "${selectEl2.value}" Saved!`, "var(--apm-success-bright)");
+        }
+        popover.remove();
+        onDiscard();
+      };
+      const escHandler = (e) => {
+        if (e.key === "Escape") {
+          popover.remove();
+          document.removeEventListener("keydown", escHandler);
+        }
+      };
+      document.addEventListener("keydown", escHandler);
     }
     function bindTabOrderActions() {
       document.getElementById("apm-s-btn-reset").onclick = () => {
         const mode = state.settingsMode === "tabs" ? "tab" : "column";
         if (!confirm(`Reset ${mode} layout to system defaults?`)) return;
         const presets = getPresets();
-        const funcName = detectScreenFunction();
+        const funcName = detectActiveScreen();
         if (state.settingsMode === "tabs") {
           const tabOrders = { ...presets.config.tabOrders || {} };
           delete tabOrders[funcName];
@@ -16418,14 +18339,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
   }
   function initBootSequence(win = window) {
     const isTop = win === win.top;
-    FeatureFlags.register("colorCode", { label: "ColorCode Engine", description: "Real-time grid highlighting and nametags" });
-    FeatureFlags.register("forecast", { label: "Forecast Tools", description: "Site/Org filters and search" });
-    FeatureFlags.register("autoFill", { label: "AutoFill Profiles", description: "Automated form completion templates" });
-    FeatureFlags.register("laborBooker", { label: "Labor Booker", description: "Quick labor entry for WOs" });
-    FeatureFlags.register("ptpTimer", { label: "PTP Take-2 Timer", description: "Safety countdown on PTP screen" });
-    FeatureFlags.register("tabGridOrder", { label: "UI Customization", description: "Drag & drop reordering of grids/tabs" });
-    FeatureFlags.register("tabTitle", { label: "Tab Title", description: "Show current screen name in browser tab" });
-    FeatureFlags.register("sessionSnapshot", { label: "Session Snapshot", description: "Restore your screen and record after session timeout", default: true });
+    FeatureFlags.registerDefaults();
     initGlobalSync();
     if (isTop) {
       try {
@@ -16463,7 +18377,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
           applyGridConsistency();
           applyTabConsistency();
         } },
-        { name: "NativeToggle", flag: "colorCode", onlyTop: true, fn: injectToggleBtnNatively },
+        { name: "NativeToggle", onlyTop: true, fn: injectToggleBtnNatively },
         { name: "PtpStatus", flag: "ptpTimer", onlyTop: true, noShell: true, fn: checkPtpStatus }
       ];
       tasks.forEach((task) => {
@@ -16540,6 +18454,8 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
         } catch (e) {
           APMLogger.error("Boot", "Failed to register tab-title-update task:", e);
         }
+        window.addEventListener("APM_VIEW_TRANSITION", () => updateTabTitle());
+        installTitleGuard();
       }
       try {
         APMScheduler.registerTask("scheduler-investigator", 1e4, () => {
@@ -17402,6 +19318,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
   } finally {
     BootManager.markReady("settings");
   }
+  FeatureFlags.registerDefaults();
   try {
     SessionMonitor.init();
   } catch (e) {
@@ -17413,6 +19330,13 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
     APMLogger.error("Boot", "UIManager init failed:", e);
   }
   var { isEAM, isPTP, isLanding: isLandingPage } = AppContext;
+  if (isLandingPage && AppContext.isTop && apmGeneralSettings.autoRedirect) {
+    const url2 = window.location.href.toLowerCase();
+    if (!url2.includes("logindisp")) {
+      APMLogger.info("Boot", "Landing page detected \u2014 immediate redirect to login.");
+      SessionMonitor.forceRedirect();
+    }
+  }
   if (isEAM || isPTP || isLandingPage) {
     if (isPTP && FeatureFlags.isEnabled("ptpTimer")) initPtpSandbox();
     if (isEAM) {
