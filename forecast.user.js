@@ -6505,10 +6505,11 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
         grids.forEach((g) => {
           if (g.rendered && !g.isDestroyed && g.getEl()?.dom?.ownerDocument === doc) {
             const view = g.getView();
-            if (view && view.getNodes) {
-              const nodes = view.getNodes();
-              if (nodes && nodes.length > 0) rowsToProcess.push(...nodes);
-            }
+            if (!view || !view.getNodes) return;
+            const viewId = view.getId?.() || "";
+            if (viewId.indexOf("checklistview") !== -1) return;
+            const nodes = view.getNodes();
+            if (nodes && nodes.length > 0) rowsToProcess.push(...nodes);
           }
         });
       }
@@ -7909,134 +7910,114 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
     const loadMoreRecords = async (grid) => {
       const store = grid.getStore();
       const countBefore = store.getCount();
-      const totalCount = store.getTotalCount?.() || countBefore;
-      if (countBefore >= totalCount) return false;
       const view = grid.getView();
       const buffRenderer = view.bufferedRenderer || view.getFeature?.("bufferedrenderer");
       if (buffRenderer && typeof buffRenderer.scrollTo === "function") {
         APMLogger.debug("AutoFill", `BufferedRenderer scroll: ${countBefore} \u2192 targeting index ${countBefore + 50}`);
-        buffRenderer.scrollTo(Math.min(countBefore + 50, totalCount - 1));
+        buffRenderer.scrollTo(countBefore + 50);
         await localWaitForAjax();
         await delay(300);
         if (store.getCount() > countBefore) return true;
       }
-      if (typeof store.nextPage === "function" && store.currentPage != null) {
-        const maxPage = Math.ceil(totalCount / (store.pageSize || 50));
-        if (store.currentPage < maxPage) {
-          APMLogger.debug("AutoFill", `Paged store: loading page ${store.currentPage + 1}/${maxPage}`);
-          store.nextPage();
-          await localWaitForAjax();
-          await waitForGridData(1e4);
-          return store.getCount() > 0;
-        }
-      }
       const scroller = view.getScrollable?.() || view.getScroller?.();
       if (scroller) {
         const maxScroll = scroller.getMaxPosition?.()?.y || scroller.getSize?.()?.y || 1e4;
-        APMLogger.debug("AutoFill", `DOM scroll fallback: scrolling to bottom (${maxScroll})`);
+        APMLogger.debug("AutoFill", `DOM scroll: scrolling to bottom (${maxScroll})`);
         scroller.scrollTo?.(0, maxScroll) || scroller.scrollTo?.("top", maxScroll);
         await localWaitForAjax();
         await delay(500);
         if (store.getCount() > countBefore) return true;
       }
-      APMLogger.debug("AutoFill", `loadMoreRecords: no additional records loaded (${countBefore}/${totalCount})`);
+      APMLogger.debug("AutoFill", `loadMoreRecords: no additional records loaded (stuck at ${countBefore})`);
       return false;
     };
     const processInBatches = async (grid, processFn, isCompletedFn, targetCompleted = null) => {
       const store = grid.getStore();
-      const loadedCount = store.getCount();
-      const serverTotal = store.getTotalCount?.() || 0;
-      const totalCount = serverTotal > 0 ? serverTotal : loadedCount;
-      const effectiveTarget = targetCompleted != null && totalCount > 0 ? Math.min(targetCompleted, totalCount) : targetCompleted;
       let globalProcessed = 0;
       let totalModified = 0;
       let alreadyDone = 0;
       let batchModified = 0;
-      let needsMoreRecords = true;
-      APMLogger.debug("AutoFill", `processInBatches: targetCompleted=${targetCompleted}, effectiveTarget=${effectiveTarget}, loaded=${store.getCount()}, total=${totalCount}`);
-      while (needsMoreRecords) {
-        const records = [];
-        store.each((rec) => records.push(rec));
-        let layoutsSuspended = false;
-        try {
-          activeExt.suspendLayouts();
-          layoutsSuspended = true;
-        } catch (e) {
-        }
-        try {
-          store.suspendEvents();
-        } catch (e) {
-        }
-        for (let i = globalProcessed; i < records.length; i++) {
-          if (effectiveTarget != null && alreadyDone + totalModified >= effectiveTarget) break;
-          if (isCompletedFn(records[i])) {
-            alreadyDone++;
-          } else {
-            const wasModified = processFn(records[i]);
-            if (wasModified) {
-              totalModified++;
-              batchModified++;
-            }
-          }
-          globalProcessed++;
-          if (globalProcessed % 10 === 0) await delay(0);
-          if (batchModified >= BATCH_SIZE) {
-            try {
-              store.resumeEvents();
-            } catch (e) {
-            }
-            try {
-              if (layoutsSuspended) {
-                activeExt.resumeLayouts(true);
-                layoutsSuspended = false;
-              }
-            } catch (e) {
-            }
-            try {
-              grid.getView().refresh();
-            } catch (e) {
-            }
-            showToast(`Saving batch (${alreadyDone + totalModified}/${effectiveTarget || totalCount})...`, "#2ecc71", true);
-            await saveGridData();
-            batchModified = 0;
-            try {
-              activeExt.suspendLayouts();
-              layoutsSuspended = true;
-            } catch (e) {
-            }
-            try {
-              store.suspendEvents();
-            } catch (e) {
-            }
+      const preLoadCount = store.getCount();
+      APMLogger.debug("AutoFill", `processInBatches: initial loaded=${preLoadCount}, serverTotal=${store.getTotalCount?.() || 0}`);
+      while (true) {
+        const loaded = await loadMoreRecords(grid);
+        if (!loaded) break;
+        APMLogger.debug("AutoFill", `processInBatches: pre-load progress ${store.getCount()} records`);
+      }
+      const totalCount = store.getCount();
+      if (totalCount > preLoadCount) {
+        APMLogger.info("AutoFill", `processInBatches: pre-loaded ${preLoadCount} \u2192 ${totalCount} records`);
+      }
+      const effectiveTarget = targetCompleted != null && totalCount > 0 ? Math.min(targetCompleted, totalCount) : targetCompleted;
+      APMLogger.debug("AutoFill", `processInBatches: targetCompleted=${targetCompleted}, effectiveTarget=${effectiveTarget}, loaded=${totalCount}`);
+      const records = [];
+      store.each((rec) => records.push(rec));
+      let layoutsSuspended = false;
+      try {
+        activeExt.suspendLayouts();
+        layoutsSuspended = true;
+      } catch (e) {
+      }
+      try {
+        store.suspendEvents();
+      } catch (e) {
+      }
+      for (let i = 0; i < records.length; i++) {
+        if (effectiveTarget != null && alreadyDone + totalModified >= effectiveTarget) break;
+        if (isCompletedFn(records[i])) {
+          alreadyDone++;
+        } else {
+          const wasModified = processFn(records[i]);
+          if (wasModified) {
+            totalModified++;
+            batchModified++;
           }
         }
-        try {
-          store.resumeEvents();
-        } catch (e) {
-        }
-        try {
-          if (layoutsSuspended) activeExt.resumeLayouts(true);
-        } catch (e) {
-        }
-        if (batchModified > 0) {
+        globalProcessed++;
+        if (globalProcessed % 10 === 0) await delay(0);
+        if (batchModified >= BATCH_SIZE) {
+          try {
+            store.resumeEvents();
+          } catch (e) {
+          }
+          try {
+            if (layoutsSuspended) {
+              activeExt.resumeLayouts(true);
+              layoutsSuspended = false;
+            }
+          } catch (e) {
+          }
           try {
             grid.getView().refresh();
           } catch (e) {
           }
-        }
-        if (effectiveTarget != null && alreadyDone + totalModified >= effectiveTarget) break;
-        if (globalProcessed >= records.length && globalProcessed < totalCount) {
-          showToast(`Loading more records (${globalProcessed}/${totalCount})...`, "#3498db", true);
-          const loaded = await loadMoreRecords(grid);
-          if (!loaded) {
-            APMLogger.info("AutoFill", `No more records to load at ${globalProcessed}/${totalCount}`);
-            needsMoreRecords = false;
+          showToast(`Saving batch (${alreadyDone + totalModified}/${effectiveTarget || totalCount})...`, "#2ecc71", true);
+          await saveGridData();
+          batchModified = 0;
+          try {
+            activeExt.suspendLayouts();
+            layoutsSuspended = true;
+          } catch (e) {
           }
-        } else {
-          needsMoreRecords = false;
+          try {
+            store.suspendEvents();
+          } catch (e) {
+          }
         }
       }
+      try {
+        store.resumeEvents();
+      } catch (e) {
+      }
+      try {
+        if (layoutsSuspended) activeExt.resumeLayouts(true);
+      } catch (e) {
+      }
       if (batchModified > 0) {
+        try {
+          grid.getView().refresh();
+        } catch (e) {
+        }
         await saveGridData();
       }
       APMLogger.debug("AutoFill", `processInBatches done: ${totalModified} modified, ${alreadyDone} already done, ${globalProcessed} processed`);
@@ -8221,6 +8202,17 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
         topDoc.body.appendChild(mask);
       }
     } catch (e) {
+    }
+    if (currentActivity == null) {
+      const combos = activeExt.ComponentQuery.query(`combobox[name=${comboName}]`, checklistContainer);
+      if (combos.length > 0) {
+        const rawVal = String(combos[0].getValue() || "").trim();
+        const norm = normalizeActivity(rawVal);
+        if (norm > 0) {
+          currentActivity = String(norm);
+          APMLogger.debug("AutoFill", `Detected current activity from combo: ${currentActivity}`);
+        }
+      }
     }
     try {
       if (data._tasks) {
