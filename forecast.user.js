@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         APM Master: Unified Tools
 // @namespace    https://w.amazon.com/bin/view/Users/rosendah/APM-Master/
-// @version      14.9.0
+// @version      14.10.4
 // @description  Quality of life and automation tool that uses native EAM ExtJS Framework functions for high reliability and capability. This is actively supported tool so Slack me or submit bug report/feature request through the bug report button in the menu.
 // @author       Jacob Rosendahl
 // @icon         https://media.licdn.com/dms/image/v2/D5603AQGdCV0_LQKRfQ/profile-displayphoto-scale_100_100/B56ZyZLvQ5HgAg-/0/1772096519061?e=1773878400&v=beta&t=eWO1Jiy0-WbzG_yBv-SBrmmsVOPMexF57-q1Xh_VXCk
@@ -318,6 +318,66 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
           pattern: null,
           screenTitle: "Shift Reports",
           descriptionField: "casedescription"
+        },
+        WSEMPS: {
+          label: "Employee",
+          systemFunc: "WSEMPS",
+          entityKey: "employee",
+          dataIndex: "employee",
+          drillbackFlag: null,
+          pattern: null,
+          screenTitle: "Employees",
+          descriptionField: "employeedescription"
+        },
+        WSSHIF: {
+          label: "Shift",
+          systemFunc: "WSSHIF",
+          entityKey: "shiftcode",
+          dataIndex: "shiftcode",
+          drillbackFlag: null,
+          pattern: null,
+          screenTitle: "Shifts",
+          descriptionField: "shiftdescription"
+        },
+        WZBLOG: {
+          label: "WO Backlog Report",
+          systemFunc: "COGREP",
+          entityKey: null,
+          dataIndex: null,
+          drillbackFlag: null,
+          pattern: null,
+          screenTitle: "WO Backlog Report",
+          descriptionField: null
+        },
+        EUWOF1: {
+          label: "WO Feedback (Employee)",
+          systemFunc: "COGREPC",
+          entityKey: null,
+          dataIndex: null,
+          drillbackFlag: null,
+          pattern: null,
+          screenTitle: "WO Feedback (Employee)",
+          descriptionField: null
+        },
+        WZWOAG: {
+          label: "WO Aging",
+          systemFunc: "COGREP",
+          entityKey: null,
+          dataIndex: null,
+          drillbackFlag: null,
+          pattern: null,
+          screenTitle: "WO Aging",
+          descriptionField: null
+        },
+        WZWOST: {
+          label: "WO Statistics",
+          systemFunc: "COGQREPC",
+          entityKey: null,
+          dataIndex: null,
+          drillbackFlag: null,
+          pattern: null,
+          screenTitle: "WO Statistics",
+          descriptionField: null
         }
       };
       SCREEN_TITLES = {
@@ -1209,7 +1269,19 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
     apmGeneralSettings[key] = value;
     saveGeneralSettings();
   }
-  var AppState, DEFAULT_SETTINGS, apmGeneralSettings, _settingsInitialized;
+  function isNavigationGuarded() {
+    return _navGuardActive;
+  }
+  function setNavigationGuard(active, maxMs = 8e3) {
+    _navGuardActive = active;
+    clearTimeout(_navGuardTimer);
+    if (active) {
+      _navGuardTimer = setTimeout(() => {
+        _navGuardActive = false;
+      }, maxMs);
+    }
+  }
+  var AppState, DEFAULT_SETTINGS, apmGeneralSettings, _settingsInitialized, _navGuardActive, _navGuardTimer;
   var init_state = __esm({
     "src/core/state.js"() {
       init_constants();
@@ -1289,6 +1361,8 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
       };
       apmGeneralSettings = { ...DEFAULT_SETTINGS };
       _settingsInitialized = false;
+      _navGuardActive = false;
+      _navGuardTimer = null;
     }
   });
 
@@ -2162,7 +2236,28 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
           this.tasks = [];
           this.running = false;
           this.timeoutId = null;
+          this._paused = false;
+          this._pauseTimer = null;
           APMLogger.info("Scheduler", `New TaskScheduler instance created: ${this.instanceId}`);
+        }
+        /**
+         * Temporarily pause all task execution.
+         * Used during EAM screen transitions to prevent scheduler tasks from
+         * accessing mid-navigation frames (causes NS_ERROR_XPC_SECURITY_MANAGER_VETO).
+         * Auto-resumes after maxMs as a safety net.
+         */
+        pause(maxMs = 8e3) {
+          this._paused = true;
+          clearTimeout(this._pauseTimer);
+          this._pauseTimer = setTimeout(() => this.resume(), maxMs);
+          APMLogger.debug("Scheduler", `Paused for up to ${maxMs}ms`);
+        }
+        resume() {
+          if (!this._paused) return;
+          this._paused = false;
+          clearTimeout(this._pauseTimer);
+          this._pauseTimer = null;
+          APMLogger.debug("Scheduler", "Resumed");
         }
         /**
          * Register a recurring task
@@ -2212,6 +2307,12 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
         }
         tick() {
           if (!this.running) return;
+          if (this._paused) {
+            this.timeoutId = setTimeout(() => {
+              if (this.running) this.tick();
+            }, 500);
+            return;
+          }
           const now = performance.now();
           let nextTickDelay = 500;
           this.tasks.forEach((task) => {
@@ -6172,7 +6273,11 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
           if (link) link.addEventListener("click", (e) => {
             e.preventDefault();
             e.stopPropagation();
-            window.top.location.href = safeUrl;
+            try {
+              window.top.location.href = safeUrl;
+            } catch (err) {
+              window.location.href = safeUrl;
+            }
           });
         }
         cell.setAttribute("data-apm-linkified", "true");
@@ -8294,7 +8399,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
         for (const win of ctx.wins) {
           if (win?.Ext?.ComponentQuery) {
             const forms = win.Ext.ComponentQuery.query("form");
-            const targetForm = forms.find((f) => f.rendered && f.id.includes("recordview"));
+            const targetForm = forms.find((f) => f.rendered && f.isVisible?.(true) && !f.id.includes("unboundform") && !f.id.includes("prompt"));
             if (targetForm) {
               activeWin = win;
               mainForm = targetForm.getForm();
@@ -8310,54 +8415,81 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
         return;
       }
       const activeExt = activeWin.Ext;
+      const orgField = activeExt.ComponentQuery.query('[name="wspf_10_repr_org"]', mainForm)[0] || activeExt.ComponentQuery.query('[name="wspf_10_repr_org"]')[0];
+      const partField = activeExt.ComponentQuery.query('[name="wspf_10_repr_part"]', mainForm)[0] || activeExt.ComponentQuery.query('[name="wspf_10_repr_part"]')[0];
+      const needsNewRecord = orgField && (orgField.readOnly || orgField.disabled || orgField.getValue?.() && partField?.getValue?.());
+      if (needsNewRecord) {
+        const newBtn = activeExt.ComponentQuery.query("button[action=newRec]").find((b) => b.rendered && !(typeof b.isHidden === "function" && b.isHidden()));
+        if (newBtn) {
+          showToast("Creating new record...", "#f1c40f", true);
+          if (newBtn.handler) newBtn.handler.call(newBtn.scope || newBtn, newBtn);
+          else newBtn.fireEvent("click", newBtn);
+          await waitForSettled(activeWin, 3e3, 200);
+          await handleEamPopups(activeWin);
+          await waitForSettled(activeWin);
+          const forms = activeExt.ComponentQuery.query("form");
+          const targetForm = forms.find((f) => f.rendered && f.isVisible?.(true) && !f.id.includes("unboundform") && !f.id.includes("prompt"));
+          if (targetForm) mainForm = targetForm.getForm();
+        }
+      }
       if (matchedData.org) {
         showToast("Setting Organization...", "#f1c40f", true);
-        await setEamLovFieldDirect(activeExt, mainForm, "organization", matchedData.org);
+        await setEamLovFieldDirect(activeExt, mainForm, "wspf_10_repr_org", matchedData.org);
         await waitForSettled(activeWin);
         await handleEamPopups(activeWin);
         await waitForSettled(activeWin);
-        verifyFieldValue(activeExt, mainForm, "organization", matchedData.org, "Organization");
+        verifyFieldValue(activeExt, mainForm, "wspf_10_repr_org", matchedData.org, "Organization");
       }
       if (matchedData.repairablePart) {
         showToast("Setting Repairable Part...", "#f1c40f", true);
-        await setEamLovFieldDirect(activeExt, mainForm, "part", matchedData.repairablePart);
+        await setEamLovFieldDirect(activeExt, mainForm, "wspf_10_repr_part", matchedData.repairablePart);
         await waitForSettled(activeWin);
         await handleEamPopups(activeWin);
         await waitForSettled(activeWin);
       }
       showToast("Searching Issued Work Order...", "#f1c40f", true);
       try {
-        const { records } = await eamQuery({
-          endpoint: "OSEQPP.xmlhttp",
-          gridName: "LVOBJL",
-          userFunction: "AUIRPR",
-          systemFunction: "OSEQPP",
-          includePagination: false,
-          extraParams: {
-            LOV_TAGNAME: "issuedrepairwo",
-            filterfields: "workordernum",
-            filteroperator: "CONTAINS",
-            filtervalue: ""
+        const issField = activeExt.ComponentQuery.query('[name="wspf_10_repr_issevent"]', mainForm)[0] || activeExt.ComponentQuery.query('[name="wspf_10_repr_issevent"]')[0];
+        if (issField) {
+          if (typeof issField.setReadOnly === "function") issField.setReadOnly(false);
+          if (typeof issField.setDisabled === "function") issField.setDisabled(false);
+          issField.setValue("");
+          if (issField.inputEl?.dom) issField.inputEl.dom.focus();
+          if (typeof issField.onTriggerClick === "function") {
+            issField.onTriggerClick();
+          } else {
+            const triggers = issField.getTriggers?.() || {};
+            const lovTrigger = triggers.search || triggers.lov || Object.values(triggers)[0];
+            if (lovTrigger?.handler) lovTrigger.handler.call(lovTrigger.scope || issField);
+            else if (lovTrigger?.onClick) lovTrigger.onClick();
           }
-        });
-        if (records?.length > 0) {
-          const woNum = records[0].workordernum || records[0].code || Object.values(records[0])[0];
-          if (woNum) {
-            await setEamLovFieldDirect(activeExt, mainForm, "issuedrepairwo", woNum);
-            await waitForSettled(activeWin);
-            await handleEamPopups(activeWin);
-            await waitForSettled(activeWin);
+          await waitForSettled(activeWin, 3e3, 200);
+          const lovGrids = activeExt.ComponentQuery.query("grid");
+          const lovGrid = lovGrids.find((g) => g.isVisible?.(true) && g.getStore?.()?.getCount() > 0);
+          if (lovGrid) {
+            const firstRec = lovGrid.getStore().getAt(0);
+            if (firstRec) {
+              lovGrid.getSelectionModel().select(firstRec);
+              lovGrid.fireEvent("itemdblclick", lovGrid.getView(), firstRec);
+              await waitForSettled(activeWin, 2e3, 200);
+              await handleEamPopups(activeWin);
+              await waitForSettled(activeWin);
+            }
+          } else {
+            APMLogger.warn("AutoFill", "Issued WO LOV grid not found after trigger");
           }
+        } else {
+          APMLogger.warn("AutoFill", "wspf_10_repr_issevent field not found");
         }
       } catch (e) {
         APMLogger.warn("AutoFill", "Issued WO search failed:", e);
       }
-      if (matchedData.requestedBy) {
-        await setEamLovFieldDirect(activeExt, mainForm, "requestedby", matchedData.requestedBy);
-        await waitForSettled(activeWin);
-      }
       if (matchedData.qty) {
-        setExtModelDirect(activeExt, mainForm, "quantity", String(matchedData.qty));
+        setExtModelDirect(activeExt, mainForm, "wspf_10_repr_qty", String(matchedData.qty));
+      }
+      if (matchedData.requestedBy) {
+        await setEamLovFieldDirect(activeExt, mainForm, "wspf_10_repr_reqorigin", matchedData.requestedBy);
+        await waitForSettled(activeWin);
       }
       await waitForSettled(activeWin, 2e3, 100);
       showToast("Saving Repair Request...", "#2ecc71", true);
@@ -8367,18 +8499,21 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
         if (saveBtn.handler) saveBtn.handler.call(saveBtn.scope || saveBtn, saveBtn);
         else saveBtn.fireEvent("click", saveBtn);
         await waitForSettled(activeWin, 5e3, 500);
-      }
-      showToast("Initiating Repair...", "#3498db", true);
-      const repairBtns = activeExt.ComponentQuery.query("button[text*=Initiate], button[tooltip*=Initiate]");
-      const repairBtn = repairBtns.find((b) => b.rendered && !(typeof b.isHidden === "function" && b.isHidden()));
-      if (repairBtn) {
-        if (repairBtn.handler) repairBtn.handler.call(repairBtn.scope || repairBtn, repairBtn);
-        else repairBtn.fireEvent("click", repairBtn);
-        await waitForSettled(activeWin, 3e3, 200);
         await handleEamPopups(activeWin);
-        showToast("Repair initiated!", "#2ecc71");
+      }
+      if (matchedData.initiateRepair) {
+        showToast("Initiating Repair...", "#3498db", true);
+        const repairBtnEl = activeWin.document.querySelector(".uft-id-amz-genrepair");
+        if (repairBtnEl) {
+          repairBtnEl.click();
+          await waitForSettled(activeWin, 3e3, 200);
+          await handleEamPopups(activeWin);
+          showToast("Repair initiated!", "#2ecc71");
+        } else {
+          showToast("Warning: Initiate Repair button not found.", "#e67e22");
+        }
       } else {
-        showToast("Warning: Initiate Repair button not found.", "#e67e22");
+        showToast("Repair saved!", "#2ecc71");
       }
     } finally {
       setIsAutoFillRunning(false);
@@ -9218,6 +9353,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
       }, 100);
     },
     bindAll() {
+      if (isNavigationGuarded()) return;
       const wins = getExtWindows();
       for (const win of wins) {
         if (!isWindowAccessible(win)) continue;
@@ -9243,7 +9379,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
      * after AJAX activity or major UI changes.
      */
     triggerDiscoveryBurst() {
-      if (_burstActive) return;
+      if (_burstActive || isNavigationGuarded()) return;
       _burstActive = true;
       const scheduler = APMScheduler;
       if (!scheduler) {
@@ -9463,6 +9599,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
   // src/core/frame-manager.js
   init_api();
   init_ui_manager();
+  init_state();
   init_labor_booker();
 
   // src/ui/styles.js
@@ -10333,6 +10470,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
     debouncedProcessColorCodeGrid(doc, true);
   }
   function scanAndAttachFrames() {
+    if (isNavigationGuarded()) return;
     const currentWins = getExtWindows();
     for (const [win, data] of _gridObservers.entries()) {
       try {
@@ -10732,7 +10870,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
               ]),
               el("div", { style: { gridColumn: "span 2" } }, [
                 el("label", { className: "eam-fc-label", style: { display: "block", marginBottom: "4px" } }, "Org (Site):"),
-                el("input", { type: "text", id: "spy-org", className: "eam-fc-input-text", style: { width: "100%" } })
+                el("input", { type: "text", id: "spy-org", className: "eam-fc-input-text", style: { width: "100%", textTransform: "uppercase" } })
               ])
             ]),
             el("div", { style: { marginTop: "15px", display: "flex", gap: "10px" } }, [
@@ -11340,7 +11478,8 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
       keywordInput = el("input", {
         type: "text",
         className: "fb-keyword-input",
-        placeholder: FIELD_CONFIG[0].placeholder
+        placeholder: FIELD_CONFIG[0].placeholder,
+        style: { textTransform: "uppercase" }
       });
       keywordInput.addEventListener("keydown", (e) => {
         if (e.key === "Enter") {
@@ -11660,25 +11799,35 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
   // src/core/eam-nav.js
   init_logger();
   init_constants();
+  init_utils();
+  init_scheduler();
+  init_state();
   function buildEamScreenUrl(target) {
     const entry = ENTITY_REGISTRY[target];
     const base = entry ? entry.systemFunc : target;
     return `${base}?USER_FUNCTION_NAME=${target}&FUNCTION_CLASS=WEBL`;
   }
-  function suppressEamTransitionError(win) {
-    const suppressors = [];
+  function isTransitionError(msg) {
+    if (msg.includes("items") && msg.includes("null")) return true;
+    if (msg.includes("NS_ERROR_XPC_SECURITY_MANAGER_VETO")) return true;
+    if (msg.includes("SecurityError") && msg.includes("cross-origin")) return true;
+    if (msg.includes("Permission denied to access property")) return true;
+    return false;
+  }
+  function patchWindow(win) {
+    const restorers = [];
     try {
       const origOnerror = win.onerror;
       win.onerror = function(msg, url2, line, col, error) {
         const msgStr = String(msg || "");
-        if (msgStr.includes("items") && msgStr.includes("null")) {
-          APMLogger.debug("EamNav", "Suppressed EAM transition error (window.onerror):", msgStr);
+        if (isTransitionError(msgStr)) {
+          APMLogger.debug("EamNav", "Suppressed transition error (onerror):", msgStr.substring(0, 120));
           return true;
         }
         if (origOnerror) return origOnerror.call(this, msg, url2, line, col, error);
         return false;
       };
-      suppressors.push(() => {
+      restorers.push(() => {
         win.onerror = origOnerror;
       });
     } catch (e) {
@@ -11688,26 +11837,104 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
       if (win.Ext?.Error) {
         win.Ext.Error.handle = function(err) {
           const msg = err && (err.msg || err.message || String(err)) || "";
-          if (msg.includes("items") && msg.includes("null")) {
-            APMLogger.debug("EamNav", "Suppressed EAM transition error (Ext.Error.handle):", msg);
+          if (isTransitionError(msg)) {
+            APMLogger.debug("EamNav", "Suppressed transition error (Ext.Error.handle):", msg.substring(0, 120));
             return true;
           }
           return origHandle ? origHandle.apply(this, arguments) : false;
         };
-        suppressors.push(() => {
+        restorers.push(() => {
           win.Ext.Error.handle = origHandle;
         });
       }
     } catch (e) {
     }
+    return () => restorers.forEach((fn) => {
+      try {
+        fn();
+      } catch (e) {
+      }
+    });
+  }
+  function suppressEamTransitionError() {
+    const cleanups = [];
+    const patched = /* @__PURE__ */ new WeakSet();
+    const patchAll = () => {
+      for (const w of [window, window.top]) {
+        try {
+          if (w && !patched.has(w) && isWindowAccessible(w)) {
+            cleanups.push(patchWindow(w));
+            patched.add(w);
+          }
+        } catch (e) {
+        }
+      }
+      try {
+        for (const w of getExtWindows()) {
+          if (!patched.has(w)) {
+            cleanups.push(patchWindow(w));
+            patched.add(w);
+          }
+        }
+      } catch (e) {
+      }
+      try {
+        document.querySelectorAll("iframe").forEach((f) => {
+          try {
+            const fw = f.contentWindow;
+            if (fw && !patched.has(fw) && isWindowAccessible(fw)) {
+              cleanups.push(patchWindow(fw));
+              patched.add(fw);
+            }
+          } catch (e) {
+          }
+        });
+      } catch (e) {
+      }
+    };
+    patchAll();
+    let observer;
+    try {
+      observer = new MutationObserver((mutations) => {
+        for (const m of mutations) {
+          for (const node of m.addedNodes) {
+            if (node.nodeName === "IFRAME") {
+              try {
+                const fw = node.contentWindow;
+                if (fw && !patched.has(fw)) {
+                  cleanups.push(patchWindow(fw));
+                  patched.add(fw);
+                }
+              } catch (e) {
+              }
+              node.addEventListener("load", () => {
+                try {
+                  const fw = node.contentWindow;
+                  if (fw && !patched.has(fw)) {
+                    cleanups.push(patchWindow(fw));
+                    patched.add(fw);
+                  }
+                } catch (e) {
+                }
+              });
+            }
+          }
+        }
+      });
+      observer.observe(document.documentElement, { childList: true, subtree: true });
+    } catch (e) {
+    }
+    const repatchInterval = setInterval(patchAll, 200);
     return () => {
-      suppressors.forEach((fn) => {
+      clearInterval(repatchInterval);
+      if (observer) observer.disconnect();
+      cleanups.forEach((fn) => {
         try {
           fn();
         } catch (e) {
         }
       });
-      APMLogger.debug("EamNav", "EAM error suppression removed");
+      APMLogger.debug("EamNav", `Transition error suppression removed (${cleanups.length} windows)`);
     };
   }
   function launchScreenDirect(win, target) {
@@ -11719,15 +11946,27 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
       }
       const url2 = buildEamScreenUrl(target);
       APMLogger.info("EamNav", `Direct navigation via EAM.Nav.launchScreen("${url2}")`);
-      const cleanup = suppressEamTransitionError(win);
+      setNavigationGuard(true, 8e3);
+      APMScheduler.pause(8e3);
+      const cleanup = suppressEamTransitionError();
       nav.launchScreen(url2, null, { fromNav: true });
-      setTimeout(cleanup, 5e3);
+      setTimeout(() => {
+        cleanup();
+        setNavigationGuard(false);
+        APMScheduler.resume();
+      }, 6e3);
       return true;
     } catch (e) {
       APMLogger.error("EamNav", "EAM.Nav.launchScreen failed:", e);
+      setNavigationGuard(false);
+      APMScheduler.resume();
       return false;
     }
   }
+
+  // src/modules/forecast/forecast-engine.js
+  init_scheduler();
+  init_state();
 
   // src/core/maddon.js
   init_logger();
@@ -11770,7 +12009,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
       });
       return shifted;
     };
-    const patchWindow = (win) => {
+    const patchWindow2 = (win) => {
       try {
         const proto = win.XMLHttpRequest.prototype;
         const origSend = proto.send;
@@ -11809,9 +12048,9 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
       consumed = true;
     };
     for (const win of getExtWindows()) {
-      patchWindow(win);
+      patchWindow2(win);
     }
-    patchWindow(window);
+    patchWindow2(window);
     APMLogger.debug("Forecast-XHR", `Armed XHR intercept on ${patchedWindows.length} windows`);
     setTimeout(() => {
       if (!consumed) cleanup();
@@ -11865,7 +12104,12 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
       const isWorkOrderSearch = url2.includes("WSJOBS.xmlhttp") || url2.includes("CTJOBS.xmlhttp") || params.GRID_NAME === "WSJOBS" || params.GRID_NAME === "CTJOBS";
       const isCacheRequest = url2.includes("GETCACHE") || typeof params === "string" && params.includes("COMPONENT_INFO_TYPE_MODE=CACHE") || params.COMPONENT_INFO_TYPE_MODE === "CACHE";
       if (!isRunning && !filtersActive) return;
-      const topDoc = window.top.document;
+      let topDoc;
+      try {
+        topDoc = window.top.document;
+      } catch (e) {
+        return;
+      }
       const profSelect = topDoc.getElementById("eam-profile-select");
       const profId = profSelect?.value;
       APMLogger.debug("Forecast-MADDON", `Hook fired: isRunning=${isRunning}, profId=${profId}, isWO=${isWorkOrderSearch}, isCache=${isCacheRequest}, savedProfiles=${savedProfiles.length}, url=${url2.substring(0, 80)}`);
@@ -12160,6 +12404,9 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
         if (!nav || typeof nav.goTo !== "function") continue;
         APMLogger.info("Forecast", `Quick search via Nav.goTo for ${woNum}`);
         const url2 = `WSJOBS?USER_FUNCTION_NAME=${target}`;
+        setNavigationGuard(true, 6e3);
+        APMScheduler.pause(6e3);
+        const navCleanup = suppressEamTransitionError();
         nav.goTo(url2, {
           CURRENT_TAB_NAME: "HDR",
           DEFAULT_VIEW: "HDR",
@@ -12168,6 +12415,9 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
         }, { drillback: true, smartCache: false });
         await delay(2e3);
         await waitForAjax(win);
+        navCleanup();
+        setNavigationGuard(false);
+        APMScheduler.resume();
         for (const w of getExtWindows()) {
           try {
             if (!w.Ext?.ComponentQuery) continue;
@@ -12813,7 +13063,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
             el("option", { value: "Contains", selected: forecastState.descOp === "Contains" }, "Include"),
             el("option", { value: "Does Not Contain", selected: forecastState.descOp === "Does Not Contain" }, "Exclude")
           ]),
-          el("input", { type: "text", id: "eam-desc-text", value: forecastState.descText, placeholder: "Keywords... (Optional)", className: "eam-fc-desc-input" })
+          el("input", { type: "text", id: "eam-desc-text", value: forecastState.descText, placeholder: "Keywords... (Optional)", className: "eam-fc-desc-input", style: { textTransform: "uppercase" } })
         ]),
         el("div", { className: "eam-fc-run-box" }, [
           el("button", { id: "eam-btn-run", className: "eam-fc-btn-run" }, "Run Search"),
@@ -15128,6 +15378,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
     _lastActiveTab = record?.activeTab || null;
     _lastGridStateHash = gridStateHash;
     if (!screen) return;
+    if (!ENTITY_REGISTRY[screen]) return;
     const snapshot = {
       _v: 2,
       tabId,
@@ -16270,9 +16521,15 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
           el("div", { className: "field-label", style: { width: "85px", textAlign: "left" } }, "Repairable Part:"),
           el("input", { type: "text", id: "apm-c-repair-part", className: "field-input upper", placeholder: "Part code", style: { height: "28px", padding: "0 6px" } })
         ]),
-        el("div", { className: "field-row", style: { margin: "0" } }, [
+        el("div", { className: "field-row", style: { margin: "0 0 4px 0" } }, [
           el("div", { className: "field-label", style: { width: "85px", textAlign: "left" } }, "Requested By:"),
           el("input", { type: "text", id: "apm-c-repair-requested-by", className: "field-input upper", placeholder: "Leave blank to ignore", style: { height: "28px", padding: "0 6px" } })
+        ]),
+        el("div", { className: "field-row", style: { margin: "0" } }, [
+          el("label", { style: { display: "flex", alignItems: "center", gap: "6px", cursor: "pointer" } }, [
+            el("input", { type: "checkbox", id: "apm-c-repair-initiate", style: { margin: "0" } }),
+            el("span", { style: { fontSize: "var(--apm-text-xs)" } }, "Auto-initiate repair after save")
+          ])
         ])
       ]),
       el(
@@ -17083,6 +17340,8 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
       setVal("apm-c-repair-qty", "qty");
       setVal("apm-c-repair-part", "repairablePart");
       setVal("apm-c-repair-requested-by", "requestedBy");
+      const initCb = document.getElementById("apm-c-repair-initiate");
+      if (initCb) initCb.checked = !!data.initiateRepair;
     } else if (screen === "shiftReport") {
       const setVal = (id, key) => {
         const el2 = document.getElementById(id);
@@ -17146,7 +17405,8 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
         org: document.getElementById("apm-c-repair-org")?.value || "",
         qty: parseInt(document.getElementById("apm-c-repair-qty")?.value, 10) || 1,
         repairablePart: document.getElementById("apm-c-repair-part")?.value || "",
-        requestedBy: document.getElementById("apm-c-repair-requested-by")?.value || ""
+        requestedBy: document.getElementById("apm-c-repair-requested-by")?.value || "",
+        initiateRepair: document.getElementById("apm-c-repair-initiate")?.checked || false
       };
     }
     if (screen === "shiftReport") {
@@ -17186,7 +17446,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
       };
     }
     if (screen === "repair") {
-      return { org: "", qty: 1, repairablePart: "", requestedBy: "" };
+      return { org: "", qty: 1, repairablePart: "", requestedBy: "", initiateRepair: false };
     }
     if (screen === "shiftReport") {
       return { keyword: "", status: "", actChecks10: 0, actChecks20: 0 };
@@ -19392,12 +19652,20 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
       APMLogger.debug("Core", `Nametag click detected: ${kw}`);
       if (kw !== null) {
         e._apmHandled = true;
-        const topWin = typeof mainWin !== "undefined" && mainWin.top ? mainWin.top : window.top;
+        let topWin;
+        try {
+          topWin = typeof mainWin !== "undefined" && mainWin.top ? mainWin.top : window.top;
+        } catch (err) {
+          topWin = window;
+        }
         const currentGlobal = topWin.activeNametagFilter;
         const isAlreadyActive = currentGlobal === kw;
         const newFilter = isAlreadyActive ? "" : kw;
         APMLogger.debug("Core", `Nametag Click Logic: currentGlobal="${currentGlobal}", targetKw="${kw}", isAlreadyActive=${isAlreadyActive}, newFilter="${newFilter}"`);
-        topWin.activeNametagFilter = newFilter;
+        try {
+          topWin.activeNametagFilter = newFilter;
+        } catch (err) {
+        }
         if (newFilter) {
           showToast(`Filter: ${newFilter} (Click to Clear)`, "var(--apm-success-bright)", true, () => {
             window.dispatchEvent(new CustomEvent("APM_CLEAR_FILTER"));
