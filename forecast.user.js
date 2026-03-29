@@ -12,8 +12,6 @@
 // @match        https://*.insights.amazon.dev/*
 // @match        https://*.hexagon.com/*
 // @match        https://*.octave.com/*
-// @updateURL    https://drive.corp.amazon.com/view/rosendah@/greasemonkey_scripts/APM-Master/forecast.user.js
-// @downloadURL  https://drive.corp.amazon.com/view/rosendah@/greasemonkey_scripts/APM-Master/forecast.user.js
 // @run-at       document-start
 // @grant        GM_addStyle
 // @grant        GM_addElement
@@ -888,18 +886,46 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
           };
         },
         /**
+         * Collect logs and errors from all accessible frames' Diagnostics instances.
+         * Content iframes have their own bundled script (own Diagnostics singleton),
+         * so the top frame must reach into them to get autofill, colorcode, etc. logs.
+         */
+        _aggregateFrameData() {
+          let allLogs = [...this.logs];
+          let allErrors = [...this.errors];
+          try {
+            document.querySelectorAll("iframe").forEach((f) => {
+              try {
+                const frameDiag = f.contentWindow?._APM?.diagnostics;
+                if (frameDiag && frameDiag !== this) {
+                  if (frameDiag.logs) allLogs.push(...frameDiag.logs);
+                  if (frameDiag.errors) allErrors.push(...frameDiag.errors);
+                }
+              } catch (e) {
+              }
+            });
+          } catch (e) {
+          }
+          allLogs.sort((a, b) => b.timestamp.localeCompare(a.timestamp));
+          allErrors.sort((a, b) => b.timestamp.localeCompare(a.timestamp));
+          if (allLogs.length > MAX_LOGS) allLogs.length = MAX_LOGS;
+          if (allErrors.length > MAX_ERRORS) allErrors.length = MAX_ERRORS;
+          return { logs: allLogs, errors: allErrors };
+        },
+        /**
          * Aggregates all diagnostic data into a single object.
          * @returns {Object}
          */
         toJSON() {
+          const { logs, errors } = this._aggregateFrameData();
           return {
             version: CURRENT_VERSION,
             timestamp: (/* @__PURE__ */ new Date()).toISOString(),
             uptime: Math.floor((Date.now() - this.startTime) / 1e3),
             bootTimings: this.bootTimings,
             performance: this.perfMetrics,
-            errors: this.errors,
-            logs: this.logs,
+            errors,
+            logs,
             frames: this.frameSnapshot(),
             userAgent: navigator.userAgent,
             url: window.location.href
@@ -2948,6 +2974,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
             laborCache.data = records;
             laborCache.employee = targetEmployee;
             laborCache.lastFetch = Date.now();
+            APMLogger.info("LaborService", `Fetched ${records.length} record(s) for ${targetEmployee}`);
             return records;
           } catch (err) {
             APMLogger.error("LaborService", "Fetch error:", err);
@@ -3465,7 +3492,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
             const eamDate = formatToEamDate(data.date);
             const targetHours = String(data.hours || "0.25");
             const targetType = data.type || "N";
-            APMLogger.debug("LaborBooker", `Starting flow for field injection. Emp: ${employee}, Hrs: ${targetHours}, Type: ${targetType}`);
+            APMLogger.info("LaborBooker", `Booking: ${targetHours}h ${targetType} for ${employee} on ${eamDate}`);
             APMLogger.debug("LaborBooker", `Starting injection: emp=${employee}, hrs=${targetHours}, type=${targetType}`);
             let injectionSuccess = false;
             for (let i = 0; i < 20; i++) {
@@ -3613,10 +3640,11 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
             await waitForAjax(targetWin);
             if (true) {
               let saveVerified = false;
+              let postCount = -1;
               if (booStore && preCount >= 0) {
                 await delay(300);
                 if (booStore.isLoading?.()) await waitForAjax(targetWin);
-                const postCount = booStore.getCount();
+                postCount = booStore.getCount();
                 APMLogger.debug("LaborBooker", `Post-save record count: ${postCount} (was ${preCount})`);
                 saveVerified = postCount > preCount;
               }
@@ -3630,7 +3658,9 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
                   showToast("Labor Booking Failed \u2014 record count unchanged", "#e74c3c");
                 }
               }
-              if (result === "failed") {
+              if (result === "success") {
+                APMLogger.info("LaborBooker", `Booked ${targetHours}h successfully (records: ${preCount} \u2192 ${postCount})`);
+              } else if (result === "failed") {
                 APMLogger.warn("LaborBooker", "Save verification failed: grid record count did not increase");
               }
               if (result === "success") {
@@ -4836,8 +4866,8 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
     _liveConfirmed: /* @__PURE__ */ new Set(),
     _lastActivity: Date.now(),
     _nextHeartbeat: 0,
-    _ACTIVITY_TIMEOUT: 2 * 60 * 60 * 1e3,
-    // 2 hours
+    _ACTIVITY_TIMEOUT: 3 * 60 * 60 * 1e3,
+    // 3 hours
     _lastWallClock: Date.now(),
     _probing: false,
     _wakePromptShown: false,
@@ -5066,7 +5096,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
       if (!session.eamid || !session.tenant) return;
       if (!window.location.hostname.includes("eam.hxgnsmartcloud.com")) return;
       if (Date.now() - this._lastActivity > this._ACTIVITY_TIMEOUT) {
-        APMLogger.debug("APM Session", "Skipping heartbeat \u2014 no user activity in last 2 hours.");
+        APMLogger.debug("APM Session", "Skipping heartbeat \u2014 no user activity in last 3 hours.");
         return;
       }
       if (Date.now() < this._nextHeartbeat) return;
@@ -6108,7 +6138,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
       const pattern = terms.map((t) => t.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")).join("|");
       return { ...r, regex: new RegExp(pattern, "i") };
     }).filter((r) => r);
-    APMLogger.debug("ColorCode", `Compiled ${_compiledRules.length} rules: ${_compiledRules.map((r) => r.id).join(", ")}`);
+    APMLogger.info("ColorCode", `Compiled ${_compiledRules.length} rule(s)`);
     return _compiledRules;
   }
   function applyRowColoring(row, fillRule, settings) {
@@ -6176,13 +6206,14 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
       APMLogger.debug("ColorCode", "Error:", e.message || e);
     }
   });
-  function isColorCodeTarget(grid) {
+  function classifyGrid(grid) {
     const view = grid.getView?.();
     if (!view) return false;
     const viewId = view.getId?.() || "";
     if (viewId.indexOf("checklistview") !== -1) return false;
     if (grid.up?.("window")) return false;
-    return true;
+    if (grid.up?.("uxtabcontainer")) return "linkify";
+    return "full";
   }
   function resolveEntityColumn(doc) {
     let userFunc = detectActiveScreen();
@@ -6218,8 +6249,11 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
       _entityColumnId = null;
       return;
     }
+    const entityChanged = _activeEntityConfig !== config;
     _activeEntityConfig = config;
-    APMLogger.debug("ColorCode", `Entity resolved: userFunc=${_activeUserFunc}, label=${config.label}, dataIndex=${config.dataIndex}`);
+    if (entityChanged) {
+      APMLogger.info("ColorCode", `Active screen: ${_activeUserFunc} (${config.label})`);
+    }
     _entityColumnId = null;
     _subGridColumns.clear();
     _nametagExcludedColIds = /* @__PURE__ */ new Set();
@@ -6546,23 +6580,33 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
       fullStyleUpdate(doc);
     }
     let rowsToProcess = [];
+    const linkifyOnlyRows = /* @__PURE__ */ new Set();
     try {
       const win = doc.defaultView || window;
       if (win.Ext && win.Ext.ComponentQuery) {
         const grids = win.Ext.ComponentQuery.query("gridpanel:not([destroyed=true])");
         grids.forEach((g) => {
-          if (g.rendered && !g.isDestroyed && g.getEl()?.dom?.ownerDocument === doc && isColorCodeTarget(g)) {
-            const view = g.getView();
-            if (!view || !view.getNodes) return;
-            const nodes = view.getNodes();
-            if (nodes && nodes.length > 0) rowsToProcess.push(...nodes);
+          if (!g.rendered || g.isDestroyed || g.getEl()?.dom?.ownerDocument !== doc) return;
+          const tier = classifyGrid(g);
+          if (!tier) return;
+          const view = g.getView();
+          if (!view || !view.getNodes) return;
+          const nodes = view.getNodes();
+          if (nodes && nodes.length > 0) {
+            rowsToProcess.push(...nodes);
+            if (tier === "linkify") nodes.forEach((n) => linkifyOnlyRows.add(n));
           }
         });
       }
     } catch (e) {
       APMLogger.error("ColorCode", "Error querying grids:", e);
     }
-    if (rowsToProcess.length === 0) rowsToProcess = doc.querySelectorAll(".x-grid-item");
+    if (rowsToProcess.length === 0) {
+      const win = doc.defaultView || window;
+      if (!win.Ext?.ComponentQuery) {
+        rowsToProcess = doc.querySelectorAll(".x-grid-item");
+      }
+    }
     const viewCache = /* @__PURE__ */ new Map();
     rowsToProcess.forEach((row) => {
       try {
@@ -6590,9 +6634,10 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
           }
           APMLogger.debug("ColorCode", `Row ${row.id} needs repaint (decorations missing)`);
         }
+        const isLinkifyOnly = linkifyOnlyRows.has(row);
         const lowerText = rawText.toLowerCase();
-        const rowMatches = activeRules.filter((r) => r.regex.test(lowerText));
-        const fillRule = rowMatches.find((r) => r.fill);
+        const rowMatches = isLinkifyOnly ? [] : activeRules.filter((r) => r.regex.test(lowerText));
+        const fillRule = isLinkifyOnly ? null : rowMatches.find((r) => r.fill);
         const tagRulesCount = rowMatches.filter((r) => r.showTag).length;
         const entityConfig = _activeEntityConfig || ENTITY_REGISTRY.WSJOBS;
         const hasEntity = !!_entityColumnId || _subGridColumns.size > 0 || !!entityConfig.pattern;
@@ -6632,7 +6677,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
         win.__apmWinHooksInjected = true;
       }
       const allGrids = win.Ext.ComponentQuery.query("gridpanel, treepanel");
-      const grids = allGrids.filter((g) => isColorCodeTarget(g));
+      const grids = allGrids.filter((g) => classifyGrid(g));
       if (grids.length > 0) APMLogger.debug("ColorCode", `Found ${grids.length}/${allGrids.length} data grids for listener binding`);
       grids.forEach((grid) => {
         const view = grid.getView();
@@ -7314,7 +7359,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
         if (defaultTabs.length > 0) _systemDefaults.tabs[funcName] = defaultTabs;
       }
       if (hasOrder && retryCount === 0) {
-        APMLogger.info("TabGridOrder", `[Silo: ${funcName}] Preferred Order:`, preferredOrder);
+        APMLogger.debug("TabGridOrder", `[Silo: ${funcName}] Preferred Order:`, preferredOrder);
       }
       const activeTab = mainTabPanel.getActiveTab?.() || null;
       const activeTabName = activeTab ? normalizeTabName(activeTab.title || activeTab.text || activeTab.tab && activeTab.tab.getText?.()) : null;
@@ -7458,11 +7503,187 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
   init_toast();
   init_state();
   init_constants();
+  init_storage();
   init_scheduler();
   init_feature_flags();
   init_eam_query();
   init_diagnostics();
   init_context();
+
+  // src/core/eam-nav.js
+  init_logger();
+  init_constants();
+  init_utils();
+  init_scheduler();
+  init_state();
+  function buildEamScreenUrl(target) {
+    const entry = ENTITY_REGISTRY[target];
+    const base = entry ? entry.systemFunc : target;
+    return `${base}?USER_FUNCTION_NAME=${target}&FUNCTION_CLASS=WEBL`;
+  }
+  function isTransitionError(msg) {
+    if (msg.includes("items") && msg.includes("null")) return true;
+    if (msg.includes("NS_ERROR_XPC_SECURITY_MANAGER_VETO")) return true;
+    if (msg.includes("SecurityError") && msg.includes("cross-origin")) return true;
+    if (msg.includes("Permission denied to access property")) return true;
+    if (msg.includes("[object ErrorEvent]") || msg.includes("[object Event]")) return true;
+    return false;
+  }
+  function patchWindow(win) {
+    const restorers = [];
+    try {
+      const origOnerror = win.onerror;
+      win.onerror = function(msg, url2, line, col, error) {
+        if (msg instanceof win.Event || msg instanceof win.ErrorEvent || typeof Event !== "undefined" && msg instanceof Event) {
+          APMLogger.debug("EamNav", "Suppressed ErrorEvent during transition");
+          return true;
+        }
+        const msgStr = String(msg || "");
+        if (isTransitionError(msgStr)) {
+          APMLogger.debug("EamNav", "Suppressed transition error (onerror):", msgStr.substring(0, 120));
+          return true;
+        }
+        if (origOnerror) return origOnerror.call(this, msg, url2, line, col, error);
+        return false;
+      };
+      restorers.push(() => {
+        win.onerror = origOnerror;
+      });
+    } catch (e) {
+    }
+    try {
+      const origHandle = win.Ext?.Error?.handle;
+      if (win.Ext?.Error) {
+        win.Ext.Error.handle = function(err) {
+          const msg = err && (err.msg || err.message || String(err)) || "";
+          if (isTransitionError(msg)) {
+            APMLogger.debug("EamNav", "Suppressed transition error (Ext.Error.handle):", msg.substring(0, 120));
+            return true;
+          }
+          return origHandle ? origHandle.apply(this, arguments) : false;
+        };
+        restorers.push(() => {
+          win.Ext.Error.handle = origHandle;
+        });
+      }
+    } catch (e) {
+    }
+    return () => restorers.forEach((fn) => {
+      try {
+        fn();
+      } catch (e) {
+      }
+    });
+  }
+  function suppressEamTransitionError() {
+    const cleanups = [];
+    const patched = /* @__PURE__ */ new WeakSet();
+    const patchAll = () => {
+      for (const w of [window, window.top]) {
+        try {
+          if (w && !patched.has(w) && isWindowAccessible(w)) {
+            cleanups.push(patchWindow(w));
+            patched.add(w);
+          }
+        } catch (e) {
+        }
+      }
+      try {
+        for (const w of getExtWindows()) {
+          if (!patched.has(w)) {
+            cleanups.push(patchWindow(w));
+            patched.add(w);
+          }
+        }
+      } catch (e) {
+      }
+      try {
+        document.querySelectorAll("iframe").forEach((f) => {
+          try {
+            const fw = f.contentWindow;
+            if (fw && !patched.has(fw) && isWindowAccessible(fw)) {
+              cleanups.push(patchWindow(fw));
+              patched.add(fw);
+            }
+          } catch (e) {
+          }
+        });
+      } catch (e) {
+      }
+    };
+    patchAll();
+    let observer;
+    try {
+      observer = new MutationObserver((mutations) => {
+        for (const m of mutations) {
+          for (const node of m.addedNodes) {
+            if (node.nodeName === "IFRAME") {
+              try {
+                const fw = node.contentWindow;
+                if (fw && !patched.has(fw)) {
+                  cleanups.push(patchWindow(fw));
+                  patched.add(fw);
+                }
+              } catch (e) {
+              }
+              node.addEventListener("load", () => {
+                try {
+                  const fw = node.contentWindow;
+                  if (fw && !patched.has(fw)) {
+                    cleanups.push(patchWindow(fw));
+                    patched.add(fw);
+                  }
+                } catch (e) {
+                }
+              });
+            }
+          }
+        }
+      });
+      observer.observe(document.documentElement, { childList: true, subtree: true });
+    } catch (e) {
+    }
+    const repatchInterval = setInterval(patchAll, 200);
+    return () => {
+      clearInterval(repatchInterval);
+      if (observer) observer.disconnect();
+      cleanups.forEach((fn) => {
+        try {
+          fn();
+        } catch (e) {
+        }
+      });
+      APMLogger.debug("EamNav", `Transition error suppression removed (${cleanups.length} windows)`);
+    };
+  }
+  function launchScreenDirect(win, target) {
+    try {
+      const nav = win.EAM?.Nav;
+      if (!nav || typeof nav.launchScreen !== "function") {
+        APMLogger.warn("EamNav", "EAM.Nav.launchScreen not available");
+        return false;
+      }
+      const url2 = buildEamScreenUrl(target);
+      APMLogger.info("EamNav", `Direct navigation via EAM.Nav.launchScreen("${url2}")`);
+      setNavigationGuard(true, 8e3);
+      APMScheduler.pause(8e3);
+      const cleanup = suppressEamTransitionError();
+      nav.launchScreen(url2, null, { fromNav: true });
+      setTimeout(() => {
+        cleanup();
+        setNavigationGuard(false);
+        APMScheduler.resume();
+      }, 6e3);
+      return true;
+    } catch (e) {
+      APMLogger.error("EamNav", "EAM.Nav.launchScreen failed:", e);
+      setNavigationGuard(false);
+      APMScheduler.resume();
+      return false;
+    }
+  }
+
+  // src/modules/autofill/autofill-engine.js
   var _autofillLock = false;
   var _lastKnownTitle = "";
   function createFlowContext() {
@@ -8579,7 +8800,9 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
       return;
     }
     if (!tabPanel.isDestroyed && tabPanel.getActiveTab() !== ackContainer) {
+      const cleanup = suppressEamTransitionError();
       tabPanel.setActiveTab(ackContainer);
+      setTimeout(cleanup, 3e3);
     }
     await waitForSettled(chkWin, 3e3, 100);
     const getGrid = () => {
@@ -8791,6 +9014,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
         await delay(250);
       }
       if (!activeWin || !mainForm) {
+        APMLogger.warn("AutoFill", "Shift Report form not found after polling");
         showToast("Error: Shift Report form not found.", "#e74c3c");
         return;
       }
@@ -8829,20 +9053,50 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
           return;
         }
       }
+      APMLogger.info("AutoFill", `Shift Report: matched "${matchedData.keyword || matchedData.name || "template"}" (status=${matchedData.status || "none"}, chk10=${matchedData.actChecks10 || 0}, chk20=${matchedData.actChecks20 || 0})`);
       showToast(`Auto-Filling Shift Report: ${matchedData.keyword || matchedData.name || "template"}`, "#f1c40f", true);
+      if (!AppState.session.user) {
+        try {
+          const stored = APMStorage.get(SESSION_STORAGE_KEY);
+          if (stored?.user) {
+            const u = stored.user;
+            AppState.session.user = typeof u === "string" && u.includes("@") ? u.split("@")[0].toUpperCase() : u;
+          }
+        } catch (e) {
+        }
+      }
       const user = AppState.session.user;
       if (user) {
         showToast("Setting User Login...", "#f1c40f", true);
-        await setEamLovFieldDirect(activeExt, mainForm, "reportedby", user);
+        const loginFieldNames = ["responsible", "reportedby", "enteredby", "userslogon", "personresponsible"];
+        let loginSet = false;
+        for (const fname of loginFieldNames) {
+          loginSet = await setEamLovFieldDirect(activeExt, mainForm, fname, user);
+          if (loginSet) {
+            APMLogger.info("AutoFill", `Set user login: ${fname}=${user}`);
+            break;
+          }
+        }
+        if (!loginSet) {
+          const allFields = activeExt.ComponentQuery.query("field[name]:not([destroyed=true])");
+          const names = allFields.slice(0, 30).map((f) => f.name).filter(Boolean);
+          APMLogger.warn("AutoFill", `User login field not found. Tried: ${loginFieldNames.join(", ")}. Available: ${names.join(", ")}`);
+        }
         await waitForSettled(activeWin);
+        await handleEamPopups(activeWin);
+        await waitForSettled(activeWin);
+      } else {
+        APMLogger.warn("AutoFill", "Session user not available \u2014 skipping user login");
       }
       if (matchedData.status) {
+        APMLogger.info("AutoFill", `Setting casestatus=${matchedData.status}`);
         showToast("Setting Status...", "#f1c40f", true);
         await setEamLovFieldDirect(activeExt, mainForm, "casestatus", matchedData.status);
         await waitForSettled(activeWin);
         await handleEamPopups(activeWin);
         await waitForSettled(activeWin);
       }
+      APMLogger.info("AutoFill", "Saving Shift Report before checklists");
       showToast("Saving Shift Report...", "#2ecc71", true);
       const saveBtns = activeExt.ComponentQuery.query("button[action=saveRec], button[action=saverecord], button.uft-id-saverec");
       const saveBtn = saveBtns.find((b) => b.rendered && !(typeof b.isHidden === "function" && b.isHidden())) || saveBtns[0];
@@ -8850,13 +9104,17 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
         if (saveBtn.handler) saveBtn.handler.call(saveBtn.scope || saveBtn, saveBtn);
         else saveBtn.fireEvent("click", saveBtn);
         await waitForSettled(activeWin, 5e3, 500);
+      } else {
+        APMLogger.warn("AutoFill", "Save button not found for Shift Report");
       }
       const srTasks = [];
       if (matchedData.actChecks10 > 0) srTasks.push({ target: 10, count: matchedData.actChecks10 });
       if (matchedData.actChecks20 > 0) srTasks.push({ target: 20, count: matchedData.actChecks20 });
       if (srTasks.length > 0) {
+        APMLogger.info("AutoFill", `Running Shift Report checklists: ${srTasks.map((t) => `task ${t.target}\xD7${t.count}`).join(", ")}`);
         await executeShiftReportChecklists(srTasks, ctx);
       }
+      APMLogger.info("AutoFill", "Shift Report flow complete");
       showToast("Shift Report complete!", "#2ecc71");
     } finally {
       setIsAutoFillRunning(false);
@@ -11834,176 +12092,6 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
   init_ajax_hooks();
   init_feature_flags();
   init_toast();
-
-  // src/core/eam-nav.js
-  init_logger();
-  init_constants();
-  init_utils();
-  init_scheduler();
-  init_state();
-  function buildEamScreenUrl(target) {
-    const entry = ENTITY_REGISTRY[target];
-    const base = entry ? entry.systemFunc : target;
-    return `${base}?USER_FUNCTION_NAME=${target}&FUNCTION_CLASS=WEBL`;
-  }
-  function isTransitionError(msg) {
-    if (msg.includes("items") && msg.includes("null")) return true;
-    if (msg.includes("NS_ERROR_XPC_SECURITY_MANAGER_VETO")) return true;
-    if (msg.includes("SecurityError") && msg.includes("cross-origin")) return true;
-    if (msg.includes("Permission denied to access property")) return true;
-    return false;
-  }
-  function patchWindow(win) {
-    const restorers = [];
-    try {
-      const origOnerror = win.onerror;
-      win.onerror = function(msg, url2, line, col, error) {
-        const msgStr = String(msg || "");
-        if (isTransitionError(msgStr)) {
-          APMLogger.debug("EamNav", "Suppressed transition error (onerror):", msgStr.substring(0, 120));
-          return true;
-        }
-        if (origOnerror) return origOnerror.call(this, msg, url2, line, col, error);
-        return false;
-      };
-      restorers.push(() => {
-        win.onerror = origOnerror;
-      });
-    } catch (e) {
-    }
-    try {
-      const origHandle = win.Ext?.Error?.handle;
-      if (win.Ext?.Error) {
-        win.Ext.Error.handle = function(err) {
-          const msg = err && (err.msg || err.message || String(err)) || "";
-          if (isTransitionError(msg)) {
-            APMLogger.debug("EamNav", "Suppressed transition error (Ext.Error.handle):", msg.substring(0, 120));
-            return true;
-          }
-          return origHandle ? origHandle.apply(this, arguments) : false;
-        };
-        restorers.push(() => {
-          win.Ext.Error.handle = origHandle;
-        });
-      }
-    } catch (e) {
-    }
-    return () => restorers.forEach((fn) => {
-      try {
-        fn();
-      } catch (e) {
-      }
-    });
-  }
-  function suppressEamTransitionError() {
-    const cleanups = [];
-    const patched = /* @__PURE__ */ new WeakSet();
-    const patchAll = () => {
-      for (const w of [window, window.top]) {
-        try {
-          if (w && !patched.has(w) && isWindowAccessible(w)) {
-            cleanups.push(patchWindow(w));
-            patched.add(w);
-          }
-        } catch (e) {
-        }
-      }
-      try {
-        for (const w of getExtWindows()) {
-          if (!patched.has(w)) {
-            cleanups.push(patchWindow(w));
-            patched.add(w);
-          }
-        }
-      } catch (e) {
-      }
-      try {
-        document.querySelectorAll("iframe").forEach((f) => {
-          try {
-            const fw = f.contentWindow;
-            if (fw && !patched.has(fw) && isWindowAccessible(fw)) {
-              cleanups.push(patchWindow(fw));
-              patched.add(fw);
-            }
-          } catch (e) {
-          }
-        });
-      } catch (e) {
-      }
-    };
-    patchAll();
-    let observer;
-    try {
-      observer = new MutationObserver((mutations) => {
-        for (const m of mutations) {
-          for (const node of m.addedNodes) {
-            if (node.nodeName === "IFRAME") {
-              try {
-                const fw = node.contentWindow;
-                if (fw && !patched.has(fw)) {
-                  cleanups.push(patchWindow(fw));
-                  patched.add(fw);
-                }
-              } catch (e) {
-              }
-              node.addEventListener("load", () => {
-                try {
-                  const fw = node.contentWindow;
-                  if (fw && !patched.has(fw)) {
-                    cleanups.push(patchWindow(fw));
-                    patched.add(fw);
-                  }
-                } catch (e) {
-                }
-              });
-            }
-          }
-        }
-      });
-      observer.observe(document.documentElement, { childList: true, subtree: true });
-    } catch (e) {
-    }
-    const repatchInterval = setInterval(patchAll, 200);
-    return () => {
-      clearInterval(repatchInterval);
-      if (observer) observer.disconnect();
-      cleanups.forEach((fn) => {
-        try {
-          fn();
-        } catch (e) {
-        }
-      });
-      APMLogger.debug("EamNav", `Transition error suppression removed (${cleanups.length} windows)`);
-    };
-  }
-  function launchScreenDirect(win, target) {
-    try {
-      const nav = win.EAM?.Nav;
-      if (!nav || typeof nav.launchScreen !== "function") {
-        APMLogger.warn("EamNav", "EAM.Nav.launchScreen not available");
-        return false;
-      }
-      const url2 = buildEamScreenUrl(target);
-      APMLogger.info("EamNav", `Direct navigation via EAM.Nav.launchScreen("${url2}")`);
-      setNavigationGuard(true, 8e3);
-      APMScheduler.pause(8e3);
-      const cleanup = suppressEamTransitionError();
-      nav.launchScreen(url2, null, { fromNav: true });
-      setTimeout(() => {
-        cleanup();
-        setNavigationGuard(false);
-        APMScheduler.resume();
-      }, 6e3);
-      return true;
-    } catch (e) {
-      APMLogger.error("EamNav", "EAM.Nav.launchScreen failed:", e);
-      setNavigationGuard(false);
-      APMScheduler.resume();
-      return false;
-    }
-  }
-
-  // src/modules/forecast/forecast-engine.js
   init_scheduler();
   init_state();
 
@@ -15189,6 +15277,141 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
   init_toast();
   init_dom_helpers();
   init_feature_flags();
+
+  // src/modules/colorcode/nametag-filter.js
+  init_logger();
+  init_api();
+  init_utils();
+  function getActiveNametagFilter() {
+    const root = apmGetGlobalWindow();
+    const topWin = root.top || root;
+    return topWin.activeNametagFilter || "";
+  }
+  function setActiveNametagFilter(kw) {
+    const root = apmGetGlobalWindow();
+    const topWin = root.top || root;
+    topWin.activeNametagFilter = kw || "";
+  }
+  function forceFooterText(gridDom, count) {
+    if (!gridDom) return;
+    const text = `Records: ${count} of ${count}`;
+    const elements = gridDom.querySelectorAll(".x-toolbar-text");
+    let found = false;
+    for (const el2 of elements) {
+      if (/Records:\s*/.test(el2.textContent)) {
+        el2.textContent = text;
+        found = true;
+      }
+    }
+    if (!found) {
+      const walk = document.createTreeWalker(gridDom, NodeFilter.SHOW_TEXT, {
+        acceptNode: function(node2) {
+          return /Records:\s*\d+\s*of\s*\d+/.test(node2.nodeValue) ? NodeFilter.FILTER_ACCEPT : NodeFilter.FILTER_SKIP;
+        }
+      }, false);
+      let node;
+      while (node = walk.nextNode()) node.nodeValue = text;
+    }
+  }
+  function applyNametagFilter(kw = "") {
+    APMLogger.debug("Nametag", `applyNametagFilter called with kw: "${kw}"`);
+    const ctx = findMainGrid();
+    if (!ctx) return;
+    const store = ctx.grid.getStore();
+    const gridEl = ctx.grid.getEl();
+    if (!gridEl) return;
+    const gridDom = gridEl.dom;
+    const view = ctx.grid.getView();
+    if (!store._nativeGetTotalCount) {
+      store._nativeGetTotalCount = store.getTotalCount;
+    }
+    if (store._nativeGetTotalCount && !store._apmCleanupBound) {
+      store._apmCleanupBound = true;
+      ctx.grid.on("destroy", () => {
+        if (store._nativeGetTotalCount) {
+          store.getTotalCount = store._nativeGetTotalCount;
+          delete store._nativeGetTotalCount;
+        }
+      });
+    }
+    const activeFilter = kw || "";
+    setActiveNametagFilter(activeFilter);
+    const startFilter = performance.now();
+    try {
+      const keywords = kw.split(",").map((s) => s.trim().toLowerCase()).filter((s) => s);
+      store.suspendEvents();
+      try {
+        if (keywords.length === 0) {
+          store.clearFilter();
+          if (store._nativeGetTotalCount) {
+            store.getTotalCount = store._nativeGetTotalCount;
+          }
+        } else {
+          store.clearFilter(true);
+          store.filterBy((record) => {
+            if (!record._apmSearchText) {
+              record._apmSearchText = Object.values(record.data).map((v) => v !== null && v !== void 0 ? String(v).toLowerCase() : "").join(" ");
+            }
+            return keywords.some((k) => record._apmSearchText.includes(k));
+          });
+        }
+      } finally {
+        store.resumeEvents();
+        if (view) view.refresh();
+      }
+      const endFilter = performance.now();
+      const matchesCount = store.getCount();
+      if (keywords.length > 0) {
+        APMLogger.info("Nametag", `Filter applied: "${kw}" \u2192 ${matchesCount} match(es)`);
+      } else {
+        APMLogger.info("Nametag", "Filter cleared");
+      }
+      const invalidate = APMApi.get("invalidateColorCodeCache");
+      if (invalidate) {
+        APMLogger.debug("Nametag", `Rendering pulse for '${ctx.grid.id}'`);
+        invalidate(ctx.doc);
+      }
+      if (!store._apmCacheHook) {
+        store.on("load", () => {
+          store.each((r) => {
+            delete r._apmSearchText;
+          });
+        });
+        store.on("datachanged", () => {
+          store.each((r) => {
+            delete r._apmSearchText;
+          });
+        });
+        store._apmCacheHook = true;
+      }
+      const count = store.getCount();
+      store.getTotalCount = function() {
+        return this.getCount();
+      };
+      forceFooterText(gridDom, count);
+      if (view && !view.__apmFooterHook) {
+        view.on("refresh", () => {
+          const currentFilter = getActiveNametagFilter();
+          if (currentFilter && ctx.grid && !ctx.grid.isDestroyed && ctx.grid.rendered) {
+            try {
+              const el2 = ctx.grid.getEl();
+              if (el2 && el2.dom) {
+                forceFooterText(el2.dom, ctx.grid.getStore().getCount());
+              }
+            } catch (e) {
+              APMLogger.debug("Nametag", "Footer hook error:", e);
+            }
+          }
+        });
+        view.__apmFooterHook = true;
+      }
+      if (view && view.el) view.el.setScrollTop(0);
+    } catch (err) {
+      APMLogger.error("Nametag", "CRITICAL ERROR in applyNametagFilter:", err);
+    }
+  }
+
+  // src/modules/session-snapshot/session-snapshot.js
   var CAPTURE_INTERVAL = 3e3;
   var RESTORE_GRID_TIMEOUT = 1e4;
   var PROMPT_AUTO_DISMISS = 15e3;
@@ -15222,7 +15445,8 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
     }
   }
   function captureGridState(targetWin) {
-    const wins = targetWin ? [targetWin, ...getExtWindows().filter((w) => w !== targetWin)] : getExtWindows();
+    if (!targetWin) return null;
+    const wins = [targetWin];
     for (const w of wins) {
       try {
         if (!w.Ext?.ComponentQuery) continue;
@@ -15310,10 +15534,15 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
         const current = dataspyCombo.getValue();
         APMLogger.info("Snapshot", `Dataspy: current=${current}, target=${gridState.dataspyId}`);
         if (String(current) !== gridState.dataspyId) {
-          dataspyCombo.setValue(gridState.dataspyId);
-          dataspyCombo.fireEvent("select", dataspyCombo, dataspyCombo.findRecordByValue?.(gridState.dataspyId));
-          await delay(1e3);
-          await waitForAjax(targetWin);
+          const dsRecord = dataspyCombo.findRecordByValue?.(gridState.dataspyId);
+          if (dsRecord) {
+            dataspyCombo.setValue(gridState.dataspyId);
+            dataspyCombo.fireEvent("select", dataspyCombo, dsRecord);
+            await delay(1e3);
+            await waitForAjax(targetWin);
+          } else {
+            APMLogger.warn("Snapshot", `Dataspy ${gridState.dataspyId} not in combo store \u2014 skipping`);
+          }
         }
       } else {
         APMLogger.debug("Snapshot", "Dataspy combo not found in restore frame");
@@ -15359,6 +15588,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
   var _lastRecordId = null;
   var _lastGridStateHash = null;
   var _lastActiveTab = null;
+  var _lastLoggedCaptureKey = null;
   function detectRecordView() {
     for (const w of getExtWindows()) {
       try {
@@ -15420,6 +15650,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
     const gridStateHash = gridState ? JSON.stringify(gridState) : null;
     const profSelect = document.getElementById("eam-profile-select");
     const forecastProfileId = profSelect?.value && profSelect.value !== "manual" ? profSelect.value : null;
+    const nametagFilter = getActiveNametagFilter() || null;
     const screenChanged = screen !== _lastScreen;
     const recordChanged = record?.entityType !== _lastRecordType || record?.entityId !== _lastRecordId;
     const tabChanged = (record?.activeTab || null) !== _lastActiveTab;
@@ -15439,10 +15670,15 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
       screen,
       record: record ? { entityType: record.entityType, entityId: record.entityId, activeTab: record.activeTab || null } : null,
       gridState: gridState || null,
-      forecastProfileId: forecastProfileId || null
+      forecastProfileId: forecastProfileId || null,
+      nametagFilter: nametagFilter || null
     };
     APMStorage.set(snapshotKey(tabId), snapshot);
-    APMLogger.debug("Snapshot", `Captured: ${screen}${record ? " / " + record.entityId : ""}${gridState ? " +filters" : ""}${forecastProfileId ? " prof:" + forecastProfileId : ""}`);
+    const captureKey = `${screen}|${record?.entityId || ""}|${gridState?.dataspyId || ""}|${gridState?.filterFields ? Object.keys(gridState.filterFields).sort().join(",") : ""}|${forecastProfileId || ""}|${nametagFilter || ""}`;
+    if (captureKey !== _lastLoggedCaptureKey) {
+      _lastLoggedCaptureKey = captureKey;
+      APMLogger.info("Snapshot", `Captured: ${screen}${record ? " / " + record.entityId : ""}${gridState ? ` (dataspy:${gridState.dataspyId || "default"}${gridState.filterFields ? ", " + Object.keys(gridState.filterFields).length + " filter(s)" : ""})` : ""}${nametagFilter ? ' tag:"' + nametagFilter + '"' : ""}${forecastProfileId ? " prof:" + forecastProfileId : ""}`);
+    }
   }
   function buildPromptMessage(snapshot) {
     const hasFilters = snapshot.gridState?.filterFields && Object.keys(snapshot.gridState.filterFields).length > 0;
@@ -15765,19 +16001,36 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
     if (snapshot.gridState) {
       APMLogger.info("Snapshot", "Restoring grid state (dataspy + filters)");
       const gridRestored = await restoreGridState(snapshot.gridState);
+      if (gridRestored && snapshot.nametagFilter) {
+        const applyFilter = APMApi.get("applyNametagFilter");
+        if (applyFilter) {
+          APMLogger.info("Snapshot", `Restoring nametag filter: "${snapshot.nametagFilter}"`);
+          applyFilter(snapshot.nametagFilter);
+        }
+      }
       if (gridRestored && snapshot.record) {
         const entry2 = ENTITY_REGISTRY[snapshot.record.entityType];
         if (entry2) {
-          const ctx2 = findMainGrid(true);
-          if (ctx2 && ctx2.grid.getStore().getCount() > 0) {
+          let ctx2 = null;
+          for (let i = 0; i < 10; i++) {
+            ctx2 = findMainGrid(true);
+            if (ctx2 && ctx2.grid.getStore().getCount() > 0) break;
+            ctx2 = null;
+            await delay(500);
+          }
+          if (ctx2) {
+            APMLogger.info("Snapshot", `Opening record ${snapshot.record.entityId} from grid (${ctx2.grid.getStore().getCount()} rows)`);
             const result2 = await openMatchingGridRecord(ctx2.grid, ctx2.win, entry2.dataIndex, snapshot.record.entityId);
             if (result2.success) {
               await restoreActiveTab(snapshot.record?.activeTab);
               showToast(`Restored ${entry2.label} ${snapshot.record.entityId}`, "var(--apm-success, #27ae60)", false);
             } else {
+              APMLogger.warn("Snapshot", `Record ${snapshot.record.entityId} not found in grid results`);
               showToast(`Restored filters \u2014 could not open ${snapshot.record.entityId}`, "#f39c12", false);
             }
             return;
+          } else {
+            APMLogger.warn("Snapshot", "Grid empty or not found after restore \u2014 cannot open record");
           }
         }
       }
@@ -15840,6 +16093,13 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
     await delay(300);
     await waitForAjax(targetWin);
     await delay(500);
+    if (snapshot.nametagFilter) {
+      const applyFilter = APMApi.get("applyNametagFilter");
+      if (applyFilter) {
+        APMLogger.info("Snapshot", `Restoring nametag filter: "${snapshot.nametagFilter}"`);
+        applyFilter(snapshot.nametagFilter);
+      }
+    }
     const ctx = findMainGrid(true);
     if (!ctx || ctx.grid.getStore().getCount() === 0) {
       showToast(`Could not find ${entry.label} ${snapshot.record.entityId}`, "#e74c3c", false);
@@ -16032,19 +16292,17 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
             // ── Getting Started & General Settings (merged) ──
             el("div", { className: "apm-help-section active", "data-section": "general" }, [
               el("div", { className: "apm-help-section-title" }, "Getting Started & General Settings"),
-              el("p", {}, "APM Master adds productivity tools on top of EAM. Open the APM Master dropdown in the toolbar to access settings, and all modules, Forecast is in a separate tab to the left. The General tab is your home for themes, backups, and feature toggles."),
+              el("p", {}, "APM Master adds productivity tools on top of EAM. Open the APM Master dropdown in the toolbar to access settings and modules. Forecast has its own tab to the left. The General tab is your home for themes, backups, and feature toggles."),
               el("img", { src: HELP_IMAGES.General_Settings_Menu, className: "apm-help-img apm-help-img-sm", alt: "General settings tab" }),
               el("div", { className: "apm-help-img-caption" }, "The General tab \u2014 theme selection, backup tools, and feature module toggles."),
               el("ul", {}, [
-                el("li", {}, [el("b", {}, "Theme: "), "Set your preferred theme in the ", el("b", {}, "General"), " tab. Dark Classic is recommended for dark mode users. Themes apply after a page reload."]),
-                el("li", {}, [el("b", {}, "Theme Bookmarks: "), "If you are using a bookmark with a theme in the URL, it is recomended that you set the theme in APM Master instead, this tool will inject a dark theme into the PTP page and applys the theme in all scenarios, like if you open a WO link"]),
-                el("li", {}, [el("b", {}, "Feature Flags: "), "Toggle individual modules on or off. Disabling a feature stops it from running entirely and improves startup performance."]),
+                el("li", {}, [el("b", {}, "Theme: "), "Set your preferred theme in the ", el("b", {}, "General"), " tab. Dark Classic is recommended for dark mode users. Themes apply after a page reload. If you use a bookmark with a theme in the URL, set the theme here instead \u2014 APM Master applies it everywhere including PTP and direct WO links."]),
+                el("li", {}, [el("b", {}, "Session Protection: "), "A background heartbeat keeps your EAM session alive as long as your computer is awake (stops after 3 hours idle). If your session does expire \u2014 like after your laptop sleeps \u2014 a prompt appears with three options: ", el("b", {}, "Restore"), " (logs back in and reopens the record you were on), ", el("b", {}, "Redirect"), " (logs back in without restoring), or ", el("b", {}, "Dismiss"), " (stay on the page to copy data first). If no prompt appears, Auto-Redirect handles it automatically and brings you back to the EAM login screen, where you\u2019ll be offered the option to restore your previous record."]),
                 el("li", {}, [el("b", {}, "Export / Import: "), "Back up all your settings, rules, and profiles using the Full System Backup section. Use this to transfer your setup to another machine or restore after a reinstall."]),
-                el("li", {}, [el("b", {}, "Auto-Redirect: "), "Automatically navigates back to the EAM home screen when your session expires, so you don't get stuck on an error page."]),
-                el("li", {}, [el("b", {}, "Session-Snapshot: "), "Remembers what record you were on before your session expired and offers to take you back after you return to the start screen. Tracks state per tab, session state is deleted after 10 hours."]),
+                el("li", {}, [el("b", {}, "Feature Toggles: "), "Toggle individual modules on or off. Disabling a feature stops it from running entirely and marginally improves startup performance."]),
                 el("li", {}, [el("b", {}, "Date Format: "), "Override EAM's date display format and separator to match what your EAM environment uses."]),
-                el("li", {}, [el("b", {}, "Diagnostics: "), "The Diagnostics tab shows boot timing, active tasks, and system health. Useful for troubleshooting if something isn't working."]),
-                el("li", {}, [el("b", {}, "Update Track: "), "If you are interested in early access features you can switch to the Beta track. If you encounter any issues, Slack is preferred for quick response before I ship it as Stable. Please be willing to assist in gathering info to help me diagnose. You can downgrade to the Stable track at any time. Beta updates will not always be available or far ahead."])
+                el("li", {}, [el("b", {}, "Update Track: "), "Switch to the Beta track for early access to new features. You can downgrade to Stable at any time. If you hit issues on Beta, Slack is the fastest way to report them."]),
+                el("li", {}, [el("b", {}, "Diagnostics: "), "The Diagnostics tab shows boot timing, active tasks, and system health. Useful for troubleshooting if something isn't working."])
               ])
             ]),
             // ── Forecast & Filters (with Dataspy merged in) ──
@@ -16110,7 +16368,8 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
                 el("li", {}, [el("b", {}, "Multi-Keyword: "), "Enter multiple terms separated by commas (e.g., ", el("code", {}, "13 week, quarterly, slider belt"), ") to match any of them with one rule."]),
                 el("li", {}, [el("b", {}, "Nametags: "), "Add badge text to a rule to show a colored pill on matching cells. Leave it empty to only highlight the row background."]),
                 el("li", {}, [el("b", {}, "Fill Row: "), "Controls whether the entire row gets a background color. The first matching rule wins."]),
-                el("li", {}, [el("b", {}, "Rule Order: "), "Drag rules to reorder priority. Rules higher in the list take precedence."])
+                el("li", {}, [el("b", {}, "Rule Order: "), "Drag rules to reorder priority. Rules higher in the list take precedence."]),
+                el("li", {}, [el("b", {}, "Entity Links in Sub-Grids: "), "Parts lists, associated records, and other sub-grids on record tabs get clickable entity links (equipment, parts, work orders) without full ColorCode rule highlighting."])
               ]),
               el("p", { style: { marginTop: "16px", fontWeight: "600", color: "var(--apm-text-bright)" } }, "Filtering by Nametag"),
               el("p", {}, "Click any nametag badge in the grid to instantly filter the list to only show work orders with that tag. A green filter banner appears at the top \u2014 click it to clear the filter."),
@@ -16136,7 +16395,8 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
                 el("li", {}, [el("b", {}, "Labor Booking: "), "Autofill can also book labor hours to the work order as part of the automated process, good for repetetive work orders with predictable labor."]),
                 el("li", {}, [el("b", {}, "Partial Fill: "), "Leave fields blank in the template to skip them. Only the fields you define will be filled."]),
                 el("li", {}, [el("b", {}, "Multiple Profiles: "), "Create as many profiles as you need. The first one whose keyword matches the WO description is suggested."]),
-                el("li", {}, [el("b", {}, "New Record Template: "), 'Check the "New record template" toggle to mark a profile as a default for brand-new work orders. When you create a new WO, profiles with this toggle are offered immediately \u2014 no keyword match needed. The title field in the profile will also fill the WO description.'])
+                el("li", {}, [el("b", {}, "New Record Template: "), 'Check the "New record template" toggle to mark a profile as a default for brand-new work orders. When you create a new WO, profiles with this toggle are offered immediately \u2014 no keyword match needed. The title field in the profile will also fill the WO description.']),
+                el("li", {}, [el("b", {}, "Multi-Screen Support: "), "AutoFill supports Work Orders, Repair Requests, and Shift Reports as separate template types. The screen selector auto-detects which EAM screen you're on."])
               ]),
               el("p", { style: { marginTop: "16px", fontWeight: "600", color: "var(--apm-text-bright)" } }, "Where the Button Appears"),
               el("p", {}, "When you open a work order whose description matches a profile keyword, the teal Auto Fill button appears in the record toolbar. Click it to fill all configured fields in one step."),
@@ -16191,7 +16451,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
               el("ul", {}, [
                 el("li", {}, [el("b", {}, "Quick Search: "), "Type a WO number in the search box in the top toolbar to jump directly to that work order."]),
                 el("li", {}, [el("b", {}, "Keyboard Shortcuts: "), "Press ", el("kbd", {}, "Alt+T"), " to load today's work orders. Press ", el("kbd", {}, "Alt+C"), " to clear all filters."]),
-                el("li", {}, [el("b", {}, "WO Links: "), "Work order numbers in the grid are automatically hyperlinked. Click to open in EAM. Use the clipboard icon to copy the direct URL."]),
+                el("li", {}, [el("b", {}, "WO Links: "), "Work order numbers in the grid are automatically hyperlinked. Click to open in EAM. Use the clipboard icon to copy \u2014 pastes as a clickable link in Slack, Teams, and email."]),
                 el("li", {}, [el("b", {}, "Link Behavior: "), "Configure whether links open as new tab or new browser window in the ", el("b", {}, "General"), " tab."])
               ])
             ]),
@@ -18664,6 +18924,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
           const grids = w.Ext.ComponentQuery.query("gridpanel:not([destroyed=true])");
           for (const g of grids) {
             if (!g.rendered || g.isDestroyed) continue;
+            if (g.up?.("uxtabcontainer")) continue;
             const store = g.getStore?.();
             if (!store || store.isLoading?.()) continue;
             if (store.getCount() !== 1) continue;
@@ -19525,135 +19786,6 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
     setTimeout(requestTheme, 4e3);
   }
 
-  // src/modules/colorcode/nametag-filter.js
-  init_logger();
-  init_api();
-  init_utils();
-  function getActiveNametagFilter() {
-    const root = apmGetGlobalWindow();
-    const topWin = root.top || root;
-    return topWin.activeNametagFilter || "";
-  }
-  function setActiveNametagFilter(kw) {
-    const root = apmGetGlobalWindow();
-    const topWin = root.top || root;
-    topWin.activeNametagFilter = kw || "";
-  }
-  function forceFooterText(gridDom, count) {
-    if (!gridDom) return;
-    const text = `Records: ${count} of ${count}`;
-    const elements = gridDom.querySelectorAll(".x-toolbar-text");
-    let found = false;
-    for (const el2 of elements) {
-      if (/Records:\s*/.test(el2.textContent)) {
-        el2.textContent = text;
-        found = true;
-      }
-    }
-    if (!found) {
-      const walk = document.createTreeWalker(gridDom, NodeFilter.SHOW_TEXT, {
-        acceptNode: function(node2) {
-          return /Records:\s*\d+\s*of\s*\d+/.test(node2.nodeValue) ? NodeFilter.FILTER_ACCEPT : NodeFilter.FILTER_SKIP;
-        }
-      }, false);
-      let node;
-      while (node = walk.nextNode()) node.nodeValue = text;
-    }
-  }
-  function applyNametagFilter(kw = "") {
-    APMLogger.debug("Nametag", `applyNametagFilter called with kw: "${kw}"`);
-    const ctx = findMainGrid();
-    if (!ctx) return;
-    const store = ctx.grid.getStore();
-    const gridEl = ctx.grid.getEl();
-    if (!gridEl) return;
-    const gridDom = gridEl.dom;
-    const view = ctx.grid.getView();
-    if (!store._nativeGetTotalCount) {
-      store._nativeGetTotalCount = store.getTotalCount;
-    }
-    if (store._nativeGetTotalCount && !store._apmCleanupBound) {
-      store._apmCleanupBound = true;
-      ctx.grid.on("destroy", () => {
-        if (store._nativeGetTotalCount) {
-          store.getTotalCount = store._nativeGetTotalCount;
-          delete store._nativeGetTotalCount;
-        }
-      });
-    }
-    const activeFilter = kw || "";
-    setActiveNametagFilter(activeFilter);
-    const startFilter = performance.now();
-    try {
-      const keywords = kw.split(",").map((s) => s.trim().toLowerCase()).filter((s) => s);
-      store.suspendEvents();
-      try {
-        if (keywords.length === 0) {
-          store.clearFilter();
-          if (store._nativeGetTotalCount) {
-            store.getTotalCount = store._nativeGetTotalCount;
-          }
-        } else {
-          store.clearFilter(true);
-          store.filterBy((record) => {
-            if (!record._apmSearchText) {
-              record._apmSearchText = Object.values(record.data).map((v) => v !== null && v !== void 0 ? String(v).toLowerCase() : "").join(" ");
-            }
-            return keywords.some((k) => record._apmSearchText.includes(k));
-          });
-        }
-      } finally {
-        store.resumeEvents();
-        if (view) view.refresh();
-      }
-      const endFilter = performance.now();
-      const matchesCount = store.getCount();
-      APMLogger.debug("Nametag", `Applied to '${ctx.grid.id}': ${matchesCount} matches in ${(endFilter - startFilter).toFixed(2)}ms`);
-      const invalidate = APMApi.get("invalidateColorCodeCache");
-      if (invalidate) {
-        APMLogger.debug("Nametag", `Rendering pulse for '${ctx.grid.id}'`);
-        invalidate(ctx.doc);
-      }
-      if (!store._apmCacheHook) {
-        store.on("load", () => {
-          store.each((r) => {
-            delete r._apmSearchText;
-          });
-        });
-        store.on("datachanged", () => {
-          store.each((r) => {
-            delete r._apmSearchText;
-          });
-        });
-        store._apmCacheHook = true;
-      }
-      const count = store.getCount();
-      store.getTotalCount = function() {
-        return this.getCount();
-      };
-      forceFooterText(gridDom, count);
-      if (view && !view.__apmFooterHook) {
-        view.on("refresh", () => {
-          const currentFilter = getActiveNametagFilter();
-          if (currentFilter && ctx.grid && !ctx.grid.isDestroyed && ctx.grid.rendered) {
-            try {
-              const el2 = ctx.grid.getEl();
-              if (el2 && el2.dom) {
-                forceFooterText(el2.dom, ctx.grid.getStore().getCount());
-              }
-            } catch (e) {
-              APMLogger.debug("Nametag", "Footer hook error:", e);
-            }
-          }
-        });
-        view.__apmFooterHook = true;
-      }
-      if (view && view.el) view.el.setScrollTop(0);
-    } catch (err) {
-      APMLogger.error("Nametag", "CRITICAL ERROR in applyNametagFilter:", err);
-    }
-  }
-
   // src/index.js
   init_labor_booker();
   APMLogger.debug("Boot", `APM script initializing in frame: ${window.location.pathname} (Top: ${AppContext.isTop})`);
@@ -19791,15 +19923,28 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
         const html = `<a href="${url2}">${woNum}</a>`;
         const blob = new Blob([html], { type: "text/html" });
         const textBlob = new Blob([woNum], { type: "text/plain" });
-        navigator.clipboard.write([
-          new ClipboardItem({ "text/html": blob, "text/plain": textBlob })
-        ]).then(() => {
+        const showCheck = () => {
           icon.classList.add("apm-copy-success");
           setTimeout(() => icon.classList.remove("apm-copy-success"), 1500);
-        }).catch(() => {
-          navigator.clipboard.writeText(woNum).catch(() => {
+        };
+        const temp = document.createElement("span");
+        temp.innerHTML = html;
+        temp.style.cssText = "position:fixed;left:-9999px;opacity:0";
+        document.body.appendChild(temp);
+        const range = document.createRange();
+        range.selectNodeContents(temp);
+        const sel = window.getSelection();
+        sel.removeAllRanges();
+        sel.addRange(range);
+        try {
+          document.execCommand("copy");
+          showCheck();
+        } catch (e2) {
+          navigator.clipboard.writeText(woNum).then(showCheck).catch(() => {
           });
-        });
+        }
+        sel.removeAllRanges();
+        temp.remove();
       }
       return;
     }
