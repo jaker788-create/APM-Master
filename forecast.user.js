@@ -12404,8 +12404,8 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
         if (!nav || typeof nav.goTo !== "function") continue;
         APMLogger.info("Forecast", `Quick search via Nav.goTo for ${woNum}`);
         const url2 = `WSJOBS?USER_FUNCTION_NAME=${target}`;
-        setNavigationGuard(true, 6e3);
-        APMScheduler.pause(6e3);
+        setNavigationGuard(true, 8e3);
+        APMScheduler.pause(8e3);
         const navCleanup = suppressEamTransitionError();
         nav.goTo(url2, {
           CURRENT_TAB_NAME: "HDR",
@@ -12413,29 +12413,39 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
           SAVE_FOR_HEADER: "true",
           workordernum: woNum
         }, { drillback: true, smartCache: false });
-        await delay(2e3);
-        await waitForAjax(win);
+        await delay(1500);
+        const POLL_MS = 250;
+        const MAX_POLLS = 20;
+        let opened = false;
+        for (let i = 0; i < MAX_POLLS; i++) {
+          await delay(POLL_MS);
+          for (const w of getExtWindows()) {
+            try {
+              if (!w.Ext?.ComponentQuery) continue;
+              const grids = w.Ext.ComponentQuery.query("gridpanel:not([destroyed=true])");
+              for (const g of grids) {
+                if (!g.rendered || !g.getStore) continue;
+                const store = g.getStore();
+                if (!store) continue;
+                if (store.isLoading?.()) continue;
+                if (store.getCount() === 0) continue;
+                const sid = (store.storeId || "").toLowerCase();
+                if (!sid.includes("wsjobs") && !sid.includes("ctjobs")) continue;
+                APMLogger.info("Forecast", `Opening from grid: ${store.getCount()} results`);
+                const result = await openFirstGridRecord(g, w);
+                opened = result.success;
+                break;
+              }
+              if (opened) break;
+            } catch (e) {
+            }
+          }
+          if (opened) break;
+        }
         navCleanup();
         setNavigationGuard(false);
         APMScheduler.resume();
-        for (const w of getExtWindows()) {
-          try {
-            if (!w.Ext?.ComponentQuery) continue;
-            const grids = w.Ext.ComponentQuery.query("gridpanel:not([destroyed=true])");
-            for (const g of grids) {
-              if (!g.rendered || !g.getStore) continue;
-              const store = g.getStore();
-              if (!store || store.getCount() === 0) continue;
-              const sid = (store.storeId || "").toLowerCase();
-              if (!sid.includes("wsjobs") && !sid.includes("ctjobs")) continue;
-              APMLogger.info("Forecast", `Opening from grid: ${store.getCount()} results`);
-              const result = await openFirstGridRecord(g, w);
-              return result.success;
-            }
-          } catch (e) {
-          }
-        }
-        return true;
+        return opened;
       } catch (e) {
         APMLogger.debug("Forecast", "goToRecordDirect error:", e.message);
       }
@@ -15825,9 +15835,8 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
   var SessionSnapshot = {
     async init() {
       if (!isTopFrame()) return;
-      const topWin = window.top || window;
-      if (!topWin.Ext) {
-        APMLogger.debug("Snapshot", "No ExtJS detected \u2014 skipping init (likely login page).");
+      if (window.location.href.toLowerCase().includes("logindisp")) {
+        APMLogger.debug("Snapshot", "Login page detected \u2014 skipping init to preserve snapshot.");
         return;
       }
       const tabId = getTabId();
@@ -18539,29 +18548,34 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
   // src/boot.js
   init_toast();
   init_constants();
-  var _drillbackHandled = false;
+  var _autoOpenHandled = false;
   async function handleDrillbackAutoOpen() {
-    if (_drillbackHandled || !isTopFrame()) return;
-    const params = new URLSearchParams(window.location.search);
-    let matchedEntry = null;
-    let entityId = null;
-    for (const [key, entry] of Object.entries(ENTITY_REGISTRY)) {
-      if (params.get(entry.drillbackFlag) === "YES" && params.get(entry.entityKey)) {
-        const urlUserFunc = params.get("USER_FUNCTION_NAME");
-        if (urlUserFunc && urlUserFunc !== key) continue;
-        matchedEntry = entry;
-        entityId = params.get(entry.entityKey);
-        break;
-      }
+    if (_autoOpenHandled || !isTopFrame()) return;
+    _autoOpenHandled = true;
+    if (document.hidden) {
+      APMLogger.info("Boot", "Tab hidden \u2014 deferring auto-open until visible.");
+      await new Promise((resolve) => {
+        const onVisible = () => {
+          if (!document.hidden) {
+            document.removeEventListener("visibilitychange", onVisible);
+            resolve();
+          }
+        };
+        document.addEventListener("visibilitychange", onVisible);
+        setTimeout(() => {
+          document.removeEventListener("visibilitychange", onVisible);
+          resolve();
+        }, 6e4);
+      });
+      APMLogger.info("Boot", "Tab now visible \u2014 starting auto-open poll.");
     }
-    if (!matchedEntry || !entityId) return;
-    _drillbackHandled = true;
-    APMLogger.info("Boot", `Drillback detected: ${matchedEntry.label} ${entityId}`);
-    const GRID_TIMEOUT = 7e3;
-    const POLL_INTERVAL = 250;
+    const entityStoreKeys = /* @__PURE__ */ new Set();
+    for (const entry of Object.values(ENTITY_REGISTRY)) {
+      if (entry.systemFunc) entityStoreKeys.add(entry.systemFunc.toLowerCase());
+    }
+    const GRID_TIMEOUT = 15e3;
+    const POLL_INTERVAL = 300;
     const maxPolls = Math.ceil(GRID_TIMEOUT / POLL_INTERVAL);
-    let grid = null;
-    let gridWin = null;
     for (let i = 0; i < maxPolls; i++) {
       await delay(POLL_INTERVAL);
       for (const w of getExtWindows()) {
@@ -18570,37 +18584,30 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
           const grids = w.Ext.ComponentQuery.query("gridpanel:not([destroyed=true])");
           for (const g of grids) {
             if (!g.rendered || g.isDestroyed) continue;
-            const store2 = g.getStore?.();
-            if (!store2 || store2.isLoading?.()) continue;
-            const sid = (store2.storeId || "").toLowerCase();
-            if (sid.includes("wsjobs") || sid.includes("ctjobs") || sid.includes(matchedEntry.systemFunc.toLowerCase())) {
-              grid = g;
-              gridWin = w;
-              break;
+            const store = g.getStore?.();
+            if (!store || store.isLoading?.()) continue;
+            if (store.getCount() !== 1) continue;
+            const sid = (store.storeId || "").toLowerCase();
+            let isEntityGrid = false;
+            for (const key of entityStoreKeys) {
+              if (sid.includes(key)) {
+                isEntityGrid = true;
+                break;
+              }
             }
+            if (!isEntityGrid) continue;
+            APMLogger.info("Boot", `Single-result entity grid detected (${sid}), auto-opening record.`);
+            const result = await openFirstGridRecord(g, w);
+            if (result.success) {
+              showToast(`Opened ${result.entityId}`, "#1abc9c", false);
+            }
+            return;
           }
-          if (grid) break;
         } catch (e) {
         }
       }
-      if (grid) break;
     }
-    if (!grid) {
-      APMLogger.warn("Boot", `Drillback grid not found within ${GRID_TIMEOUT}ms`);
-      showToast(`${matchedEntry.label} grid did not load`, "#e74c3c", false);
-      return;
-    }
-    const store = grid.getStore();
-    if (store.getCount() === 0) {
-      showToast(`${matchedEntry.label} ${entityId} not found`, "#e74c3c", false);
-      return;
-    }
-    const result = await openFirstGridRecord(grid, gridWin);
-    if (result.success) {
-      showToast(`Opened ${matchedEntry.label} ${result.entityId}`, "#1abc9c", false);
-    } else {
-      showToast(`Could not open ${matchedEntry.label} ${entityId}`, "#e74c3c", false);
-    }
+    APMLogger.debug("Boot", "Auto-open: no single-result entity grid found within timeout \u2014 normal boot.");
   }
   function initBootSequence(win = window) {
     const isTop = win === win.top;
@@ -18734,7 +18741,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
       if (isTop && FeatureFlags.isEnabled("sessionSnapshot")) {
         SessionSnapshot.init().catch((e) => APMLogger.error("Boot", "Session snapshot error:", e));
       }
-      handleDrillbackAutoOpen().catch((e) => APMLogger.error("Boot", "Drillback auto-open error:", e));
+      handleDrillbackAutoOpen().catch((e) => APMLogger.error("Boot", "Auto-open error:", e));
     });
   }
 
