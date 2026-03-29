@@ -15574,6 +15574,11 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
   var SessionSnapshot = {
     async init() {
       if (!isTopFrame()) return;
+      const topWin = window.top || window;
+      if (!topWin.Ext) {
+        APMLogger.debug("Snapshot", "No ExtJS detected \u2014 skipping init (likely login page).");
+        return;
+      }
       const tabId = getTabId();
       APMLogger.info("Snapshot", `Tab ID: ${tabId}`);
       purgeExpiredSnapshots();
