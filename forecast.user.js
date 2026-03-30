@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         APM Master: Unified Tools
 // @namespace    https://w.amazon.com/bin/view/Users/rosendah/APM-Master/
-// @version      14.10.4
+// @version      14.10.7
 // @description  Quality of life and automation tool that uses native EAM ExtJS Framework functions for high reliability and capability. This is actively supported tool so Slack me or submit bug report/feature request through the bug report button in the menu.
 // @author       Jacob Rosendahl
 // @icon         https://media.licdn.com/dms/image/v2/D5603AQGdCV0_LQKRfQ/profile-displayphoto-scale_100_100/B56ZyZLvQ5HgAg-/0/1772096519061?e=1773878400&v=beta&t=eWO1Jiy0-WbzG_yBv-SBrmmsVOPMexF57-q1Xh_VXCk
@@ -55,6 +55,8 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
         hostname,
         // Core Domains
         isEAM: hostname.includes("hxgnsmartcloud.com"),
+        // Region detection — eu1.eam.hxgnsmartcloud.com, eu2.eam... etc.
+        isEU: /^eu\d/i.test(hostname),
         // PTP runs on *.ptp.amazon.dev and *.insights.amazon.dev subdomains;
         // 'insights' also matches the HxGN EAM Insights subdomain where the PTP timer iframe is hosted.
         isPTP: /\.(ptp|insights)\.amazon\.dev$|insights\.hxgnsmartcloud\.com/i.test(hostname),
@@ -113,7 +115,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
   });
 
   // src/core/constants.js
-  var KEY_THEME, CC_STORAGE_RULES, CC_STORAGE_SET, PRESET_STORAGE_KEY, STORAGE_KEY, APM_GENERAL_STORAGE, CURRENT_VERSION, VERSION_CHECK_URL, UPDATE_URL, LABOR_EMPS_STORAGE, LABOR_ACTIVE_STORAGE, LABOR_DOCK_STORAGE, LABOR_PREFS_STORAGE, LABOR_NIGHT_SHIFT_KEY, LABOR_LAST_EMP_KEY, SESSION_STORAGE_KEY, PTP_HISTORY_KEY, UPDATE_CHECK_KEY, MIGRATIONS_DONE_KEY, WELCOME_SEEN_KEY, SNAPSHOT_STORAGE_PREFIX, SNAPSHOT_TTL, BETA_VERSION_CHECK_URL, BETA_UPDATE_URL, LOG_LEVELS, DEFAULT_TENANT, SESSION_TIMEOUT_URL, LINK_CONFIG, MIN_GRID_COLUMNS, MIN_TAB_ITEMS, ENTITY_REGISTRY, SCREEN_TITLES, AUTOFILL_SCREENS, AUTOFILL_SCREEN_LABELS;
+  var KEY_THEME, CC_STORAGE_RULES, CC_STORAGE_SET, PRESET_STORAGE_KEY, STORAGE_KEY, APM_GENERAL_STORAGE, CURRENT_VERSION, VERSION_CHECK_URL, UPDATE_URL, LABOR_EMPS_STORAGE, LABOR_ACTIVE_STORAGE, LABOR_DOCK_STORAGE, LABOR_PREFS_STORAGE, LABOR_NIGHT_SHIFT_KEY, LABOR_LAST_EMP_KEY, SESSION_STORAGE_KEY, PTP_HISTORY_KEY, UPDATE_CHECK_KEY, MIGRATIONS_DONE_KEY, WELCOME_SEEN_KEY, SNAPSHOT_STORAGE_PREFIX, SNAPSHOT_TTL, BETA_VERSION_CHECK_URL, BETA_UPDATE_URL, LOG_LEVELS, DEFAULT_TENANT, _regionMatch, EAM_REGION_PREFIX, EAM_BASE_URL, SESSION_TIMEOUT_URL, LINK_CONFIG, MIN_GRID_COLUMNS, MIN_TAB_ITEMS, ENTITY_REGISTRY, SCREEN_TITLES, AUTOFILL_SCREENS, AUTOFILL_SCREEN_LABELS;
   var init_constants = __esm({
     "src/core/constants.js"() {
       KEY_THEME = "apm_v1_ui_theme";
@@ -122,7 +124,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
       PRESET_STORAGE_KEY = "apm_v1_autofill_presets";
       STORAGE_KEY = "apm_v1_forecast_prefs";
       APM_GENERAL_STORAGE = "apm_v1_general_settings";
-      CURRENT_VERSION = "14.10.1";
+      CURRENT_VERSION = "14.10.7";
       VERSION_CHECK_URL = "https://raw.githubusercontent.com/jaker788-create/APM-Master/main/forecast.user.js";
       UPDATE_URL = "https://raw.githubusercontent.com/jaker788-create/APM-Master/main/forecast.user.js";
       LABOR_EMPS_STORAGE = "apm_v1_labor_employees";
@@ -148,7 +150,10 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
         VERBOSE: 4
       };
       DEFAULT_TENANT = "AMAZONRMENA_PRD";
-      SESSION_TIMEOUT_URL = `https://us1.eam.hxgnsmartcloud.com/web/base/logindisp?tenant=${DEFAULT_TENANT}`;
+      _regionMatch = (typeof location !== "undefined" ? location.hostname : "").match(/^(eu\d|us\d)/i);
+      EAM_REGION_PREFIX = _regionMatch ? _regionMatch[1].toLowerCase() : "us1";
+      EAM_BASE_URL = `https://${EAM_REGION_PREFIX}.eam.hxgnsmartcloud.com/web/base/`;
+      SESSION_TIMEOUT_URL = `${EAM_BASE_URL}logindisp?tenant=${DEFAULT_TENANT}`;
       LINK_CONFIG = {
         tenant: "AMAZONRMENA_PRD",
         userFuncName: "WSJOBS",
@@ -1053,9 +1058,9 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
 
   // src/core/toast.js
   function getOrCreateToast(id) {
-    let t = document.getElementById(id);
-    if (!t) {
-      t = el("div", {
+    let t2 = document.getElementById(id);
+    if (!t2) {
+      t2 = el("div", {
         id,
         style: {
           position: "fixed",
@@ -1075,21 +1080,21 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
           cursor: "default"
         }
       });
-      document.body.appendChild(t);
+      document.body.appendChild(t2);
     }
-    return t;
+    return t2;
   }
-  function animateIn(t) {
+  function animateIn(t2) {
     setTimeout(() => {
-      t.style.opacity = "1";
-      t.style.transform = t._translateBase + " translateY(0)";
+      t2.style.opacity = "1";
+      t2.style.transform = t2._translateBase + " translateY(0)";
     }, 10);
   }
-  function animateOut(t, cb) {
-    t.style.opacity = "0";
-    t.style.transform = t._translateBase + " translateY(-20px)";
+  function animateOut(t2, cb) {
+    t2.style.opacity = "0";
+    t2.style.transform = t2._translateBase + " translateY(-20px)";
     setTimeout(() => {
-      t.style.display = "none";
+      t2.style.display = "none";
       if (cb) cb();
     }, 300);
   }
@@ -1107,76 +1112,76 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
       const pt = document.getElementById("apm-persistent-toast");
       if (pt && pt.style.display !== "none") animateOut(pt);
     }
-    const t = getOrCreateToast("apm-global-toast");
-    t.style.top = "15px";
-    t._translateBase = "translateX(-50%)";
-    t.onclick = null;
-    t.style.cursor = "default";
-    t.style.pointerEvents = "none";
+    const t2 = getOrCreateToast("apm-global-toast");
+    t2.style.top = "15px";
+    t2._translateBase = "translateX(-50%)";
+    t2.onclick = null;
+    t2.style.cursor = "default";
+    t2.style.pointerEvents = "none";
     if (!msg) {
-      animateOut(t);
+      animateOut(t2);
       return;
     }
-    t.textContent = msg;
-    t.style.background = color || "var(--apm-accent)";
-    t.style.display = "block";
-    document.body.appendChild(t);
-    animateIn(t);
+    t2.textContent = msg;
+    t2.style.background = color || "var(--apm-accent)";
+    t2.style.display = "block";
+    document.body.appendChild(t2);
+    animateIn(t2);
     _nudgePersistent(true);
     if (_toastTimeout) clearTimeout(_toastTimeout);
     if (keepOpen) {
       _toastTimeout = null;
     } else {
       _toastTimeout = setTimeout(() => {
-        animateOut(t, () => _nudgePersistent(false));
+        animateOut(t2, () => _nudgePersistent(false));
       }, 5e3);
     }
   }
   function _showPersistent() {
-    const t = getOrCreateToast("apm-persistent-toast");
-    t.style.top = "15px";
-    t._translateBase = "translateX(-50%)";
-    t.onclick = null;
-    t.style.cursor = "default";
-    t.style.pointerEvents = "none";
+    const t2 = getOrCreateToast("apm-persistent-toast");
+    t2.style.top = "15px";
+    t2._translateBase = "translateX(-50%)";
+    t2.onclick = null;
+    t2.style.cursor = "default";
+    t2.style.pointerEvents = "none";
     if (!_persistentMsg) {
-      animateOut(t);
+      animateOut(t2);
       return;
     }
-    t.textContent = _persistentMsg;
-    t.style.background = _persistentColor || "var(--apm-success)";
-    t.style.display = "block";
-    document.body.appendChild(t);
+    t2.textContent = _persistentMsg;
+    t2.style.background = _persistentColor || "var(--apm-success)";
+    t2.style.display = "block";
+    document.body.appendChild(t2);
     if (_persistentOnClick) {
-      t.style.pointerEvents = "auto";
-      t.style.cursor = "pointer";
-      t.onclick = (e) => {
+      t2.style.pointerEvents = "auto";
+      t2.style.cursor = "pointer";
+      t2.onclick = (e) => {
         e.stopPropagation();
         _persistentOnClick(e);
         _persistentMsg = null;
         _persistentColor = null;
         _persistentOnClick = null;
-        animateOut(t);
+        animateOut(t2);
       };
     }
     const tmp = document.getElementById("apm-global-toast");
     const tmpVisible = tmp && tmp.style.opacity === "1" && tmp.style.display !== "none";
     if (tmpVisible) {
-      t.style.top = "55px";
+      t2.style.top = "55px";
     }
-    animateIn(t);
+    animateIn(t2);
   }
   function _nudgePersistent(down) {
-    const t = document.getElementById("apm-persistent-toast");
-    if (!t || t.style.display === "none" || t.style.opacity === "0") return;
-    t.style.top = down ? "55px" : "15px";
+    const t2 = document.getElementById("apm-persistent-toast");
+    if (!t2 || t2.style.display === "none" || t2.style.opacity === "0") return;
+    t2.style.top = down ? "55px" : "15px";
   }
   function clearPersistentToast() {
     _persistentMsg = null;
     _persistentColor = null;
     _persistentOnClick = null;
-    const t = document.getElementById("apm-persistent-toast");
-    if (t) animateOut(t);
+    const t2 = document.getElementById("apm-persistent-toast");
+    if (t2) animateOut(t2);
   }
   var _toastTimeout, _persistentMsg, _persistentColor, _persistentOnClick;
   var init_toast = __esm({
@@ -1255,7 +1260,785 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
     }
   });
 
+  // src/core/locale.js
+  function setLanguageOverride(lang, settingsObj) {
+    _override = lang && lang !== "auto" ? lang : null;
+    if (settingsObj) _settingsRef = settingsObj;
+  }
+  function getLang() {
+    if (_override) return _override;
+    if (_settingsRef && _settingsRef.language && _settingsRef.language !== "auto") return _settingsRef.language;
+    return _systemLang;
+  }
+  function t(key, ...args) {
+    const lang = getLang();
+    const str = strings[lang] && strings[lang][key] || strings.en[key] || key;
+    if (args.length === 0) return str;
+    return str.replace(/\{(\d+)\}/g, (_, i) => args[i] ?? "");
+  }
+  var strings, _systemLang, _override, _settingsRef, SUPPORTED_LANGUAGES;
+  var init_locale = __esm({
+    "src/core/locale.js"() {
+      strings = {
+        en: {
+          // ── Labor ──
+          bookingHours: "Booking {0}h...",
+          laborBooked: "Labor Booked Successfully!",
+          laborSent: "Labor Sent!",
+          laborFailed: "Labor Booking Failed \u2014 record count unchanged",
+          enterHours: "Enter hours!",
+          enterValidHours: "Enter valid hours",
+          // ── AutoFill ──
+          autoFilling: "Auto-Filling Template: {0}",
+          autoFillComplete: "Auto-Fill Complete.",
+          autoFillCompleteLaborBooked: "Auto-Fill Complete \u2014 Labor Booked!",
+          autoFillCompleteLaborFailed: "Auto-Fill Complete \u2014 Labor Booking Failed",
+          autoFillCompleteLaborError: "Auto-Fill Complete \u2014 Labor Error",
+          locatingForm: "Locating active EAM Form...",
+          formNotFound: "Error: Visible WO Form not found.",
+          injectingData: "Injecting Data Model...",
+          dispatchingSave: "Dispatching Save Request...",
+          savingBeforeLabor: "Saving WO before Labor...",
+          autoBookingLabor: "Auto-Booking {0}h Labor...",
+          navigatingChecklist: "Navigating to Checklist...",
+          checklistComplete: "1-Tech checklist already complete.",
+          noItemsOnTech: "No items found on {0}-Tech.",
+          noMatch: 'No match for: "{0}"',
+          savingBatch: "Saving batch ({0}/{1})...",
+          scriptError: "Script Error (See Console)",
+          saveBtnMissing: "Error: Save button missing.",
+          checklistNotFound: "Checklist Tab (ACK) not found.",
+          // ── AutoFill Repair ──
+          autoFillingRepair: "Auto-Filling Repair: {0}",
+          repairFormNotFound: "Error: Repair form not found.",
+          savingRepair: "Saving Repair Request...",
+          repairSaved: "Repair saved!",
+          repairInitiated: "Repair initiated!",
+          creatingRecord: "Creating new record...",
+          noRepairTemplates: "No repair templates configured.",
+          // ── AutoFill Shift Report ──
+          autoFillingShiftReport: "Auto-Filling Shift Report: {0}",
+          savingShiftReport: "Saving Shift Report...",
+          shiftReportComplete: "Shift Report complete!",
+          shiftReportFormNotFound: "Error: Shift Report form not found.",
+          noShiftReportMatch: "No shift report template matched.",
+          // ── Filter ──
+          filterActive: "Filter: {0} (Click to Clear)",
+          filterCleared: "Filter Cleared",
+          // ── Session Restore ──
+          restored: "Restored {0} {1}",
+          restoredScreen: "Restored {0} screen",
+          restoredFilters: "Restored {0} with search filters",
+          restoredProfile: "Restored forecast profile",
+          couldNotRestore: "Could not restore \u2014 navigation unavailable",
+          sessionRestoreDisabled: "Session restore disabled \u2014 re-enable in APM Master > General",
+          // ── Settings / Templates ──
+          templateSaved: 'Template "{0}" Saved!',
+          templateDeleted: 'Template "{0}" Deleted.',
+          templateCreated: 'Template "{0}" Created!',
+          profileSaved: "Profile saved!",
+          profileDeleted: "Profile deleted",
+          settingsDownloaded: "Settings downloaded!",
+          reportCopied: "Report copied to clipboard!",
+          copiedToClipboard: "Base64 backup copied to clipboard!",
+          // ── Forecast ──
+          dataspyActive: "Dataspy: {0} ({1})",
+          clickToClear: "Click to Clear",
+          openedWO: "Opened WO {0}",
+          openedEntity: "Opened {0}",
+          // ── Labor UI ──
+          quickBookLabor: "Quick Book Labor",
+          bookLabor: "Book Labor",
+          doubleClickHint: "Double-click a preset to book instantly",
+          normal: "Normal",
+          overtime: "Overtime",
+          today: "Today",
+          yesterday: "Yesterday",
+          total: "TOTAL",
+          noHoursYet: "No hours booked yet.",
+          noLaborRecords: "No labor records found.",
+          laborTally: "LABOR TALLY",
+          targetSelf: "Target: Self",
+          targetLabel: "Target: {0}",
+          twoDayTab: "2-Day",
+          sevenDayTab: "7-Day",
+          nightShiftHint: "Night shift \u2014 showing today + yesterday",
+          hrs: "hrs",
+          refreshFromServer: "Refresh from Server",
+          dateLabel: "Date:",
+          hoursPlaceholder: "Hours...",
+          subtract: "Subtract (-)",
+          shiftSummary: "Shift Summary",
+          fetching: "Fetching...",
+          nightShiftMode: "Night Shift Mode",
+          managerMode: "Manager Mode",
+          // ── Other UI ──
+          autoFillBtn: "Auto Fill",
+          stuckReturnEam: "Stuck? Click here to return to EAM",
+          ready: "READY",
+          // ── Prompts & Buttons ──
+          sessionExpiredAway: "Session expired while away",
+          restoreBtn: "Restore",
+          restoreExpiredBtn: "Restore (expired)",
+          redirectBtn: "Redirect",
+          dismissBtn: "Dismiss",
+          dontAskAgain: "Don\u2019t Ask Again",
+          restorePromptRecord: "Your previous session had <b>{0}</b> open{1}. Restore?",
+          restorePromptScreen: "You were on the <b>{0}</b> screen{1}. Restore?",
+          withContext: " with {0}",
+          contextForecastProfile: "forecast profile",
+          contextSearchFilters: "search filters",
+          sessionExpiredTitle: "Session Expired!",
+          pleaseRefresh: "Please refresh EAM."
+        },
+        de: {
+          bookingHours: "Buche {0}h...",
+          laborBooked: "Arbeit erfolgreich gebucht!",
+          laborSent: "Arbeit gebucht!",
+          laborFailed: "Buchung fehlgeschlagen \u2014 Anzahl unver\xE4ndert",
+          enterHours: "Stunden eingeben!",
+          enterValidHours: "G\xFCltige Stunden eingeben",
+          autoFilling: "Vorlage wird ausgef\xFCllt: {0}",
+          autoFillComplete: "AutoFill abgeschlossen.",
+          autoFillCompleteLaborBooked: "AutoFill abgeschlossen \u2014 Arbeit gebucht!",
+          autoFillCompleteLaborFailed: "AutoFill abgeschlossen \u2014 Buchung fehlgeschlagen",
+          autoFillCompleteLaborError: "AutoFill abgeschlossen \u2014 Buchungsfehler",
+          locatingForm: "EAM-Formular wird gesucht...",
+          formNotFound: "Fehler: Sichtbares WO-Formular nicht gefunden.",
+          injectingData: "Daten werden eingetragen...",
+          dispatchingSave: "Speichern wird ausgel\xF6st...",
+          savingBeforeLabor: "WO wird vor Buchung gespeichert...",
+          autoBookingLabor: "Buche {0}h Arbeit...",
+          navigatingChecklist: "Zur Checkliste...",
+          checklistComplete: "1-Tech Checkliste bereits erledigt.",
+          noItemsOnTech: "Keine Eintr\xE4ge in {0}-Tech.",
+          noMatch: 'Keine \xDCbereinstimmung: \u201E{0}"',
+          savingBatch: "Speichere ({0}/{1})...",
+          scriptError: "Skriptfehler (siehe Konsole)",
+          saveBtnMissing: "Fehler: Speicher-Button fehlt.",
+          checklistNotFound: "Checkliste (ACK) nicht gefunden.",
+          autoFillingRepair: "Reparatur wird ausgef\xFCllt: {0}",
+          repairFormNotFound: "Fehler: Reparatur-Formular nicht gefunden.",
+          savingRepair: "Reparatur wird gespeichert...",
+          repairSaved: "Reparatur gespeichert!",
+          repairInitiated: "Reparatur eingeleitet!",
+          creatingRecord: "Neuer Datensatz wird erstellt...",
+          noRepairTemplates: "Keine Reparaturvorlagen konfiguriert.",
+          autoFillingShiftReport: "Schichtbericht wird ausgef\xFCllt: {0}",
+          savingShiftReport: "Schichtbericht wird gespeichert...",
+          shiftReportComplete: "Schichtbericht abgeschlossen!",
+          shiftReportFormNotFound: "Fehler: Schichtbericht-Formular nicht gefunden.",
+          noShiftReportMatch: "Keine passende Schichtbericht-Vorlage.",
+          filterActive: "Filter: {0} (Klicken zum L\xF6schen)",
+          filterCleared: "Filter gel\xF6scht",
+          restored: "{0} {1} wiederhergestellt",
+          restoredScreen: "{0} wiederhergestellt",
+          restoredFilters: "{0} mit Suchfiltern wiederhergestellt",
+          restoredProfile: "Forecast-Profil wiederhergestellt",
+          couldNotRestore: "Wiederherstellung nicht m\xF6glich \u2014 Navigation fehlt",
+          sessionRestoreDisabled: "Sitzungswiederherstellung deaktiviert \u2014 unter APM Master > Allgemein aktivieren",
+          templateSaved: 'Vorlage \u201E{0}" gespeichert!',
+          templateDeleted: 'Vorlage \u201E{0}" gel\xF6scht.',
+          templateCreated: 'Vorlage \u201E{0}" erstellt!',
+          profileSaved: "Profil gespeichert!",
+          profileDeleted: "Profil gel\xF6scht",
+          settingsDownloaded: "Einstellungen heruntergeladen!",
+          reportCopied: "Bericht in Zwischenablage kopiert!",
+          copiedToClipboard: "Base64-Sicherung in Zwischenablage kopiert!",
+          dataspyActive: "Dataspy: {0} ({1})",
+          clickToClear: "Zum L\xF6schen klicken",
+          openedWO: "WO {0} ge\xF6ffnet",
+          openedEntity: "{0} ge\xF6ffnet",
+          // ── Labor UI ──
+          quickBookLabor: "Schnellbuchung",
+          bookLabor: "Arbeit buchen",
+          doubleClickHint: "Doppelklick auf Vorlage zum sofort Buchen",
+          normal: "Normal",
+          overtime: "\xDCberstunden",
+          today: "Heute",
+          yesterday: "Gestern",
+          total: "GESAMT",
+          noHoursYet: "Noch keine Stunden gebucht.",
+          noLaborRecords: "Keine Arbeitsnachweise gefunden.",
+          laborTally: "STUNDEN",
+          targetSelf: "Ziel: Selbst",
+          targetLabel: "Ziel: {0}",
+          twoDayTab: "2 Tage",
+          sevenDayTab: "7 Tage",
+          nightShiftHint: "Nachtschicht \u2014 zeigt heute + gestern",
+          hrs: "Std",
+          refreshFromServer: "Vom Server aktualisieren",
+          dateLabel: "Datum:",
+          hoursPlaceholder: "Stunden...",
+          subtract: "Abzug (-)",
+          shiftSummary: "Schicht\xFCbersicht",
+          fetching: "Laden...",
+          nightShiftMode: "Schicht-Modus",
+          managerMode: "Manager Mode",
+          // ── Other UI ──
+          autoFillBtn: "AutoFill",
+          stuckReturnEam: "H\xE4ngt? Hier klicken um zu EAM zur\xFCckzukehren",
+          ready: "BEREIT",
+          sessionExpiredAway: "Sitzung w\xE4hrend Abwesenheit abgelaufen",
+          restoreBtn: "Wiederherstellen",
+          restoreExpiredBtn: "Wiederherstellen (abgelaufen)",
+          redirectBtn: "Neu laden",
+          dismissBtn: "Schlie\xDFen",
+          dontAskAgain: "Nicht mehr fragen",
+          restorePromptRecord: "Ihre Sitzung enthielt <b>{0}</b>{1}. Wiederherstellen?",
+          restorePromptScreen: "Sie waren auf <b>{0}</b>{1}. Wiederherstellen?",
+          withContext: " mit {0}",
+          contextForecastProfile: "Forecast-Profil",
+          contextSearchFilters: "Suchfiltern",
+          sessionExpiredTitle: "Sitzung abgelaufen!",
+          pleaseRefresh: "Bitte EAM neu laden."
+        },
+        fr: {
+          bookingHours: "R\xE9servation de {0}h...",
+          laborBooked: "Main-d'\u0153uvre enregistr\xE9e !",
+          laborSent: "Main-d'\u0153uvre envoy\xE9e !",
+          laborFailed: "\xC9chec de la r\xE9servation \u2014 nombre inchang\xE9",
+          enterHours: "Saisir les heures !",
+          enterValidHours: "Saisir des heures valides",
+          autoFilling: "Remplissage du mod\xE8le : {0}",
+          autoFillComplete: "Remplissage termin\xE9.",
+          autoFillCompleteLaborBooked: "Remplissage termin\xE9 \u2014 Main-d'\u0153uvre enregistr\xE9e !",
+          autoFillCompleteLaborFailed: "Remplissage termin\xE9 \u2014 \xC9chec de la r\xE9servation",
+          autoFillCompleteLaborError: "Remplissage termin\xE9 \u2014 Erreur de r\xE9servation",
+          locatingForm: "Recherche du formulaire EAM...",
+          formNotFound: "Erreur : Formulaire WO introuvable.",
+          injectingData: "Injection des donn\xE9es...",
+          dispatchingSave: "Sauvegarde en cours...",
+          savingBeforeLabor: "Sauvegarde du WO avant r\xE9servation...",
+          autoBookingLabor: "R\xE9servation de {0}h...",
+          navigatingChecklist: "Navigation vers la checklist...",
+          checklistComplete: "Checklist 1-Tech d\xE9j\xE0 compl\xE8te.",
+          noItemsOnTech: "Aucun \xE9l\xE9ment sur {0}-Tech.",
+          noMatch: "Aucune correspondance : \xAB {0} \xBB",
+          savingBatch: "Sauvegarde ({0}/{1})...",
+          scriptError: "Erreur de script (voir la console)",
+          saveBtnMissing: "Erreur : Bouton de sauvegarde manquant.",
+          checklistNotFound: "Onglet Checklist (ACK) introuvable.",
+          autoFillingRepair: "Remplissage r\xE9paration : {0}",
+          repairFormNotFound: "Erreur : Formulaire de r\xE9paration introuvable.",
+          savingRepair: "Sauvegarde de la r\xE9paration...",
+          repairSaved: "R\xE9paration sauvegard\xE9e !",
+          repairInitiated: "R\xE9paration lanc\xE9e !",
+          creatingRecord: "Cr\xE9ation d'un enregistrement...",
+          noRepairTemplates: "Aucun mod\xE8le de r\xE9paration configur\xE9.",
+          autoFillingShiftReport: "Remplissage du rapport de quart : {0}",
+          savingShiftReport: "Sauvegarde du rapport de quart...",
+          shiftReportComplete: "Rapport de quart termin\xE9 !",
+          shiftReportFormNotFound: "Erreur : Formulaire de rapport introuvable.",
+          noShiftReportMatch: "Aucun mod\xE8le de rapport correspondant.",
+          filterActive: "Filtre : {0} (Cliquer pour effacer)",
+          filterCleared: "Filtre effac\xE9",
+          restored: "{0} {1} restaur\xE9",
+          restoredScreen: "\xC9cran {0} restaur\xE9",
+          restoredFilters: "{0} restaur\xE9 avec les filtres",
+          restoredProfile: "Profil Forecast restaur\xE9",
+          couldNotRestore: "Restauration impossible \u2014 navigation indisponible",
+          sessionRestoreDisabled: "Restauration d\xE9sactiv\xE9e \u2014 r\xE9activer dans APM Master > G\xE9n\xE9ral",
+          templateSaved: "Mod\xE8le \xAB {0} \xBB sauvegard\xE9 !",
+          templateDeleted: "Mod\xE8le \xAB {0} \xBB supprim\xE9.",
+          templateCreated: "Mod\xE8le \xAB {0} \xBB cr\xE9\xE9 !",
+          profileSaved: "Profil sauvegard\xE9 !",
+          profileDeleted: "Profil supprim\xE9",
+          settingsDownloaded: "Param\xE8tres t\xE9l\xE9charg\xE9s !",
+          reportCopied: "Rapport copi\xE9 dans le presse-papiers !",
+          copiedToClipboard: "Sauvegarde Base64 copi\xE9e !",
+          dataspyActive: "Dataspy : {0} ({1})",
+          clickToClear: "Cliquer pour effacer",
+          openedWO: "WO {0} ouvert",
+          openedEntity: "{0} en cours",
+          // ── Labor UI ──
+          quickBookLabor: "R\xE9servation rapide",
+          bookLabor: "R\xE9server",
+          doubleClickHint: "Double-clic sur un pr\xE9r\xE9glage pour r\xE9server",
+          normal: "Normal",
+          overtime: "Heures sup.",
+          today: "Aujourd'hui",
+          yesterday: "Hier",
+          total: "TOTAL",
+          noHoursYet: "Aucune heure enregistr\xE9e.",
+          noLaborRecords: "Aucun enregistrement trouv\xE9.",
+          laborTally: "HEURES",
+          targetSelf: "Cible : Moi",
+          targetLabel: "Cible : {0}",
+          twoDayTab: "2 jours",
+          sevenDayTab: "7 jours",
+          nightShiftHint: "\xC9quipe de nuit \u2014 aujourd'hui + hier",
+          hrs: "h",
+          refreshFromServer: "Actualiser depuis le serveur",
+          dateLabel: "Date :",
+          hoursPlaceholder: "Heures...",
+          subtract: "Soustraction (-)",
+          shiftSummary: "R\xE9sum\xE9 du quart",
+          fetching: "Chargement...",
+          nightShiftMode: "Mode quart de nuit",
+          managerMode: "Manager Mode",
+          // ── Other UI ──
+          autoFillBtn: "AutoFill",
+          stuckReturnEam: "Bloqu\xE9 ? Cliquez ici pour revenir \xE0 EAM",
+          ready: "PR\xCAT",
+          sessionExpiredAway: "Session expir\xE9e pendant votre absence",
+          restoreBtn: "Restaurer",
+          restoreExpiredBtn: "Restaurer (expir\xE9)",
+          redirectBtn: "Recharger",
+          dismissBtn: "Fermer",
+          dontAskAgain: "Ne plus demander",
+          restorePromptRecord: "Votre session pr\xE9c\xE9dente incluait <b>{0}</b>{1}. Restaurer ?",
+          restorePromptScreen: "Vous \xE9tiez sur l'\xE9cran <b>{0}</b>{1}. Restaurer ?",
+          withContext: " avec {0}",
+          contextForecastProfile: "profil Forecast",
+          contextSearchFilters: "filtres de recherche",
+          sessionExpiredTitle: "Session expir\xE9e !",
+          pleaseRefresh: "Veuillez actualiser EAM."
+        },
+        es: {
+          bookingHours: "Registrando {0}h...",
+          laborBooked: "\xA1Trabajo registrado correctamente!",
+          laborSent: "\xA1Trabajo enviado!",
+          laborFailed: "Error en el registro \u2014 cantidad sin cambios",
+          enterHours: "\xA1Introducir horas!",
+          enterValidHours: "Introducir horas v\xE1lidas",
+          autoFilling: "Rellenando plantilla: {0}",
+          autoFillComplete: "AutoFill completado.",
+          autoFillCompleteLaborBooked: "AutoFill completado \u2014 \xA1Trabajo registrado!",
+          autoFillCompleteLaborFailed: "AutoFill completado \u2014 Error en el registro",
+          autoFillCompleteLaborError: "AutoFill completado \u2014 Error de registro",
+          locatingForm: "Buscando formulario EAM...",
+          formNotFound: "Error: Formulario WO no encontrado.",
+          injectingData: "Insertando datos...",
+          dispatchingSave: "Guardando...",
+          savingBeforeLabor: "Guardando WO antes del registro...",
+          autoBookingLabor: "Registrando {0}h...",
+          navigatingChecklist: "Navegando a la checklist...",
+          checklistComplete: "Checklist 1-Tech ya completada.",
+          noItemsOnTech: "Sin elementos en {0}-Tech.",
+          noMatch: 'Sin coincidencia: "{0}"',
+          savingBatch: "Guardando ({0}/{1})...",
+          scriptError: "Error de script (ver consola)",
+          saveBtnMissing: "Error: Bot\xF3n de guardar no encontrado.",
+          checklistNotFound: "Pesta\xF1a Checklist (ACK) no encontrada.",
+          autoFillingRepair: "Rellenando reparaci\xF3n: {0}",
+          repairFormNotFound: "Error: Formulario de reparaci\xF3n no encontrado.",
+          savingRepair: "Guardando reparaci\xF3n...",
+          repairSaved: "\xA1Reparaci\xF3n guardada!",
+          repairInitiated: "\xA1Reparaci\xF3n iniciada!",
+          creatingRecord: "Creando registro...",
+          noRepairTemplates: "Sin plantillas de reparaci\xF3n configuradas.",
+          autoFillingShiftReport: "Rellenando informe de turno: {0}",
+          savingShiftReport: "Guardando informe de turno...",
+          shiftReportComplete: "\xA1Informe de turno completado!",
+          shiftReportFormNotFound: "Error: Formulario de informe no encontrado.",
+          noShiftReportMatch: "Sin plantilla de informe coincidente.",
+          filterActive: "Filtro: {0} (Clic para borrar)",
+          filterCleared: "Filtro borrado",
+          restored: "{0} {1} restaurado",
+          restoredScreen: "Pantalla {0} restaurada",
+          restoredFilters: "{0} restaurado con filtros",
+          restoredProfile: "Perfil Forecast restaurado",
+          couldNotRestore: "No se pudo restaurar \u2014 navegaci\xF3n no disponible",
+          sessionRestoreDisabled: "Restauraci\xF3n desactivada \u2014 reactivar en APM Master > General",
+          templateSaved: '\xA1Plantilla "{0}" guardada!',
+          templateDeleted: 'Plantilla "{0}" eliminada.',
+          templateCreated: '\xA1Plantilla "{0}" creada!',
+          profileSaved: "\xA1Perfil guardado!",
+          profileDeleted: "Perfil eliminado",
+          settingsDownloaded: "\xA1Configuraci\xF3n descargada!",
+          reportCopied: "\xA1Informe copiado al portapapeles!",
+          copiedToClipboard: "\xA1Copia Base64 en portapapeles!",
+          dataspyActive: "Dataspy: {0} ({1})",
+          clickToClear: "Clic para borrar",
+          openedWO: "WO {0} abierto",
+          openedEntity: "{0} en uso",
+          // ── Labor UI ──
+          quickBookLabor: "Registro r\xE1pido",
+          bookLabor: "Registrar",
+          doubleClickHint: "Doble clic en un preset para registrar al instante",
+          normal: "Normal",
+          overtime: "Horas extra",
+          today: "Hoy",
+          yesterday: "Ayer",
+          total: "TOTAL",
+          noHoursYet: "Sin horas registradas.",
+          noLaborRecords: "Sin registros de trabajo.",
+          laborTally: "HORAS",
+          targetSelf: "Objetivo: Yo",
+          targetLabel: "Objetivo: {0}",
+          twoDayTab: "2 d\xEDas",
+          sevenDayTab: "7 d\xEDas",
+          nightShiftHint: "Turno nocturno \u2014 mostrando hoy + ayer",
+          hrs: "hrs",
+          refreshFromServer: "Actualizar desde el servidor",
+          dateLabel: "Fecha:",
+          hoursPlaceholder: "Horas...",
+          subtract: "Resta (-)",
+          shiftSummary: "Resumen de turno",
+          fetching: "Cargando...",
+          nightShiftMode: "Modo turno nocturno",
+          managerMode: "Manager Mode",
+          // ── Other UI ──
+          autoFillBtn: "AutoFill",
+          stuckReturnEam: "\xBFAtascado? Haga clic aqu\xED para volver a EAM",
+          ready: "LISTO",
+          sessionExpiredAway: "La sesi\xF3n expir\xF3 durante su ausencia",
+          restoreBtn: "Restaurar",
+          restoreExpiredBtn: "Restaurar (expirado)",
+          redirectBtn: "Recargar",
+          dismissBtn: "Cerrar",
+          dontAskAgain: "No preguntar de nuevo",
+          restorePromptRecord: "Su sesi\xF3n anterior inclu\xEDa <b>{0}</b>{1}. \xBFRestaurar?",
+          restorePromptScreen: "Estaba en la pantalla <b>{0}</b>{1}. \xBFRestaurar?",
+          withContext: " con {0}",
+          contextForecastProfile: "perfil Forecast",
+          contextSearchFilters: "filtros de b\xFAsqueda",
+          sessionExpiredTitle: "\xA1Sesi\xF3n expirada!",
+          pleaseRefresh: "Actualice EAM."
+        },
+        it: {
+          bookingHours: "Registrazione di {0}h...",
+          laborBooked: "Lavoro registrato con successo!",
+          laborSent: "Lavoro inviato!",
+          laborFailed: "Registrazione fallita \u2014 conteggio invariato",
+          enterHours: "Inserire le ore!",
+          enterValidHours: "Inserire ore valide",
+          autoFilling: "Compilazione modello: {0}",
+          autoFillComplete: "AutoFill completato.",
+          autoFillCompleteLaborBooked: "AutoFill completato \u2014 Lavoro registrato!",
+          autoFillCompleteLaborFailed: "AutoFill completato \u2014 Registrazione fallita",
+          autoFillCompleteLaborError: "AutoFill completato \u2014 Errore di registrazione",
+          locatingForm: "Ricerca del modulo EAM...",
+          formNotFound: "Errore: Modulo WO non trovato.",
+          injectingData: "Inserimento dati...",
+          dispatchingSave: "Salvataggio in corso...",
+          savingBeforeLabor: "Salvataggio WO prima della registrazione...",
+          autoBookingLabor: "Registrazione di {0}h...",
+          navigatingChecklist: "Apertura checklist...",
+          checklistComplete: "Checklist 1-Tech gi\xE0 completata.",
+          noItemsOnTech: "Nessun elemento in {0}-Tech.",
+          noMatch: 'Nessuna corrispondenza: "{0}"',
+          savingBatch: "Salvataggio ({0}/{1})...",
+          scriptError: "Errore di script (vedi console)",
+          saveBtnMissing: "Errore: Pulsante Salva mancante.",
+          checklistNotFound: "Scheda Checklist (ACK) non trovata.",
+          autoFillingRepair: "Compilazione riparazione: {0}",
+          repairFormNotFound: "Errore: Modulo riparazione non trovato.",
+          savingRepair: "Salvataggio riparazione...",
+          repairSaved: "Riparazione salvata!",
+          repairInitiated: "Riparazione avviata!",
+          creatingRecord: "Creazione record...",
+          noRepairTemplates: "Nessun modello di riparazione configurato.",
+          autoFillingShiftReport: "Compilazione rapporto turno: {0}",
+          savingShiftReport: "Salvataggio rapporto turno...",
+          shiftReportComplete: "Rapporto turno completato!",
+          shiftReportFormNotFound: "Errore: Modulo rapporto non trovato.",
+          noShiftReportMatch: "Nessun modello di rapporto corrispondente.",
+          filterActive: "Filtro: {0} (Clicca per cancellare)",
+          filterCleared: "Filtro cancellato",
+          restored: "{0} {1} ripristinato",
+          restoredScreen: "Schermata {0} ripristinata",
+          restoredFilters: "{0} ripristinato con filtri",
+          restoredProfile: "Profilo Forecast ripristinato",
+          couldNotRestore: "Impossibile ripristinare \u2014 navigazione non disponibile",
+          sessionRestoreDisabled: "Ripristino sessione disattivato \u2014 riattivare in APM Master > Generale",
+          templateSaved: 'Modello "{0}" salvato!',
+          templateDeleted: 'Modello "{0}" eliminato.',
+          templateCreated: 'Modello "{0}" creato!',
+          profileSaved: "Profilo salvato!",
+          profileDeleted: "Profilo eliminato",
+          settingsDownloaded: "Impostazioni scaricate!",
+          reportCopied: "Report copiato negli appunti!",
+          copiedToClipboard: "Backup Base64 copiato negli appunti!",
+          dataspyActive: "Dataspy: {0} ({1})",
+          clickToClear: "Clicca per cancellare",
+          openedWO: "WO {0} aperto",
+          openedEntity: "{0} in uso",
+          // ── Labor UI ──
+          quickBookLabor: "Registrazione rapida",
+          bookLabor: "Registra",
+          doubleClickHint: "Doppio clic su un preset per registrare subito",
+          normal: "Normale",
+          overtime: "Straordinario",
+          today: "Oggi",
+          yesterday: "Ieri",
+          total: "TOTALE",
+          noHoursYet: "Nessuna ora registrata.",
+          noLaborRecords: "Nessun registro trovato.",
+          laborTally: "ORE",
+          targetSelf: "Obiettivo: Me",
+          targetLabel: "Obiettivo: {0}",
+          twoDayTab: "2 giorni",
+          sevenDayTab: "7 giorni",
+          nightShiftHint: "Turno di notte \u2014 oggi + ieri",
+          hrs: "ore",
+          refreshFromServer: "Aggiorna dal server",
+          dateLabel: "Data:",
+          hoursPlaceholder: "Ore...",
+          subtract: "Sottrazione (-)",
+          shiftSummary: "Riepilogo turno",
+          fetching: "Caricamento...",
+          nightShiftMode: "Modalit\xE0 turno di notte",
+          managerMode: "Manager Mode",
+          // ── Other UI ──
+          autoFillBtn: "AutoFill",
+          stuckReturnEam: "Bloccato? Clicca qui per tornare a EAM",
+          ready: "PRONTO",
+          sessionExpiredAway: "Sessione scaduta durante l'assenza",
+          restoreBtn: "Ripristina",
+          restoreExpiredBtn: "Ripristina (scaduto)",
+          redirectBtn: "Ricarica",
+          dismissBtn: "Chiudi",
+          dontAskAgain: "Non chiedere pi\xF9",
+          restorePromptRecord: "La sessione precedente includeva <b>{0}</b>{1}. Ripristinare?",
+          restorePromptScreen: "Eri sulla schermata <b>{0}</b>{1}. Ripristinare?",
+          withContext: " con {0}",
+          contextForecastProfile: "profilo Forecast",
+          contextSearchFilters: "filtri di ricerca",
+          sessionExpiredTitle: "Sessione scaduta!",
+          pleaseRefresh: "Aggiorna EAM."
+        },
+        pt: {
+          bookingHours: "Registrando {0}h...",
+          laborBooked: "Trabalho registrado com sucesso!",
+          laborSent: "Trabalho enviado!",
+          laborFailed: "Falha no registro \u2014 contagem inalterada",
+          enterHours: "Inserir horas!",
+          enterValidHours: "Inserir horas v\xE1lidas",
+          autoFilling: "Preenchendo modelo: {0}",
+          autoFillComplete: "AutoFill conclu\xEDdo.",
+          autoFillCompleteLaborBooked: "AutoFill conclu\xEDdo \u2014 Trabalho registrado!",
+          autoFillCompleteLaborFailed: "AutoFill conclu\xEDdo \u2014 Falha no registro",
+          autoFillCompleteLaborError: "AutoFill conclu\xEDdo \u2014 Erro no registro",
+          locatingForm: "Localizando formul\xE1rio EAM...",
+          formNotFound: "Erro: Formul\xE1rio WO n\xE3o encontrado.",
+          injectingData: "Inserindo dados...",
+          dispatchingSave: "Salvando...",
+          savingBeforeLabor: "Salvando WO antes do registro...",
+          autoBookingLabor: "Registrando {0}h...",
+          navigatingChecklist: "Abrindo checklist...",
+          checklistComplete: "Checklist 1-Tech j\xE1 conclu\xEDda.",
+          noItemsOnTech: "Nenhum item em {0}-Tech.",
+          noMatch: 'Sem correspond\xEAncia: "{0}"',
+          savingBatch: "Salvando ({0}/{1})...",
+          scriptError: "Erro de script (ver console)",
+          saveBtnMissing: "Erro: Bot\xE3o Salvar n\xE3o encontrado.",
+          checklistNotFound: "Aba Checklist (ACK) n\xE3o encontrada.",
+          autoFillingRepair: "Preenchendo reparo: {0}",
+          repairFormNotFound: "Erro: Formul\xE1rio de reparo n\xE3o encontrado.",
+          savingRepair: "Salvando reparo...",
+          repairSaved: "Reparo salvo!",
+          repairInitiated: "Reparo iniciado!",
+          creatingRecord: "Criando registro...",
+          noRepairTemplates: "Nenhum modelo de reparo configurado.",
+          autoFillingShiftReport: "Preenchendo relat\xF3rio de turno: {0}",
+          savingShiftReport: "Salvando relat\xF3rio de turno...",
+          shiftReportComplete: "Relat\xF3rio de turno conclu\xEDdo!",
+          shiftReportFormNotFound: "Erro: Formul\xE1rio de relat\xF3rio n\xE3o encontrado.",
+          noShiftReportMatch: "Nenhum modelo de relat\xF3rio correspondente.",
+          filterActive: "Filtro: {0} (Clique para limpar)",
+          filterCleared: "Filtro limpo",
+          restored: "{0} {1} restaurado",
+          restoredScreen: "Tela {0} restaurada",
+          restoredFilters: "{0} restaurado com filtros",
+          restoredProfile: "Perfil Forecast restaurado",
+          couldNotRestore: "N\xE3o foi poss\xEDvel restaurar \u2014 navega\xE7\xE3o indispon\xEDvel",
+          sessionRestoreDisabled: "Restaura\xE7\xE3o desativada \u2014 reativar em APM Master > Geral",
+          templateSaved: 'Modelo "{0}" salvo!',
+          templateDeleted: 'Modelo "{0}" exclu\xEDdo.',
+          templateCreated: 'Modelo "{0}" criado!',
+          profileSaved: "Perfil salvo!",
+          profileDeleted: "Perfil exclu\xEDdo",
+          settingsDownloaded: "Configura\xE7\xF5es baixadas!",
+          reportCopied: "Relat\xF3rio copiado!",
+          copiedToClipboard: "Backup Base64 copiado!",
+          dataspyActive: "Dataspy: {0} ({1})",
+          clickToClear: "Clique para limpar",
+          openedWO: "WO {0} aberto",
+          openedEntity: "{0} em uso",
+          // ── Labor UI ──
+          quickBookLabor: "Registro r\xE1pido",
+          bookLabor: "Registrar",
+          doubleClickHint: "Duplo clique em um preset para registrar",
+          normal: "Normal",
+          overtime: "Horas extras",
+          today: "Hoje",
+          yesterday: "Ontem",
+          total: "TOTAL",
+          noHoursYet: "Nenhuma hora registrada.",
+          noLaborRecords: "Nenhum registro encontrado.",
+          laborTally: "HORAS",
+          targetSelf: "Alvo: Eu",
+          targetLabel: "Alvo: {0}",
+          twoDayTab: "2 dias",
+          sevenDayTab: "7 dias",
+          nightShiftHint: "Turno noturno \u2014 mostrando hoje + ontem",
+          hrs: "hrs",
+          refreshFromServer: "Atualizar do servidor",
+          dateLabel: "Data:",
+          hoursPlaceholder: "Horas...",
+          subtract: "Subtra\xE7\xE3o (-)",
+          shiftSummary: "Resumo do turno",
+          fetching: "Carregando...",
+          nightShiftMode: "Modo turno noturno",
+          managerMode: "Manager Mode",
+          // ── Other UI ──
+          autoFillBtn: "AutoFill",
+          stuckReturnEam: "Travado? Clique aqui para voltar ao EAM",
+          ready: "PRONTO",
+          sessionExpiredAway: "Sess\xE3o expirou durante sua aus\xEAncia",
+          restoreBtn: "Restaurar",
+          restoreExpiredBtn: "Restaurar (expirado)",
+          redirectBtn: "Recarregar",
+          dismissBtn: "Fechar",
+          dontAskAgain: "N\xE3o perguntar novamente",
+          restorePromptRecord: "Sua sess\xE3o anterior continha <b>{0}</b>{1}. Restaurar?",
+          restorePromptScreen: "Voc\xEA estava na tela <b>{0}</b>{1}. Restaurar?",
+          withContext: " com {0}",
+          contextForecastProfile: "perfil Forecast",
+          contextSearchFilters: "filtros de pesquisa",
+          sessionExpiredTitle: "Sess\xE3o expirada!",
+          pleaseRefresh: "Atualize o EAM."
+        },
+        ja: {
+          bookingHours: "{0}\u6642\u9593\u3092\u8A18\u9332\u4E2D...",
+          laborBooked: "\u4F5C\u696D\u6642\u9593\u306E\u8A18\u9332\u304C\u5B8C\u4E86\u3057\u307E\u3057\u305F",
+          laborSent: "\u4F5C\u696D\u6642\u9593\u3092\u9001\u4FE1\u3057\u307E\u3057\u305F",
+          laborFailed: "\u8A18\u9332\u306B\u5931\u6557\u3057\u307E\u3057\u305F \u2014 \u4EF6\u6570\u306B\u5909\u5316\u306A\u3057",
+          enterHours: "\u6642\u9593\u3092\u5165\u529B\u3057\u3066\u304F\u3060\u3055\u3044",
+          enterValidHours: "\u6709\u52B9\u306A\u6642\u9593\u3092\u5165\u529B\u3057\u3066\u304F\u3060\u3055\u3044",
+          autoFilling: "\u30C6\u30F3\u30D7\u30EC\u30FC\u30C8\u9069\u7528\u4E2D: {0}",
+          autoFillComplete: "AutoFill \u5B8C\u4E86",
+          autoFillCompleteLaborBooked: "AutoFill \u5B8C\u4E86 \u2014 \u4F5C\u696D\u6642\u9593\u3092\u8A18\u9332\u3057\u307E\u3057\u305F",
+          autoFillCompleteLaborFailed: "AutoFill \u5B8C\u4E86 \u2014 \u4F5C\u696D\u8A18\u9332\u306B\u5931\u6557",
+          autoFillCompleteLaborError: "AutoFill \u5B8C\u4E86 \u2014 \u8A18\u9332\u30A8\u30E9\u30FC",
+          locatingForm: "EAM\u30D5\u30A9\u30FC\u30E0\u3092\u691C\u7D22\u4E2D...",
+          formNotFound: "\u30A8\u30E9\u30FC: WO\u30D5\u30A9\u30FC\u30E0\u304C\u898B\u3064\u304B\u308A\u307E\u305B\u3093",
+          injectingData: "\u30C7\u30FC\u30BF\u3092\u5165\u529B\u4E2D...",
+          dispatchingSave: "\u4FDD\u5B58\u4E2D...",
+          savingBeforeLabor: "\u8A18\u9332\u524D\u306BWO\u3092\u4FDD\u5B58\u4E2D...",
+          autoBookingLabor: "{0}\u6642\u9593\u3092\u81EA\u52D5\u8A18\u9332\u4E2D...",
+          navigatingChecklist: "\u30C1\u30A7\u30C3\u30AF\u30EA\u30B9\u30C8\u306B\u79FB\u52D5\u4E2D...",
+          checklistComplete: "1-Tech\u30C1\u30A7\u30C3\u30AF\u30EA\u30B9\u30C8\u306F\u5B8C\u4E86\u6E08\u307F\u3067\u3059",
+          noItemsOnTech: "{0}-Tech\u306B\u9805\u76EE\u304C\u3042\u308A\u307E\u305B\u3093",
+          noMatch: "\u4E00\u81F4\u306A\u3057: \u300C{0}\u300D",
+          savingBatch: "\u4FDD\u5B58\u4E2D ({0}/{1})...",
+          scriptError: "\u30B9\u30AF\u30EA\u30D7\u30C8\u30A8\u30E9\u30FC\uFF08\u30B3\u30F3\u30BD\u30FC\u30EB\u3092\u78BA\u8A8D\uFF09",
+          saveBtnMissing: "\u30A8\u30E9\u30FC: \u4FDD\u5B58\u30DC\u30BF\u30F3\u304C\u898B\u3064\u304B\u308A\u307E\u305B\u3093",
+          checklistNotFound: "\u30C1\u30A7\u30C3\u30AF\u30EA\u30B9\u30C8\u30BF\u30D6 (ACK) \u304C\u898B\u3064\u304B\u308A\u307E\u305B\u3093",
+          autoFillingRepair: "\u4FEE\u7406\u3092\u5165\u529B\u4E2D: {0}",
+          repairFormNotFound: "\u30A8\u30E9\u30FC: \u4FEE\u7406\u30D5\u30A9\u30FC\u30E0\u304C\u898B\u3064\u304B\u308A\u307E\u305B\u3093",
+          savingRepair: "\u4FEE\u7406\u3092\u4FDD\u5B58\u4E2D...",
+          repairSaved: "\u4FEE\u7406\u3092\u4FDD\u5B58\u3057\u307E\u3057\u305F",
+          repairInitiated: "\u4FEE\u7406\u3092\u958B\u59CB\u3057\u307E\u3057\u305F",
+          creatingRecord: "\u30EC\u30B3\u30FC\u30C9\u3092\u4F5C\u6210\u4E2D...",
+          noRepairTemplates: "\u4FEE\u7406\u30C6\u30F3\u30D7\u30EC\u30FC\u30C8\u304C\u672A\u8A2D\u5B9A\u3067\u3059",
+          autoFillingShiftReport: "\u30B7\u30D5\u30C8\u30EC\u30DD\u30FC\u30C8\u3092\u5165\u529B\u4E2D: {0}",
+          savingShiftReport: "\u30B7\u30D5\u30C8\u30EC\u30DD\u30FC\u30C8\u3092\u4FDD\u5B58\u4E2D...",
+          shiftReportComplete: "\u30B7\u30D5\u30C8\u30EC\u30DD\u30FC\u30C8\u304C\u5B8C\u4E86\u3057\u307E\u3057\u305F",
+          shiftReportFormNotFound: "\u30A8\u30E9\u30FC: \u30B7\u30D5\u30C8\u30EC\u30DD\u30FC\u30C8\u30D5\u30A9\u30FC\u30E0\u304C\u898B\u3064\u304B\u308A\u307E\u305B\u3093",
+          noShiftReportMatch: "\u4E00\u81F4\u3059\u308B\u30B7\u30D5\u30C8\u30EC\u30DD\u30FC\u30C8\u30C6\u30F3\u30D7\u30EC\u30FC\u30C8\u304C\u3042\u308A\u307E\u305B\u3093",
+          filterActive: "\u30D5\u30A3\u30EB\u30BF\u30FC: {0}\uFF08\u30AF\u30EA\u30C3\u30AF\u3067\u89E3\u9664\uFF09",
+          filterCleared: "\u30D5\u30A3\u30EB\u30BF\u30FC\u3092\u89E3\u9664\u3057\u307E\u3057\u305F",
+          restored: "{0} {1} \u3092\u5FA9\u5143\u3057\u307E\u3057\u305F",
+          restoredScreen: "{0} \u753B\u9762\u3092\u5FA9\u5143\u3057\u307E\u3057\u305F",
+          restoredFilters: "{0} \u3092\u30D5\u30A3\u30EB\u30BF\u30FC\u4ED8\u304D\u3067\u5FA9\u5143\u3057\u307E\u3057\u305F",
+          restoredProfile: "Forecast\u30D7\u30ED\u30D5\u30A1\u30A4\u30EB\u3092\u5FA9\u5143\u3057\u307E\u3057\u305F",
+          couldNotRestore: "\u5FA9\u5143\u3067\u304D\u307E\u305B\u3093 \u2014 \u30CA\u30D3\u30B2\u30FC\u30B7\u30E7\u30F3\u304C\u5229\u7528\u4E0D\u53EF",
+          sessionRestoreDisabled: "\u30BB\u30C3\u30B7\u30E7\u30F3\u5FA9\u5143\u304C\u7121\u52B9\u3067\u3059 \u2014 APM Master > \u4E00\u822C \u3067\u6709\u52B9\u306B\u3057\u3066\u304F\u3060\u3055\u3044",
+          templateSaved: "\u30C6\u30F3\u30D7\u30EC\u30FC\u30C8\u300C{0}\u300D\u3092\u4FDD\u5B58\u3057\u307E\u3057\u305F",
+          templateDeleted: "\u30C6\u30F3\u30D7\u30EC\u30FC\u30C8\u300C{0}\u300D\u3092\u524A\u9664\u3057\u307E\u3057\u305F",
+          templateCreated: "\u30C6\u30F3\u30D7\u30EC\u30FC\u30C8\u300C{0}\u300D\u3092\u4F5C\u6210\u3057\u307E\u3057\u305F",
+          profileSaved: "\u30D7\u30ED\u30D5\u30A1\u30A4\u30EB\u3092\u4FDD\u5B58\u3057\u307E\u3057\u305F",
+          profileDeleted: "\u30D7\u30ED\u30D5\u30A1\u30A4\u30EB\u3092\u524A\u9664\u3057\u307E\u3057\u305F",
+          settingsDownloaded: "\u8A2D\u5B9A\u3092\u30C0\u30A6\u30F3\u30ED\u30FC\u30C9\u3057\u307E\u3057\u305F",
+          reportCopied: "\u30EC\u30DD\u30FC\u30C8\u3092\u30AF\u30EA\u30C3\u30D7\u30DC\u30FC\u30C9\u306B\u30B3\u30D4\u30FC\u3057\u307E\u3057\u305F",
+          copiedToClipboard: "Base64\u30D0\u30C3\u30AF\u30A2\u30C3\u30D7\u3092\u30B3\u30D4\u30FC\u3057\u307E\u3057\u305F",
+          dataspyActive: "Dataspy: {0}\uFF08{1}\uFF09",
+          clickToClear: "\u30AF\u30EA\u30C3\u30AF\u3067\u89E3\u9664",
+          openedWO: "WO {0} \u3092\u958B\u304D\u307E\u3057\u305F",
+          openedEntity: "{0} \u3092\u958B\u304D\u307E\u3057\u305F",
+          // ── Labor UI ──
+          quickBookLabor: "\u30AF\u30A4\u30C3\u30AF\u8A18\u9332",
+          bookLabor: "\u8A18\u9332\u3059\u308B",
+          doubleClickHint: "\u30D7\u30EA\u30BB\u30C3\u30C8\u3092\u30C0\u30D6\u30EB\u30AF\u30EA\u30C3\u30AF\u3067\u5373\u6642\u8A18\u9332",
+          normal: "\u901A\u5E38",
+          overtime: "\u6B8B\u696D",
+          today: "\u4ECA\u65E5",
+          yesterday: "\u6628\u65E5",
+          total: "\u5408\u8A08",
+          noHoursYet: "\u8A18\u9332\u3055\u308C\u305F\u6642\u9593\u306F\u3042\u308A\u307E\u305B\u3093",
+          noLaborRecords: "\u4F5C\u696D\u8A18\u9332\u304C\u3042\u308A\u307E\u305B\u3093",
+          laborTally: "\u4F5C\u696D\u6642\u9593",
+          targetSelf: "\u5BFE\u8C61: \u81EA\u5206",
+          targetLabel: "\u5BFE\u8C61: {0}",
+          twoDayTab: "2\u65E5\u9593",
+          sevenDayTab: "7\u65E5\u9593",
+          nightShiftHint: "\u591C\u52E4 \u2014 \u4ECA\u65E5\u3068\u6628\u65E5\u3092\u8868\u793A\u4E2D",
+          hrs: "\u6642\u9593",
+          refreshFromServer: "\u30B5\u30FC\u30D0\u30FC\u304B\u3089\u66F4\u65B0",
+          dateLabel: "\u65E5\u4ED8:",
+          hoursPlaceholder: "\u6642\u9593...",
+          subtract: "\u6E1B\u7B97 (-)",
+          shiftSummary: "\u30B7\u30D5\u30C8\u6982\u8981",
+          fetching: "\u53D6\u5F97\u4E2D...",
+          nightShiftMode: "\u591C\u52E4\u30E2\u30FC\u30C9",
+          managerMode: "\u30DE\u30CD\u30FC\u30B8\u30E3\u30FC\u30E2\u30FC\u30C9",
+          // ── Other UI ──
+          autoFillBtn: "AutoFill",
+          stuckReturnEam: "EAM\u306B\u623B\u308B\u306B\u306F\u3053\u3053\u3092\u30AF\u30EA\u30C3\u30AF",
+          ready: "\u6E96\u5099\u5B8C\u4E86",
+          sessionExpiredAway: "\u96E2\u5E2D\u4E2D\u306B\u30BB\u30C3\u30B7\u30E7\u30F3\u304C\u671F\u9650\u5207\u308C\u306B\u306A\u308A\u307E\u3057\u305F",
+          restoreBtn: "\u5FA9\u5143",
+          restoreExpiredBtn: "\u5FA9\u5143\uFF08\u671F\u9650\u5207\u308C\uFF09",
+          redirectBtn: "\u518D\u8AAD\u307F\u8FBC\u307F",
+          dismissBtn: "\u9589\u3058\u308B",
+          dontAskAgain: "\u4ECA\u5F8C\u8868\u793A\u3057\u306A\u3044",
+          restorePromptRecord: "\u524D\u56DE\u306E\u30BB\u30C3\u30B7\u30E7\u30F3\u3067 <b>{0}</b> \u304C\u958B\u304B\u308C\u3066\u3044\u307E\u3057\u305F{1}\u3002\u5FA9\u5143\u3057\u307E\u3059\u304B\uFF1F",
+          restorePromptScreen: "<b>{0}</b> \u753B\u9762\u3092\u8868\u793A\u3057\u3066\u3044\u307E\u3057\u305F{1}\u3002\u5FA9\u5143\u3057\u307E\u3059\u304B\uFF1F",
+          withContext: "\uFF08{0}\u4ED8\u304D\uFF09",
+          contextForecastProfile: "Forecast\u30D7\u30ED\u30D5\u30A1\u30A4\u30EB",
+          contextSearchFilters: "\u691C\u7D22\u30D5\u30A3\u30EB\u30BF\u30FC",
+          sessionExpiredTitle: "\u30BB\u30C3\u30B7\u30E7\u30F3\u671F\u9650\u5207\u308C",
+          pleaseRefresh: "EAM\u3092\u66F4\u65B0\u3057\u3066\u304F\u3060\u3055\u3044"
+        }
+      };
+      _systemLang = (typeof navigator !== "undefined" ? navigator.language : "en").split("-")[0].toLowerCase();
+      _override = null;
+      _settingsRef = null;
+      SUPPORTED_LANGUAGES = Object.keys(strings);
+    }
+  });
+
   // src/core/state.js
+  function detectDateFormat() {
+    if (!AppContext.isEU) return "us";
+    try {
+      const testDate = new Date(2024, 0, 13);
+      const parts = new Intl.DateTimeFormat(navigator.language).formatToParts(testDate);
+      const order = parts.filter((p) => p.type !== "literal").map((p) => p.type);
+      const monthPart = parts.find((p) => p.type === "month");
+      if (order[0] === "year") return "iso";
+      if (order[0] === "day" && monthPart && isNaN(monthPart.value)) return "mon";
+      if (order[0] === "day") return "eu";
+      return "us";
+    } catch {
+      return "eu";
+    }
+  }
+  function detectDateSeparator() {
+    if (!AppContext.isEU) return "/";
+    try {
+      const testDate = new Date(2024, 0, 13);
+      const parts = new Intl.DateTimeFormat(navigator.language).formatToParts(testDate);
+      const lit = parts.find((p) => p.type === "literal");
+      const sep = lit ? lit.value.trim() : "/";
+      return ["/", "-", "."].includes(sep) ? sep : "/";
+    } catch {
+      return "/";
+    }
+  }
   function initializeGeneralSettings() {
     if (_settingsInitialized) return apmGeneralSettings;
     let stored = APMStorage.get(APM_GENERAL_STORAGE);
@@ -1293,6 +2076,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
       Object.assign(apmGeneralSettings, DEFAULT_SETTINGS);
       apmGeneralSettings.flags = { ...existingFlags };
     }
+    setLanguageOverride(apmGeneralSettings.language, apmGeneralSettings);
     _settingsInitialized = true;
     APMLogger.debug("APM State", "Initialization complete.");
     return apmGeneralSettings;
@@ -1343,6 +2127,8 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
       init_utils();
       init_logger();
       init_storage();
+      init_context();
+      init_locale();
       AppState = {
         // Forecast
         forecast: {
@@ -1403,10 +2189,12 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
         ptpTrackingEnabled: true,
         openLinksInNewTab: true,
         autoRedirect: true,
-        dateFormat: "us",
-        // 'us', 'eu', or 'mon'
-        dateSeparator: "/",
+        dateFormat: detectDateFormat(),
+        // 'us', 'eu', or 'mon' — auto-detected on EU domains
+        dateSeparator: detectDateSeparator(),
         dateOverrideEnabled: true,
+        language: "auto",
+        // 'auto' = system language, or 'en', 'de', 'fr', 'es', 'it', 'pt', 'ja'
         logLevel: "error",
         // error, warn, info, debug, verbose
         updateTrack: "stable",
@@ -1580,7 +2368,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
       try {
         if (!win.Ext?.ComponentQuery) continue;
         const frameVis = isFrameVisible(win);
-        const tps = win.Ext.ComponentQuery.query("tabpanel:not([destroyed=true]), uxtabpanel:not([destroyed=true])").filter((tp) => tp.rendered && !tp.isDestroyed && tp.items?.items?.length > MIN_TAB_ITEMS && tp.items.items.some((t) => t.itemId === "HDR"));
+        const tps = win.Ext.ComponentQuery.query("tabpanel:not([destroyed=true]), uxtabpanel:not([destroyed=true])").filter((tp) => tp.rendered && !tp.isDestroyed && tp.items?.items?.length > MIN_TAB_ITEMS && tp.items.items.some((t2) => t2.itemId === "HDR"));
         for (const tp of tps) {
           candidates.push({ win, tabPanel: tp, visible: frameVis });
         }
@@ -1750,6 +2538,9 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
     const monName = months[d.getMonth()];
     const year = d.getFullYear();
     const sep = apmGeneralSettings?.dateSeparator || "/";
+    if (apmGeneralSettings?.dateFormat === "iso") {
+      return `${year}-${month}-${day}`;
+    }
     if (apmGeneralSettings?.dateFormat === "eu") {
       return `${day}${sep}${month}${sep}${year}`;
     }
@@ -1782,17 +2573,15 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
       const d = parseInt(monMatch[1]), m = months.indexOf(monMatch[2]), y = parseInt(monMatch[3]);
       return new Date(y, m, d);
     }
-    if (s.includes("/")) {
-      const parts = s.split("/");
-      if (parts.length === 3) {
-        const p1 = parseInt(parts[0]), p2 = parseInt(parts[1]), y = parseInt(parts[2]);
-        if (apmGeneralSettings.dateFormat === "eu") return new Date(y, p2 - 1, p1);
-        return new Date(y, p1 - 1, p2);
-      }
-    }
     if (s.includes("-") && s.split("-").length === 3 && s.split("-")[0].length === 4) {
       const parts = s.split("-");
       return new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
+    }
+    const sepMatch = s.match(/^(\d{1,2})[\/.\-](\d{1,2})[\/.\-](\d{4})$/);
+    if (sepMatch) {
+      const p1 = parseInt(sepMatch[1]), p2 = parseInt(sepMatch[2]), y = parseInt(sepMatch[3]);
+      if (apmGeneralSettings.dateFormat === "eu") return new Date(y, p2 - 1, p1);
+      return new Date(y, p1 - 1, p2);
     }
     const fallback = new Date(dateStr);
     return isNaN(fallback.getTime()) ? null : fallback;
@@ -2324,7 +3113,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
         registerTask(id, intervalMs, callback, options = {}) {
           const executeImmediately = !!options.executeImmediately;
           const isIdle = !!options.isIdle;
-          this.tasks = this.tasks.filter((t) => t.id !== id);
+          this.tasks = this.tasks.filter((t2) => t2.id !== id);
           this.tasks.push({
             id,
             intervalMs,
@@ -2341,7 +3130,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
           }
         }
         removeTask(id) {
-          const idx = this.tasks.findIndex((t) => t.id === id);
+          const idx = this.tasks.findIndex((t2) => t2.id === id);
           if (idx === -1) return;
           this.tasks.splice(idx, 1);
           if (this.tasks.length === 0) {
@@ -2411,7 +3200,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
          * @param {string} id - Task identifier
          */
         runTaskNow(id) {
-          const task = this.tasks.find((t) => t.id === id);
+          const task = this.tasks.find((t2) => t2.id === id);
           if (task) {
             const start = performance.now();
             try {
@@ -2431,12 +3220,12 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
          * Return all registered tasks for diagnostics
          */
         getTasks() {
-          return this.tasks.map((t) => ({
-            id: t.id,
+          return this.tasks.map((t2) => ({
+            id: t2.id,
             instance: this.instanceId,
-            intervalMs: t.intervalMs,
-            isIdle: t.isIdle,
-            lastRunMs: t.lastRun
+            intervalMs: t2.intervalMs,
+            isIdle: t2.isIdle,
+            lastRunMs: t2.lastRun
           }));
         }
       };
@@ -2816,7 +3605,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
     return maddonParams;
   }
   async function eamQuery({
-    baseUrl = "https://us1.eam.hxgnsmartcloud.com/web/base/",
+    baseUrl = EAM_BASE_URL,
     endpoint = "",
     // e.g. 'WSBOOK.HDR.xmlhttp'
     gridId,
@@ -2994,7 +3783,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
             const diffDays = Math.floor((now - rDate) / (1e3 * 3600 * 24));
             const maxDaysAgo = daysParam - 1;
             if (diffDays <= maxDaysAgo && diffDays >= 0) {
-              const hrs = parseFloat(r.hrswork);
+              const hrs = parseFloat(String(r.hrswork ?? "").replace(",", "."));
               if (!isNaN(hrs)) {
                 total += hrs;
                 const isoKey = getLocalIsoDate(rDate);
@@ -3033,8 +3822,10 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
       init_scheduler();
       init_logger();
       init_toast();
+      init_locale();
       init_state();
       init_constants();
+      init_context();
       init_labor_service();
       init_ui_manager();
       init_storage();
@@ -3042,11 +3833,16 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
       init_feature_flags();
       init_dom_helpers();
       LaborBooker = (function() {
+        const fmtDecimal = (n, digits = 2) => {
+          const s = Number(n).toFixed(digits);
+          return AppContext.isEU ? s.replace(".", ",") : s;
+        };
         let _laborWin = null;
         const getLaborWin = () => _laborWin || (_laborWin = apmGetGlobalWindow());
         let isRunning2 = false;
         let laborObservers = /* @__PURE__ */ new Map();
-        let hoursPresets = ["0.1", "0.25", "0.5", "0.75", "1", "1.5", "2", "2.5", "3"];
+        const _basePresets = ["0.1", "0.25", "0.5", "0.75", "1", "1.5", "2", "2.5", "3"];
+        let hoursPresets = AppContext.isEU ? _basePresets.map((h) => h.replace(".", ",")) : _basePresets;
         const RATE_DATE_DEFAULT = "0.|01/01/2020|01/01/2035";
         let _capturedDepartment = null;
         AjaxHooks.onBeforeRequest("labor-save", (win, conn, options) => {
@@ -3096,7 +3892,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
           if (!isWindowAccessible(win) || !win.Ext || !win.Ext.ComponentQuery) return;
           try {
             const tabs = win.Ext.ComponentQuery.query("uxtabcontainer[itemId=BOO]:not([destroyed=true])");
-            const booTab = tabs.find((t) => t.rendered && !t.isDestroyed);
+            const booTab = tabs.find((t2) => t2.rendered && !t2.isDestroyed);
             if (!booTab) {
               const existingCmp2 = win.Ext.getCmp("apm-quick-book-cmp");
               if (existingCmp2 && !existingCmp2.isDestroyed) existingCmp2.destroy();
@@ -3199,7 +3995,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
             formSide.appendChild(header);
             const dateRow = win.document.createElement("div");
             dateRow.className = "apm-lb-date-row";
-            dateRow.innerHTML = `<label class="apm-lb-date-label">Date:</label>`;
+            dateRow.innerHTML = `<label class="apm-lb-date-label">${t("dateLabel")}</label>`;
             const dateInput2 = win.document.createElement("input");
             dateInput2.id = "apm-lb-date";
             dateInput2.type = "date";
@@ -3212,7 +4008,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
             formSide.appendChild(dateRow);
             const hint = win.document.createElement("div");
             hint.className = "apm-lb-hint";
-            hint.textContent = "Double-click a preset to book instantly";
+            hint.textContent = t("doubleClickHint");
             formSide.appendChild(hint);
             const presetBox = win.document.createElement("div");
             presetBox.className = "apm-lb-presets";
@@ -3238,7 +4034,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
                 const type = win.document.querySelector('input[name="lb-type"]').value;
                 UIManager.closeAll(true);
                 setTimeout(() => {
-                  showToast(`Booking ${val}h... \u23F3`, "#3498db");
+                  showToast(t("bookingHours", val) + " \u23F3", "#3498db");
                   executeBookingFlow({ hours: val, date: dInput, type }, win);
                 }, 10);
               };
@@ -3250,7 +4046,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
             const hoursInput2 = win.document.createElement("input");
             hoursInput2.id = "apm-lb-hours";
             hoursInput2.type = "text";
-            hoursInput2.placeholder = "Hours...";
+            hoursInput2.placeholder = t("hoursPlaceholder");
             hoursInput2.className = "apm-lb-hours-input";
             hoursInput2.addEventListener("input", () => {
               presetBox.querySelectorAll(".apm-lb-preset").forEach((p) => p.classList.remove("active"));
@@ -3261,7 +4057,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
             corrLabel.className = "apm-lb-correction";
             corrLabel.innerHTML = `
                 <input id="apm-lb-correction" type="checkbox">
-                <span class="apm-lb-correction-text">Subtract (-)</span>
+                <span class="apm-lb-correction-text">${t("subtract")}</span>
             `;
             const corrCheck2 = corrLabel.querySelector("input");
             corrCheck2.onchange = (e) => {
@@ -3280,10 +4076,10 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
             typeRow.className = "apm-lb-type-row";
             const normalBtn = win.document.createElement("button");
             normalBtn.className = "apm-lb-type-btn active";
-            normalBtn.textContent = "Normal";
+            normalBtn.textContent = t("normal");
             const overtimeBtn = win.document.createElement("button");
             overtimeBtn.className = "apm-lb-type-btn";
-            overtimeBtn.textContent = "Overtime";
+            overtimeBtn.textContent = t("overtime");
             const typeHidden = win.document.createElement("input");
             typeHidden.type = "hidden";
             typeHidden.name = "lb-type";
@@ -3302,21 +4098,21 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
             formSide.appendChild(typeRow);
             const bookBtn2 = win.document.createElement("button");
             bookBtn2.id = "apm-lb-book-btn";
-            bookBtn2.innerHTML = "Book Labor";
+            bookBtn2.innerHTML = t("bookLabor");
             bookBtn2.className = "apm-lb-book-btn";
             formSide.appendChild(bookBtn2);
             popup.appendChild(formSide);
             const sumSide = win.document.createElement("div");
             sumSide.className = "apm-lb-summary";
             sumSide.innerHTML = `
-                <h4 class="apm-lb-summary-title">Shift Summary</h4>
+                <h4 class="apm-lb-summary-title">${t("shiftSummary")}</h4>
                 <div id="apm-lb-sum-content" class="apm-lb-summary-content">
-                    <div class="apm-lb-summary-loading">Fetching...</div>
+                    <div class="apm-lb-summary-loading">${t("fetching")}</div>
                 </div>
                 <div class="apm-lb-summary-footer">
                     <label class="apm-lb-night-label">
                         <input id="apm-lb-night-toggle" type="checkbox" ${APMStorage.get(LABOR_NIGHT_SHIFT_KEY) === true ? "checked" : ""}>
-                        Night Shift Mode
+                        ${t("nightShiftMode")}
                     </label>
                 </div>
             `;
@@ -3354,24 +4150,25 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
           } else if (dateInput) dateInput.value = getLocalIsoDate();
           const titleEl = popup.querySelector("h3");
           const bookBtn = win.document.getElementById("apm-lb-book-btn");
-          if (titleEl) titleEl.textContent = "Quick Book Labor";
+          if (titleEl) titleEl.textContent = t("quickBookLabor");
           if (bookBtn) {
-            bookBtn.textContent = "Book Labor";
+            bookBtn.textContent = t("bookLabor");
             bookBtn.onclick = () => {
               const hRaw = hoursInput.value;
-              if (!hRaw || hRaw === "-") return showToast("Enter hours!", "#e74c3c");
+              if (!hRaw || hRaw === "-") return showToast(t("enterHours"), "#e74c3c");
               const isCorrection = win.document.getElementById("apm-lb-correction").checked;
-              const parsed = parseFloat(hRaw);
+              const parsed = parseFloat(hRaw.replace(/\s/g, "").replace(",", "."));
               if (isNaN(parsed) || parsed === 0) {
-                showToast("Enter valid hours", "var(--apm-danger)");
+                showToast(t("enterValidHours"), "var(--apm-danger)");
                 return;
               }
               const hours = isCorrection ? `-${Math.abs(parsed)}` : Math.abs(parsed).toString();
+              const displayHrs = AppContext.isEU ? hours.replace(".", ",") : hours;
               const date = dateInput.value;
               const type = win.document.querySelector('input[name="lb-type"]').value;
               UIManager.closeAll(true);
               setTimeout(() => {
-                showToast(`Booking ${hours}h... \u23F3`, "#3498db");
+                showToast(t("bookingHours", displayHrs) + " \u23F3", "#3498db");
                 executeBookingFlow({ hours, date, type }, win);
               }, 10);
             };
@@ -3421,28 +4218,28 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
             datesToDisplay.forEach((d) => {
               const val = breakdown[d] || 0;
               const row = el("div", { className: "apm-lb-summary-row" }, [
-                el("span", { className: "apm-lb-summary-day" }, d === todayIso ? "Today" : "Yesterday"),
+                el("span", { className: "apm-lb-summary-day" }, d === todayIso ? t("today") : t("yesterday")),
                 win.document.createTextNode(" "),
-                el("strong", { className: "apm-lb-summary-hours" }, val.toFixed(2) + "h")
+                el("strong", { className: "apm-lb-summary-hours" }, fmtDecimal(val) + "h")
               ]);
               content.appendChild(row);
             });
             const totalRow = el("div", { className: "apm-lb-summary-total" }, [
-              el("span", {}, "TOTAL"),
+              el("span", {}, t("total")),
               win.document.createTextNode(" "),
-              el("span", {}, total.toFixed(2) + "h")
+              el("span", {}, fmtDecimal(total) + "h")
             ]);
             content.appendChild(totalRow);
           } catch (err) {
             content.innerHTML = "";
             if (err.message === "SESSION_EXPIRED") {
               const errDiv = el("div", { className: "apm-lb-summary-error" });
-              errDiv.appendChild(win.document.createTextNode("Session Expired!"));
+              errDiv.appendChild(win.document.createTextNode(t("sessionExpiredTitle")));
               errDiv.appendChild(win.document.createElement("br"));
-              errDiv.appendChild(win.document.createTextNode("Please refresh EAM."));
+              errDiv.appendChild(win.document.createTextNode(t("pleaseRefresh")));
               content.appendChild(errDiv);
             } else {
-              content.appendChild(el("div", { className: "apm-lb-summary-empty" }, "No hours booked yet."));
+              content.appendChild(el("div", { className: "apm-lb-summary-empty" }, t("noHoursYet")));
             }
           }
         }
@@ -3490,7 +4287,8 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
             }
             const employee = extractEmployee();
             const eamDate = formatToEamDate(data.date);
-            const targetHours = String(data.hours || "0.25");
+            const targetHours = String(parseFloat(String(data.hours || "0.25").replace(",", ".")));
+            const targetHoursEAM = AppContext.isEU ? targetHours.replace(".", ",") : targetHours;
             const targetType = data.type || "N";
             APMLogger.info("LaborBooker", `Booking: ${targetHours}h ${targetType} for ${employee} on ${eamDate}`);
             APMLogger.debug("LaborBooker", `Starting injection: emp=${employee}, hrs=${targetHours}, type=${targetType}`);
@@ -3531,7 +4329,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
                   ExtUtils.setFieldValue(form, "ocrtype", targetType);
                 }
                 ExtUtils.setFieldValue(form, "datework", eamDate);
-                ExtUtils.setFieldValue(form, "hrswork", targetHours);
+                ExtUtils.setFieldValue(form, "hrswork", targetHoursEAM);
                 const fRate = form.findField("rate") || form.findField("laborrate") || form.findField("traderate") || form.findField("costrate") || form.findField("trarate");
                 const fRD = form.findField("ratedate");
                 if (fRate) {
@@ -3651,11 +4449,11 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
               const result = saveVerified ? "success" : preCount < 0 ? "unknown" : "failed";
               if (!options.silent) {
                 if (result === "success") {
-                  showToast("Labor Booked Successfully! \u26A1", "#1abc9c");
+                  showToast(t("laborBooked") + " \u26A1", "#1abc9c");
                 } else if (result === "unknown") {
-                  showToast("Labor Sent! \u26A1", "#1abc9c");
+                  showToast(t("laborSent") + " \u26A1", "#1abc9c");
                 } else {
-                  showToast("Labor Booking Failed \u2014 record count unchanged", "#e74c3c");
+                  showToast(t("laborFailed"), "#e74c3c");
                 }
               }
               if (result === "success") {
@@ -3864,6 +4662,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
   // src/core/theme-shield.js
   init_constants();
   init_context();
+  init_locale();
   init_logger();
   function applyTransitionShield(targetWin, targetDoc, isDarkHint, context) {
     const { isTransition, isSSO, isSAML, isIDP, isEAMAuth } = context;
@@ -3904,9 +4703,9 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
               const rescue = targetDoc.createElement("div");
               rescue.id = "apm-sso-rescue";
               const rescueLink = targetDoc.createElement("a");
-              rescueLink.href = `https://us1.eam.hxgnsmartcloud.com/web/base/logindisp?tenant=${DEFAULT_TENANT}`;
+              rescueLink.href = `${EAM_BASE_URL}logindisp?tenant=${DEFAULT_TENANT}`;
               rescueLink.style.cssText = "color:#3498db;text-decoration:underline;font-family:sans-serif;font-size:14px;pointer-events:auto;cursor:pointer;font-weight:bold;";
-              rescueLink.textContent = "Stuck? Click here to return to EAM";
+              rescueLink.textContent = t("stuckReturnEam");
               rescue.appendChild(rescueLink);
               rescue.style.cssText = "position:fixed; bottom:20px; left:50%; transform:translateX(-50%); z-index:2147483647; text-align:center; padding:10px; background:rgba(0,0,0,0.7); border-radius:8px;";
               shield.appendChild(rescue);
@@ -4862,6 +5661,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
   init_api();
   init_scheduler();
   init_dom_helpers();
+  init_locale();
   var SessionMonitor = {
     _liveConfirmed: /* @__PURE__ */ new Set(),
     _lastActivity: Date.now(),
@@ -5186,6 +5986,17 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
             hasSnapshot = true;
           }
         }
+        if (!hasSnapshot) {
+          const keys = APMStorage.list();
+          for (const k of keys) {
+            if (!k.startsWith(SNAPSHOT_STORAGE_PREFIX)) continue;
+            const snap = APMStorage.get(k);
+            if (snap && snap.ts && Date.now() - snap.ts <= SNAPSHOT_TTL) {
+              hasSnapshot = true;
+              break;
+            }
+          }
+        }
       } catch (e) {
       }
       const font = "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif";
@@ -5249,7 +6060,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
               flexShrink: "0"
             }
           }, ["\u23F0"]),
-          el("span", {}, ["Session expired while away"])
+          el("span", {}, [t("sessionExpiredAway")])
         ]),
         // Button row
         el("div", {
@@ -5284,7 +6095,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
               }
               this.forceRedirect();
             }
-          }, [hasSnapshot ? "Restore" : "Restore (expired)"]),
+          }, [hasSnapshot ? t("restoreBtn") : t("restoreExpiredBtn")]),
           el("button", {
             style: {
               ...btnBase,
@@ -5305,7 +6116,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
               }
               this.forceRedirect();
             }
-          }, ["Redirect"]),
+          }, [t("redirectBtn")]),
           // Spacer
           el("div", { style: { flex: "1" } }),
           el("button", {
@@ -5323,7 +6134,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
               e.target.style.color = "var(--apm-text-muted, #95a5a6)";
             },
             onclick: () => dismiss()
-          }, ["Dismiss"])
+          }, [t("dismissBtn")])
         ])
       ]);
       document.body.appendChild(prompt2);
@@ -5441,6 +6252,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
   init_state();
   init_logger();
   init_feature_flags();
+  init_locale();
   var countdownStart = null;
   var COUNTDOWN_DURATION = 120;
   var _ptpTimerRunning = false;
@@ -5529,7 +6341,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
       if (ptpSeconds <= 0) {
         clearInterval(_countdownInterval);
         _countdownInterval = null;
-        timeEl.textContent = "READY";
+        timeEl.textContent = t("ready");
         timerUI.style.background = "var(--apm-success-bright)";
         timerUI.style.borderColor = "var(--apm-success-bright)";
       } else {
@@ -6020,6 +6832,139 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
     window.dispatchEvent(new CustomEvent("APM_CC_SYNC_REQUIRED"));
   }
 
+  // src/modules/colorcode/nametag-filter.js
+  init_logger();
+  init_api();
+  init_utils();
+  function getActiveNametagFilter() {
+    const root = apmGetGlobalWindow();
+    const topWin = root.top || root;
+    return topWin.activeNametagFilter || "";
+  }
+  function setActiveNametagFilter(kw) {
+    const root = apmGetGlobalWindow();
+    const topWin = root.top || root;
+    topWin.activeNametagFilter = kw || "";
+  }
+  function forceFooterText(gridDom, count) {
+    if (!gridDom) return;
+    const text = `Records: ${count} of ${count}`;
+    const elements = gridDom.querySelectorAll(".x-toolbar-text");
+    let found = false;
+    for (const el2 of elements) {
+      if (/Records:\s*/.test(el2.textContent)) {
+        el2.textContent = text;
+        found = true;
+      }
+    }
+    if (!found) {
+      const walk = document.createTreeWalker(gridDom, NodeFilter.SHOW_TEXT, {
+        acceptNode: function(node2) {
+          return /Records:\s*\d+\s*of\s*\d+/.test(node2.nodeValue) ? NodeFilter.FILTER_ACCEPT : NodeFilter.FILTER_SKIP;
+        }
+      }, false);
+      let node;
+      while (node = walk.nextNode()) node.nodeValue = text;
+    }
+  }
+  function applyNametagFilter(kw = "") {
+    APMLogger.debug("Nametag", `applyNametagFilter called with kw: "${kw}"`);
+    const ctx = findMainGrid();
+    if (!ctx) return;
+    const store = ctx.grid.getStore();
+    const gridEl = ctx.grid.getEl();
+    if (!gridEl) return;
+    const gridDom = gridEl.dom;
+    const view = ctx.grid.getView();
+    if (!store._nativeGetTotalCount) {
+      store._nativeGetTotalCount = store.getTotalCount;
+    }
+    if (store._nativeGetTotalCount && !store._apmCleanupBound) {
+      store._apmCleanupBound = true;
+      ctx.grid.on("destroy", () => {
+        if (store._nativeGetTotalCount) {
+          store.getTotalCount = store._nativeGetTotalCount;
+          delete store._nativeGetTotalCount;
+        }
+      });
+    }
+    const activeFilter = kw || "";
+    setActiveNametagFilter(activeFilter);
+    const startFilter = performance.now();
+    try {
+      const keywords = kw.split(",").map((s) => s.trim().toLowerCase()).filter((s) => s);
+      store.suspendEvents();
+      try {
+        if (keywords.length === 0) {
+          store.clearFilter();
+          if (store._nativeGetTotalCount) {
+            store.getTotalCount = store._nativeGetTotalCount;
+          }
+        } else {
+          store.clearFilter(true);
+          store.filterBy((record) => {
+            if (!record._apmSearchText) {
+              record._apmSearchText = Object.values(record.data).map((v) => v !== null && v !== void 0 ? String(v).toLowerCase() : "").join(" ");
+            }
+            return keywords.some((k) => record._apmSearchText.includes(k));
+          });
+        }
+      } finally {
+        store.resumeEvents();
+        if (view) view.refresh();
+      }
+      const endFilter = performance.now();
+      const matchesCount = store.getCount();
+      if (keywords.length > 0) {
+        APMLogger.info("Nametag", `Filter applied: "${kw}" \u2192 ${matchesCount} match(es)`);
+      } else {
+        APMLogger.info("Nametag", "Filter cleared");
+      }
+      const invalidate = APMApi.get("invalidateColorCodeCache");
+      if (invalidate) {
+        APMLogger.debug("Nametag", `Rendering pulse for '${ctx.grid.id}'`);
+        invalidate(ctx.doc);
+      }
+      if (!store._apmCacheHook) {
+        store.on("load", () => {
+          store.each((r) => {
+            delete r._apmSearchText;
+          });
+        });
+        store.on("datachanged", () => {
+          store.each((r) => {
+            delete r._apmSearchText;
+          });
+        });
+        store._apmCacheHook = true;
+      }
+      const count = store.getCount();
+      store.getTotalCount = function() {
+        return this.getCount();
+      };
+      forceFooterText(gridDom, count);
+      if (view && !view.__apmFooterHook) {
+        view.on("refresh", () => {
+          const currentFilter = getActiveNametagFilter();
+          if (currentFilter && ctx.grid && !ctx.grid.isDestroyed && ctx.grid.rendered) {
+            try {
+              const el2 = ctx.grid.getEl();
+              if (el2 && el2.dom) {
+                forceFooterText(el2.dom, ctx.grid.getStore().getCount());
+              }
+            } catch (e) {
+              APMLogger.debug("Nametag", "Footer hook error:", e);
+            }
+          }
+        });
+        view.__apmFooterHook = true;
+      }
+      if (view && view.el) view.el.setScrollTop(0);
+    } catch (err) {
+      APMLogger.error("Nametag", "CRITICAL ERROR in applyNametagFilter:", err);
+    }
+  }
+
   // src/modules/colorcode/colorcode-engine.js
   init_dom_helpers();
   var _rowCache = /* @__PURE__ */ new WeakMap();
@@ -6135,7 +7080,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
       if (!r.search) return null;
       const terms = r.search.split(",").map((s) => s.trim().toLowerCase()).filter((s) => s);
       if (terms.length === 0) return null;
-      const pattern = terms.map((t) => t.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")).join("|");
+      const pattern = terms.map((t2) => t2.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")).join("|");
       return { ...r, regex: new RegExp(pattern, "i") };
     }).filter((r) => r);
     APMLogger.info("ColorCode", `Compiled ${_compiledRules.length} rule(s)`);
@@ -6165,7 +7110,9 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
     "wspf_10_repr_part": "SSPART",
     "workorder": "WSJOBS",
     "workordernum": "WSJOBS",
-    "wspf_10_repr_issevent": "WSJOBS"
+    "wspf_10_repr_issevent": "WSJOBS",
+    // Follow-up WO column in checklist grids (WSJOBS + CTJOBS)
+    "followupwoactivity": "WSJOBS"
   };
   var HEADER_FIELD_ENTITIES = {
     "workordernum": "WSJOBS"
@@ -6210,8 +7157,8 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
     const view = grid.getView?.();
     if (!view) return false;
     const viewId = view.getId?.() || "";
-    if (viewId.indexOf("checklistview") !== -1) return false;
     if (grid.up?.("window")) return false;
+    if (viewId.indexOf("checklistview") !== -1) return "linkify";
     if (grid.up?.("uxtabcontainer")) return "linkify";
     return "full";
   }
@@ -6456,6 +7403,206 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
     applyPtpTag(cell, woNum ? ptpHistory[woNum] : null);
     applyNametags(cell, rowMatches);
   }
+  var _splitViewProbed = false;
+  function discoverSplitViewItems(doc) {
+    const win = doc.defaultView || window;
+    const items = [];
+    let sourceType = "";
+    if (win.Ext?.ComponentQuery) {
+      try {
+        const views = win.Ext.ComponentQuery.query("dataview:not([destroyed=true])");
+        for (const view of views) {
+          if (!view.rendered || view.isDestroyed) continue;
+          if (view.up?.("gridpanel") || view.up?.("treepanel")) continue;
+          if (view.isTableView || view.ownerGrid) continue;
+          if (view.up?.("window")) continue;
+          const nodes = view.getNodes?.();
+          if (nodes?.length) {
+            items.push(...nodes);
+            sourceType = `dataview:${view.xtype || view.$className || "unknown"}`;
+          }
+        }
+      } catch (e) {
+        APMLogger.debug("ColorCode", "Split view dataview query error:", e.message);
+      }
+    }
+    if (items.length === 0) {
+      const candidates = doc.querySelectorAll(".x-dataview-item");
+      for (const item of candidates) {
+        if (!item.closest(".x-grid")) items.push(item);
+      }
+      if (items.length > 0) sourceType = "dom(.x-dataview-item)";
+    }
+    if (items.length === 0) {
+      const candidates = doc.querySelectorAll(".x-boundlist-item");
+      for (const item of candidates) {
+        if (!item.closest(".x-grid")) items.push(item);
+      }
+      if (items.length > 0) sourceType = "dom(.x-boundlist-item)";
+    }
+    if (items.length === 0 && !_splitViewProbed && win.Ext?.ComponentQuery) {
+      _splitViewProbed = true;
+      try {
+        const all = win.Ext.ComponentQuery.query("component:not([destroyed=true])");
+        const viewLike = all.filter((c) => c.rendered && !c.isDestroyed && typeof c.getNodes === "function" && !c.up?.("gridpanel") && !c.up?.("treepanel") && !c.isTableView && !c.ownerGrid);
+        if (viewLike.length > 0) {
+          APMLogger.info("ColorCode", `Split view probe: found ${viewLike.length} non-grid view component(s):`);
+          viewLike.forEach((v) => {
+            const nodes = v.getNodes?.() || [];
+            APMLogger.info("ColorCode", `  - xtype=${v.xtype}, class=${v.$className}, id=${v.id}, items=${nodes.length}, html=${nodes[0]?.outerHTML?.slice(0, 120) || "none"}`);
+          });
+        }
+      } catch (e) {
+        APMLogger.debug("ColorCode", "Split view probe error:", e.message);
+      }
+    }
+    return { items, sourceType };
+  }
+  function applySplitViewEntityLink(item, entityId, entityConfig) {
+    const userFunc = _activeUserFunc || "WSJOBS";
+    const safeUrl = buildEntityUrl(entityId, entityConfig, userFunc);
+    const isNewTab = apmGeneralSettings?.openLinksInNewTab;
+    const walker = document.createTreeWalker(item, NodeFilter.SHOW_TEXT, null);
+    let targetNode = null;
+    while (walker.nextNode()) {
+      if (walker.currentNode.textContent.includes(entityId)) {
+        targetNode = walker.currentNode;
+        break;
+      }
+    }
+    if (!targetNode) return;
+    const text = targetNode.textContent;
+    const idx = text.indexOf(entityId);
+    if (idx === -1) return;
+    const before = text.slice(0, idx);
+    const after = text.slice(idx + entityId.length);
+    const parent = targetNode.parentNode;
+    const frag = document.createDocumentFragment();
+    if (before) frag.appendChild(document.createTextNode(before));
+    const anchorProps = { className: "apm-wo-link", href: safeUrl };
+    if (isNewTab) anchorProps.target = "_blank";
+    const anchor = el("a", anchorProps, [entityId]);
+    const copyIcon = el("span", { className: "apm-copy-icon", title: "Copy link to clipboard", dataset: { woCopyUrl: safeUrl } });
+    const wrapper = el("span", { className: "apm-sv-entity", style: { whiteSpace: "nowrap" } }, [anchor, copyIcon]);
+    frag.appendChild(wrapper);
+    if (after) frag.appendChild(document.createTextNode(after));
+    parent.replaceChild(frag, targetNode);
+    item.setAttribute("data-apm-linkified", "true");
+    wrapper.setAttribute("data-wo-num", entityId);
+    if (!isNewTab) {
+      anchor.addEventListener("click", (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        try {
+          window.top.location.href = safeUrl;
+        } catch (err) {
+          window.location.href = safeUrl;
+        }
+      });
+    }
+  }
+  function applySplitViewNametags(item, rowMatches) {
+    item.querySelectorAll(".apm-nametag").forEach((tag) => {
+      const raw = tag.getAttribute("data-cc-id");
+      const ruleId = isNaN(Number(raw)) ? raw : Number(raw);
+      if (!rowMatches.some((r) => r.id === ruleId && r.showTag)) tag.remove();
+    });
+    const lowerText = item.textContent.toLowerCase();
+    rowMatches.forEach((rule) => {
+      if (!rule.showTag || !rule.tag || !rule.regex.test(lowerText)) {
+        item.querySelector(`.apm-nametag[data-cc-id="${CSS.escape(String(rule.id))}"]`)?.remove();
+        return;
+      }
+      const safeId = rule.id.toString().replace(/[^a-zA-Z0-9_-]/g, "_");
+      const allTermsCsv = rule.search || "";
+      const existing = item.querySelector(`.apm-nametag[data-cc-id="${CSS.escape(String(rule.id))}"]`);
+      if (!existing) {
+        const tagChildren = [];
+        const tagParts = rule.tag.split("\\n");
+        tagParts.forEach((part, i) => {
+          if (i > 0) tagChildren.push(el("br"));
+          tagChildren.push(part);
+        });
+        const tagDiv = el("div", {
+          className: "apm-nametag apm-sv-nametag",
+          title: "Click to filter",
+          dataset: { ccId: rule.id, filterKw: allTermsCsv },
+          style: { backgroundColor: `var(--cc-color-${safeId})` }
+        }, tagChildren);
+        item.appendChild(tagDiv);
+      } else {
+        existing.style.backgroundColor = `var(--cc-color-${safeId})`;
+        existing.setAttribute("data-filter-kw", allTermsCsv);
+      }
+    });
+  }
+  function processSplitViewItems(doc, activeRules, settings, ptpHistory) {
+    const { items, sourceType } = discoverSplitViewItems(doc);
+    if (items.length === 0) return;
+    APMLogger.debug("ColorCode", `Split view: processing ${items.length} items via ${sourceType}`);
+    const entityConfig = _activeEntityConfig || ENTITY_REGISTRY.WSJOBS;
+    const activeFilter = getActiveNametagFilter();
+    const filterKeywords = activeFilter ? activeFilter.split(",").map((s) => s.trim().toLowerCase()).filter((s) => s) : [];
+    items.forEach((item) => {
+      try {
+        const rawText = item.textContent;
+        const lowerText = rawText.toLowerCase();
+        if (filterKeywords.length > 0) {
+          const matchesFilter = filterKeywords.some((k) => lowerText.includes(k));
+          item.classList.toggle("apm-sv-filtered", !matchesFilter);
+        } else {
+          item.classList.remove("apm-sv-filtered");
+        }
+        const cached = _rowCache.get(item);
+        const isRecycled = cached?.textRaw !== rawText;
+        if (!isRecycled && cached && cached.gen === _rowCacheGeneration) {
+          const needsRepaint = cached.hasTag && !item.querySelector(".apm-nametag") || cached.hasEntity && !item.querySelector(".apm-wo-link") || cached.hasFill && !item.hasAttribute("data-cc-rule");
+          if (!needsRepaint) return;
+        }
+        const rowMatches = activeRules.filter((r) => r.regex.test(lowerText));
+        const fillRule = rowMatches.find((r) => r.fill);
+        const tagRulesCount = rowMatches.filter((r) => r.showTag).length;
+        let entityId = null;
+        if (entityConfig.pattern) {
+          const match = rawText.match(entityConfig.pattern);
+          if (match) entityId = match[1];
+        }
+        _rowCache.set(item, {
+          textRaw: rawText,
+          gen: _rowCacheGeneration,
+          hasFill: !!fillRule,
+          hasTag: tagRulesCount > 0,
+          hasEntity: !!entityId
+        });
+        applyRowColoring(item, fillRule, settings);
+        if (entityId && !item.querySelector(".apm-wo-link")) {
+          applySplitViewEntityLink(item, entityId, entityConfig);
+        }
+        if (rowMatches.length > 0 || item.querySelector(".apm-nametag")) {
+          applySplitViewNametags(item, rowMatches);
+        }
+        if (!item._apmSvClickRelay) {
+          item.addEventListener("mousedown", (e) => {
+            if (e.target.closest(".apm-copy-icon, .apm-nametag, .apm-wo-link")) return;
+            const filter = getActiveNametagFilter();
+            if (!filter) return;
+            const ctx = findMainGrid();
+            if (!ctx) return;
+            const store = ctx.grid.getStore();
+            store.suspendEvents();
+            store.clearFilter(true);
+            store.resumeEvents();
+            setTimeout(() => {
+              if (getActiveNametagFilter()) applyNametagFilter(getActiveNametagFilter());
+            }, 300);
+          }, true);
+          item._apmSvClickRelay = true;
+        }
+      } catch (e) {
+        APMLogger.error("ColorCode", "Split view item error:", e);
+      }
+    });
+  }
   function processRecordHeader(doc, ptpHistory) {
     try {
       const headerConfig = _activeEntityConfig || ENTITY_REGISTRY.WSJOBS;
@@ -6662,6 +7809,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
         APMLogger.error("ColorCode", "Row processing error:", e);
       }
     });
+    processSplitViewItems(doc, activeRules, settings, ptpHistory);
     processRecordHeader(doc, ptpHistory);
   }
   function setupExtGridListeners(win) {
@@ -6726,11 +7874,47 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
           view._apmHooksInjected = true;
         }
       });
+      try {
+        const dataviews = win.Ext.ComponentQuery.query("dataview:not([destroyed=true])");
+        for (const dv of dataviews) {
+          if (!dv.rendered || dv.isDestroyed) continue;
+          if (dv.up?.("gridpanel") || dv.up?.("treepanel")) continue;
+          if (dv.isTableView || dv.ownerGrid) continue;
+          if (dv.up?.("window")) continue;
+          if (dv._apmSplitViewHooked) continue;
+          APMLogger.debug("ColorCode", `Binding split view listeners: ${dv.xtype || dv.id}`);
+          const trigger = () => debouncedProcessColorCodeGrid(dv.el?.dom?.ownerDocument);
+          dv.on("refresh", trigger);
+          dv.on("itemupdate", trigger);
+          dv.on("itemadd", trigger);
+          dv.on("itemremove", trigger);
+          if (dv.on) {
+            try {
+              dv.on("select", trigger);
+            } catch (e) {
+            }
+          }
+          if (dv.el?.dom) {
+            let _svScrollTO = null;
+            dv.el.dom.addEventListener("scroll", () => {
+              if (_svScrollTO) return;
+              _svScrollTO = setTimeout(() => {
+                _svScrollTO = null;
+                trigger();
+              }, 250);
+            }, { passive: true });
+          }
+          dv._apmSplitViewHooked = true;
+        }
+      } catch (e) {
+        APMLogger.debug("ColorCode", "Split view listener binding error:", e.message);
+      }
       const tabPanels = win.Ext.ComponentQuery.query("tabpanel[id=main-tab-panel], tabpanel[itemId=main-tab-panel]");
       tabPanels.forEach((tp) => {
         if (!tp._apmCCInjected) {
           tp.on("tabchange", () => {
             APMLogger.debug("ColorCode", "Main tab change detected - invalidating cache");
+            _splitViewProbed = false;
             invalidateColorCodeCache(win.document);
           });
           tp._apmCCInjected = true;
@@ -6899,14 +8083,14 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
       const tabBar = tp.getTabBar ? tp.getTabBar() : tp.tabBar;
       const tabMenuPlugin = tp.plugins?.find?.((p) => p.ptype === "uxtabmenu");
       const barRect = tabBar && tabBar.rendered && tabBar.el?.dom ? tabBar.el.dom.getBoundingClientRect() : null;
-      tp.items.items.forEach((t) => {
-        if (t.isDestroyed) return;
-        let cleanText = normalizeTabName(t.title || t.text || t.tab?.getText?.());
+      tp.items.items.forEach((t2) => {
+        if (t2.isDestroyed) return;
+        let cleanText = normalizeTabName(t2.title || t2.text || t2.tab?.getText?.());
         if (cleanText && cleanText !== "&#160;") {
-          const systemHidden = !!(t.hidden || t.tab && t.tab.hidden);
+          const systemHidden = !!(t2.hidden || t2.tab && t2.tab.hidden);
           let isOverflow = false;
-          if (barRect && t.tab && t.tab.rendered && !t.tab.isDestroyed) {
-            const tabEl = t.tab.el?.dom;
+          if (barRect && t2.tab && t2.tab.rendered && !t2.tab.isDestroyed) {
+            const tabEl = t2.tab.el?.dom;
             if (tabEl) {
               const tabRect = tabEl.getBoundingClientRect();
               isOverflow = tabRect.right > barRect.right + 2 || tabRect.left < barRect.left - 2;
@@ -6914,10 +8098,10 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
           }
           const existing = tabsMap.get(cleanText);
           if (!existing || existing.systemHidden && !systemHidden) {
-            tabsMap.set(cleanText, { index: cleanText, text: cleanText, isOverflow, systemHidden, itemId: t.itemId || null });
-          } else if (existing && t.itemId && existing.itemId && t.itemId !== existing.itemId) {
-            const suffixed = `${cleanText} (${t.itemId})`;
-            tabsMap.set(suffixed, { index: suffixed, text: cleanText, isOverflow, systemHidden, itemId: t.itemId });
+            tabsMap.set(cleanText, { index: cleanText, text: cleanText, isOverflow, systemHidden, itemId: t2.itemId || null });
+          } else if (existing && t2.itemId && existing.itemId && t2.itemId !== existing.itemId) {
+            const suffixed = `${cleanText} (${t2.itemId})`;
+            tabsMap.set(suffixed, { index: suffixed, text: cleanText, isOverflow, systemHidden, itemId: t2.itemId });
           }
         }
       });
@@ -7138,7 +8322,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
     });
     if (activeTabWasRemoved) {
       try {
-        const firstVisible = mainTabPanel.items.items.find((t) => t.tab && t.tab.isVisible());
+        const firstVisible = mainTabPanel.items.items.find((t2) => t2.tab && t2.tab.isVisible());
         if (firstVisible) mainTabPanel.setActiveTab(firstVisible);
       } catch (e) {
         APMLogger.warn("TabGridOrder", "Could not safely switch away from hidden active tab", e);
@@ -7162,9 +8346,9 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
       const isHiddenInPresets = hiddenTabs.includes(tabName);
       const isUserOrdered = preferredOrder.includes(tabName);
       if (!isHiddenInPresets && isUserOrdered) {
-        const alreadyOpen = mainTabPanel.items.items.some((t) => {
-          if (!t || t.isDestroyed) return false;
-          return normalizeTabName(t.title || t.text || t.tab && t.tab.getText?.()) === tabName;
+        const alreadyOpen = mainTabPanel.items.items.some((t2) => {
+          if (!t2 || t2.isDestroyed) return false;
+          return normalizeTabName(t2.title || t2.text || t2.tab && t2.tab.getText?.()) === tabName;
         });
         if (!alreadyOpen && mi.handler && typeof mi.handler === "function") {
           try {
@@ -7245,7 +8429,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
     const currentActiveName = currentActive ? normalizeTabName(currentActive.title || currentActive.text || currentActive.tab && currentActive.tab.getText?.() || "") : null;
     if (currentActiveName !== activeTabName) {
       const targetItem = mainTabPanel.items.items.find(
-        (t) => normalizeTabName(t.title || t.text || t.tab && t.tab.getText?.()) === activeTabName
+        (t2) => normalizeTabName(t2.title || t2.text || t2.tab && t2.tab.getText?.()) === activeTabName
       );
       if (targetItem && !targetItem.isDestroyed && targetItem.tab && targetItem.tab.isVisible()) {
         APMLogger.debug("TabGridOrder", `Restoring active tab to: ${activeTabName}`);
@@ -7313,7 +8497,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
       const result = findMainTabPanel();
       if (!result) return;
       const { tabPanel: mainTabPanel, win } = result;
-      const hdrTab = mainTabPanel.items?.items?.find((t) => t.itemId === "HDR");
+      const hdrTab = mainTabPanel.items?.items?.find((t2) => t2.itemId === "HDR");
       if (hdrTab && (!hdrTab.rendered || !hdrTab.getEl?.()?.dom?.children?.length)) {
         APMLogger.debug("TabGridOrder", "Record tab panel found but no record loaded (HDR empty). Skipping.");
         return;
@@ -7414,7 +8598,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
           if (mi.isDestroyed || !mi.handler || restored >= 5) return;
           const tabName = normalizeTabName(mi.text);
           const alreadyOpen = mainTabPanel.items.items.some(
-            (t) => !t.isDestroyed && normalizeTabName(t.title || t.text || t.tab?.getText?.()) === tabName
+            (t2) => !t2.isDestroyed && normalizeTabName(t2.title || t2.text || t2.tab?.getText?.()) === tabName
           );
           if (!alreadyOpen) {
             try {
@@ -7501,6 +8685,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
   init_dom_helpers();
   init_logger();
   init_toast();
+  init_locale();
   init_state();
   init_constants();
   init_storage();
@@ -7890,7 +9075,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
     }
     _autofillLock = true;
     try {
-      showToast("Locating active EAM Form...", "#f1c40f", true);
+      showToast(t("locatingForm"), "#f1c40f", true);
       let activeWin = null;
       let mainForm = null;
       let laborResult = null;
@@ -7911,7 +9096,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
         await delay(250);
       }
       if (!activeWin || !mainForm) {
-        showToast("Error: Visible WO Form not found.", "#e74c3c");
+        showToast(t("formNotFound"), "#e74c3c");
         return;
       }
       if (ctx) {
@@ -7957,7 +9142,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
         await waitForSettled(activeWin);
         verifyFieldValue(activeExt, mainForm, "equipment", finalEquipment, "Equipment");
       }
-      showToast("Injecting Data Model...", "#f1c40f", true);
+      showToast(t("injectingData"), "#f1c40f", true);
       const FIELD_MAP = { exec: "udfchar13", safety: "udfchar24", close: "udfnote01" };
       const modelFields = [
         [FIELD_MAP.exec, data.exec],
@@ -8005,7 +9190,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
         verifyFieldValue(activeExt, mainForm, "workorderstatus", data.status, "Status");
       }
       await waitForSettled(activeWin, 2e3, 100);
-      showToast("Dispatching Save Request...", "#2ecc71", true);
+      showToast(t("dispatchingSave"), "#2ecc71", true);
       const saveBtns = activeExt.ComponentQuery.query("button[action=saveRec], button[action=saverecord], button.uft-id-saverec");
       const targetBtn = saveBtns.find((b) => b.rendered && !(typeof b.isHidden === "function" && b.isHidden())) || saveBtns[0];
       if (targetBtn) {
@@ -8015,13 +9200,13 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
           targetBtn.fireEvent("click", targetBtn);
         }
         if (data.laborHours && parseFloat(data.laborHours) > 0) {
-          showToast("Saving WO before Labor...", "#f1c40f", true);
+          showToast(t("savingBeforeLabor"), "#f1c40f", true);
           await waitForSettled(activeWin, 5e3, 500);
-          showToast(`Auto-Booking ${data.laborHours}h Labor...`, "#1abc9c", true);
+          showToast(t("autoBookingLabor", data.laborHours), "#1abc9c", true);
           laborResult = await executeLaborBookingNative(parseFloat(data.laborHours), activeWin, { silent: true });
         }
       } else {
-        showToast("Error: Save button missing.", "#e74c3c");
+        showToast(t("saveBtnMissing"), "#e74c3c");
         return null;
       }
       await waitForAjax(activeWin);
@@ -8034,9 +9219,9 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
     const lotoMode = data.lotoMode;
     const techChecks5 = data.techChecks5 || 0;
     let techChecks10 = data.techChecks10 || data.pmChecks || 0;
-    const hasTasks = data._tasks && data._tasks.some((t) => t.count > 0);
+    const hasTasks = data._tasks && data._tasks.some((t2) => t2.count > 0);
     if (!hasTasks && (!lotoMode || lotoMode === "none") && techChecks5 === 0 && techChecks10 === 0) return;
-    showToast("Navigating to Checklist...", "#9b59b6", true);
+    showToast(t("navigatingChecklist"), "#9b59b6", true);
     let activeExt = null;
     let checklistContainer = null;
     let mainTabPanel = null;
@@ -8059,7 +9244,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
       await delay(100);
     }
     if (!activeExt || !mainTabPanel || !checklistContainer) {
-      showToast("Checklist Tab (ACK) not found.", "#e74c3c");
+      showToast(t("checklistNotFound"), "#e74c3c");
       return;
     }
     const getGridStore = () => {
@@ -8312,7 +9497,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
       });
       if (!anyNeedWork) {
         APMLogger.debug("AutoFill", "1-Tech: all items already in target state");
-        showToast("1-Tech checklist already complete.", "#2ecc71", true);
+        showToast(t("checklistComplete"), "#2ecc71", true);
         return;
       }
       let modifiedCount = 0;
@@ -8369,7 +9554,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
       if (!isReady) return;
       const pmGrid = getGridStore();
       if (!pmGrid || pmGrid.getStore().getCount() === 0) {
-        showToast("No items found on 10-Tech.", "#e74c3c");
+        showToast(t("noItemsOnTech", "10"), "#e74c3c");
         return;
       }
       const isCompleted = (record) => {
@@ -8399,7 +9584,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
       } else if (alreadyDone > 0) {
         showToast(`${alreadyDone} PM Checks already completed.`, "#2ecc71", true);
       } else {
-        showToast("No items found on 10-Tech.", "#e74c3c");
+        showToast(t("noItemsOnTech", "10"), "#e74c3c");
       }
     };
     const do5Tech = async () => {
@@ -8408,7 +9593,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
       if (!isReady) return;
       const grid5 = getGridStore();
       if (!grid5 || grid5.getStore().getCount() === 0) {
-        showToast("No items found on 5-Tech.", "#e74c3c");
+        showToast(t("noItemsOnTech", "5"), "#e74c3c");
         return;
       }
       const isCompleted = (record) => {
@@ -8513,6 +9698,52 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
       } catch (e) {
       }
     }
+    if (data.createFollowUp) {
+      try {
+        APMLogger.info("AutoFill", "Creating Follow-up WO...");
+        await switchActivity("10");
+        const fupGrid = getGridStore();
+        if (fupGrid && fupGrid.getStore().getCount() > 0) {
+          const fupStore = fupGrid.getStore();
+          const fupRecord = fupStore.getAt(0);
+          if (fupRecord) {
+            if (data.followUpNotes) {
+              fupRecord.set("notes", data.followUpNotes);
+              APMLogger.info("AutoFill", `Follow-up Notes set: ${data.followUpNotes}`);
+            }
+            fupRecord.set("followup", "-1");
+            await saveGridData();
+            await localWaitForAjax();
+            await delay(500);
+            const fupSelModel = fupGrid.getSelectionModel();
+            if (fupSelModel && fupSelModel.select) fupSelModel.select(fupRecord);
+            const actionsBtns = activeExt.ComponentQuery.query("button:not([destroyed=true])", checklistContainer);
+            const actionsBtn = actionsBtns.find((b) => b.rendered && !b.isDestroyed && /^Actions$/i.test(b.getText?.() || b.text || ""));
+            if (actionsBtn) {
+              if (actionsBtn.showMenu) actionsBtn.showMenu();
+              else actionsBtn.fireEvent("click", actionsBtn);
+              await delay(300);
+              const menuItems = activeExt.ComponentQuery.query("menuitem:not([destroyed=true])");
+              const followUpItem = menuItems.find(
+                (item) => !item.hidden && !(typeof item.isHidden === "function" && item.isHidden()) && /follow.?up/i.test(item.text || "")
+              );
+              if (followUpItem) {
+                if (followUpItem.handler) followUpItem.handler.call(followUpItem.scope || followUpItem, followUpItem);
+                else followUpItem.fireEvent("click", followUpItem);
+                await localWaitForAjax();
+                APMLogger.info("AutoFill", "Follow-up WO created successfully");
+              } else {
+                APMLogger.warn("AutoFill", 'Could not find "Create Follow-up WO" menu item');
+              }
+            } else {
+              APMLogger.warn("AutoFill", "Could not find Actions button for Follow-up WO");
+            }
+          }
+        }
+      } catch (e) {
+        APMLogger.error("AutoFill", "Error creating Follow-up WO:", e);
+      }
+    }
     try {
       const hdrContainers = activeExt.ComponentQuery.query("uxtabcontainer[itemId=HDR]");
       if (hdrContainers.length > 0) {
@@ -8595,51 +9826,104 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
   function showDefaultProfilePicker(profiles) {
     const existing = document.getElementById("apm-autofill-picker");
     if (existing) existing.remove();
+    let anchorRect = null;
+    for (const d of getAccessibleDocs()) {
+      const btn = d.getElementById("apm-btn-do-autofill") || d.querySelector(".apm-af-trigger");
+      if (btn) {
+        anchorRect = btn.getBoundingClientRect();
+        break;
+      }
+    }
+    const dismiss = () => {
+      const el2 = document.getElementById("apm-autofill-picker");
+      if (el2) {
+        el2.style.opacity = "0";
+        setTimeout(() => el2.remove(), 150);
+      }
+    };
+    const menu = el("div", {
+      className: "apm-ui-panel",
+      style: {
+        background: "var(--apm-surface-0)",
+        border: "1px solid var(--apm-border-strong)",
+        borderRadius: "var(--apm-radius-lg)",
+        padding: "6px",
+        minWidth: "180px",
+        maxWidth: "300px",
+        boxShadow: "var(--apm-shadow)"
+      }
+    }, profiles.map((prof) => {
+      const btn = el("button", {
+        style: {
+          display: "block",
+          width: "100%",
+          padding: "7px 10px",
+          marginBottom: "2px",
+          background: "transparent",
+          border: "1px solid transparent",
+          borderRadius: "var(--apm-radius-sm)",
+          color: "var(--apm-text-primary)",
+          cursor: "pointer",
+          fontSize: "var(--apm-text-sm)",
+          textAlign: "left",
+          transition: "all 0.1s",
+          whiteSpace: "nowrap",
+          overflow: "hidden",
+          textOverflow: "ellipsis"
+        }
+      }, prof.name + (prof.woTitle ? ` \u2014 ${prof.woTitle}` : ""));
+      btn.onmouseenter = () => {
+        btn.style.borderColor = "var(--apm-accent)";
+        btn.style.background = "var(--apm-accent-subtle)";
+      };
+      btn.onmouseleave = () => {
+        btn.style.borderColor = "transparent";
+        btn.style.background = "transparent";
+      };
+      btn.onclick = () => {
+        dismiss();
+        const funcName = detectScreenFunction() || "";
+        const sType = AUTOFILL_SCREENS[funcName] || "wo";
+        if (sType === "repair") {
+          executeRepairFlow(prof);
+        } else {
+          executeAutoFillFlow("", prof);
+        }
+      };
+      return btn;
+    }));
     const overlay = el("div", {
       id: "apm-autofill-picker",
-      style: { position: "fixed", inset: "0", zIndex: "1000001", display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(0,0,0,0.4)" }
-    }, [
-      el("div", {
-        className: "apm-ui-panel",
-        style: { background: "var(--apm-surface-0)", border: "1px solid var(--apm-border-strong)", borderRadius: "var(--apm-radius-lg)", padding: "12px", minWidth: "220px", maxWidth: "320px", boxShadow: "var(--apm-shadow)" }
-      }, [
-        el("div", {
-          style: { fontSize: "var(--apm-text-md)", fontWeight: "600", color: "var(--apm-accent)", marginBottom: "10px" }
-        }, "Select Template"),
-        ...profiles.map((prof) => {
-          const btn = el("button", {
-            style: { display: "block", width: "100%", padding: "8px 12px", marginBottom: "4px", background: "var(--apm-surface-raised)", border: "1px solid var(--apm-border)", borderRadius: "var(--apm-radius-sm)", color: "var(--apm-text-primary)", cursor: "pointer", fontSize: "var(--apm-text-sm)", textAlign: "left", transition: "all 0.15s" }
-          }, prof.name + (prof.woTitle ? ` \u2014 ${prof.woTitle}` : ""));
-          btn.onmouseenter = () => {
-            btn.style.borderColor = "var(--apm-accent)";
-            btn.style.background = "var(--apm-accent-subtle)";
-          };
-          btn.onmouseleave = () => {
-            btn.style.borderColor = "var(--apm-border)";
-            btn.style.background = "var(--apm-surface-raised)";
-          };
-          btn.onclick = () => {
-            overlay.remove();
-            const funcName = detectScreenFunction() || "";
-            const sType = AUTOFILL_SCREENS[funcName] || "wo";
-            if (sType === "repair") {
-              executeRepairFlow(prof);
-            } else {
-              executeAutoFillFlow("", prof);
-            }
-          };
-          return btn;
-        })
-      ])
-    ]);
+      style: {
+        position: "fixed",
+        inset: "0",
+        zIndex: "1000001",
+        background: "transparent",
+        opacity: "0",
+        transition: "opacity 0.15s"
+      }
+    }, [menu]);
+    if (anchorRect) {
+      const margin = 6;
+      let top = anchorRect.bottom + margin;
+      let left = anchorRect.left;
+      if (top + 200 > window.innerHeight) top = anchorRect.top - margin - 200;
+      if (left + 300 > window.innerWidth) left = window.innerWidth - 300 - margin;
+      Object.assign(menu.style, { position: "absolute", top: Math.max(0, top) + "px", left: Math.max(0, left) + "px" });
+    } else {
+      Object.assign(menu.style, { position: "absolute", top: "50%", left: "50%", transform: "translate(-50%, -50%)" });
+    }
     overlay.onclick = (e) => {
-      if (e.target === overlay) overlay.remove();
+      if (e.target === overlay) dismiss();
     };
     overlay.addEventListener("keydown", (e) => {
-      if (e.key === "Escape") overlay.remove();
+      if (e.key === "Escape") dismiss();
     });
     overlay.tabIndex = -1;
     document.body.appendChild(overlay);
+    requestAnimationFrame(() => {
+      overlay.style.opacity = "1";
+    });
     overlay.focus();
   }
   async function executeRepairFlow(preselectedProfile) {
@@ -8651,7 +9935,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
         showToast("Error: No repair template provided.", "#e74c3c");
         return;
       }
-      showToast(`Auto-Filling Repair: ${matchedData.name || "template"}`, "#f1c40f", true);
+      showToast(t("autoFillingRepair", matchedData.name || "template"), "#f1c40f", true);
       const ctx = createFlowContext();
       let activeWin = null;
       let mainForm = null;
@@ -8671,7 +9955,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
         await delay(250);
       }
       if (!activeWin || !mainForm) {
-        showToast("Error: Repair form not found.", "#e74c3c");
+        showToast(t("repairFormNotFound"), "#e74c3c");
         return;
       }
       const activeExt = activeWin.Ext;
@@ -8681,7 +9965,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
       if (needsNewRecord) {
         const newBtn = activeExt.ComponentQuery.query("button[action=newRec]").find((b) => b.rendered && !(typeof b.isHidden === "function" && b.isHidden()));
         if (newBtn) {
-          showToast("Creating new record...", "#f1c40f", true);
+          showToast(t("creatingRecord"), "#f1c40f", true);
           if (newBtn.handler) newBtn.handler.call(newBtn.scope || newBtn, newBtn);
           else newBtn.fireEvent("click", newBtn);
           await waitForSettled(activeWin, 3e3, 200);
@@ -8752,7 +10036,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
         await waitForSettled(activeWin);
       }
       await waitForSettled(activeWin, 2e3, 100);
-      showToast("Saving Repair Request...", "#2ecc71", true);
+      showToast(t("savingRepair"), "#2ecc71", true);
       const saveBtns = activeExt.ComponentQuery.query("button[action=saveRec], button[action=saverecord], button.uft-id-saverec");
       const saveBtn = saveBtns.find((b) => b.rendered && !(typeof b.isHidden === "function" && b.isHidden())) || saveBtns[0];
       if (saveBtn) {
@@ -8768,12 +10052,12 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
           repairBtnEl.click();
           await waitForSettled(activeWin, 3e3, 200);
           await handleEamPopups(activeWin);
-          showToast("Repair initiated!", "#2ecc71");
+          showToast(t("repairInitiated"), "#2ecc71");
         } else {
           showToast("Warning: Initiate Repair button not found.", "#e67e22");
         }
       } else {
-        showToast("Repair saved!", "#2ecc71");
+        showToast(t("repairSaved"), "#2ecc71");
       }
     } finally {
       setIsAutoFillRunning(false);
@@ -8783,7 +10067,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
     const chkWin = ctx.activeWin;
     const chkExt = ctx.activeExt;
     if (!chkWin || !chkExt) return;
-    showToast("Navigating to Checklist...", "#9b59b6", true);
+    showToast(t("navigatingChecklist"), "#9b59b6", true);
     let ackContainer = null;
     let tabPanel = null;
     for (let i = 0; i < 15; i++) {
@@ -8796,7 +10080,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
       await delay(200);
     }
     if (!ackContainer || !tabPanel) {
-      showToast("Checklist tab not found.", "#e74c3c");
+      showToast(t("checklistNotFound"), "#e74c3c");
       return;
     }
     if (!tabPanel.isDestroyed && tabPanel.getActiveTab() !== ackContainer) {
@@ -9015,7 +10299,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
       }
       if (!activeWin || !mainForm) {
         APMLogger.warn("AutoFill", "Shift Report form not found after polling");
-        showToast("Error: Shift Report form not found.", "#e74c3c");
+        showToast(t("shiftReportFormNotFound"), "#e74c3c");
         return;
       }
       ctx.activeWin = activeWin;
@@ -9041,20 +10325,29 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
         const titleLower = activeTitle.toLowerCase();
         const presets = getPresets();
         const kwIndex = getKeywordIndex();
+        const srMatches = [];
         for (const [kw, entry] of kwIndex) {
           if (entry.screen !== "shiftReport") continue;
           if (titleLower.includes(kw)) {
-            matchedData = presets.autofill?.shiftReport?.[entry.presetKey];
-            break;
+            const prof = presets.autofill?.shiftReport?.[entry.presetKey];
+            if (prof) srMatches.push({ ...prof, name: entry.presetKey });
           }
         }
+        if (srMatches.length === 1) {
+          matchedData = srMatches[0];
+        } else if (srMatches.length > 1) {
+          APMLogger.info("AutoFill", `${srMatches.length} shift report profiles match \u2014 showing picker`);
+          setIsAutoFillRunning(false);
+          showDefaultProfilePicker(srMatches);
+          return;
+        }
         if (!matchedData) {
-          showToast("No shift report template matched.", "#e74c3c");
+          showToast(t("noShiftReportMatch"), "#e74c3c");
           return;
         }
       }
       APMLogger.info("AutoFill", `Shift Report: matched "${matchedData.keyword || matchedData.name || "template"}" (status=${matchedData.status || "none"}, chk10=${matchedData.actChecks10 || 0}, chk20=${matchedData.actChecks20 || 0})`);
-      showToast(`Auto-Filling Shift Report: ${matchedData.keyword || matchedData.name || "template"}`, "#f1c40f", true);
+      showToast(t("autoFillingShiftReport", matchedData.keyword || matchedData.name || "template"), "#f1c40f", true);
       if (!AppState.session.user) {
         try {
           const stored = APMStorage.get(SESSION_STORAGE_KEY);
@@ -9097,7 +10390,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
         await waitForSettled(activeWin);
       }
       APMLogger.info("AutoFill", "Saving Shift Report before checklists");
-      showToast("Saving Shift Report...", "#2ecc71", true);
+      showToast(t("savingShiftReport"), "#2ecc71", true);
       const saveBtns = activeExt.ComponentQuery.query("button[action=saveRec], button[action=saverecord], button.uft-id-saverec");
       const saveBtn = saveBtns.find((b) => b.rendered && !(typeof b.isHidden === "function" && b.isHidden())) || saveBtns[0];
       if (saveBtn) {
@@ -9111,11 +10404,11 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
       if (matchedData.actChecks10 > 0) srTasks.push({ target: 10, count: matchedData.actChecks10 });
       if (matchedData.actChecks20 > 0) srTasks.push({ target: 20, count: matchedData.actChecks20 });
       if (srTasks.length > 0) {
-        APMLogger.info("AutoFill", `Running Shift Report checklists: ${srTasks.map((t) => `task ${t.target}\xD7${t.count}`).join(", ")}`);
+        APMLogger.info("AutoFill", `Running Shift Report checklists: ${srTasks.map((t2) => `task ${t2.target}\xD7${t2.count}`).join(", ")}`);
         await executeShiftReportChecklists(srTasks, ctx);
       }
       APMLogger.info("AutoFill", "Shift Report flow complete");
-      showToast("Shift Report complete!", "#2ecc71");
+      showToast(t("shiftReportComplete"), "#2ecc71");
     } finally {
       setIsAutoFillRunning(false);
     }
@@ -9211,13 +10504,22 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
       }
       const presets = getPresets();
       if (!matchedData) {
+        const allMatches = [];
         const kwIndex = getKeywordIndex();
         for (const [kw, entry] of kwIndex) {
           if (entry.screen !== screenType) continue;
           if (titleLower.includes(kw)) {
-            matchedData = presets.autofill?.[entry.screen]?.[entry.presetKey];
-            break;
+            const prof = presets.autofill?.[entry.screen]?.[entry.presetKey];
+            if (prof) allMatches.push({ ...prof, name: entry.presetKey });
           }
+        }
+        if (allMatches.length === 1) {
+          matchedData = allMatches[0];
+        } else if (allMatches.length > 1) {
+          APMLogger.info("AutoFill", `${allMatches.length} profiles match "${titleLower}" \u2014 showing picker`);
+          setIsAutoFillRunning(false);
+          showDefaultProfilePicker(allMatches);
+          return;
         }
       }
       if (!matchedData && !titleLower) {
@@ -9234,12 +10536,12 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
       }
       if (!matchedData) {
         const shortTitle = activeTitle.length > 25 ? activeTitle.substring(0, 25) + "..." : activeTitle;
-        showToast(`No match for: "${shortTitle}"`, "#e74c3c");
+        showToast(t("noMatch", shortTitle), "#e74c3c");
         return;
       }
-      showToast(`Auto-Filling Template: ${matchedData.keyword || matchedData.woTitle || matchedData.name}`, "#f1c40f", true);
+      showToast(t("autoFilling", matchedData.keyword || matchedData.woTitle || matchedData.name), "#f1c40f", true);
       const needsRecordFill = !!(matchedData.org || matchedData.type || matchedData.eq || matchedData.exec || matchedData.safety || matchedData.close || matchedData.prob || matchedData.fail || matchedData.cause || matchedData.assign || matchedData.status || matchedData.start || matchedData.end || matchedData.laborHours && parseFloat(matchedData.laborHours) > 0);
-      const needsChecklist = matchedData.lotoMode && matchedData.lotoMode !== "none" || matchedData.techChecks5 > 0 || matchedData.techChecks10 > 0 || matchedData.pmChecks > 0;
+      const needsChecklist = matchedData.lotoMode && matchedData.lotoMode !== "none" || matchedData.techChecks5 > 0 || matchedData.techChecks10 > 0 || matchedData.pmChecks > 0 || matchedData.createFollowUp;
       const hasLaborHours = matchedData.laborHours && parseFloat(matchedData.laborHours) > 0;
       let _lastLaborResult = null;
       if (context.tab === "ACK") {
@@ -9256,7 +10558,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
         }
       } else if (context.tab === "LABOR" && hasLaborHours) {
         APMLogger.info("AutoFill", "Starting from Book Labor tab \u2014 booking labor first");
-        showToast(`Auto-Booking ${matchedData.laborHours}h Labor...`, "#1abc9c", true);
+        showToast(t("autoBookingLabor", matchedData.laborHours), "#1abc9c", true);
         _lastLaborResult = await executeLaborBookingNative(parseFloat(matchedData.laborHours), context.win, { silent: true });
         const dataWithoutLabor = { ...matchedData, laborHours: 0 };
         if (needsRecordFill) {
@@ -9284,18 +10586,18 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
         }
       }
       if (_lastLaborResult?.result === "failed") {
-        showToast("Auto-Fill Complete \u2014 Labor Booking Failed", "#e74c3c");
+        showToast(t("autoFillCompleteLaborFailed"), "#e74c3c");
       } else if (_lastLaborResult?.result === "error") {
-        showToast("Auto-Fill Complete \u2014 Labor Error", "#e74c3c");
+        showToast(t("autoFillCompleteLaborError"), "#e74c3c");
       } else if (_lastLaborResult?.result === "success") {
-        showToast("Auto-Fill Complete \u2014 Labor Booked! \u26A1", "#1abc9c");
+        showToast(t("autoFillCompleteLaborBooked") + " \u26A1", "#1abc9c");
       } else {
-        showToast("Auto-Fill Complete.", "#1abc9c");
+        showToast(t("autoFillComplete"), "#1abc9c");
       }
       Diagnostics.recordAutofillFlow(Math.round(performance.now() - flowStart));
     } catch (e) {
       APMLogger.error("AutoFill", "Critical Error in executeAutoFillFlow:", e);
-      showToast("Script Error (See Console)", "#e74c3c");
+      showToast(t("scriptError"), "#e74c3c");
     } finally {
       setIsAutoFillRunning(false);
     }
@@ -9483,8 +10785,8 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
         if (!parentContainer) {
           const tabPanels = win.Ext.ComponentQuery.query("tabpanel, uxtabpanel");
           const mainTabPanel = tabPanels.find(
-            (tp) => tp.rendered && !tp.isDestroyed && tp.items?.items?.some((t) => {
-              const txt = t.title || t.text || "";
+            (tp) => tp.rendered && !tp.isDestroyed && tp.items?.items?.some((t2) => {
+              const txt = t2.title || t2.text || "";
               return /Activities|Checklist|Comments/i.test(txt);
             })
           );
@@ -9493,7 +10795,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
           APMLogger.debug("AutoFill", `Injecting AutoFill button (tab bar fallback) for: "${foundTitleLocal}" in ${d.location?.pathname}`);
           const btn = d.createElement("button");
           btn.id = "apm-btn-do-autofill";
-          btn.textContent = "Auto Fill";
+          btn.textContent = t("autoFillBtn");
           btn.className = "apm-af-trigger";
           btn.style.position = "absolute";
           btn.style.right = "10px";
@@ -9511,7 +10813,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
               } else if (rProfiles.length > 1) {
                 showDefaultProfilePicker(rProfiles);
               } else {
-                showToast("No repair templates configured.", "#e74c3c");
+                showToast(t("noRepairTemplates"), "#e74c3c");
               }
             } else {
               executeAutoFillFlow(foundTitleLocal);
@@ -9544,7 +10846,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
                   } else if (rProfiles.length > 1) {
                     showDefaultProfilePicker(rProfiles);
                   } else {
-                    showToast("No repair templates configured.", "#e74c3c");
+                    showToast(t("noRepairTemplates"), "#e74c3c");
                   }
                 } else {
                   executeAutoFillFlow(foundTitleLocal);
@@ -9775,9 +11077,9 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
     },
     captureTabDefaults(tp) {
       if (tp[FLAGS.TAB_CAPTURED] || tp.isDestroyed) return;
-      const isRecordPanel = tp.items?.items?.length > MIN_TAB_ITEMS && tp.items.items.some((t) => t.itemId === "HDR");
+      const isRecordPanel = tp.items?.items?.length > MIN_TAB_ITEMS && tp.items.items.some((t2) => t2.itemId === "HDR");
       if (isRecordPanel && !APMApi.get("systemDefaultTabOrder")) {
-        APMApi.register("systemDefaultTabOrder", tp.items.items.filter((t) => !t.isDestroyed).map((t) => normalizeTabName(t.title || t.text || "")).filter((n) => n && n !== "&#160;"));
+        APMApi.register("systemDefaultTabOrder", tp.items.items.filter((t2) => !t2.isDestroyed).map((t2) => normalizeTabName(t2.title || t2.text || "")).filter((n) => n && n !== "&#160;"));
       }
       tp[FLAGS.TAB_CAPTURED] = true;
     },
@@ -9820,7 +11122,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
           }
         } else if (action === "add") {
           APMLogger.debug("ExtConsistency", `Native ADD detected for: ${tabName} (Silo: ${funcName})`);
-          const newScreenHidden = screenHidden.filter((t) => t !== tabName);
+          const newScreenHidden = screenHidden.filter((t2) => t2 !== tabName);
           const newHidden = { ...Array.isArray(allHidden) ? {} : allHidden, [funcName]: newScreenHidden };
           const tabOrders = { ...p.config.tabOrders || {} };
           const siloOrder = tabOrders[funcName];
@@ -10096,6 +11398,13 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
 .x-grid-item.x-grid-item-alt[data-cc-rule] { background-color: var(--cc-row-bg-alt) !important; }
 .x-grid-item.x-grid-item-over[data-cc-rule] { background-color: var(--cc-row-bg-hover) !important; }
 .x-grid-item.x-grid-item-selected[data-cc-rule] { background-color: var(--cc-row-bg-sel) !important; }
+
+/* Split View (List/Detail) ColorCode \u2014 generic fallback for non-grid items */
+[data-cc-rule] { background-color: var(--cc-row-bg) !important; }
+[data-cc-rule]:hover { background-color: var(--cc-row-bg-hover) !important; }
+[data-cc-rule] .apm-sv-entity { position: relative; z-index: 1; }
+.apm-sv-nametag { display: inline-block; margin-left: 6px; vertical-align: middle; font-size: 10px; padding: 1px 5px; }
+.apm-sv-filtered { display: none !important; }
 
 /* =========================
  * ColorCode Rules UI
@@ -10860,6 +12169,9 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
     });
   }
 
+  // src/index.js
+  init_locale();
+
   // src/boot.js
   init_state();
   init_utils();
@@ -10877,10 +12189,16 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
     const applyOverride = () => {
       if (typeof Ext !== "undefined" && Ext.form && Ext.form.field && Ext.form.field.Date) {
         if (!apmGeneralSettings.dateOverrideEnabled) return;
-        const fmt = apmGeneralSettings.dateFormat === "eu" ? "d/m/Y" : apmGeneralSettings.dateFormat === "mon" ? "d-M-Y" : "m/d/Y";
+        const sep = apmGeneralSettings.dateSeparator || "/";
+        const extSep = sep === "." ? "\\." : sep;
+        let fmt;
+        if (apmGeneralSettings.dateFormat === "iso") fmt = "Y-m-d";
+        else if (apmGeneralSettings.dateFormat === "mon") fmt = "d-M-Y";
+        else if (apmGeneralSettings.dateFormat === "eu") fmt = `d${extSep}m${extSep}Y`;
+        else fmt = `m${extSep}d${extSep}Y`;
         Ext.override(Ext.form.field.Date, {
           format: fmt,
-          altFormats: "m/d/Y|n/j/Y|n/j/y|m/j/y|n/d/y|m/j/Y|n/d/Y|m-d-y|m-d-Y|m/d|m-d|md|mdy|mdY|d|Y-m-d|n-j|n/j|d/m/Y|j/n/Y|j/n/y"
+          altFormats: "m/d/Y|n/j/Y|n/j/y|m/j/y|n/d/y|m/j/Y|n/d/Y|m-d-y|m-d-Y|m/d|m-d|md|mdy|mdY|d|Y-m-d|n-j|n/j|d/m/Y|j/n/Y|j/n/y|d.m.Y|d-m-Y"
         });
         APMLogger.debug("APM Master", "Date format override applied.");
       } else if (++retries < 50) {
@@ -11107,6 +12425,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
   init_dom_helpers();
   init_logger();
   init_toast();
+  init_locale();
   function createProfileManager() {
     try {
       const modal = el("div", { id: "apm-spies-modal", className: "apm-modal-overlay apm-ui-panel", style: { display: "none" } }, [
@@ -11268,7 +12587,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
       renderProfiles_Global();
       updateProfileUI_Global();
       saveAllPreferences();
-      showToast("Profile saved!", "var(--apm-success)");
+      showToast(t("profileSaved"), "var(--apm-success)");
     };
     modal.querySelector("#spy-btn-delete").onclick = () => {
       const id = spyMgrSelect.value;
@@ -11355,6 +12674,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
   // src/modules/forecast/components/filter-builder.js
   init_dom_helpers();
   init_toast();
+  init_locale();
   init_logger();
   init_utils();
   var FIELD_CONFIG = [
@@ -11689,7 +13009,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
         renderProfileOptions();
         profileSelect.value = profData.id;
         deleteBtn.style.display = "inline-block";
-        showToast("Profile saved!", "#2ecc71");
+        showToast(t("profileSaved"), "#2ecc71");
       }, deleteProfile = function() {
         const id = state.profileId;
         if (!id) return;
@@ -11702,7 +13022,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
         renderProfileOptions();
         profileSelect.value = "";
         loadProfile(null);
-        showToast("Profile deleted", "#e74c3c");
+        showToast(t("profileDeleted"), "#e74c3c");
       }, renderProfileOptions = function() {
         profileSelect.innerHTML = "";
         profileSelect.appendChild(el("option", { value: "" }, "-- Create New Profile --"));
@@ -12092,6 +13412,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
   init_ajax_hooks();
   init_feature_flags();
   init_toast();
+  init_locale();
   init_scheduler();
   init_state();
 
@@ -12478,7 +13799,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
       try {
         if (!win.Ext || !win.Ext.ComponentQuery) continue;
         const tabs = win.Ext.ComponentQuery.query("tab:not([hidden=true]):not([destroyed=true])");
-        let targetTab = tabs.find((t) => isExactMatch(t.text, tabText));
+        let targetTab = tabs.find((t2) => isExactMatch(t2.text, tabText));
         if (targetTab) {
           if (targetTab.el && targetTab.el.dom) targetTab.el.dom.click();
           else targetTab.fireEvent("click", targetTab);
@@ -12910,7 +14231,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
       }
       APMLogger.debug("Forecast", `Profile date override: weeks=${weeks}, days=[${profDays}], dates=${JSON.stringify(dates)}`);
     }
-    if (activeProfileEarly && activeProfileEarly.target) {
+    if (activeProfileEarly && activeProfileEarly.target && mode === "normal") {
       currentTarget = activeProfileEarly.target;
     } else if (targetOverride) {
       currentTarget = targetOverride;
@@ -12935,7 +14256,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
         const jumped = await goToRecordDirect(quickSearchText, currentTarget);
         if (jumped) {
           setStatus("", "#18bc9c");
-          showToast(`Opened WO ${quickSearchText}`, "#1abc9c", false);
+          showToast(t("openedWO", quickSearchText), "#1abc9c", false);
           const qsClear = document.getElementById("apm-qs-input");
           if (qsClear) qsClear.value = "";
           return;
@@ -13029,7 +14350,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
             setStatus("Opening record...", "#3498db");
             const result = await openFirstGridRecord(woGrid, woGridWin);
             if (result.success) {
-              showToast(`Opened WO ${result.entityId}`, "#1abc9c", false);
+              showToast(t("openedWO", result.entityId), "#1abc9c", false);
             } else {
               setStatus("Record open timed out.", "var(--apm-danger)");
             }
@@ -13038,7 +14359,8 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
       }
       if (activeProfile && mode !== "clear") {
         const datePart = buildDateSummary(activeProfile);
-        const toastMsg = datePart ? `Dataspy: ${activeProfile.name} \u2014 ${datePart} (Click to Clear)` : `Dataspy: ${activeProfile.name} (Click to Clear)`;
+        const clearHint = t("clickToClear");
+        const toastMsg = datePart ? t("dataspyActive", `${activeProfile.name} \u2014 ${datePart}`, clearHint) : t("dataspyActive", activeProfile.name, clearHint);
         showToast(toastMsg, "#1abc9c", true, () => {
           setSelectedProfileIdWithSync("manual");
           updateProfileUI_Global();
@@ -13072,6 +14394,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
   // src/modules/forecast/forecast-ui.js
   init_dom_helpers();
   init_toast();
+  init_locale();
   init_logger();
   init_ui_manager();
   init_api();
@@ -13617,7 +14940,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
           updateProfileUI_Global();
           saveAllPreferences();
           clearPersistentToast();
-          showToast("Profile deleted", "#e74c3c");
+          showToast(t("profileDeleted"), "#e74c3c");
           const mainView = panel.querySelector("#eam-main-view");
           if (mainView?._refreshProfileActions) mainView._refreshProfileActions();
           if (mainView?._refreshContextStatus) mainView._refreshContextStatus();
@@ -14829,12 +16152,15 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
   init_constants();
   init_storage();
   init_feature_flags();
+  init_context();
+  init_locale();
   var LaborTracker = (function() {
     if (!isTopFrame()) return { init: function() {
     } };
     let activeTab = 1;
     let isFetching = false;
     let isInitialized = false;
+    let _nightShiftApplied = false;
     let savedEmployees = [];
     let selectedEmployee = "";
     function loadAndMigrateLaborState() {
@@ -14953,7 +16279,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
         if (emp === selectedEmployee) opt.selected = true;
         sel.appendChild(opt);
       });
-      lbl.textContent = "Target: " + (selectedEmployee || "Self");
+      lbl.textContent = selectedEmployee ? t("targetLabel", selectedEmployee) : t("targetSelf");
     }
     function injectUI() {
       if (trigger) trigger.remove();
@@ -14961,11 +16287,11 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
       trigger = document.createElement("div");
       trigger.id = "apm-labor-trigger";
       trigger.className = "apm-labor-trigger";
-      trigger.textContent = "LABOR TALLY";
+      trigger.textContent = t("laborTally");
       panel = el("div", { id: "apm-labor-panel", className: "apm-labor-panel apm-ui-panel" }, [
         el("div", { className: "apm-labor-header" }, [
-          el("span", { className: "apm-labor-target-lbl", id: "apm-labor-target-label" }, "Target: Self"),
-          el("button", { id: "apm-labor-mgr-toggle", className: "apm-labor-mgr-toggle" }, "Manager Mode \u2699\uFE0F")
+          el("span", { className: "apm-labor-target-lbl", id: "apm-labor-target-label" }, t("targetSelf")),
+          el("button", { id: "apm-labor-mgr-toggle", className: "apm-labor-mgr-toggle" }, t("managerMode") + " \u2699\uFE0F")
         ]),
         el("div", { id: "apm-labor-mgr-panel", className: "apm-labor-mgr-panel" }, [
           el("div", { className: "apm-labor-mgr-row" }, [
@@ -14975,16 +16301,17 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
           ])
         ]),
         el("div", { className: "labor-tabs" }, [
-          el("div", { className: "labor-tab active", "data-d": "1" }, "Today"),
-          el("div", { className: "labor-tab", "data-d": "2" }, "2-Day"),
-          el("div", { className: "labor-tab", "data-d": "7" }, "7-Day")
+          el("div", { className: "labor-tab active", "data-d": "1" }, t("today")),
+          el("div", { className: "labor-tab", "data-d": "2" }, t("twoDayTab")),
+          el("div", { className: "labor-tab", "data-d": "7" }, t("sevenDayTab"))
         ]),
+        el("div", { id: "apm-labor-night-hint", style: { display: "none", fontSize: "10px", color: "var(--apm-text-muted)", textAlign: "center", padding: "2px 0", fontStyle: "italic" } }, t("nightShiftHint")),
         el("div", { id: "labor-sum-box", className: "labor-total" }, [
           "0.00 ",
-          el("span", { className: "labor-total-unit" }, "hrs")
+          el("span", { className: "labor-total-unit" }, t("hrs"))
         ]),
         el("div", { id: "labor-breakdown-box", className: "apm-labor-breakdown-box" }),
-        el("button", { id: "labor-force-refresh", className: "apm-labor-force-refresh" }, "Refresh from Server")
+        el("button", { id: "labor-force-refresh", className: "apm-labor-force-refresh" }, t("refreshFromServer"))
       ]);
       document.body.appendChild(trigger);
       document.body.appendChild(panel);
@@ -15100,14 +16427,32 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
         renderEmpSelect();
         fetchLaborData(true);
       };
-      panel.querySelectorAll(".labor-tab").forEach((t) => t.onclick = (e) => {
+      panel.querySelectorAll(".labor-tab").forEach((tab) => tab.onclick = (e) => {
         panel.querySelectorAll(".labor-tab").forEach((x) => x.classList.remove("active"));
         e.target.classList.add("active");
         activeTab = parseInt(e.target.getAttribute("data-d"));
+        _nightShiftApplied = false;
+        const hint = document.getElementById("apm-labor-night-hint");
+        if (hint) hint.style.display = "none";
         if (!isFetching) updateUIState();
       });
       const refreshBtn = document.getElementById("labor-force-refresh");
       if (refreshBtn) refreshBtn.onclick = () => fetchLaborData(true);
+    }
+    function applyNightShiftDefault() {
+      const isNightShift = APMStorage.get(LABOR_NIGHT_SHIFT_KEY);
+      const hour = (/* @__PURE__ */ new Date()).getHours();
+      const hint = document.getElementById("apm-labor-night-hint");
+      if (isNightShift && hour < 11 && !_nightShiftApplied) {
+        _nightShiftApplied = true;
+        activeTab = 2;
+        panel.querySelectorAll(".labor-tab").forEach((tab) => {
+          tab.classList.toggle("active", tab.getAttribute("data-d") === "2");
+        });
+        if (hint) hint.style.display = "";
+      } else if (hint && !_nightShiftApplied) {
+        hint.style.display = "none";
+      }
     }
     function updateUIState(errorMsg = null) {
       const sumBox = document.getElementById("labor-sum-box");
@@ -15124,22 +16469,26 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
         return;
       }
       const { total, breakdown } = calculateLabor(activeTab);
+      const fmtDec = (n) => {
+        const s = n.toFixed(2);
+        return AppContext.isEU ? s.replace(".", ",") : s;
+      };
       sumBox.textContent = "";
-      sumBox.appendChild(document.createTextNode(total.toFixed(2) + " "));
+      sumBox.appendChild(document.createTextNode(fmtDec(total) + " "));
       const unit = document.createElement("span");
       unit.className = "labor-total-unit";
-      unit.textContent = "hrs";
+      unit.textContent = t("hrs");
       sumBox.appendChild(unit);
       list.innerHTML = "";
       const sortedDates = Object.keys(breakdown).sort((a, b) => b.localeCompare(a));
       if (sortedDates.length === 0) {
-        list.appendChild(el("div", { className: "labor-empty" }, "No labor records found."));
+        list.appendChild(el("div", { className: "labor-empty" }, t("noLaborRecords")));
       } else {
         sortedDates.forEach((d) => {
           const row = el("div", { className: "labor-row" }, [
             el("span", {}, formatToEamDate(d)),
             document.createTextNode(" "),
-            el("strong", {}, String(breakdown[d].toFixed(2)))
+            el("strong", {}, fmtDec(breakdown[d]))
           ]);
           list.appendChild(row);
         });
@@ -15154,6 +16503,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
           return;
         }
         injectUI();
+        applyNightShiftDefault();
         isInitialized = true;
         UIManager.addExternalHandler(() => {
           const isHidden = panel.style.display === "none" || panel.style.visibility === "hidden";
@@ -15173,6 +16523,10 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
           if (e.detail?.isFresh && isVisible) {
             fetchLaborData();
           }
+        });
+        window.addEventListener("APM_LABOR_SYNC", () => {
+          applyNightShiftDefault();
+          fetchLaborData(true);
         });
         window.addEventListener("resize", () => applyDocking());
         const isVisibleStart = panel.style.display !== "none" && panel.style.visibility !== "hidden";
@@ -15275,143 +16629,9 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
   init_utils();
   init_api();
   init_toast();
+  init_locale();
   init_dom_helpers();
   init_feature_flags();
-
-  // src/modules/colorcode/nametag-filter.js
-  init_logger();
-  init_api();
-  init_utils();
-  function getActiveNametagFilter() {
-    const root = apmGetGlobalWindow();
-    const topWin = root.top || root;
-    return topWin.activeNametagFilter || "";
-  }
-  function setActiveNametagFilter(kw) {
-    const root = apmGetGlobalWindow();
-    const topWin = root.top || root;
-    topWin.activeNametagFilter = kw || "";
-  }
-  function forceFooterText(gridDom, count) {
-    if (!gridDom) return;
-    const text = `Records: ${count} of ${count}`;
-    const elements = gridDom.querySelectorAll(".x-toolbar-text");
-    let found = false;
-    for (const el2 of elements) {
-      if (/Records:\s*/.test(el2.textContent)) {
-        el2.textContent = text;
-        found = true;
-      }
-    }
-    if (!found) {
-      const walk = document.createTreeWalker(gridDom, NodeFilter.SHOW_TEXT, {
-        acceptNode: function(node2) {
-          return /Records:\s*\d+\s*of\s*\d+/.test(node2.nodeValue) ? NodeFilter.FILTER_ACCEPT : NodeFilter.FILTER_SKIP;
-        }
-      }, false);
-      let node;
-      while (node = walk.nextNode()) node.nodeValue = text;
-    }
-  }
-  function applyNametagFilter(kw = "") {
-    APMLogger.debug("Nametag", `applyNametagFilter called with kw: "${kw}"`);
-    const ctx = findMainGrid();
-    if (!ctx) return;
-    const store = ctx.grid.getStore();
-    const gridEl = ctx.grid.getEl();
-    if (!gridEl) return;
-    const gridDom = gridEl.dom;
-    const view = ctx.grid.getView();
-    if (!store._nativeGetTotalCount) {
-      store._nativeGetTotalCount = store.getTotalCount;
-    }
-    if (store._nativeGetTotalCount && !store._apmCleanupBound) {
-      store._apmCleanupBound = true;
-      ctx.grid.on("destroy", () => {
-        if (store._nativeGetTotalCount) {
-          store.getTotalCount = store._nativeGetTotalCount;
-          delete store._nativeGetTotalCount;
-        }
-      });
-    }
-    const activeFilter = kw || "";
-    setActiveNametagFilter(activeFilter);
-    const startFilter = performance.now();
-    try {
-      const keywords = kw.split(",").map((s) => s.trim().toLowerCase()).filter((s) => s);
-      store.suspendEvents();
-      try {
-        if (keywords.length === 0) {
-          store.clearFilter();
-          if (store._nativeGetTotalCount) {
-            store.getTotalCount = store._nativeGetTotalCount;
-          }
-        } else {
-          store.clearFilter(true);
-          store.filterBy((record) => {
-            if (!record._apmSearchText) {
-              record._apmSearchText = Object.values(record.data).map((v) => v !== null && v !== void 0 ? String(v).toLowerCase() : "").join(" ");
-            }
-            return keywords.some((k) => record._apmSearchText.includes(k));
-          });
-        }
-      } finally {
-        store.resumeEvents();
-        if (view) view.refresh();
-      }
-      const endFilter = performance.now();
-      const matchesCount = store.getCount();
-      if (keywords.length > 0) {
-        APMLogger.info("Nametag", `Filter applied: "${kw}" \u2192 ${matchesCount} match(es)`);
-      } else {
-        APMLogger.info("Nametag", "Filter cleared");
-      }
-      const invalidate = APMApi.get("invalidateColorCodeCache");
-      if (invalidate) {
-        APMLogger.debug("Nametag", `Rendering pulse for '${ctx.grid.id}'`);
-        invalidate(ctx.doc);
-      }
-      if (!store._apmCacheHook) {
-        store.on("load", () => {
-          store.each((r) => {
-            delete r._apmSearchText;
-          });
-        });
-        store.on("datachanged", () => {
-          store.each((r) => {
-            delete r._apmSearchText;
-          });
-        });
-        store._apmCacheHook = true;
-      }
-      const count = store.getCount();
-      store.getTotalCount = function() {
-        return this.getCount();
-      };
-      forceFooterText(gridDom, count);
-      if (view && !view.__apmFooterHook) {
-        view.on("refresh", () => {
-          const currentFilter = getActiveNametagFilter();
-          if (currentFilter && ctx.grid && !ctx.grid.isDestroyed && ctx.grid.rendered) {
-            try {
-              const el2 = ctx.grid.getEl();
-              if (el2 && el2.dom) {
-                forceFooterText(el2.dom, ctx.grid.getStore().getCount());
-              }
-            } catch (e) {
-              APMLogger.debug("Nametag", "Footer hook error:", e);
-            }
-          }
-        });
-        view.__apmFooterHook = true;
-      }
-      if (view && view.el) view.el.setScrollTop(0);
-    } catch (err) {
-      APMLogger.error("Nametag", "CRITICAL ERROR in applyNametagFilter:", err);
-    }
-  }
-
-  // src/modules/session-snapshot/session-snapshot.js
   var CAPTURE_INTERVAL = 3e3;
   var RESTORE_GRID_TIMEOUT = 1e4;
   var PROMPT_AUTO_DISMISS = 15e3;
@@ -15684,17 +16904,17 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
     const hasFilters = snapshot.gridState?.filterFields && Object.keys(snapshot.gridState.filterFields).length > 0;
     const hasProfile = !!snapshot.forecastProfileId;
     const contextParts = [];
-    if (hasProfile) contextParts.push("forecast profile");
-    if (hasFilters) contextParts.push("search filters");
-    const contextSuffix = contextParts.length > 0 ? ` with ${contextParts.join(" + ")}` : "";
+    if (hasProfile) contextParts.push(t("contextForecastProfile"));
+    if (hasFilters) contextParts.push(t("contextSearchFilters"));
+    const contextSuffix = contextParts.length > 0 ? t("withContext", contextParts.join(" + ")) : "";
     if (snapshot.record) {
       const entry2 = ENTITY_REGISTRY[snapshot.record.entityType];
       const label = entry2 ? entry2.label : snapshot.record.entityType;
-      return `Your previous session had <b>${label} ${snapshot.record.entityId}</b> open${contextSuffix}. Restore?`;
+      return t("restorePromptRecord", `${label} ${snapshot.record.entityId}`, contextSuffix);
     }
     const entry = ENTITY_REGISTRY[snapshot.screen];
     const screenLabel = entry ? entry.screenTitle : snapshot.screen;
-    return `You were on the <b>${screenLabel}</b> screen${contextSuffix}. Restore?`;
+    return t("restorePromptScreen", screenLabel, contextSuffix);
   }
   function showRestorePrompt(snapshot) {
     return new Promise((resolve) => {
@@ -15814,7 +17034,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
               e.target.style.filter = "";
             },
             onclick: () => finish("restore")
-          }, ["Restore"]),
+          }, [t("restoreBtn")]),
           el("button", {
             style: {
               ...btnBase,
@@ -15828,7 +17048,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
               e.target.style.background = "var(--apm-control-bg, #4a5a6a)";
             },
             onclick: () => finish("dismiss")
-          }, ["Dismiss"]),
+          }, [t("dismissBtn")]),
           // Spacer pushes "Don't Ask Again" to the right
           el("div", { style: { flex: "1" } }),
           el("button", {
@@ -15847,10 +17067,10 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
             },
             onclick: () => {
               FeatureFlags.set("sessionSnapshot", false);
-              showToast("Session restore disabled \u2014 re-enable in APM Master \u2192 General", "var(--apm-control-bg, #4a5a6a)", false);
+              showToast(t("sessionRestoreDisabled"), "var(--apm-control-bg, #4a5a6a)", false);
               finish("dismiss");
             }
-          }, ["Don\u2019t Ask Again"])
+          }, [t("dontAskAgain")])
         ]),
         // Progress bar
         progressBar
@@ -15904,8 +17124,8 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
         const tps = w.Ext.ComponentQuery.query("tabpanel:not([destroyed=true]), uxtabpanel:not([destroyed=true])");
         for (const tp of tps) {
           if (!tp.rendered || tp.isDestroyed) continue;
-          if (!tp.items?.items?.some((t) => t.itemId === "HDR")) continue;
-          const tab = tp.items.items.find((t) => t.itemId === activeTab);
+          if (!tp.items?.items?.some((t2) => t2.itemId === "HDR")) continue;
+          const tab = tp.items.items.find((t2) => t2.itemId === activeTab);
           if (tab) {
             tp.setActiveTab(tab);
             APMLogger.debug("Snapshot", `Restored active tab: ${activeTab}`);
@@ -15964,13 +17184,13 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
               const result2 = await openMatchingGridRecord(ctx2.grid, ctx2.win, entry2.dataIndex, snapshot.record.entityId);
               if (result2.success) {
                 await restoreActiveTab(snapshot.record?.activeTab);
-                showToast(`Restored ${entry2.label} ${snapshot.record.entityId} (profile)`, "var(--apm-success, #27ae60)", false);
+                showToast(t("restored", entry2.label, snapshot.record.entityId), "var(--apm-success, #27ae60)", false);
                 return;
               }
             }
           }
         }
-        showToast("Restored forecast profile", "var(--apm-success, #27ae60)", false);
+        showToast(t("restoredProfile"), "var(--apm-success, #27ae60)", false);
         return;
       }
     }
@@ -15993,7 +17213,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
       }
     }
     if (!navOk) {
-      showToast("Could not restore \u2014 navigation unavailable", "#e74c3c", false);
+      showToast(t("couldNotRestore"), "#e74c3c", false);
       return;
     }
     await delay(2e3);
@@ -16023,7 +17243,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
             const result2 = await openMatchingGridRecord(ctx2.grid, ctx2.win, entry2.dataIndex, snapshot.record.entityId);
             if (result2.success) {
               await restoreActiveTab(snapshot.record?.activeTab);
-              showToast(`Restored ${entry2.label} ${snapshot.record.entityId}`, "var(--apm-success, #27ae60)", false);
+              showToast(t("restored", entry2.label, snapshot.record.entityId), "var(--apm-success, #27ae60)", false);
             } else {
               APMLogger.warn("Snapshot", `Record ${snapshot.record.entityId} not found in grid results`);
               showToast(`Restored filters \u2014 could not open ${snapshot.record.entityId}`, "#f39c12", false);
@@ -16037,14 +17257,14 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
       if (gridRestored) {
         const entry2 = ENTITY_REGISTRY[snapshot.screen];
         const label = entry2 ? entry2.screenTitle : snapshot.screen;
-        showToast(`Restored ${label} with search filters`, "var(--apm-success, #27ae60)", false);
+        showToast(t("restoredFilters", label), "var(--apm-success, #27ae60)", false);
         return;
       }
     }
     if (!snapshot.record) {
       const entry2 = ENTITY_REGISTRY[snapshot.screen];
       const label = entry2 ? entry2.screenTitle : snapshot.screen;
-      showToast(`Restored ${label} screen`, "var(--apm-success, #27ae60)", false);
+      showToast(t("restoredScreen", label), "var(--apm-success, #27ae60)", false);
       return;
     }
     const entry = ENTITY_REGISTRY[snapshot.record.entityType];
@@ -16108,7 +17328,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
     const result = await openMatchingGridRecord(ctx.grid, ctx.win, entry.dataIndex, snapshot.record.entityId);
     if (result.success) {
       await restoreActiveTab(snapshot.record?.activeTab);
-      showToast(`Restored ${entry.label} ${snapshot.record.entityId}`, "var(--apm-success, #27ae60)", false);
+      showToast(t("restored", entry.label, snapshot.record.entityId), "var(--apm-success, #27ae60)", false);
     } else {
       showToast(`Could not open ${entry.label} ${snapshot.record.entityId}`, "#e74c3c", false);
     }
@@ -16145,7 +17365,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
                 const result = await openMatchingGridRecord(g, w, entry.dataIndex, snapshot.record.entityId);
                 if (result.success) {
                   await restoreActiveTab(snapshot.record?.activeTab);
-                  showToast(`Restored ${entry.label} ${snapshot.record.entityId}`, "var(--apm-success, #27ae60)", false);
+                  showToast(t("restored", entry.label, snapshot.record.entityId), "var(--apm-success, #27ae60)", false);
                   return true;
                 }
               }
@@ -16189,7 +17409,28 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
           (entry) => params.get(entry.drillbackFlag) === "YES" && params.get(entry.entityKey)
         );
         if (!hasDrillback) {
-          const snapshot = APMStorage.get(snapshotKey(tabId));
+          let snapshot = APMStorage.get(snapshotKey(tabId));
+          let snapshotKeyUsed = snapshotKey(tabId);
+          if ((!snapshot || !snapshot.ts || Date.now() - snapshot.ts > SNAPSHOT_TTL) && (autoRestore || !skipRestore)) {
+            const keys = APMStorage.list();
+            let best = null;
+            let bestKey = null;
+            for (const k of keys) {
+              if (!k.startsWith(SNAPSHOT_STORAGE_PREFIX)) continue;
+              const s = APMStorage.get(k);
+              if (s && s.ts && Date.now() - s.ts <= SNAPSHOT_TTL) {
+                if (!best || s.ts > best.ts) {
+                  best = s;
+                  bestKey = k;
+                }
+              }
+            }
+            if (best) {
+              snapshot = best;
+              snapshotKeyUsed = bestKey;
+              APMLogger.info("Snapshot", `Tab-specific snapshot not found \u2014 using fallback from key: ${bestKey}`);
+            }
+          }
           if (snapshot && snapshot.ts && Date.now() - snapshot.ts <= SNAPSHOT_TTL) {
             APMLogger.info("Snapshot", `Found restorable snapshot: ${snapshot.screen}${snapshot.record ? " / " + snapshot.record.entityId : ""}${snapshot.gridState?.dataspyId ? " (dataspy:" + snapshot.gridState.dataspyId + ")" : ""}${snapshot.gridState?.filterFields ? " +filters" : ""}`);
             if (skipRestore) {
@@ -16204,7 +17445,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
                 await executeRestore(snapshot);
               }
             }
-            APMStorage.remove(snapshotKey(tabId));
+            APMStorage.remove(snapshotKeyUsed);
           }
         }
       }
@@ -16222,6 +17463,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
   // src/ui/settings-panel.js
   init_logger();
   init_toast();
+  init_locale();
   init_utils();
   init_state();
   init_constants();
@@ -16790,6 +18032,13 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
           el("input", { type: "number", id: "apm-c-tech-checks-10", className: "field-input", title: "How many 10-Tech items to check YES", min: "0", placeholder: "0", onblur: (e) => {
             if (e.target.value === "") e.target.value = "0";
           }, style: { display: "inline-block", width: "64px", height: "28px", padding: "0 2px", textAlign: "center", verticalAlign: "middle" } })
+        ]),
+        el("div", { className: "apm-checklist-row", style: { marginTop: "6px", display: "flex", alignItems: "center", gap: "6px" } }, [
+          el("label", { style: { display: "flex", alignItems: "center", gap: "5px", cursor: "pointer", color: "var(--apm-text-bright)", fontSize: "var(--apm-text-sm)", whiteSpace: "nowrap" } }, [
+            el("input", { type: "checkbox", id: "apm-c-create-followup", style: { cursor: "pointer", accentColor: "var(--apm-success)" } }),
+            "Create Follow-up WO"
+          ]),
+          el("input", { type: "text", id: "apm-c-followup-notes", className: "field-input", placeholder: "Notes (e.g. UPS filter replaced)", style: { flex: "1", height: "28px", padding: "0 6px", fontSize: "var(--apm-text-sm)", textTransform: "none" } })
         ])
       ]),
       // ── Trouble Codes & Assignment ──
@@ -17122,29 +18371,47 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
           el("div", { className: "apm-section-label", style: { color: "var(--apm-success)", marginBottom: "8px" } }, "Regional"),
           el("div", { className: "apm-general-item" }, [
             el("div", {}, [
-              el("div", { className: "apm-general-title" }, "Date Format"),
-              el("div", { className: "apm-general-desc" }, "The format your EAM expects for date inputs")
+              el("div", { className: "apm-general-title" }, "Language"),
+              el("div", { className: "apm-general-desc" }, "Changes toast notifications only \u2014 menus and settings stay in English")
             ]),
-            el("select", { id: "gen-setting-date-fmt", className: "apm-cc-theme-select", style: { width: "120px" } }, [
+            el("select", { id: "gen-setting-language", className: "apm-cc-theme-select", style: { width: "135px" } }, [
+              el("option", { value: "auto" }, "Auto (System)"),
+              el("option", { value: "en" }, "English"),
+              el("option", { value: "de" }, "Deutsch"),
+              el("option", { value: "fr" }, "Fran\xE7ais"),
+              el("option", { value: "es" }, "Espa\xF1ol"),
+              el("option", { value: "it" }, "Italiano"),
+              el("option", { value: "pt" }, "Portugu\xEAs"),
+              el("option", { value: "ja" }, "\u65E5\u672C\u8A9E")
+            ])
+          ]),
+          el("div", { className: "apm-general-item" }, [
+            el("div", {}, [
+              el("div", { className: "apm-general-title" }, "Date Format"),
+              el("div", { className: "apm-general-desc" }, "Must match your EAM region \u2014 auto-detected on EU domains")
+            ]),
+            el("select", { id: "gen-setting-date-fmt", className: "apm-cc-theme-select", style: { width: "135px" } }, [
               el("option", { value: "us" }, "MM/DD/YYYY"),
               el("option", { value: "eu" }, "DD/MM/YYYY"),
-              el("option", { value: "mon" }, "DD-MON-YYYY")
+              el("option", { value: "mon" }, "DD-MON-YYYY"),
+              el("option", { value: "iso" }, "YYYY-MM-DD")
             ])
           ]),
           el("div", { className: "apm-general-item" }, [
             el("div", {}, [
               el("div", { className: "apm-general-title" }, "Separator"),
-              el("div", { className: "apm-general-desc" }, "Character between date parts (/ or -)")
+              el("div", { className: "apm-general-desc" }, "Character between date parts")
             ]),
-            el("select", { id: "gen-setting-date-sep", className: "apm-cc-theme-select", style: { width: "120px" } }, [
+            el("select", { id: "gen-setting-date-sep", className: "apm-cc-theme-select", style: { width: "135px" } }, [
               el("option", { value: "/" }, "/ (Slash)"),
-              el("option", { value: "-" }, "- (Dash)")
+              el("option", { value: "-" }, "- (Dash)"),
+              el("option", { value: "." }, ". (Period)")
             ])
           ]),
           el("div", { className: "apm-general-item" }, [
             el("div", {}, [
               el("div", { className: "apm-general-title" }, "Date Override"),
-              el("div", { className: "apm-general-desc" }, "Force standard parsing (disable if causing errors)")
+              el("div", { className: "apm-general-desc" }, "Applies the format above to EAM date fields so they match APM Master's UI. Set this to match your EAM region \u2014 wrong format will swap day/month. Turn off if dates look wrong.")
             ]),
             el("label", { className: "cc-toggle-switch" }, [
               el("input", { type: "checkbox", id: "gen-setting-date-over", checked: !!apmGeneralSettings.dateOverrideEnabled }),
@@ -17585,9 +18852,9 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
           const p = getPresets();
           const allHidden = { ...p.config.hiddenTabs || {} };
           if (Array.isArray(p.config.hiddenTabs)) {
-            allHidden[funcName] = p.config.hiddenTabs.filter((t) => t !== tabName);
+            allHidden[funcName] = p.config.hiddenTabs.filter((t2) => t2 !== tabName);
           } else {
-            allHidden[funcName] = (allHidden[funcName] || []).filter((t) => t !== tabName);
+            allHidden[funcName] = (allHidden[funcName] || []).filter((t2) => t2 !== tabName);
           }
           const tabOrders = { ...p.config.tabOrders || {} };
           const siloOrder = tabOrders[funcName];
@@ -17679,6 +18946,10 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
       if (defaultCb) defaultCb.checked = !!data.isDefault;
       const woTitleEl = document.getElementById("apm-c-wo-title");
       if (woTitleEl) woTitleEl.value = data.woTitle || "";
+      const followUpCb = document.getElementById("apm-c-create-followup");
+      if (followUpCb) followUpCb.checked = !!data.createFollowUp;
+      const followUpNotesEl = document.getElementById("apm-c-followup-notes");
+      if (followUpNotesEl) followUpNotesEl.value = data.followUpNotes || "";
       syncDefaultToggle();
     } else if (screen === "repair") {
       const setVal = (id, key) => {
@@ -17746,7 +19017,9 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
         close: document.getElementById("apm-c-close")?.value || "",
         laborHours: document.getElementById("apm-c-labor-hours")?.value || "",
         isDefault: document.getElementById("apm-c-is-default")?.checked || false,
-        woTitle: document.getElementById("apm-c-wo-title")?.value || ""
+        woTitle: document.getElementById("apm-c-wo-title")?.value || "",
+        createFollowUp: document.getElementById("apm-c-create-followup")?.checked || false,
+        followUpNotes: document.getElementById("apm-c-followup-notes")?.value || ""
       };
     }
     if (screen === "repair") {
@@ -17791,7 +19064,9 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
         close: "",
         laborHours: "",
         isDefault: false,
-        woTitle: ""
+        woTitle: "",
+        createFollowUp: false,
+        followUpNotes: ""
       };
     }
     if (screen === "repair") {
@@ -17917,11 +19192,11 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
       link.click();
       document.body.removeChild(link);
       URL.revokeObjectURL(url2);
-      showToast("Settings downloaded!", "var(--apm-success)");
+      showToast(t("settingsDownloaded"), "var(--apm-success)");
     }
     const resetTabs = () => {
-      [tabAutofill, tabSettings, tabColorcode, tabGeneral, tabDiagnostics].forEach((t) => {
-        t.className = "apm-tab-btn apm-tab-inactive";
+      [tabAutofill, tabSettings, tabColorcode, tabGeneral, tabDiagnostics].forEach((t2) => {
+        t2.className = "apm-tab-btn apm-tab-inactive";
       });
       document.getElementById("apm-tab-container").style.display = "flex";
       const ccFooterTools = document.getElementById("cc-footer-btns");
@@ -17942,7 +19217,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
         const tpResult = findMainTabPanel();
         let hasRecordTabs = false;
         if (tpResult && isFrameVisible(tpResult.win)) {
-          const hdrTab = tpResult.tabPanel.items?.items?.find((t) => t.itemId === "HDR");
+          const hdrTab = tpResult.tabPanel.items?.items?.find((t2) => t2.itemId === "HDR");
           hasRecordTabs = hdrTab && hdrTab.rendered && !!hdrTab.getEl?.()?.dom?.innerHTML?.trim();
         }
         state.settingsMode = hasRecordTabs ? "tabs" : "cols";
@@ -17978,9 +19253,11 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
         const fmt = document.getElementById("gen-setting-date-fmt");
         const sep = document.getElementById("gen-setting-date-sep");
         const over = document.getElementById("gen-setting-date-over");
+        const langSel = document.getElementById("gen-setting-language");
         if (fmt) fmt.value = apmGeneralSettings.dateFormat || "us";
         if (sep) sep.value = apmGeneralSettings.dateSeparator || "/";
         if (over) over.checked = !!apmGeneralSettings.dateOverrideEnabled;
+        if (langSel) langSel.value = apmGeneralSettings.language || "auto";
         setupColorCodeLogic(colorcodeFields);
         const ccSettings = getSettings();
         const elTheme = document.getElementById("cc-setting-theme");
@@ -18039,6 +19316,11 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
         const overSet = document.getElementById("gen-setting-date-over");
         if (overSet) overSet.onchange = (e) => {
           setGeneralSetting("dateOverrideEnabled", e.target.checked);
+        };
+        const langSet = document.getElementById("gen-setting-language");
+        if (langSet) langSet.onchange = (e) => {
+          setGeneralSetting("language", e.target.value);
+          setLanguageOverride(e.target.value);
         };
         const logVal = document.getElementById("gen-setting-log-level");
         if (logVal) {
@@ -18131,7 +19413,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
               const b64Data = encodeSettingsAsBase64(jsonData);
               if (navigator.clipboard && navigator.clipboard.writeText) {
                 navigator.clipboard.writeText(b64Data).then(() => {
-                  showToast("Base64 backup copied to clipboard!", "var(--apm-success)");
+                  showToast(t("copiedToClipboard"), "var(--apm-success)");
                   copyB64Btn.textContent = "\u2713 Copied!";
                   setTimeout(() => {
                     if (copyB64Btn) copyB64Btn.textContent = "\u{1F4CB} Copy To Clipboard (Base64)";
@@ -18327,7 +19609,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
     }
     function bindTabSwitching() {
       const showTab = (target) => {
-        [autofillFields, tabOrderFields, colorcodeFields, generalFields, diagnosticsFields].forEach((t) => t.style.display = "none");
+        [autofillFields, tabOrderFields, colorcodeFields, generalFields, diagnosticsFields].forEach((t2) => t2.style.display = "none");
         target.style.display = "flex";
       };
       togCols.onclick = () => {
@@ -18382,7 +19664,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
         copyBtn.onclick = () => {
           const data = JSON.stringify(Diagnostics.toJSON(), null, 2);
           navigator.clipboard.writeText(data).then(() => {
-            showToast("Report copied to clipboard!", "var(--apm-success)");
+            showToast(t("reportCopied"), "var(--apm-success)");
           }).catch(() => showToast("Failed to copy to clipboard", "var(--apm-danger)"));
         };
       }
@@ -18491,7 +19773,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
         if (selectEl.value) {
           updatePresetAutofill(selectEl.value, getCurrentFormData(), screen());
           markClean();
-          showToast(`Template "${selectEl.value}" Saved!`, "var(--apm-success-bright)");
+          showToast(t("templateSaved", selectEl.value), "var(--apm-success-bright)");
         } else {
           showToast("No template selected to save.", "var(--apm-danger)");
         }
@@ -18504,7 +19786,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
           const deletedName = selectEl.value;
           updatePresetAutofill(deletedName, null, screen());
           renderPresetOptions(selectEl, screen());
-          showToast(`Template "${deletedName}" Deleted.`, "var(--apm-danger)");
+          showToast(t("templateDeleted", deletedName), "var(--apm-danger)");
         }
       };
     }
@@ -18543,7 +19825,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
         renderPresetOptions(selectEl2, screen);
         selectEl2.value = name;
         applyPresetData(data, screen);
-        showToast(`Template "${name}" Created!`, "var(--apm-accent)");
+        showToast(t("templateCreated", name), "var(--apm-accent)");
         popover.remove();
       };
       document.getElementById("apm-popover-create").onclick = doCreate;
@@ -18593,7 +19875,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
         if (selectEl2?.value) {
           updatePresetAutofill(selectEl2.value, getCurrentFormData(), screen);
           markClean();
-          showToast(`Template "${selectEl2.value}" Saved!`, "var(--apm-success-bright)");
+          showToast(t("templateSaved", selectEl2.value), "var(--apm-success-bright)");
         }
         popover.remove();
         onDiscard();
@@ -18887,6 +20169,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
 
   // src/boot.js
   init_toast();
+  init_locale();
   init_constants();
   var _autoOpenHandled = false;
   async function handleDrillbackAutoOpen() {
@@ -18940,7 +20223,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
             APMLogger.info("Boot", `Single-result entity grid detected (${sid}), auto-opening record.`);
             const result = await openFirstGridRecord(g, w);
             if (result.success) {
-              showToast(`Opened ${result.entityId}`, "#1abc9c", false);
+              showToast(t("openedEntity", result.entityId), "#1abc9c", false);
             }
             return;
           }
@@ -18985,7 +20268,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
         { name: "LaborTracker", flag: "laborBooker", onlyTop: true, fn: () => LaborTracker.init() },
         { name: "SettingsPanel", onlyTop: true, fn: buildSettingsPanel },
         { name: "ColorCodeLogic", flag: "colorCode", noShell: true, fn: setupColorCodeLogic },
-        { name: "AutoFillObserver", flag: "autoFill", onlyTop: true, fn: initAutoFillObserver },
+        { name: "AutoFillObserver", flag: "autoFill", fn: initAutoFillObserver },
         { name: "TabGridOrder", flag: "tabGridOrder", noShell: true, fn: () => {
           applyGridConsistency();
           applyTabConsistency();
@@ -19074,7 +20357,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
         APMScheduler.registerTask("scheduler-investigator", 1e4, () => {
           const schedulerTasks = APMScheduler.getTasks();
           const instanceId = APMScheduler.instanceId;
-          APMLogger.debug("Scheduler", `[${instanceId}] Live tasks (${schedulerTasks.length}):`, schedulerTasks.map((t) => t.id).join(", "));
+          APMLogger.debug("Scheduler", `[${instanceId}] Live tasks (${schedulerTasks.length}):`, schedulerTasks.map((t2) => t2.id).join(", "));
         });
       } catch (e) {
         APMLogger.error("Boot", "Failed to register scheduler-investigator task:", e);
@@ -19886,12 +21169,12 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
         } catch (err) {
         }
         if (newFilter) {
-          showToast(`Filter: ${newFilter} (Click to Clear)`, "var(--apm-success-bright)", true, () => {
+          showToast(t("filterActive", newFilter), "var(--apm-success-bright)", true, () => {
             window.dispatchEvent(new CustomEvent("APM_CLEAR_FILTER"));
           });
         } else {
           clearPersistentToast();
-          showToast("Filter Cleared", "var(--apm-text-disabled)");
+          showToast(t("filterCleared"), "var(--apm-text-disabled)");
         }
         const applyNametagFilterFn = APMApi.get("applyNametagFilter");
         if (typeof applyNametagFilterFn === "function") {
@@ -19995,7 +21278,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
       const applyNametagFilterFn = APMApi.get("applyNametagFilter");
       if (typeof applyNametagFilterFn === "function") applyNametagFilterFn("");
       clearPersistentToast();
-      showToast("Filter Cleared", "var(--apm-text-disabled)");
+      showToast(t("filterCleared"), "var(--apm-text-disabled)");
       const msg = { type: "APM_SET_FILTER", kw: "" };
       window.postMessage(msg, window.location.origin);
       document.querySelectorAll("iframe").forEach((f) => {
