@@ -7,6 +7,7 @@
 // @icon         https://media.licdn.com/dms/image/v2/D5603AQGdCV0_LQKRfQ/profile-displayphoto-scale_100_100/B56ZyZLvQ5HgAg-/0/1772096519061?e=1773878400&v=beta&t=eWO1Jiy0-WbzG_yBv-SBrmmsVOPMexF57-q1Xh_VXCk
 // @match        https://*.eam.hxgnsmartcloud.com/*
 // @match        https://*.sso.eam.hxgnsmartcloud.com/*
+// @match        https://*.eam.aws.a2z.com/*
 // @match        https://idp.federate.amazon.com/*
 // @match        https://*.ptp.amazon.dev/*
 // @match        https://*.insights.amazon.dev/*
@@ -24,6 +25,7 @@
 // @connect      raw.githubusercontent.com
 // @connect      github.com
 // @connect      *.hxgnsmartcloud.com
+// @connect      *.eam.aws.a2z.com
 // ==/UserScript==
 
 if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dark') {
@@ -54,7 +56,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
       AppContext = Object.freeze({
         hostname,
         // Core Domains
-        isEAM: hostname.includes("hxgnsmartcloud.com"),
+        isEAM: hostname.includes("hxgnsmartcloud.com") || hostname.includes("eam.aws.a2z.com"),
         // Region detection — eu1.eam.hxgnsmartcloud.com, eu2.eam... etc.
         isEU: /^eu\d/i.test(hostname),
         // PTP runs on *.ptp.amazon.dev and *.insights.amazon.dev subdomains;
@@ -69,7 +71,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
         get isSubmit() {
           return document.title === "Submit Form";
         },
-        isEAMAuth: hostname.includes("hxgnsmartcloud.com") && (url.includes("/sso/") || url.includes("/sp/") || url.includes("ssoservlet")),
+        isEAMAuth: (hostname.includes("hxgnsmartcloud.com") || hostname.includes("eam.aws.a2z.com")) && (url.includes("/sso/") || url.includes("/sp/") || url.includes("ssoservlet")),
         // Frame Context — screen-cache-aware.
         // EAM's "screen cache" wraps the main page in an iframe, so window !== window.top.
         // Fallback: outermost EAM content frame if parent IS top and we're not a
@@ -115,7 +117,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
   });
 
   // src/core/constants.js
-  var KEY_THEME, CC_STORAGE_RULES, CC_STORAGE_SET, PRESET_STORAGE_KEY, STORAGE_KEY, APM_GENERAL_STORAGE, CURRENT_VERSION, VERSION_CHECK_URL, UPDATE_URL, LABOR_EMPS_STORAGE, LABOR_ACTIVE_STORAGE, LABOR_DOCK_STORAGE, LABOR_PREFS_STORAGE, LABOR_NIGHT_SHIFT_KEY, LABOR_LAST_EMP_KEY, SESSION_STORAGE_KEY, PTP_HISTORY_KEY, UPDATE_CHECK_KEY, MIGRATIONS_DONE_KEY, WELCOME_SEEN_KEY, SNAPSHOT_STORAGE_PREFIX, SNAPSHOT_TTL, BETA_VERSION_CHECK_URL, BETA_UPDATE_URL, LOG_LEVELS, DEFAULT_TENANT, _regionMatch, EAM_REGION_PREFIX, EAM_BASE_URL, SESSION_TIMEOUT_URL, LINK_CONFIG, MIN_GRID_COLUMNS, MIN_TAB_ITEMS, ENTITY_REGISTRY, SCREEN_TITLES, AUTOFILL_SCREENS, AUTOFILL_SCREEN_LABELS;
+  var KEY_THEME, CC_STORAGE_RULES, CC_STORAGE_SET, PRESET_STORAGE_KEY, STORAGE_KEY, APM_GENERAL_STORAGE, CURRENT_VERSION, VERSION_CHECK_URL, UPDATE_URL, LABOR_EMPS_STORAGE, LABOR_ACTIVE_STORAGE, LABOR_DOCK_STORAGE, LABOR_PREFS_STORAGE, LABOR_NIGHT_SHIFT_KEY, LABOR_LAST_EMP_KEY, SESSION_STORAGE_KEY, PTP_HISTORY_KEY, UPDATE_CHECK_KEY, MIGRATIONS_DONE_KEY, WELCOME_SEEN_KEY, SNAPSHOT_STORAGE_PREFIX, SNAPSHOT_TTL, BETA_VERSION_CHECK_URL, BETA_UPDATE_URL, LOG_LEVELS, DEFAULT_TENANT, _eamHostname, _regionMatch, EAM_REGION_PREFIX, EAM_BASE_URL, SESSION_TIMEOUT_URL, LINK_CONFIG, MIN_GRID_COLUMNS, MIN_TAB_ITEMS, ENTITY_REGISTRY, SCREEN_TITLES, AUTOFILL_SCREENS, AUTOFILL_SCREEN_LABELS;
   var init_constants = __esm({
     "src/core/constants.js"() {
       KEY_THEME = "apm_v1_ui_theme";
@@ -150,9 +152,10 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
         VERBOSE: 4
       };
       DEFAULT_TENANT = "AMAZONRMENA_PRD";
-      _regionMatch = (typeof location !== "undefined" ? location.hostname : "").match(/^(eu\d|us\d)/i);
+      _eamHostname = typeof location !== "undefined" ? location.hostname : "";
+      _regionMatch = _eamHostname.match(/^(eu\d|us\d)/i);
       EAM_REGION_PREFIX = _regionMatch ? _regionMatch[1].toLowerCase() : "us1";
-      EAM_BASE_URL = `https://${EAM_REGION_PREFIX}.eam.hxgnsmartcloud.com/web/base/`;
+      EAM_BASE_URL = _eamHostname.includes("eam.aws.a2z.com") ? `https://${_eamHostname}/web/base/` : `https://${EAM_REGION_PREFIX}.eam.hxgnsmartcloud.com/web/base/`;
       SESSION_TIMEOUT_URL = `${EAM_BASE_URL}logindisp?tenant=${DEFAULT_TENANT}`;
       LINK_CONFIG = {
         tenant: "AMAZONRMENA_PRD",
@@ -2092,7 +2095,8 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
     apmGeneralSettings._v = 1;
     APMStorage.set(APM_GENERAL_STORAGE, apmGeneralSettings);
     try {
-      const domain = ".hxgnsmartcloud.com";
+      const hostname2 = window.location.hostname;
+      const domain = hostname2.includes("a2z.com") ? ".aws.a2z.com" : ".hxgnsmartcloud.com";
       const expiry = new Date(Date.now() + 365 * 24 * 60 * 60 * 1e3).toUTCString();
       const syncData = {
         autoRedirect: apmGeneralSettings.autoRedirect,
@@ -2851,6 +2855,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
     "src/core/origin-guard.js"() {
       TRUSTED_PATTERNS = [
         /\.hxgnsmartcloud\.com$/,
+        /\.eam\.aws\.a2z\.com$/,
         /\.hexagon\.com$/,
         // PTP uses varying subdomains under ptp and insights:
         // e.g. user.sparsy.insights.amazon.dev, *.ptp.amazon.dev, etc.
@@ -4741,7 +4746,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
         if (isDarkNow) {
           if (targetWin === targetWin.top) {
             const baseDomain = targetWin.location.hostname.split(".").slice(-2).join(".");
-            const isWhitelisted = baseDomain.includes("hxgnsmartcloud") || baseDomain.includes("hexagon") || baseDomain.includes("amazon");
+            const isWhitelisted = baseDomain.includes("hxgnsmartcloud") || baseDomain.includes("hexagon") || baseDomain.includes("amazon") || baseDomain.includes("a2z");
             const cookieDomain = isWhitelisted ? `domain=.${baseDomain};` : "";
             targetDoc.cookie = `apm_transition_active=1; path=/; ${cookieDomain} max-age=15; SameSite=Lax`;
           }
@@ -4790,7 +4795,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
       try {
         if (typeof GM_setValue !== "undefined") GM_setValue("apm_theme_hint", "default");
         const baseDomain = targetWin.location.hostname.split(".").slice(-2).join(".");
-        const cookieDomain = baseDomain.includes("hxgnsmartcloud") || baseDomain.includes("hexagon") || baseDomain.includes("amazon") ? `domain=.${baseDomain};` : "";
+        const cookieDomain = baseDomain.includes("hxgnsmartcloud") || baseDomain.includes("hexagon") || baseDomain.includes("amazon") || baseDomain.includes("a2z") ? `domain=.${baseDomain};` : "";
         targetDoc.cookie = `apm_theme_hint=default; path=/; ${cookieDomain} max-age=31536000; SameSite=Lax`;
       } catch (e) {
       }
@@ -5032,7 +5037,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
     if (targetWin === targetWin.top) {
       try {
         const baseDomain = targetWin.location.hostname.split(".").slice(-2).join(".");
-        const cookieDomain = baseDomain.includes("hxgnsmartcloud") || baseDomain.includes("hexagon") || baseDomain.includes("amazon") ? `domain=.${baseDomain};` : "";
+        const cookieDomain = baseDomain.includes("hxgnsmartcloud") || baseDomain.includes("hexagon") || baseDomain.includes("amazon") || baseDomain.includes("a2z") ? `domain=.${baseDomain};` : "";
         if (typeof GM_setValue !== "undefined") GM_setValue("apm_theme_hint", isDark ? "dark" : "default");
         if (isDark) {
           targetDoc.cookie = `apm_theme_hint=dark; path=/; ${cookieDomain} max-age=31536000; SameSite=Lax`;
@@ -5894,7 +5899,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
       if (window.__apmRedirecting) return;
       const session = AppState.session;
       if (!session.eamid || !session.tenant) return;
-      if (!window.location.hostname.includes("eam.hxgnsmartcloud.com")) return;
+      if (!window.location.hostname.includes("eam.hxgnsmartcloud.com") && !window.location.hostname.includes("eam.aws.a2z.com")) return;
       if (Date.now() - this._lastActivity > this._ACTIVITY_TIMEOUT) {
         APMLogger.debug("APM Session", "Skipping heartbeat \u2014 no user activity in last 3 hours.");
         return;
@@ -8502,6 +8507,19 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
         APMLogger.debug("TabGridOrder", "Record tab panel found but no record loaded (HDR empty). Skipping.");
         return;
       }
+      let _isBlankRecord = false;
+      if (hdrTab) {
+        const rvForms = win.Ext?.ComponentQuery?.query("form[id*=recordview]") || [];
+        const activeForm = rvForms.find((f) => f.rendered && !f.isDestroyed && f.isVisible?.(true));
+        if (activeForm) {
+          const rec = activeForm.getRecord?.();
+          const recId = rec?.getId?.() ?? rec?.get?.("code") ?? rec?.get?.("workordernum") ?? null;
+          if (!rec || rec.phantom || !recId) {
+            _isBlankRecord = true;
+            APMLogger.debug("TabGridOrder", "Blank/new record detected \u2014 plugin tab restoration will be skipped.");
+          }
+        }
+      }
       const ldvs = win.Ext?.ComponentQuery?.query("listdetailview:not([destroyed=true])") || [];
       for (const ldv of ldvs) {
         if (ldv.isDestroyed) continue;
@@ -8549,7 +8567,9 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
       const activeTabName = activeTab ? normalizeTabName(activeTab.title || activeTab.text || activeTab.tab && activeTab.tab.getText?.()) : null;
       if (hasHidden || hasOrder) {
         hideAndShowTabs(mainTabPanel, hiddenTabs, preferredOrder);
-        await restorePluginTabs(mainTabPanel, hiddenTabs, preferredOrder);
+        if (!_isBlankRecord) {
+          await restorePluginTabs(mainTabPanel, hiddenTabs, preferredOrder);
+        }
       }
       reorderTabs(mainTabPanel, preferredOrder, win);
       restoreFocus(mainTabPanel, activeTabName);
@@ -14231,9 +14251,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
       }
       APMLogger.debug("Forecast", `Profile date override: weeks=${weeks}, days=[${profDays}], dates=${JSON.stringify(dates)}`);
     }
-    if (activeProfileEarly && activeProfileEarly.target && mode === "normal") {
-      currentTarget = activeProfileEarly.target;
-    } else if (targetOverride) {
+    if (targetOverride) {
       currentTarget = targetOverride;
     } else {
       const targetSelect = document.getElementById("eam-target-select");
@@ -14241,11 +14259,13 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
       const isAdvancedVisible = advSite && advSite.style.display !== "none";
       if (isAdvancedVisible && targetSelect) {
         currentTarget = targetSelect.value || "WSJOBS";
+      } else if (isAdvancedVisible && activeProfileEarly && activeProfileEarly.target) {
+        currentTarget = activeProfileEarly.target;
       } else {
         currentTarget = detectActiveTarget();
       }
     }
-    APMLogger.debug("Forecast", `Target resolved: ${currentTarget}`);
+    APMLogger.info("Forecast", `Executing: mode=${mode}, target=${currentTarget}, profile=${activeProfIdEarly}`);
     try {
       if (mode !== "quick") saveAllPreferences();
       UIManager.closeAll(true);
@@ -14380,6 +14400,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
           if (qsClear) qsClear.value = "";
         }
       }
+      APMLogger.info("Forecast", `Complete: mode=${mode}, target=${currentTarget}`);
     } catch (e) {
       APMLogger.error("Forecast", "executeForecast error:", e);
       throw e;
