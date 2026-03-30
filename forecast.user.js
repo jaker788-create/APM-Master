@@ -2973,7 +2973,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
               const isInsidePanel = target.closest(".apm-ui-panel") || Array.from(registry.panels).some((id) => {
                 return targetWin.document.getElementById(id)?.contains(target);
               });
-              const isSystem = target.closest(".swal2-container") || target.closest(".x-mask") || target.closest(".x-datepicker") || target.closest(".x-menu") || target.closest(".x-layer") || target.closest(".x-combo-list") || target.closest(".x-tip");
+              const isSystem = target.closest(".swal2-container") || target.closest(".x-mask") || target.closest(".x-datepicker") || target.closest(".x-menu") || target.closest(".x-layer") || target.closest(".x-combo-list") || target.closest(".x-tip") || target.closest(".apm-modal-overlay");
               const isFormElement = ["INPUT", "TEXTAREA", "SELECT", "OPTION"].includes(target.tagName) || target.closest("form");
               if (APMLogger.isLevel("verbose")) {
                 APMLogger.verbose("UIManager", `Click: inside=${!!isInsidePanel}, system=${!!isSystem} | target=${target.tagName}${target.id ? "#" + target.id : ""}`);
@@ -6779,6 +6779,21 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
           AppState.colorCode.rules = storedRules;
         }
       }
+      const rules = AppState.colorCode.rules;
+      if (Array.isArray(rules)) {
+        let migrated = false;
+        rules.forEach((r) => {
+          if (typeof r.search === "string") {
+            r.search = r.search.split(",").map((s) => s.trim()).filter((s) => s);
+            migrated = true;
+          }
+        });
+        if (migrated) {
+          APMLogger.info("ColorCode", `Migrated ${rules.length} rule(s) to array keyword format`);
+          const wrapped = { _v: 1, rules };
+          APMStorage.set(CC_STORAGE_RULES, wrapped);
+        }
+      }
       const storedSet = APMStorage.get(CC_STORAGE_SET);
       if (storedSet) {
         if (storedSet._v === void 0) {
@@ -6801,6 +6816,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
     APMStorage.set(CC_STORAGE_SET, AppState.colorCode.settings);
   }
   var _cachedRulesJson = null;
+  var _cachedRulesRef = null;
   var _rulesGen = 0;
   var _currentRulesGen = 0;
   function getRules() {
@@ -6811,9 +6827,10 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
     } else {
       rules = AppState.colorCode.rules;
     }
-    if (!_cachedRulesJson || _rulesGen !== _currentRulesGen) {
+    if (!_cachedRulesJson || _rulesGen !== _currentRulesGen || rules !== _cachedRulesRef) {
       _cachedRulesJson = JSON.stringify(rules);
       _rulesGen = _currentRulesGen;
+      _cachedRulesRef = rules;
     }
     return JSON.parse(_cachedRulesJson);
   }
@@ -6897,7 +6914,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
     setActiveNametagFilter(activeFilter);
     const startFilter = performance.now();
     try {
-      const keywords = kw.split(",").map((s) => s.trim().toLowerCase()).filter((s) => s);
+      const keywords = toKeywords(kw);
       store.suspendEvents();
       try {
         if (keywords.length === 0) {
@@ -6972,6 +6989,11 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
 
   // src/modules/colorcode/colorcode-engine.js
   init_dom_helpers();
+  function toKeywords(search) {
+    if (Array.isArray(search)) return search.map((s) => s.trim().toLowerCase()).filter((s) => s);
+    if (typeof search === "string") return search.split(",").map((s) => s.trim().toLowerCase()).filter((s) => s);
+    return [];
+  }
   var _rowCache = /* @__PURE__ */ new WeakMap();
   var _rowCacheGeneration = 0;
   var _lastRuleFingerprint = "";
@@ -7075,7 +7097,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
     return _getTopAPM()[_APM_PREVIEW_KEY] || null;
   }
   function getCompiledRules(rules) {
-    const fingerprint = rules.map((r) => `${r.id}:${r.search}:${r.fill}:${r.showTag}:${r.color}:${r.tag || ""}`).join("|");
+    const fingerprint = rules.map((r) => `${r.id}:${Array.isArray(r.search) ? r.search.join(",") : r.search}:${r.fill}:${r.showTag}:${r.color}:${r.tag || ""}`).join("|");
     if (_compiledRules && fingerprint === _compiledRulesFingerprint) {
       return _compiledRules;
     }
@@ -7083,7 +7105,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
     _compiledRulesFingerprint = fingerprint;
     _compiledRules = rules.map((r) => {
       if (!r.search) return null;
-      const terms = r.search.split(",").map((s) => s.trim().toLowerCase()).filter((s) => s);
+      const terms = toKeywords(r.search);
       if (terms.length === 0) return null;
       const pattern = terms.map((t2) => t2.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")).join("|");
       return { ...r, regex: new RegExp(pattern, "i") };
@@ -7547,7 +7569,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
     APMLogger.debug("ColorCode", `Split view: processing ${items.length} items via ${sourceType}`);
     const entityConfig = _activeEntityConfig || ENTITY_REGISTRY.WSJOBS;
     const activeFilter = getActiveNametagFilter();
-    const filterKeywords = activeFilter ? activeFilter.split(",").map((s) => s.trim().toLowerCase()).filter((s) => s) : [];
+    const filterKeywords = toKeywords(activeFilter);
     items.forEach((item) => {
       try {
         const rawText = item.textContent;
@@ -8885,6 +8907,23 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
       setNavigationGuard(false);
       APMScheduler.resume();
       return false;
+    }
+  }
+  function navigateViaUrl(target) {
+    const entry = ENTITY_REGISTRY[target] || { systemFunc: target };
+    const tenant = window.EAM?.AppData?.tenant || "";
+    const params = new URLSearchParams({
+      tenant,
+      SYSTEM_FUNCTION_NAME: entry.systemFunc,
+      USER_FUNCTION_NAME: target,
+      FUNCTION_CLASS: "WEBL"
+    });
+    const url2 = `https://${window.location.hostname}/web/base/logindisp?${params.toString()}`;
+    APMLogger.info("EamNav", `URL navigation fallback: ${target}`);
+    try {
+      window.top.location.href = url2;
+    } catch (e) {
+      window.location.href = url2;
     }
   }
 
@@ -11657,6 +11696,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
 .field-input textarea, textarea.field-input { height: auto; padding: 6px; text-transform: none; }
 .field-input.upper { text-transform: uppercase; }
 #apm-creator-panel .field-input:focus { border-color: var(--apm-accent) !important; background: #ffffff !important; box-shadow: 0 0 0 2px var(--apm-input-focus) !important; }
+.cc-chip-container:focus-within { border-color: var(--apm-accent); box-shadow: 0 0 0 2px var(--apm-input-focus); }
 .apm-tab-btn { flex: 1; min-width: 0; height: 36px; padding: 4px 2px; text-align: center; cursor: pointer; font-weight: 600; transition: color 0.15s, border-color 0.15s, background 0.15s; border-bottom: 2px solid transparent; font-size: var(--apm-text-sm); display: flex; flex-direction: column; align-items: center; justify-content: center; line-height: 1.2; box-sizing: border-box; flex-shrink: 0; user-select: none; }
 .apm-tab-active-autofill { color: var(--apm-accent); border-bottom-color: var(--apm-accent); background: var(--apm-accent-subtle); }
 .apm-tab-active-autofill:hover { filter: brightness(1.15); }
@@ -12944,7 +12984,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
       }, updatePlaceholder = function() {
         const fc = FIELD_CONFIG.find((f) => f.key === fieldSelect.value);
         keywordInput.placeholder = fc ? fc.placeholder : "Enter keyword...";
-      }, addChip = function() {
+      }, addChip2 = function() {
         const field = fieldSelect.value;
         const operator = opSelect.value;
         const keyword = keywordInput.value.trim();
@@ -13121,11 +13161,11 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
       keywordInput.addEventListener("keydown", (e) => {
         if (e.key === "Enter") {
           e.preventDefault();
-          addChip();
+          addChip2();
         }
       });
       hintEl = el("div", { className: "fb-hint" }, OPERATORS[0].hint);
-      const addBtn = el("button", { className: "fb-add-btn", onclick: addChip }, "+ Add");
+      const addBtn = el("button", { className: "fb-add-btn", onclick: addChip2 }, "+ Add");
       chipListEl = el("div", { className: "fb-chip-list" });
       previewEl = el("div", { className: "fb-preview-text" });
       profileSelect = el("select", { className: "eam-fc-select", style: { flex: "1" } });
@@ -13829,13 +13869,21 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
       }
     }
     const target = options.target || "WSJOBS";
-    for (const win of getExtWindows()) {
-      try {
-        if (launchScreenDirect(win, target)) {
-          await delay(1500);
-          return;
+    const LAUNCH_RETRIES = 3;
+    const LAUNCH_BACKOFF = [0, 1500, 3e3];
+    for (let attempt = 0; attempt < LAUNCH_RETRIES; attempt++) {
+      if (attempt > 0) {
+        APMLogger.debug("Forecast", `launchScreen retry ${attempt}/${LAUNCH_RETRIES - 1} after ${LAUNCH_BACKOFF[attempt]}ms`);
+        await delay(LAUNCH_BACKOFF[attempt]);
+      }
+      for (const win of getExtWindows()) {
+        try {
+          if (launchScreenDirect(win, target)) {
+            await delay(1500);
+            return;
+          }
+        } catch (e) {
         }
-      } catch (e) {
       }
     }
     APMLogger.warn("Forecast", "EAM.Nav.launchScreen unavailable, falling back to menu navigation");
@@ -13864,6 +13912,9 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
       } catch (e) {
       }
     }
+    APMLogger.info("Forecast", `All internal navigation failed \u2014 redirecting via URL to ${target}`);
+    navigateViaUrl(target);
+    await delay(5e3);
   }
   async function goToRecordDirect(woNum, target = "WSJOBS") {
     for (const win of getExtWindows()) {
@@ -14283,7 +14334,19 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
         }
         APMLogger.debug("Forecast", "Nav.goTo unavailable, falling back to grid search");
       }
+      try {
+        sessionStorage.setItem("apm-pending-forecast", JSON.stringify({
+          mode,
+          target: currentTarget,
+          ts: Date.now()
+        }));
+      } catch (e) {
+      }
       await navigateTo("Work Orders", ["Work", "Work Orders"], { target: currentTarget });
+      try {
+        sessionStorage.removeItem("apm-pending-forecast");
+      } catch (e) {
+      }
       setStatus("Expanding...", "#f1c40f");
       await returnToListView(currentTarget);
       let gridFound = false;
@@ -15156,6 +15219,20 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
     APMApi.register("executeForecast", executeForecast);
     window.addEventListener("keydown", checkKey, true);
     window[FLAGS.HOTKEYS_BOUND] = true;
+    if (window.self === window.top) {
+      try {
+        const raw = sessionStorage.getItem("apm-pending-forecast");
+        if (raw) {
+          const { mode, target, ts } = JSON.parse(raw);
+          sessionStorage.removeItem("apm-pending-forecast");
+          if (Date.now() - ts < 3e4) {
+            APMLogger.info("Forecast", `Resuming pending forecast: ${mode} \u2192 ${target}`);
+            setTimeout(() => executeForecast(mode, target), 4e3);
+          }
+        }
+      } catch (e) {
+      }
+    }
     const bindExtHotkeys = () => {
       if (!window.Ext || !window.Ext.onReady) return;
       window.Ext.onReady(() => {
@@ -15322,6 +15399,110 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
     };
   })();
 
+  // src/modules/colorcode/colorcode-consolidate.js
+  function parseHex(hex) {
+    const h = (hex || "#000000").replace("#", "");
+    if (h.length === 3) {
+      return [parseInt(h[0] + h[0], 16), parseInt(h[1] + h[1], 16), parseInt(h[2] + h[2], 16)];
+    }
+    return [parseInt(h.slice(0, 2), 16), parseInt(h.slice(2, 4), 16), parseInt(h.slice(4, 6), 16)];
+  }
+  function toHex(rgb) {
+    return "#" + rgb.map((v) => Math.round(v).toString(16).padStart(2, "0")).join("");
+  }
+  function colorDistance(hex1, hex2) {
+    const [r1, g1, b1] = parseHex(hex1);
+    const [r2, g2, b2] = parseHex(hex2);
+    return Math.sqrt(2 * (r1 - r2) ** 2 + 4 * (g1 - g2) ** 2 + 3 * (b1 - b2) ** 2);
+  }
+  var COLOR_THRESHOLD = 60;
+  function findConsolidationGroups(rules) {
+    if (!rules || rules.length < 2) return [];
+    const tagBuckets = /* @__PURE__ */ new Map();
+    for (const rule of rules) {
+      const normTag = (rule.tag || "").trim().toLowerCase();
+      if (!normTag) continue;
+      if (!tagBuckets.has(normTag)) tagBuckets.set(normTag, []);
+      tagBuckets.get(normTag).push(rule);
+    }
+    const groups = [];
+    for (const [normTag, bucket] of tagBuckets) {
+      if (bucket.length < 2) continue;
+      const used = /* @__PURE__ */ new Set();
+      for (let i = 0; i < bucket.length; i++) {
+        if (used.has(i)) continue;
+        const cluster = [bucket[i]];
+        used.add(i);
+        for (let j = i + 1; j < bucket.length; j++) {
+          if (used.has(j)) continue;
+          const close = cluster.some((c) => colorDistance(c.color, bucket[j].color) < COLOR_THRESHOLD);
+          if (close) {
+            cluster.push(bucket[j]);
+            used.add(j);
+          }
+        }
+        if (cluster.length >= 2) {
+          const seen = /* @__PURE__ */ new Set();
+          const mergedKeywords = [];
+          for (const r of cluster) {
+            const kws = Array.isArray(r.search) ? r.search : [r.search].filter(Boolean);
+            for (const kw of kws) {
+              const lower = kw.toLowerCase().trim();
+              if (lower && !seen.has(lower)) {
+                seen.add(lower);
+                mergedKeywords.push(kw.trim());
+              }
+            }
+          }
+          const rgbs = cluster.map((r) => parseHex(r.color));
+          const avg = [0, 1, 2].map(
+            (ch) => rgbs.reduce((sum, rgb) => sum + rgb[ch], 0) / rgbs.length
+          );
+          groups.push({
+            tag: cluster[0].tag,
+            // original casing from first rule
+            averagedColor: toHex(avg),
+            ruleIds: cluster.map((r) => r.id),
+            mergedKeywords
+          });
+        }
+      }
+    }
+    return groups;
+  }
+  function applyConsolidation(rules, selectedGroups) {
+    if (!selectedGroups || selectedGroups.length === 0) return [...rules];
+    const idToGroup = /* @__PURE__ */ new Map();
+    for (const group of selectedGroups) {
+      for (const id of group.ruleIds) {
+        idToGroup.set(id, group);
+      }
+    }
+    const emitted = /* @__PURE__ */ new Set();
+    const result = [];
+    for (const rule of rules) {
+      const group = idToGroup.get(rule.id);
+      if (!group) {
+        result.push(rule);
+        continue;
+      }
+      if (emitted.has(group)) {
+        continue;
+      }
+      const groupRules = rules.filter((r) => group.ruleIds.includes(r.id));
+      result.push({
+        id: Date.now() + Math.random(),
+        search: group.mergedKeywords,
+        tag: group.tag,
+        color: group.averagedColor,
+        fill: groupRules.some((r) => r.fill),
+        showTag: groupRules.some((r) => r.showTag)
+      });
+      emitted.add(group);
+    }
+    return result;
+  }
+
   // src/modules/colorcode/colorcode-ui.js
   init_constants();
   init_storage();
@@ -15484,7 +15665,11 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
             result.errors.push(`${key}: expected object, got ${typeof value}`);
             continue;
           }
-          if ((key === CC_STORAGE_RULES || key === LABOR_EMPS_STORAGE) && !Array.isArray(value)) {
+          if (key === CC_STORAGE_RULES && !Array.isArray(value) && !(value && value._v !== void 0 && Array.isArray(value.rules))) {
+            result.errors.push(`${key}: expected array or wrapped {_v, rules}, got ${typeof value}`);
+            continue;
+          }
+          if (key === LABOR_EMPS_STORAGE && !Array.isArray(value)) {
             result.errors.push(`${key}: expected array, got ${typeof value}`);
             continue;
           }
@@ -15516,6 +15701,126 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
   init_dom_helpers();
   init_logger();
   var DEFAULT_RULE_COLOR = "#e74c3c";
+  function getChipKeywords() {
+    const container = document.getElementById("cc-chip-container");
+    if (!container) return [];
+    return Array.from(container.querySelectorAll(".cc-chip")).map((chip) => chip.dataset.keyword || "").filter((s) => s);
+  }
+  function createChipElement(keyword, { onRemove } = {}) {
+    const chip = el("span", {
+      className: "cc-chip",
+      title: keyword,
+      style: {
+        display: "inline-flex",
+        alignItems: "center",
+        gap: "3px",
+        background: "var(--apm-surface-raised)",
+        border: "1px solid var(--apm-border)",
+        borderRadius: "10px",
+        padding: "1px 6px 1px 8px",
+        fontSize: "var(--apm-text-xs, 10px)",
+        color: "var(--apm-text-bright)",
+        maxWidth: "180px",
+        whiteSpace: "nowrap",
+        cursor: "default",
+        lineHeight: "18px"
+      }
+    }, [
+      el("span", { style: { overflow: "hidden", textOverflow: "ellipsis" } }, keyword),
+      el("span", {
+        className: "cc-chip-remove",
+        onclick: (e) => {
+          e.stopPropagation();
+          chip.remove();
+          if (onRemove) onRemove();
+        },
+        style: {
+          cursor: "pointer",
+          color: "var(--apm-text-muted)",
+          fontSize: "12px",
+          lineHeight: "1",
+          padding: "0 1px",
+          marginLeft: "2px",
+          borderRadius: "50%",
+          transition: "color 0.15s"
+        }
+      }, "\xD7")
+    ]);
+    chip.dataset.keyword = keyword;
+    return chip;
+  }
+  function addChip(keyword, { updatePreviewFn } = {}) {
+    const trimmed = keyword.trim();
+    if (!trimmed) return false;
+    const container = document.getElementById("cc-chip-container");
+    const input = document.getElementById("cc-search");
+    if (!container || !input) return false;
+    const existing = getChipKeywords().map((k) => k.toLowerCase());
+    if (existing.includes(trimmed.toLowerCase())) return false;
+    const chip = createChipElement(trimmed, {
+      onRemove: () => {
+        updateChipCount();
+        if (updatePreviewFn) updatePreviewFn();
+      }
+    });
+    container.insertBefore(chip, input);
+    const chips = container.querySelectorAll(".cc-chip");
+    if (chips.length > 1 && chips.length <= 10) {
+      const orLabel = el("span", {
+        className: "cc-or-label",
+        style: { fontSize: "9px", color: "var(--apm-text-muted)", fontStyle: "italic", userSelect: "none", padding: "0 1px" }
+      }, "or");
+      container.insertBefore(orLabel, chip);
+    }
+    updateChipCount();
+    if (updatePreviewFn) updatePreviewFn();
+    return true;
+  }
+  function clearChips() {
+    const container = document.getElementById("cc-chip-container");
+    if (!container) return;
+    container.querySelectorAll(".cc-chip, .cc-or-label").forEach((el2) => el2.remove());
+    updateChipCount();
+  }
+  function setChips(keywords, { updatePreviewFn } = {}) {
+    clearChips();
+    if (!Array.isArray(keywords)) return;
+    keywords.forEach((kw) => addChip(kw, { updatePreviewFn }));
+  }
+  function updateChipCount() {
+    const badge = document.getElementById("cc-chip-count");
+    if (!badge) return;
+    const count = getChipKeywords().length;
+    if (count >= 5) {
+      badge.textContent = `(${count} keywords)`;
+      badge.style.display = "";
+    } else {
+      badge.style.display = "none";
+    }
+    if (count > 10) {
+      const container = document.getElementById("cc-chip-container");
+      if (container) container.querySelectorAll(".cc-or-label").forEach((el2) => el2.remove());
+    }
+  }
+  function expandRanges(keywords) {
+    const result = [];
+    const rangePattern = /^(\d+)-(\d+)$/;
+    for (const kw of keywords) {
+      const match = kw.match(rangePattern);
+      if (match) {
+        const start = parseInt(match[1], 10);
+        const end = parseInt(match[2], 10);
+        if (end > start && end - start <= 1e3) {
+          for (let i = start; i <= end; i++) result.push(String(i));
+        } else {
+          result.push(kw);
+        }
+      } else {
+        result.push(kw);
+      }
+    }
+    return result;
+  }
   function applyToggleBtnStyle(btn, active) {
     if (!btn) return;
     if (active) {
@@ -15537,7 +15842,9 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
   var currentPreviewRule = null;
   var originalRulesSnapshot = null;
   function buildTempRuleFromFormState() {
-    const search = document.getElementById("cc-search")?.value || "";
+    const chips = getChipKeywords();
+    const pendingInput = document.getElementById("cc-search")?.value?.trim() || "";
+    const search = pendingInput ? [...chips, pendingInput] : chips;
     const color = document.getElementById("cc-color")?.value || DEFAULT_RULE_COLOR;
     const rawTag = document.getElementById("cc-tag")?.value || "";
     const tag = rawTag.replace(/\n/g, "\\n");
@@ -15604,7 +15911,36 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
       const upBtn = el("button", { className: "rule-up-btn", onclick: onMoveUp, style: { background: "transparent", border: "none", color: "var(--apm-text-secondary)", cursor: "pointer", fontSize: "12px", padding: "0 4px" } }, ["\u25B2"]);
       const downBtn = el("button", { className: "rule-down-btn", onclick: onMoveDown, style: { background: "transparent", border: "none", color: "var(--apm-text-secondary)", cursor: "pointer", fontSize: "12px", padding: "0 4px" } }, ["\u25BC"]);
       const ctrlCol = el("div", { style: { display: "flex", flexDirection: "column", gap: "2px", marginRight: "6px" } }, [upBtn, downBtn]);
-      const searchSpan = el("span", { style: { fontSize: "13px", fontWeight: "bold", color: "var(--apm-text-bright)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" } }, [rule.search]);
+      const keywords = Array.isArray(rule.search) ? rule.search : (rule.search || "").split(",").map((s) => s.trim()).filter((s) => s);
+      const maxShow = 3;
+      const shown = keywords.slice(0, maxShow);
+      const remaining = keywords.length - maxShow;
+      const miniChips = [];
+      shown.forEach((kw, i) => {
+        if (i > 0) {
+          miniChips.push(el("span", { style: { fontSize: "9px", color: "var(--apm-text-muted)", fontStyle: "italic" } }, "or"));
+        }
+        miniChips.push(el("span", {
+          style: {
+            display: "inline-block",
+            background: "var(--apm-surface-raised)",
+            border: "1px solid var(--apm-border)",
+            borderRadius: "8px",
+            padding: "0 6px",
+            fontSize: "11px",
+            color: "var(--apm-text-bright)",
+            maxWidth: "120px",
+            overflow: "hidden",
+            textOverflow: "ellipsis",
+            whiteSpace: "nowrap",
+            lineHeight: "18px"
+          }
+        }, kw));
+      });
+      if (remaining > 0) {
+        miniChips.push(el("span", { style: { fontSize: "10px", color: "var(--apm-text-muted)", fontWeight: "normal" } }, `+${remaining} more`));
+      }
+      const searchSpan = el("span", { style: { display: "flex", flexWrap: "wrap", gap: "3px", alignItems: "center", overflow: "hidden" } }, miniChips);
       let tagText, tagColor, tagBg;
       if (rule.fill && rule.showTag && rule.tag) {
         tagText = `Fill & Tag: ${rule.tag}`;
@@ -15649,8 +15985,10 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
             _editingId = rule.id;
             const r = getRules().find((x) => x.id === _editingId);
             if (r) {
+              const keywords = Array.isArray(r.search) ? r.search : (r.search || "").split(",").map((s) => s.trim()).filter((s) => s);
+              setChips(keywords, { updatePreviewFn: updateGridPreview });
               const ccSearchEl = document.getElementById("cc-search");
-              if (ccSearchEl) ccSearchEl.value = r.search;
+              if (ccSearchEl) ccSearchEl.value = "";
               const ccTagEl = document.getElementById("cc-tag");
               if (ccTagEl) {
                 ccTagEl.value = (r.tag || "").replace(/\\n/g, "\n");
@@ -15697,8 +16035,23 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
     };
     const resetForm = () => {
       _editingId = null;
+      clearChips();
       const ccSearchEl = document.getElementById("cc-search");
       if (ccSearchEl) ccSearchEl.value = "";
+      const bulkContainer2 = document.getElementById("cc-bulk-container");
+      const chipContainerEl2 = document.getElementById("cc-chip-container");
+      const addChipBtnEl2 = document.getElementById("cc-add-chip-btn");
+      const bulkToggleBtn2 = document.getElementById("cc-bulk-toggle-btn");
+      const bulkTextarea = document.getElementById("cc-bulk-textarea");
+      if (bulkContainer2) bulkContainer2.style.display = "none";
+      if (chipContainerEl2) chipContainerEl2.style.display = "flex";
+      if (addChipBtnEl2) addChipBtnEl2.style.display = "";
+      if (bulkToggleBtn2) {
+        bulkToggleBtn2.textContent = "Bulk";
+        bulkToggleBtn2.style.background = "var(--apm-surface-raised)";
+        bulkToggleBtn2.style.color = "var(--apm-text-secondary)";
+      }
+      if (bulkTextarea) bulkTextarea.value = "";
       const ccTagEl = document.getElementById("cc-tag");
       if (ccTagEl) ccTagEl.value = "";
       const ccColorEl = document.getElementById("cc-color");
@@ -15722,6 +16075,24 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
       const lbl = document.getElementById("cc-uniform-label");
       if (lbl) lbl.textContent = e.target.checked ? "Uniform Shading" : "Alternating Shading";
     };
+    const ccConsolidateBtn = document.getElementById("cc-consolidate-btn");
+    if (ccConsolidateBtn) {
+      ccConsolidateBtn.onclick = async () => {
+        const rules = getRules();
+        const groups = findConsolidationGroups(rules);
+        if (groups.length === 0) {
+          showToast("No duplicate badge names found", "var(--apm-text-secondary)");
+          return;
+        }
+        const selected = await showConsolidateModal(groups);
+        if (!selected || selected.length === 0) return;
+        const consolidated = applyConsolidation(rules, selected);
+        setRules(consolidated);
+        saveSync();
+        const totalMerged = selected.reduce((n, g) => n + g.ruleIds.length, 0);
+        showToast(`Consolidated ${totalMerged} rules into ${selected.length}`, "var(--apm-success-bright)");
+      };
+    }
     const elTheme = document.getElementById("cc-setting-theme");
     if (elTheme) elTheme.onchange = (e) => {
       const val = e.target.value;
@@ -15751,15 +16122,39 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
     document.getElementById("cc-tag")?.addEventListener("input", updatePreview);
     const elAddBtn = document.getElementById("cc-add-btn");
     if (elAddBtn) elAddBtn.onclick = () => {
+      const bulkContainerEl = document.getElementById("cc-bulk-container");
+      if (bulkContainerEl && bulkContainerEl.style.display !== "none") {
+        const bulkTextarea = document.getElementById("cc-bulk-textarea");
+        if (bulkTextarea) {
+          const lines = bulkTextarea.value.split("\n").map((s2) => s2.trim()).filter((s2) => s2);
+          const expanded = expandRanges(lines);
+          clearChips();
+          expanded.forEach((kw) => addChip(kw, { updatePreviewFn: updateGridPreview }));
+          bulkTextarea.value = "";
+        }
+        bulkContainerEl.style.display = "none";
+        const chipCont = document.getElementById("cc-chip-container");
+        if (chipCont) chipCont.style.display = "flex";
+        const addBtn = document.getElementById("cc-add-chip-btn");
+        if (addBtn) addBtn.style.display = "";
+        const bulkBtn = document.getElementById("cc-bulk-toggle-btn");
+        if (bulkBtn) {
+          bulkBtn.textContent = "Bulk";
+          bulkBtn.style.background = "var(--apm-surface-raised)";
+          bulkBtn.style.color = "var(--apm-text-secondary)";
+        }
+      }
       const searchInput = document.getElementById("cc-search");
-      const s = searchInput?.value.trim();
-      if (!s) return;
+      const pending = searchInput?.value?.trim();
+      if (pending) addChip(pending, { updatePreviewFn: updateGridPreview });
+      const s = getChipKeywords();
+      if (s.length === 0) return;
       const tagInput = document.getElementById("cc-tag");
       const tag = (tagInput?.value.trim() || "").replace(/\n/g, "\\n");
       const fillActive = document.getElementById("cc-btn-fill")?.classList.contains("active") ?? false;
       const tagActive = document.getElementById("cc-btn-tag")?.classList.contains("active") ?? false;
       const nr = {
-        search: s,
+        search: [...s],
         tag,
         color: document.getElementById("cc-color")?.value || DEFAULT_RULE_COLOR,
         fill: fillActive,
@@ -15780,28 +16175,111 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
       resetForm();
       if (searchInput) searchInput.focus();
     };
-    const handleEnter = (e) => {
-      if (e.key === "Enter") {
-        e.preventDefault();
-        e.stopPropagation();
-        elAddBtn.click();
-      }
-    };
     const ccSearch = document.getElementById("cc-search");
     const ccTag = document.getElementById("cc-tag");
-    if (ccSearch && !ccSearch._apmListenersAttached) {
-      ["keydown", "keyup", "keypress"].forEach((evt) => {
-        ccSearch.addEventListener(evt, (e) => {
-          if (e.key !== "Tab") e.stopPropagation();
-        });
+    if (ccSearch && !ccSearch._apmChipKeysAttached) {
+      document.addEventListener("keydown", (e) => {
+        if (!e.target || e.target.id !== "cc-search") return;
+        if (e.key !== "Tab") e.stopPropagation();
+        if (e.key === "Enter") {
+          e.preventDefault();
+          e.stopImmediatePropagation();
+          const input = document.getElementById("cc-search");
+          const val = input?.value?.trim();
+          if (val) {
+            addChip(val, { updatePreviewFn: updateGridPreview });
+            input.value = "";
+          }
+          return;
+        }
+        if (e.key === "Backspace" && e.target.value === "") {
+          const container = document.getElementById("cc-chip-container");
+          if (!container) return;
+          const chips = container.querySelectorAll(".cc-chip");
+          if (chips.length === 0) return;
+          const lastChip = chips[chips.length - 1];
+          if (lastChip.classList.contains("cc-chip-selected")) {
+            const prev = lastChip.previousElementSibling;
+            if (prev && prev.classList.contains("cc-or-label")) prev.remove();
+            lastChip.remove();
+            updateChipCount();
+            updateGridPreview();
+          } else {
+            lastChip.classList.add("cc-chip-selected");
+            lastChip.style.outline = "1px solid var(--apm-accent)";
+          }
+        } else if (e.key !== "Backspace") {
+          const container = document.getElementById("cc-chip-container");
+          if (container) {
+            container.querySelectorAll(".cc-chip-selected").forEach((c) => {
+              c.classList.remove("cc-chip-selected");
+              c.style.outline = "";
+            });
+          }
+        }
+      }, true);
+      ccSearch.onpaste = (e) => {
+        e.preventDefault();
+        const text = (e.clipboardData || window.clipboardData).getData("text");
+        const parts = text.split(",").map((s) => s.trim()).filter((s) => s);
+        parts.forEach((p) => addChip(p, { updatePreviewFn: updateGridPreview }));
+      };
+      ccSearch._apmChipKeysAttached = true;
+    }
+    const addChipBtn = document.getElementById("cc-add-chip-btn");
+    if (addChipBtn) {
+      addChipBtn.onclick = () => {
+        const val = ccSearch?.value?.trim();
+        if (val) {
+          addChip(val, { updatePreviewFn: updateGridPreview });
+          ccSearch.value = "";
+          ccSearch.focus();
+        }
+      };
+    }
+    const chipContainer = document.getElementById("cc-chip-container");
+    if (chipContainer) {
+      chipContainer.addEventListener("click", (e) => {
+        if (e.target === chipContainer || e.target.classList.contains("cc-or-label")) {
+          ccSearch?.focus();
+        }
       });
-      ccSearch.addEventListener("keydown", handleEnter);
-      ccSearch.addEventListener("input", () => {
-        const pos = ccSearch.selectionStart;
-        ccSearch.value = ccSearch.value.replace(/(^|[, ]+)([a-z])/g, (m, sep, ch) => sep + ch.toUpperCase());
-        ccSearch.selectionStart = ccSearch.selectionEnd = pos;
-      });
-      ccSearch._apmListenersAttached = true;
+    }
+    const bulkToggleBtn = document.getElementById("cc-bulk-toggle-btn");
+    const bulkContainer = document.getElementById("cc-bulk-container");
+    const chipContainerEl = document.getElementById("cc-chip-container");
+    const addChipBtnEl = document.getElementById("cc-add-chip-btn");
+    if (bulkToggleBtn && bulkContainer && chipContainerEl) {
+      bulkToggleBtn.onclick = () => {
+        const isBulkActive = bulkContainer.style.display !== "none";
+        if (isBulkActive) {
+          const textarea = document.getElementById("cc-bulk-textarea");
+          if (textarea) {
+            const lines = textarea.value.split("\n").map((s) => s.trim()).filter((s) => s);
+            const expanded = expandRanges(lines);
+            clearChips();
+            expanded.forEach((kw) => addChip(kw, { updatePreviewFn: updateGridPreview }));
+            textarea.value = "";
+          }
+          bulkContainer.style.display = "none";
+          chipContainerEl.style.display = "flex";
+          if (addChipBtnEl) addChipBtnEl.style.display = "";
+          bulkToggleBtn.textContent = "Bulk";
+          bulkToggleBtn.style.background = "var(--apm-surface-raised)";
+          bulkToggleBtn.style.color = "var(--apm-text-secondary)";
+        } else {
+          const textarea = document.getElementById("cc-bulk-textarea");
+          const keywords = getChipKeywords();
+          if (textarea) textarea.value = keywords.join("\n");
+          chipContainerEl.style.display = "none";
+          if (addChipBtnEl) addChipBtnEl.style.display = "none";
+          bulkContainer.style.display = "block";
+          bulkToggleBtn.textContent = "Done";
+          bulkToggleBtn.style.background = "var(--apm-accent)";
+          bulkToggleBtn.style.color = "white";
+          if (textarea) textarea.focus();
+        }
+      };
     }
     if (ccTag && !ccTag._apmListenersAttached) {
       ["keyup", "keypress"].forEach((evt) => {
@@ -15870,7 +16348,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
       if (!isExternal) return null;
       return arr.map((r) => ({
         id: Date.now() + Math.random(),
-        search: String(r.searchText || ""),
+        search: [String(r.searchText || "")].filter((s) => s),
         tag: String(r.appendText || "").replace(/\n/g, "\\n"),
         color: String(r.color || NEUTRAL_TAG_COLOR),
         fill: false,
@@ -15962,6 +16440,133 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
         document.body.appendChild(overlay);
       });
     }
+    function showConsolidationBanner(groups, preConsolidatedRules) {
+      const existing = document.getElementById("cc-consolidation-banner");
+      if (existing) existing.remove();
+      const summaryLines = groups.map(
+        (g) => el("div", { style: { fontSize: "11px", color: "var(--apm-text-secondary)", padding: "2px 0" } }, [
+          el("span", { style: { fontWeight: "bold", color: "var(--apm-text-bright)" } }, g.tag),
+          `: merged ${g.mergedKeywords.join(", ")}`
+        ])
+      );
+      const totalBefore = groups.reduce((n, g) => n + g.ruleIds.length, 0);
+      const totalAfter = groups.length;
+      const banner2 = el("div", {
+        id: "cc-consolidation-banner",
+        style: {
+          background: "var(--apm-success-subtle, rgba(26,188,156,0.1))",
+          border: "1px solid var(--apm-success)",
+          borderRadius: "6px",
+          padding: "10px 12px",
+          marginBottom: "10px",
+          fontSize: "12px"
+        }
+      }, [
+        el(
+          "div",
+          { style: { fontWeight: "bold", color: "var(--apm-success)", marginBottom: "6px" } },
+          `Consolidated ${totalBefore} rules into ${totalAfter} by badge name`
+        ),
+        ...summaryLines,
+        el("div", { style: { display: "flex", gap: "8px", marginTop: "8px" } }, [
+          el("button", {
+            className: "apm-modal-btn apm-modal-btn-ghost",
+            style: { fontSize: "11px", padding: "4px 12px" },
+            onclick: () => banner2.remove()
+          }, "Got it"),
+          el("button", {
+            className: "apm-modal-btn apm-modal-btn-ghost",
+            style: { fontSize: "11px", padding: "4px 12px", color: "var(--apm-warning)" },
+            onclick: () => {
+              setRules(preConsolidatedRules);
+              saveSync();
+              banner2.remove();
+              showToast("Consolidation undone", "var(--apm-warning)");
+            }
+          }, "Undo")
+        ])
+      ]);
+      if (rContainer) rContainer.insertAdjacentElement("beforebegin", banner2);
+    }
+    function showConsolidateModal(groups) {
+      return new Promise((resolve) => {
+        const checkboxes = [];
+        const groupRows = groups.map((g, idx) => {
+          const cb = el("input", { type: "checkbox", checked: true, dataset: { groupIdx: String(idx) } });
+          checkboxes.push(cb);
+          const kwPreview = g.mergedKeywords.length > 5 ? g.mergedKeywords.slice(0, 5).join(", ") + ` +${g.mergedKeywords.length - 5} more` : g.mergedKeywords.join(", ");
+          return el("label", {
+            style: {
+              display: "flex",
+              alignItems: "flex-start",
+              gap: "8px",
+              padding: "8px 10px",
+              background: "var(--apm-surface-inset)",
+              borderRadius: "6px",
+              cursor: "pointer",
+              lineHeight: "1.5"
+            }
+          }, [
+            cb,
+            el("div", { style: { flex: "1", fontSize: "11px" } }, [
+              el("div", { style: { display: "flex", alignItems: "center", gap: "6px" } }, [
+                el("span", {
+                  style: {
+                    width: "12px",
+                    height: "12px",
+                    borderRadius: "2px",
+                    background: g.averagedColor,
+                    display: "inline-block",
+                    border: "1px solid var(--apm-border)",
+                    flexShrink: "0"
+                  }
+                }),
+                el("span", { style: { fontWeight: "bold", color: "var(--apm-text-bright)" } }, g.tag),
+                el(
+                  "span",
+                  { style: { color: "var(--apm-text-muted)" } },
+                  `\u2014 ${g.ruleIds.length} rules \u2192 1`
+                )
+              ]),
+              el("div", { style: { color: "var(--apm-text-secondary)", marginTop: "2px" } }, kwPreview)
+            ])
+          ]);
+        });
+        const overlay = el("div", { className: "apm-modal-overlay", style: { zIndex: "2147483647" } }, [
+          el("div", { className: "apm-modal-content", style: { width: "420px", maxWidth: "90vw" } }, [
+            el("div", { className: "apm-modal-header" }, [
+              el("span", { style: { fontWeight: "600", fontSize: "14px", color: "var(--apm-text-bright)" } }, "Consolidate Rules")
+            ]),
+            el("div", { className: "apm-modal-body" }, [
+              el(
+                "p",
+                { style: { fontSize: "12px", color: "var(--apm-text-secondary)", margin: "0 0 10px", lineHeight: "1.5" } },
+                `Found ${groups.length} group${groups.length !== 1 ? "s" : ""} with duplicate badge names:`
+              ),
+              el("div", { style: { display: "flex", flexDirection: "column", gap: "6px", maxHeight: "300px", overflowY: "auto" } }, groupRows)
+            ]),
+            el("div", { className: "apm-modal-footer", style: { display: "flex", gap: "8px", justifyContent: "flex-end" } }, [
+              el("button", {
+                className: "apm-modal-btn apm-modal-btn-ghost",
+                onclick: () => {
+                  overlay.remove();
+                  resolve(null);
+                }
+              }, "Cancel"),
+              el("button", {
+                className: "apm-modal-btn apm-modal-btn-accent",
+                onclick: () => {
+                  const selected = checkboxes.filter((cb) => cb.checked).map((cb) => groups[parseInt(cb.dataset.groupIdx, 10)]);
+                  overlay.remove();
+                  resolve(selected);
+                }
+              }, "Consolidate Selected")
+            ])
+          ])
+        ]);
+        document.body.appendChild(overlay);
+      });
+    }
     const performImport = async (input) => {
       if (!input || !input.trim()) {
         showToast("No rules provided", "var(--apm-warning)");
@@ -15993,7 +16598,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
         } else {
           importedRules = importedRules.map((r) => ({
             id: Date.now() + Math.random(),
-            search: String(r.search || ""),
+            search: Array.isArray(r.search) ? r.search : String(r.search || "").split(",").map((s) => s.trim()).filter((s) => s),
             tag: String(r.tag || ""),
             color: String(r.color || DEFAULT_RULE_COLOR),
             fill: !!r.fill,
@@ -16002,18 +16607,34 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
         }
         const choice = await showImportChoiceDialog(importedRules.length);
         if (choice === "cancel") return;
+        let finalRules;
         if (choice === "replace") {
-          setRules(importedRules);
+          finalRules = importedRules;
         } else {
-          let rs = getRules();
+          finalRules = getRules();
           importedRules.forEach((r) => {
             r.id = Date.now() + Math.random();
-            rs.push(r);
+            finalRules.push(r);
           });
-          setRules(rs);
         }
+        let consolidationGroups = null;
+        let preConsolidated = null;
+        if (converted) {
+          const groups = findConsolidationGroups(finalRules);
+          if (groups.length > 0) {
+            preConsolidated = [...finalRules];
+            consolidationGroups = groups;
+            finalRules = applyConsolidation(finalRules, groups);
+          }
+        }
+        setRules(finalRules);
         saveSync();
-        showToast(`${choice === "replace" ? "Replaced" : "Merged"} ${importedRules.length} rules`, "var(--apm-success-bright)");
+        if (consolidationGroups) {
+          showConsolidationBanner(consolidationGroups, preConsolidated);
+          showToast(`Imported & consolidated ${importedRules.length} rules into ${finalRules.length}`, "var(--apm-success-bright)");
+        } else {
+          showToast(`${choice === "replace" ? "Replaced" : "Merged"} ${importedRules.length} rules`, "var(--apm-success-bright)");
+        }
         if (ccImportPanel) ccImportPanel.style.display = "none";
         if (ccImportTextarea) ccImportTextarea.value = "";
       } catch (err) {
@@ -16117,6 +16738,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
     const ccColor = document.getElementById("cc-color");
     const ccBtnFill = document.getElementById("cc-btn-fill");
     const ccBtnTag = document.getElementById("cc-btn-tag");
+    clearChips();
     if (ccSearch) ccSearch.value = "";
     if (ccTag) ccTag.value = "";
     if (ccColor) ccColor.value = DEFAULT_RULE_COLOR;
@@ -16656,14 +17278,6 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
   var CAPTURE_INTERVAL = 3e3;
   var RESTORE_GRID_TIMEOUT = 1e4;
   var PROMPT_AUTO_DISMISS = 15e3;
-  function getTabId() {
-    let id = sessionStorage.getItem("apm_tab_id");
-    if (!id) {
-      id = crypto.randomUUID();
-      sessionStorage.setItem("apm_tab_id", id);
-    }
-    return id;
-  }
   function snapshotKey(tabId) {
     return SNAPSHOT_STORAGE_PREFIX + tabId;
   }
@@ -17411,8 +18025,10 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
         APMLogger.debug("Snapshot", "Login page detected \u2014 skipping init to preserve snapshot.");
         return;
       }
-      const tabId = getTabId();
-      APMLogger.info("Snapshot", `Tab ID: ${tabId}`);
+      const previousTabId = sessionStorage.getItem("apm_tab_id");
+      const tabId = crypto.randomUUID();
+      sessionStorage.setItem("apm_tab_id", tabId);
+      APMLogger.info("Snapshot", `Tab ID: ${tabId}${previousTabId ? ` (prev: ${previousTabId.slice(0, 8)}\u2026)` : ""}`);
       purgeExpiredSnapshots();
       if (!_restoreHandled) {
         _restoreHandled = true;
@@ -17430,8 +18046,8 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
           (entry) => params.get(entry.drillbackFlag) === "YES" && params.get(entry.entityKey)
         );
         if (!hasDrillback) {
-          let snapshot = APMStorage.get(snapshotKey(tabId));
-          let snapshotKeyUsed = snapshotKey(tabId);
+          let snapshot = previousTabId ? APMStorage.get(snapshotKey(previousTabId)) : null;
+          let snapshotKeyUsed = previousTabId ? snapshotKey(previousTabId) : null;
           if ((!snapshot || !snapshot.ts || Date.now() - snapshot.ts > SNAPSHOT_TTL) && (autoRestore || !skipRestore)) {
             const keys = APMStorage.list();
             let best = null;
@@ -17456,17 +18072,25 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
             APMLogger.info("Snapshot", `Found restorable snapshot: ${snapshot.screen}${snapshot.record ? " / " + snapshot.record.entityId : ""}${snapshot.gridState?.dataspyId ? " (dataspy:" + snapshot.gridState.dataspyId + ")" : ""}${snapshot.gridState?.filterFields ? " +filters" : ""}`);
             if (skipRestore) {
               APMLogger.info("Snapshot", "Skipping restore \u2014 user chose Redirect from wake prompt.");
+              APMStorage.remove(snapshotKeyUsed);
             } else if (autoRestore) {
               APMLogger.info("Snapshot", "Auto-restoring \u2014 user chose Restore from wake prompt.");
               await executeRestore(snapshot);
+              APMStorage.remove(snapshotKeyUsed);
             } else {
-              const choice = await showRestorePrompt(snapshot);
-              await delay(350);
-              if (choice === "restore") {
-                await executeRestore(snapshot);
+              await delay(1e3);
+              const activeScreen = detectActiveScreen();
+              if (activeScreen && activeScreen !== "BSSTRT") {
+                APMLogger.info("Snapshot", `On ${activeScreen} \u2014 skipping restore (not start screen)`);
+              } else {
+                const choice = await showRestorePrompt(snapshot);
+                await delay(350);
+                if (choice === "restore") {
+                  await executeRestore(snapshot);
+                }
+                APMStorage.remove(snapshotKeyUsed);
               }
             }
-            APMStorage.remove(snapshotKeyUsed);
           }
         }
       }
@@ -17477,7 +18101,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
         window.addEventListener("APM_VIEW_TRANSITION", () => {
           setTimeout(() => captureState(tabId), 300);
         });
-      }, 3e4);
+      }, 15e3);
     }
   };
 
@@ -18224,8 +18848,20 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
         el("div", { className: "apm-cc-search-box", style: { background: "var(--apm-surface-sunken)", padding: "12px", borderRadius: "6px", border: "1px solid var(--apm-border)", marginBottom: "15px" } }, [
           el("div", { style: { display: "flex", gap: "10px", marginBottom: "12px" } }, [
             el("div", { style: { flex: "1" } }, [
-              el("div", { style: { fontSize: "11px", color: "var(--apm-text-muted)", marginBottom: "4px", fontWeight: "bold" } }, "Keyword (Search)"),
-              el("input", { type: "text", id: "cc-search", className: "field-input", placeholder: "Match multiple keywords separated by, comma,", style: { height: "28px", fontSize: "12px", width: "100%", boxSizing: "border-box", textTransform: "none" } })
+              el("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "4px" } }, [
+                el("div", { style: { fontSize: "11px", color: "var(--apm-text-muted)", fontWeight: "bold" } }, "Keywords (Search)"),
+                el("span", { id: "cc-chip-count", style: { fontSize: "10px", color: "var(--apm-text-muted)", display: "none" } })
+              ]),
+              el("div", { id: "cc-chip-container", className: "field-input cc-chip-container", style: { display: "flex", flexWrap: "wrap", alignItems: "center", gap: "4px", minHeight: "28px", maxHeight: "120px", overflowY: "auto", fontSize: "12px", width: "100%", boxSizing: "border-box", padding: "3px 6px", cursor: "text" } }, [
+                el("input", { type: "text", id: "cc-search", className: "cc-chip-input", placeholder: "Enter another keyword to match (OR logic)", style: { border: "none", outline: "none", background: "transparent", fontSize: "12px", color: "var(--apm-input-text)", caretColor: "var(--apm-input-text)", flexGrow: "1", minWidth: "80px", height: "22px", padding: "0", textTransform: "none" } })
+              ]),
+              el("div", { id: "cc-bulk-container", style: { display: "none" } }, [
+                el("textarea", { id: "cc-bulk-textarea", className: "field-input", rows: 4, placeholder: "One keyword per line\nUse N-M for numeric ranges (e.g. 10500-10510)", style: { fontSize: "12px", width: "100%", boxSizing: "border-box", resize: "vertical", minHeight: "80px", textTransform: "none" } })
+              ]),
+              el("div", { style: { display: "flex", gap: "4px", marginTop: "4px" } }, [
+                el("button", { id: "cc-add-chip-btn", title: "Add keyword", style: { background: "var(--apm-surface-raised)", border: "1px solid var(--apm-border)", borderRadius: "4px", color: "var(--apm-text-secondary)", cursor: "pointer", fontSize: "14px", width: "28px", height: "22px", display: "flex", alignItems: "center", justifyContent: "center", padding: "0" } }, "+"),
+                el("button", { id: "cc-bulk-toggle-btn", title: "Bulk add / paste keywords", style: { background: "var(--apm-surface-raised)", border: "1px solid var(--apm-border)", borderRadius: "4px", color: "var(--apm-text-secondary)", cursor: "pointer", fontSize: "10px", height: "22px", padding: "0 6px", fontWeight: "bold" } }, "Bulk")
+              ])
             ]),
             el("div", { style: { width: "50px" } }, [
               el("div", { style: { fontSize: "11px", color: "var(--apm-text-muted)", marginBottom: "4px", fontWeight: "bold", textAlign: "center" } }, "Color"),
@@ -18254,17 +18890,34 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
           ])
         ]),
         el("div", { className: "apm-cc-theme-box" }, [
-          el("div", { className: "apm-cc-theme-item" }, [
-            el("div", { id: "cc-uniform-label", className: "apm-cc-theme-label" }, "Uniform Shading"),
-            el("label", { className: "cc-toggle-switch" }, [
-              el("input", { type: "checkbox", id: "cc-setting-uniform", checked: true }),
-              el("span", { className: "cc-toggle-slider" })
-            ])
+          el("div", { className: "apm-cc-theme-item", style: { display: "flex", justifyContent: "space-between", alignItems: "center" } }, [
+            el("div", { style: { display: "flex", alignItems: "center", gap: "8px" } }, [
+              el("div", { id: "cc-uniform-label", className: "apm-cc-theme-label" }, "Uniform Shading"),
+              el("label", { className: "cc-toggle-switch" }, [
+                el("input", { type: "checkbox", id: "cc-setting-uniform", checked: true }),
+                el("span", { className: "cc-toggle-slider" })
+              ])
+            ]),
+            el("button", {
+              id: "cc-consolidate-btn",
+              style: {
+                background: "var(--apm-surface-raised)",
+                border: "1px solid var(--apm-border)",
+                borderRadius: "4px",
+                color: "var(--apm-text-secondary)",
+                cursor: "pointer",
+                fontSize: "11px",
+                padding: "4px 10px",
+                fontWeight: "bold",
+                transition: "all 0.15s"
+              },
+              title: "Merge rules with the same badge name and similar color"
+            }, "Consolidate Rules")
           ])
         ]),
         el("div", { id: "cc-rules-container", className: "apm-cc-rules-container" }),
         el("div", { id: "cc-guide-container", className: "apm-cc-guide" }, [
-          el("p", {}, 'Rules match if ANY of the comma-separated keywords are found in a row. "Fill Row" is applied to every match.'),
+          el("p", {}, 'Rules match if ANY keyword is found in a row. Add keywords one at a time with Enter, or use Bulk mode to paste many at once. "Fill Row" is applied to every match.'),
           el("p", {}, [
             el("b", { style: { color: "white" } }, "Nametags: "),
             'Type text into "Badge Text" to show a pill badge on matching cells. Leave it empty to only highlight the row without showing a tag. Use ',
@@ -18393,7 +19046,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
           el("div", { className: "apm-general-item" }, [
             el("div", {}, [
               el("div", { className: "apm-general-title" }, "Language"),
-              el("div", { className: "apm-general-desc" }, "Changes toast notifications only \u2014 menus and settings stay in English")
+              el("div", { className: "apm-general-desc" }, "Translates toast notifications and some menus (Quick Book, Labor Tally). Settings panel and most UI labels stay in English.")
             ]),
             el("select", { id: "gen-setting-language", className: "apm-cc-theme-select", style: { width: "135px" } }, [
               el("option", { value: "auto" }, "Auto (System)"),
@@ -19352,8 +20005,38 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
         if (trackVal) {
           trackVal.value = apmGeneralSettings.updateTrack || "stable";
           trackVal.onchange = (e) => {
-            setGeneralSetting("updateTrack", e.target.value);
-            checkForGlobalUpdates(true);
+            const newTrack = e.target.value;
+            setGeneralSetting("updateTrack", newTrack);
+            const { download } = getUpdateUrls();
+            const trackLabel = newTrack === "beta" ? "Beta" : "Stable";
+            const trackOverlay = el("div", { className: "apm-modal-overlay", style: { zIndex: "2147483647" } }, [
+              el("div", { className: "apm-modal-content", style: { width: "360px", maxWidth: "90vw" } }, [
+                el("div", { className: "apm-modal-header" }, [
+                  el("span", { style: { fontWeight: "600", fontSize: "14px", color: "var(--apm-text-bright)" } }, `Switched to ${trackLabel}`)
+                ]),
+                el("div", { className: "apm-modal-body" }, [
+                  el(
+                    "p",
+                    { style: { fontSize: "12px", color: "var(--apm-text-secondary)", margin: "0", lineHeight: "1.5" } },
+                    `Future update checks will use the ${trackLabel.toLowerCase()} track. To install the latest ${trackLabel.toLowerCase()} version now, click below.`
+                  )
+                ]),
+                el("div", { className: "apm-modal-footer", style: { display: "flex", gap: "8px", justifyContent: "flex-end" } }, [
+                  el("button", {
+                    className: "apm-modal-btn apm-modal-btn-ghost",
+                    onclick: () => trackOverlay.remove()
+                  }, "Later"),
+                  el("button", {
+                    className: "apm-modal-btn apm-modal-btn-accent",
+                    onclick: () => {
+                      trackOverlay.remove();
+                      window.open(download, "_blank");
+                    }
+                  }, `Install ${trackLabel}`)
+                ])
+              ])
+            ]);
+            document.body.appendChild(trackOverlay);
           };
         }
         subscribeToUpdates(() => {
@@ -19522,7 +20205,33 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
                             APMLogger.info("Settings", `Selective import: ${count} modules`);
                             importPasteInput.value = "";
                             importPasteInput.style.borderColor = "var(--apm-border)";
-                            setTimeout(() => location.reload(), 1500);
+                            const refreshOverlay = el("div", { className: "apm-modal-overlay", style: { zIndex: "2147483647" } }, [
+                              el("div", { className: "apm-modal-content", style: { width: "360px", maxWidth: "90vw" } }, [
+                                el("div", { className: "apm-modal-header" }, [
+                                  el("span", { style: { fontWeight: "600", fontSize: "14px", color: "var(--apm-text-bright)" } }, "Settings Imported")
+                                ]),
+                                el("div", { className: "apm-modal-body" }, [
+                                  el(
+                                    "p",
+                                    { style: { fontSize: "12px", color: "var(--apm-text-secondary)", margin: "0", lineHeight: "1.5" } },
+                                    "A page refresh is required for all imported settings to take effect. You can continue working and refresh later."
+                                  )
+                                ]),
+                                el("div", { className: "apm-modal-footer", style: { display: "flex", gap: "8px", justifyContent: "flex-end" } }, [
+                                  el("button", {
+                                    className: "apm-modal-btn apm-modal-btn-ghost",
+                                    onclick: () => refreshOverlay.remove()
+                                  }, "Later"),
+                                  el("button", {
+                                    className: "apm-modal-btn apm-modal-btn-accent",
+                                    onclick: () => {
+                                      window.top.location.href = SESSION_TIMEOUT_URL;
+                                    }
+                                  }, "Refresh Now")
+                                ])
+                              ])
+                            ]);
+                            document.body.appendChild(refreshOverlay);
                           } else {
                             const errorMsg = result.errors.length > 0 ? result.errors.slice(0, 3).join("; ") : "Import failed";
                             showToast(errorMsg, "var(--apm-danger)");
