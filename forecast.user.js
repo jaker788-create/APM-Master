@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         APM Master: Unified Tools
 // @namespace    https://w.amazon.com/bin/view/Users/rosendah/APM-Master/
-// @version      14.10.7
+// @version      14.10.8
 // @description  Quality of life and automation tool that uses native EAM ExtJS Framework functions for high reliability and capability. This is actively supported tool so Slack me or submit bug report/feature request through the bug report button in the menu.
 // @author       Jacob Rosendahl
 // @icon         https://media.licdn.com/dms/image/v2/D5603AQGdCV0_LQKRfQ/profile-displayphoto-scale_100_100/B56ZyZLvQ5HgAg-/0/1772096519061?e=1773878400&v=beta&t=eWO1Jiy0-WbzG_yBv-SBrmmsVOPMexF57-q1Xh_VXCk
@@ -126,7 +126,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
       PRESET_STORAGE_KEY = "apm_v1_autofill_presets";
       STORAGE_KEY = "apm_v1_forecast_prefs";
       APM_GENERAL_STORAGE = "apm_v1_general_settings";
-      CURRENT_VERSION = "14.10.7";
+      CURRENT_VERSION = "14.10.8";
       VERSION_CHECK_URL = "https://raw.githubusercontent.com/jaker788-create/APM-Master/main/forecast.user.js";
       UPDATE_URL = "https://raw.githubusercontent.com/jaker788-create/APM-Master/main/forecast.user.js";
       LABOR_EMPS_STORAGE = "apm_v1_labor_employees";
@@ -11557,7 +11557,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
 .apm-general-title { font-weight: 600; font-size: var(--apm-text-md); color: var(--apm-text-bright); line-height: 1.3; margin-bottom: 2px; }
 .apm-general-desc { font-size: var(--apm-text-sm); color: var(--apm-text-muted); line-height: 1.4; margin-right: 10px; }
 .apm-help-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 2147483647; display: none; align-items: center; justify-content: center; backdrop-filter: blur(3px); }
-.apm-help-modal { background: var(--apm-surface-0); width: 1100px; max-width: 94vw; max-height: 85vh; border-radius: var(--apm-radius-lg); border: 1px solid var(--apm-border-strong); box-shadow: 0 20px 50px rgba(0,0,0,0.6); display: flex; flex-direction: column; position: relative; overflow: hidden; }
+.apm-help-modal { background: var(--apm-surface-0); width: 1100px; max-width: 94vw; height: 85vh; border-radius: var(--apm-radius-lg); border: 1px solid var(--apm-border-strong); box-shadow: 0 20px 50px rgba(0,0,0,0.6); display: flex; flex-direction: column; position: relative; overflow: hidden; }
 .apm-help-header { padding: 15px 20px; background: var(--apm-surface-raised); border-bottom: 1px solid var(--apm-border); display: flex; justify-content: space-between; align-items: center; flex-shrink: 0; }
 .apm-help-title { color: var(--apm-accent); margin: 0; font-size: var(--apm-text-xl); font-weight: 600; }
 .apm-help-close { background: transparent; border: none; color: var(--apm-text-muted); font-size: 20px; cursor: pointer; padding: 5px; line-height: 1; transition: color 0.15s; }
@@ -18150,6 +18150,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
   function createHelpOverlay() {
     const sections = [
       { id: "general", label: "Getting Started" },
+      { id: "session", label: "Session Protection" },
       { id: "forecast", label: "Forecast & Filters" },
       { id: "pm-filter", label: "PM / Non-PM Filter" },
       { id: "colorcode", label: "ColorCode & Nametag" },
@@ -18184,13 +18185,90 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
               el("div", { className: "apm-help-img-caption" }, "The General tab \u2014 theme selection, backup tools, and feature module toggles."),
               el("ul", {}, [
                 el("li", {}, [el("b", {}, "Theme: "), "Set your preferred theme in the ", el("b", {}, "General"), " tab. Dark Classic is recommended for dark mode users. Themes apply after a page reload. If you use a bookmark with a theme in the URL, set the theme here instead \u2014 APM Master applies it everywhere including PTP and direct WO links."]),
-                el("li", {}, [el("b", {}, "Session Protection: "), "A background heartbeat keeps your EAM session alive as long as your computer is awake (stops after 3 hours idle). If your session does expire \u2014 like after your laptop sleeps \u2014 a prompt appears with three options: ", el("b", {}, "Restore"), " (logs back in and reopens the record you were on), ", el("b", {}, "Redirect"), " (logs back in without restoring), or ", el("b", {}, "Dismiss"), " (stay on the page to copy data first). If no prompt appears, Auto-Redirect handles it automatically and brings you back to the EAM login screen, where you\u2019ll be offered the option to restore your previous record."]),
                 el("li", {}, [el("b", {}, "Export / Import: "), "Back up all your settings, rules, and profiles using the Full System Backup section. Use this to transfer your setup to another machine or restore after a reinstall."]),
                 el("li", {}, [el("b", {}, "Feature Toggles: "), "Toggle individual modules on or off. Disabling a feature stops it from running entirely and marginally improves startup performance."]),
                 el("li", {}, [el("b", {}, "Date Format: "), "Override EAM's date display format and separator to match what your EAM environment uses."]),
                 el("li", {}, [el("b", {}, "Update Track: "), "Switch to the Beta track for early access to new features. You can downgrade to Stable at any time. If you hit issues on Beta, Slack is the fastest way to report them."]),
                 el("li", {}, [el("b", {}, "Diagnostics: "), "The Diagnostics tab shows boot timing, active tasks, and system health. Useful for troubleshooting if something isn't working."])
               ])
+            ]),
+            // ── Session Protection ──
+            el("div", { className: "apm-help-section", "data-section": "session" }, [
+              el("div", { className: "apm-help-section-title" }, "Session Protection"),
+              el("p", {}, "APM Master monitors your EAM session and helps you recover when things go wrong."),
+              el("p", { style: { fontWeight: "600", color: "var(--apm-text-bright)", marginTop: "14px", marginBottom: "6px" } }, "Session Heartbeat"),
+              el("p", {}, "A background heartbeat keeps your EAM session alive as long as your computer is awake. It stops after 3 hours of inactivity to avoid unnecessary traffic."),
+              el("p", { style: { fontWeight: "600", color: "var(--apm-text-bright)", marginTop: "18px", marginBottom: "6px" } }, "Session Expired Detection"),
+              el("p", {}, "When you switch to a tab with an expired session, this prompt appears. No more guessing if the session is still alive and getting taken to a generic landing page."),
+              // ── Rendered replica: Session Expired prompt ──
+              el("div", { style: {
+                padding: "12px 16px 10px",
+                borderRadius: "var(--apm-radius-lg, 10px)",
+                background: "var(--apm-surface-0, #35404a)",
+                border: "1px solid var(--apm-border, #45535e)",
+                boxShadow: "0 2px 6px rgba(0,0,0,0.3)",
+                margin: "10px 0 6px",
+                display: "flex",
+                flexDirection: "column",
+                gap: "8px",
+                maxWidth: "380px",
+                fontSize: "12px"
+              } }, [
+                el("div", { style: { display: "flex", alignItems: "center", gap: "8px", fontSize: "13px", lineHeight: "1.4" } }, [
+                  el("span", { style: { fontSize: "16px", color: "var(--apm-warning, #f39c12)", flexShrink: "0" } }, "\u23F0"),
+                  el("span", {}, "Session expired while away")
+                ]),
+                el("div", { style: { display: "flex", alignItems: "center", gap: "6px" } }, [
+                  el("span", { style: { background: "var(--apm-accent, #3498db)", color: "white", borderRadius: "4px", padding: "4px 10px", fontWeight: "bold", fontSize: "11px" } }, "Restore"),
+                  el("span", { style: { background: "var(--apm-control-bg, #4a5a6a)", color: "var(--apm-text-primary, #fff)", borderRadius: "4px", padding: "4px 10px", fontWeight: "bold", fontSize: "11px" } }, "Redirect to Start"),
+                  el("div", { style: { flex: "1" } }),
+                  el("span", { style: { color: "var(--apm-text-muted, #95a5a6)", fontSize: "11px", fontWeight: "600" } }, "Dismiss")
+                ])
+              ]),
+              el("div", { className: "apm-help-img-caption" }, "Restore refreshes and picks up your snapshot. Redirect goes straight to the start screen."),
+              el("p", { style: { fontWeight: "600", color: "var(--apm-text-bright)", marginTop: "18px", marginBottom: "6px" } }, "Session Snapshot Restore"),
+              el("p", {}, "APM Master keeps track of your place as you work \u2014 the screen you're on, the record you have open, your search filters, and even the active tab. If your session expires or the page reloads, a restore prompt slides in offering to take you right back where you were."),
+              // ── Rendered replica: Session Restore prompt ──
+              el("div", { style: {
+                padding: "12px 16px 10px",
+                borderRadius: "var(--apm-radius-lg, 10px)",
+                background: "var(--apm-surface-0, #35404a)",
+                border: "1px solid var(--apm-border, #45535e)",
+                boxShadow: "0 2px 6px rgba(0,0,0,0.3)",
+                margin: "10px 0 6px",
+                display: "flex",
+                flexDirection: "column",
+                gap: "8px",
+                maxWidth: "380px",
+                fontSize: "12px",
+                position: "relative",
+                overflow: "hidden"
+              } }, [
+                el("div", { style: { display: "flex", alignItems: "center", gap: "8px", fontSize: "13px", lineHeight: "1.4" } }, [
+                  el("span", { style: { fontSize: "16px", color: "var(--apm-accent, #3498db)", flexShrink: "0" } }, "\u21BB"),
+                  el("span", {}, "Your previous session had Work Order 10050991604 open with search filters. Restore?")
+                ]),
+                el("div", { style: { display: "flex", alignItems: "center", gap: "6px" } }, [
+                  el("span", { style: { background: "var(--apm-accent, #3498db)", color: "white", borderRadius: "4px", padding: "4px 10px", fontWeight: "bold", fontSize: "11px" } }, "Restore"),
+                  el("span", { style: { background: "var(--apm-control-bg, #4a5a6a)", color: "var(--apm-text-primary, #fff)", borderRadius: "4px", padding: "4px 10px", fontWeight: "bold", fontSize: "11px" } }, "Dismiss"),
+                  el("div", { style: { flex: "1" } }),
+                  el("span", { style: { color: "var(--apm-text-muted, #95a5a6)", fontSize: "11px", fontWeight: "600" } }, "Don't Ask Again")
+                ]),
+                // Static progress bar replica
+                el("div", { style: {
+                  position: "absolute",
+                  bottom: "0",
+                  left: "0",
+                  height: "2px",
+                  width: "65%",
+                  background: "var(--apm-accent, #3498db)",
+                  borderRadius: "0 0 10px 10px",
+                  opacity: "0.6"
+                } })
+              ]),
+              el("div", { className: "apm-help-img-caption" }, "The blue progress bar counts down before auto-dismissing. Click Restore to jump back to your last record."),
+              el("p", { style: { fontWeight: "600", color: "var(--apm-text-bright)", marginTop: "18px", marginBottom: "6px" } }, "Auto Record Open"),
+              el("p", {}, "When a search or navigation results in a single work order, it opens automatically \u2014 no need to click the row. Works for links opened in new tabs, same-tab searches, and forecast results.")
             ]),
             // ── Forecast & Filters (with Dataspy merged in) ──
             el("div", { className: "apm-help-section", "data-section": "forecast" }, [
@@ -18256,7 +18334,8 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
                 el("li", {}, [el("b", {}, "Nametags: "), "Add badge text to a rule to show a colored pill on matching cells. Leave it empty to only highlight the row background."]),
                 el("li", {}, [el("b", {}, "Fill Row: "), "Controls whether the entire row gets a background color. The first matching rule wins."]),
                 el("li", {}, [el("b", {}, "Rule Order: "), "Drag rules to reorder priority. Rules higher in the list take precedence."]),
-                el("li", {}, [el("b", {}, "Entity Links in Sub-Grids: "), "Parts lists, associated records, and other sub-grids on record tabs get clickable entity links (equipment, parts, work orders) without full ColorCode rule highlighting."])
+                el("li", {}, [el("b", {}, "Entity Links in Sub-Grids: "), "Parts lists, associated records, and other sub-grids on record tabs get clickable entity links (equipment, parts, work orders) without full ColorCode rule highlighting."]),
+                el("li", {}, [el("b", {}, "Consolidate Rules: "), "If you end up with many rules sharing the same badge name and similar color, the Consolidate Rules button merges them into single rules with combined keywords."])
               ]),
               el("p", { style: { marginTop: "16px", fontWeight: "600", color: "var(--apm-text-bright)" } }, "Filtering by Nametag"),
               el("p", {}, "Click any nametag badge in the grid to instantly filter the list to only show work orders with that tag. A green filter banner appears at the top \u2014 click it to clear the filter."),
@@ -18281,7 +18360,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
                 el("li", {}, [el("b", {}, "PM Checkbox: "), 'Set "1-Tech" or "10-Tech" to automatically complete the PM checklist as part of the fill.']),
                 el("li", {}, [el("b", {}, "Labor Booking: "), "Autofill can also book labor hours to the work order as part of the automated process, good for repetetive work orders with predictable labor."]),
                 el("li", {}, [el("b", {}, "Partial Fill: "), "Leave fields blank in the template to skip them. Only the fields you define will be filled."]),
-                el("li", {}, [el("b", {}, "Multiple Profiles: "), "Create as many profiles as you need. The first one whose keyword matches the WO description is suggested."]),
+                el("li", {}, [el("b", {}, "Multiple Profiles: "), "Create as many profiles as you need. If multiple profiles match the same WO, a selector appears so you can pick the right one."]),
                 el("li", {}, [el("b", {}, "New Record Template: "), 'Check the "New record template" toggle to mark a profile as a default for brand-new work orders. When you create a new WO, profiles with this toggle are offered immediately \u2014 no keyword match needed. The title field in the profile will also fill the WO description.']),
                 el("li", {}, [el("b", {}, "Multi-Screen Support: "), "AutoFill supports Work Orders, Repair Requests, and Shift Reports as separate template types. The screen selector auto-detects which EAM screen you're on."])
               ]),
@@ -18509,21 +18588,22 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
         ]),
         el("div", { className: "apm-help-content", style: { fontSize: "12px", lineHeight: "1.6" } }, [
           el("div", { style: { marginBottom: "15px", borderBottom: "1px solid var(--apm-border)", paddingBottom: "10px" } }, [
-            el("b", { style: { color: "var(--apm-success)", display: "block", marginBottom: "5px" } }, "Latest \u2014 UI, Quality of Life, Infrastructure"),
+            el("b", { style: { color: "var(--apm-success)", display: "block", marginBottom: "5px" } }, "Latest"),
             el("ul", { style: { paddingLeft: "20px", margin: "0" } }, [
-              el("li", {}, "Session state snapshot to restore the record you were viewing after timeout, for now its only the record, maybe i can restore/replay search results in the future"),
-              el("li", {}, "UI overhaul \u2014 centralized theme tokens, consistent visual flow across all panels and popups"),
-              el("li", {}, "First-run welcome screen with theme selection and optional feature tour"),
-              el("li", {}, "Comprehensive Help & Tips guide covering all features, linked from both settings and forecast"),
+              el("li", {}, "Improved safety of EAM direct navigation with a global halt flag that pauses all event and schedule-driven tasks, preventing cross-origin frame access mid-transition"),
+              el("li", {}, "Fixed sort column click undoing custom dataspy filters by catching new XHR requests via AjaxHook"),
+              el("li", {}, "Hardened labor booking with request verification that checks save data against expected values and injects missing fields, with confirmation that labor was actually added to the record"),
+              el("li", {}, "Auto record open for single-result grids \u2014 works for links in new tabs, same-tab searches, etc."),
+              el("li", {}, "Session expired detection with prompt to restore session or redirect to start"),
+              el("li", {}, "Fixed Session Snapshot incorrectly detecting a cached record from a different screen, causing restore to open an invalid record on the wrong page and trigger a system error"),
+              el("li", {}, "Localized status messages, prompts, and menus (Labor Tally, Quick Book) in multiple languages"),
+              el("li", {}, "Fixed comma/decimal handling for numeric fields"),
+              el("li", {}, "Multiple matching AutoFill profiles with a selector"),
+              el("li", {}, "ColorCode rule consolidation \u2014 auto-merges imported rules with same badge name and similar color"),
+              el("li", {}, "BetterAPM tag import with automatic rule consolidation"),
+              el("li", {}, "Grid column resizing, record tab reordering with overflow menu and tab hiding"),
               el("li", {}, "Custom dataspy builder with multi-keyword OR/AND/exclusion filters"),
-              el("li", {}, "Performance & error diagnostics tab"),
-              el("li", {}, "Grid Column resizing, record tab reordering with overflow menu support and tab hiding"),
-              el("li", {}, "ColorCode engine performance improvements with live rule preview"),
-              el("li", {}, "Global configuration export/import"),
-              el("li", {}, "Compatability with BetterAPM tags export into ColorCode tags"),
-              el("li", {}, "Reduced dark mode page load flash"),
-              el("li", {}, "Expanded hyperlink support for non-work order records"),
-              el("li", {}, "Service centralization and legacy code cleanup")
+              el("li", {}, "WO link clipboard now copies a hyperlink for supported applications (Slack, Outlook, etc.)")
             ])
           ]),
           el("div", { style: { marginBottom: "15px", borderBottom: "1px solid var(--apm-border)", paddingBottom: "10px" } }, [
@@ -18531,8 +18611,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
             el("ul", { style: { paddingLeft: "20px", margin: "0" } }, [
               el("li", {}, "WO QR codes for quick mobile access"),
               el("li", {}, "ColorCode rule pause/resume toggle"),
-              el("li", {}, "Relative date filtering for ColorCode rules"),
-              el("li", {}, "Bug fixes specific to EAM environment differences")
+              el("li", {}, "Relative date filtering for ColorCode rules")
             ])
           ]),
           el("div", {}, [
