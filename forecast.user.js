@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         APM Master: Unified Tools
 // @namespace    https://w.amazon.com/bin/view/Users/rosendah/APM-Master/
-// @version      14.10.10
+// @version      14.10.11
 // @description  Quality of life and automation tool that uses native EAM ExtJS Framework functions for high reliability and capability. This is actively supported tool so Slack me or submit bug report/feature request through the bug report button in the menu.
 // @author       Jacob Rosendahl
 // @icon         https://media.licdn.com/dms/image/v2/D5603AQGdCV0_LQKRfQ/profile-displayphoto-scale_100_100/B56ZyZLvQ5HgAg-/0/1772096519061?e=1773878400&v=beta&t=eWO1Jiy0-WbzG_yBv-SBrmmsVOPMexF57-q1Xh_VXCk
@@ -126,7 +126,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
       PRESET_STORAGE_KEY = "apm_v1_autofill_presets";
       STORAGE_KEY = "apm_v1_forecast_prefs";
       APM_GENERAL_STORAGE = "apm_v1_general_settings";
-      CURRENT_VERSION = "14.10.10";
+      CURRENT_VERSION = "14.10.11";
       VERSION_CHECK_URL = "https://raw.githubusercontent.com/jaker788-create/APM-Master/main/forecast.user.js";
       UPDATE_URL = "https://raw.githubusercontent.com/jaker788-create/APM-Master/main/forecast.user.js";
       LABOR_EMPS_STORAGE = "apm_v1_labor_employees";
@@ -6695,6 +6695,26 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
   init_utils();
   init_diagnostics();
   var _keywordIndex = null;
+  function toKeywords(raw) {
+    if (Array.isArray(raw)) return raw.map((s) => s.trim().toLowerCase()).filter((s) => s);
+    if (typeof raw === "string") return raw.split(",").map((s) => s.trim().toLowerCase()).filter((s) => s);
+    return [];
+  }
+  function migrateKeywordsToArrays(autofill) {
+    let migrated = 0;
+    for (const screen of ["wo", "shiftReport"]) {
+      const screenPresets = autofill[screen];
+      if (!screenPresets) continue;
+      for (const key in screenPresets) {
+        const preset = screenPresets[key];
+        if (typeof preset.keyword === "string") {
+          preset.keyword = preset.keyword.split(",").map((s) => s.trim()).filter((s) => s);
+          migrated++;
+        }
+      }
+    }
+    if (migrated > 0) APMLogger.info("AutoFill", `Migrated ${migrated} preset(s) to array keyword format`);
+  }
   function rebuildKeywordIndex() {
     const autofill = AppState.autofill.presets.autofill;
     const map = /* @__PURE__ */ new Map();
@@ -6702,17 +6722,14 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
       const screenPresets = autofill[screen];
       if (!screenPresets) continue;
       for (const key in screenPresets) {
-        const kwString = screenPresets[key].keyword;
-        if (!kwString) continue;
-        for (const kw of kwString.split(",")) {
-          const trimmed = kw.trim().toLowerCase();
-          if (!trimmed) continue;
-          const existing = map.get(trimmed);
+        const keywords = toKeywords(screenPresets[key].keyword);
+        for (const kw of keywords) {
+          const existing = map.get(kw);
           if (existing) {
             if (!existing.some((e) => e.screen === screen && e.presetKey === key))
               existing.push({ screen, presetKey: key });
           } else {
-            map.set(trimmed, [{ screen, presetKey: key }]);
+            map.set(kw, [{ screen, presetKey: key }]);
           }
         }
       }
@@ -6776,7 +6793,10 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
           APMLogger.debug("AutoFill", "Presets loaded as legacy v0");
         }
         if (parsed.autofill || parsed.config) {
-          if (parsed.autofill) AppState.autofill.presets.autofill = parsed.autofill;
+          if (parsed.autofill) {
+            migrateKeywordsToArrays(parsed.autofill);
+            AppState.autofill.presets.autofill = parsed.autofill;
+          }
           if (parsed.config) AppState.autofill.presets.config = parsed.config;
           _keywordIndex = null;
         } else if (typeof parsed === "object" && Object.keys(parsed).length > 0) {
@@ -7075,7 +7095,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
     setActiveNametagFilter(activeFilter);
     const startFilter = performance.now();
     try {
-      const keywords = toKeywords(kw);
+      const keywords = toKeywords2(kw);
       store.suspendEvents();
       try {
         if (keywords.length === 0) {
@@ -7152,7 +7172,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
 
   // src/modules/colorcode/colorcode-engine.js
   init_dom_helpers();
-  function toKeywords(search) {
+  function toKeywords2(search) {
     if (Array.isArray(search)) return search.map((s) => s.trim().toLowerCase()).filter((s) => s);
     if (typeof search === "string") return search.split(",").map((s) => s.trim().toLowerCase()).filter((s) => s);
     return [];
@@ -7268,7 +7288,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
     _compiledRulesFingerprint = fingerprint;
     _compiledRules = rules.map((r) => {
       if (!r.search) return null;
-      const terms = toKeywords(r.search);
+      const terms = toKeywords2(r.search);
       if (terms.length === 0) return null;
       const pattern = terms.map((t2) => t2.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")).join("|");
       return { ...r, regex: new RegExp(pattern, "i") };
@@ -7735,7 +7755,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
     APMLogger.debug("ColorCode", `Split view: processing ${items.length} items via ${sourceType}`);
     const entityConfig = _activeEntityConfig || ENTITY_REGISTRY.WSJOBS;
     const activeFilter = getActiveNametagFilter();
-    const filterKeywords = toKeywords(activeFilter);
+    const filterKeywords = toKeywords2(activeFilter);
     items.forEach((item) => {
       try {
         const rawText = item.textContent;
@@ -8219,6 +8239,30 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
   var RESTORATION_TIMEOUT_MS = 1e3;
   var AJAX_IDLE_TIMEOUT_MS = 3e3;
   var CLEANUP_RETRY_COUNT = 11;
+  var _SAFE_ACTIVE_VIEW = Object.freeze({
+    isRecordView: void 0,
+    isListView: void 0,
+    isDetailView: void 0,
+    screen: Object.freeze({ userFunction: "" })
+  });
+  function guardFocusManager(win) {
+    const fm = win?.EAM?.FocusManager;
+    if (!fm || fm.__apmActiveViewGuard) return;
+    const desc = Object.getOwnPropertyDescriptor(fm, "activeView");
+    if (desc && (desc.get || desc.set)) return;
+    let _real = fm.activeView;
+    Object.defineProperty(fm, "activeView", {
+      get() {
+        return _real ?? _SAFE_ACTIVE_VIEW;
+      },
+      set(v) {
+        _real = v;
+      },
+      configurable: true,
+      enumerable: true
+    });
+    fm.__apmActiveViewGuard = true;
+  }
   async function waitForCondition(predicate, timeoutMs = 3e3, intervalMs = 50) {
     const start = Date.now();
     while (Date.now() - start < timeoutMs) {
@@ -8471,7 +8515,9 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
     _cleanupScheduled = true;
     setTimeout(() => {
       _cleanupScheduled = false;
-      applyTabConsistency(CLEANUP_RETRY_COUNT);
+      applyTabConsistency(CLEANUP_RETRY_COUNT).catch(
+        (e) => APMLogger.debug("TabGridOrder", `Cleanup pass rejected: ${e.message}`)
+      );
       APMApi.get("triggerResponsiveInjections")?.();
     }, delay2);
   }
@@ -8613,7 +8659,13 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
       APMLogger.warn("TabGridOrder", "Tab reorder failed:", e);
     } finally {
       if (typeof mainTabPanel.resumeEvents === "function") mainTabPanel.resumeEvents();
-      if (layoutsSuspended) win.Ext.resumeLayouts(true);
+      if (layoutsSuspended) {
+        try {
+          win.Ext.resumeLayouts(true);
+        } catch (e) {
+          APMLogger.debug("TabGridOrder", `resumeLayouts threw during tab reorder: ${e.message}`);
+        }
+      }
     }
   }
   function restoreFocus(mainTabPanel, activeTabName) {
@@ -8698,6 +8750,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
       const result = findMainTabPanel();
       if (!result) return;
       const { tabPanel: mainTabPanel, win } = result;
+      guardFocusManager(win);
       const hdrTab = mainTabPanel.items?.items?.find((t2) => t2.itemId === "HDR");
       if (hdrTab && (!hdrTab.rendered || !hdrTab.getEl?.()?.dom?.children?.length)) {
         APMLogger.debug("TabGridOrder", "Record tab panel found but no record loaded (HDR empty). Skipping.");
@@ -8770,7 +8823,11 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
       reorderTabs(mainTabPanel, preferredOrder, win);
       restoreFocus(mainTabPanel, activeTabName);
       if (!mainTabPanel.isDestroyed && typeof mainTabPanel.updateLayout === "function") {
-        mainTabPanel.updateLayout();
+        try {
+          mainTabPanel.updateLayout();
+        } catch (e) {
+          APMLogger.debug("TabGridOrder", `updateLayout threw during tab consistency: ${e.message}`);
+        }
       }
       installHooks(mainTabPanel, win, hasOrder || hasHidden);
     } finally {
@@ -8883,11 +8940,9 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
     APMApi.register("applyTabConsistency", applyTabConsistency);
     window.addEventListener("APM_PRESETS_SYNC_REQUIRED", () => {
       if (!FeatureFlags.isEnabled("tabGridOrder")) return;
-      try {
-        applyTabConsistency();
-      } catch (e) {
-        APMLogger.warn("TabGridOrder", "applyTabConsistency failed during sync:", e);
-      }
+      applyTabConsistency().catch(
+        (e) => APMLogger.warn("TabGridOrder", "applyTabConsistency failed during sync:", e)
+      );
       try {
         applyGridConsistency();
       } catch (e) {
@@ -10583,8 +10638,9 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
           return;
         }
       }
-      APMLogger.info("AutoFill", `Shift Report: matched "${matchedData.keyword || matchedData.name || "template"}" (status=${matchedData.status || "none"}, chk10=${matchedData.actChecks10 || 0}, chk20=${matchedData.actChecks20 || 0})`);
-      showToast(t("autoFillingShiftReport", matchedData.keyword || matchedData.name || "template"), "#f1c40f", true);
+      const srKwLabel = Array.isArray(matchedData.keyword) ? matchedData.keyword.join(", ") : matchedData.keyword || "";
+      APMLogger.info("AutoFill", `Shift Report: matched "${srKwLabel || matchedData.name || "template"}" (status=${matchedData.status || "none"}, chk10=${matchedData.actChecks10 || 0}, chk20=${matchedData.actChecks20 || 0})`);
+      showToast(t("autoFillingShiftReport", srKwLabel || matchedData.name || "template"), "#f1c40f", true);
       if (!AppState.session.user) {
         try {
           const stored = APMStorage.get(SESSION_STORAGE_KEY);
@@ -10780,7 +10836,8 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
         showToast(t("noMatch", shortTitle), "#e74c3c");
         return;
       }
-      showToast(t("autoFilling", matchedData.keyword || matchedData.woTitle || matchedData.name), "#f1c40f", true);
+      const woKwLabel = Array.isArray(matchedData.keyword) ? matchedData.keyword.join(", ") : matchedData.keyword || "";
+      showToast(t("autoFilling", woKwLabel || matchedData.woTitle || matchedData.name), "#f1c40f", true);
       const needsRecordFill = !!(matchedData.org || matchedData.type || matchedData.eq || matchedData.exec || matchedData.safety || matchedData.close || matchedData.prob || matchedData.fail || matchedData.cause || matchedData.assign || matchedData.status || matchedData.start || matchedData.end || matchedData.laborHours && parseFloat(matchedData.laborHours) > 0);
       const needsChecklist = matchedData.lotoMode && matchedData.lotoMode !== "none" || matchedData.techChecks5 > 0 || matchedData.techChecks10 > 0 || matchedData.pmChecks > 0 || matchedData.createFollowUp;
       const hasLaborHours = matchedData.laborHours && parseFloat(matchedData.laborHours) > 0;
@@ -11333,7 +11390,9 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
         clearTimeout(_triggerTimeout);
         _triggerTimeout = setTimeout(() => {
           APMLogger.debug("ExtConsistency", `Tab Activity on ${tp.id}. Re-scanning for components...`);
-          applyTabConsistency();
+          applyTabConsistency().catch(
+            (e) => APMLogger.debug("ExtConsistency", `Tab consistency rejected: ${e.message}`)
+          );
           this.setupComponentListeners(win);
           this.triggerInjections();
           const cc = APMApi.get("invalidateColorCodeCache");
@@ -12353,7 +12412,9 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
           setTimeout(() => {
             APMApi.triggerDiscoveryBurst?.();
             APMApi.triggerResponsiveInjections?.();
-            if (typeof applyTabConsistency === "function") applyTabConsistency();
+            if (typeof applyTabConsistency === "function") applyTabConsistency().catch(
+              (e) => APMLogger.debug("FrameManager", `Tab consistency rejected: ${e.message}`)
+            );
             if (typeof applyGridConsistency === "function") applyGridConsistency();
             debouncedProcessColorCodeGrid(win.document);
           }, 100);
@@ -18988,14 +19049,19 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
       // ── Trigger Keywords / New Record Default ──
       el("div", { className: "apm-section-group", style: { marginBottom: "8px" } }, [
         el("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "center" } }, [
-          el("div", { id: "apm-c-keyword-label", className: "apm-section-label", style: { color: "var(--apm-warning)", margin: "0" } }, "Auto-Match Keywords"),
+          el("div", { id: "apm-c-keyword-label", className: "apm-section-label", style: { color: "var(--apm-warning)", margin: "0" } }, "Title Match Keywords"),
           el("label", { style: { display: "flex", alignItems: "center", gap: "5px", cursor: "pointer" } }, [
             el("input", { type: "checkbox", id: "apm-c-is-default", style: { cursor: "pointer" } }),
             el("span", { style: { fontSize: "var(--apm-text-xs)", color: "var(--apm-text-muted)" } }, "New record template")
           ])
         ]),
-        el("div", { id: "apm-c-keyword-row", className: "field-row", style: { margin: "0" } }, [
-          el("input", { type: "text", id: "apm-c-keyword", className: "field-input apm-field-highlight", title: "Keywords to match WO title \u2014 separate multiple with comma", placeholder: "e.g., pre-sort, repair, jam", style: { fontFamily: "var(--apm-font-mono)", height: "28px", padding: "0 8px" } })
+        el("div", { id: "apm-c-keyword-row", style: { margin: "0" } }, [
+          el("div", { id: "apm-c-chip-container", className: "field-input cc-chip-container apm-field-highlight", style: { display: "flex", flexWrap: "wrap", alignItems: "center", gap: "4px", height: "auto", minHeight: "28px", maxHeight: "120px", overflowY: "auto", fontSize: "12px", width: "100%", boxSizing: "border-box", padding: "3px 6px", cursor: "text" } }, [
+            el("input", { type: "text", id: "apm-c-chip-input", className: "cc-chip-input", placeholder: "e.g., pre-sort, repair, jam", style: { border: "none", outline: "none", background: "transparent", fontSize: "12px", color: "var(--apm-input-text)", caretColor: "var(--apm-input-text)", flexGrow: "1", minWidth: "80px", height: "22px", padding: "0", textTransform: "none", fontFamily: "var(--apm-font-mono)" } })
+          ]),
+          el("div", { style: { display: "flex", gap: "4px", marginTop: "4px" } }, [
+            el("button", { id: "apm-c-chip-container-add", title: "Add keyword", style: { background: "var(--apm-surface-raised)", border: "1px solid var(--apm-border)", borderRadius: "4px", color: "var(--apm-text-secondary)", cursor: "pointer", fontSize: "14px", width: "28px", height: "22px", display: "flex", alignItems: "center", justifyContent: "center", padding: "0" } }, "+")
+          ])
         ]),
         el("div", { id: "apm-c-wo-title-row", className: "field-row", style: { margin: "0", display: "none" } }, [
           el("input", { type: "text", id: "apm-c-wo-title", className: "field-input", title: "Title to set on the new work order", placeholder: "e.g., 13 Week PM \u2014 Line 1", style: { height: "28px", padding: "0 8px" } })
@@ -19180,9 +19246,14 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
     return el("div", { id: "apm-fields-shiftReport", className: "apm-fields-wrapper" }, [
       // ── Trigger Keywords ──
       el("div", { className: "apm-section-group", style: { marginBottom: "8px" } }, [
-        el("div", { className: "apm-section-label", style: { color: "var(--apm-warning)", margin: "0 0 4px 0" } }, "Auto-Match Keywords"),
-        el("div", { className: "field-row", style: { margin: "0" } }, [
-          el("input", { type: "text", id: "apm-c-sr-keyword", className: "field-input apm-field-highlight", title: "Keywords to match shift report title", placeholder: "e.g., night, day, ns", style: { fontFamily: "var(--apm-font-mono)", height: "28px", padding: "0 8px" } })
+        el("div", { className: "apm-section-label", style: { color: "var(--apm-warning)", margin: "0 0 4px 0" } }, "Title Match Keywords"),
+        el("div", { style: { margin: "0" } }, [
+          el("div", { id: "apm-c-sr-chip-container", className: "field-input cc-chip-container apm-field-highlight", style: { display: "flex", flexWrap: "wrap", alignItems: "center", gap: "4px", height: "auto", minHeight: "28px", maxHeight: "120px", overflowY: "auto", fontSize: "12px", width: "100%", boxSizing: "border-box", padding: "3px 6px", cursor: "text" } }, [
+            el("input", { type: "text", id: "apm-c-sr-chip-input", className: "cc-chip-input", placeholder: "e.g., night, day, ns", style: { border: "none", outline: "none", background: "transparent", fontSize: "12px", color: "var(--apm-input-text)", caretColor: "var(--apm-input-text)", flexGrow: "1", minWidth: "80px", height: "22px", padding: "0", textTransform: "none", fontFamily: "var(--apm-font-mono)" } })
+          ]),
+          el("div", { style: { display: "flex", gap: "4px", marginTop: "4px" } }, [
+            el("button", { id: "apm-c-sr-chip-container-add", title: "Add keyword", style: { background: "var(--apm-surface-raised)", border: "1px solid var(--apm-border)", borderRadius: "4px", color: "var(--apm-text-secondary)", cursor: "pointer", fontSize: "14px", width: "28px", height: "22px", display: "flex", alignItems: "center", justifyContent: "center", padding: "0" } }, "+")
+          ])
         ]),
         el("div", { style: { fontSize: "var(--apm-text-xs)", color: "var(--apm-text-muted)", marginTop: "3px" } }, "When a shift report title contains these words, this template is suggested automatically.")
       ]),
@@ -19255,7 +19326,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
                 el("div", { style: { fontSize: "11px", color: "var(--apm-text-muted)", fontWeight: "bold" } }, "Keywords (Search)"),
                 el("span", { id: "cc-chip-count", style: { fontSize: "10px", color: "var(--apm-text-muted)", display: "none" } })
               ]),
-              el("div", { id: "cc-chip-container", className: "field-input cc-chip-container", style: { display: "flex", flexWrap: "wrap", alignItems: "center", gap: "4px", minHeight: "28px", maxHeight: "120px", overflowY: "auto", fontSize: "12px", width: "100%", boxSizing: "border-box", padding: "3px 6px", cursor: "text" } }, [
+              el("div", { id: "cc-chip-container", className: "field-input cc-chip-container", style: { display: "flex", flexWrap: "wrap", alignItems: "center", gap: "4px", height: "auto", minHeight: "28px", maxHeight: "120px", overflowY: "auto", fontSize: "12px", width: "100%", boxSizing: "border-box", padding: "3px 6px", cursor: "text" } }, [
                 el("input", { type: "text", id: "cc-search", className: "cc-chip-input", placeholder: "Enter another keyword to match (OR logic)", style: { border: "none", outline: "none", background: "transparent", fontSize: "12px", color: "var(--apm-input-text)", caretColor: "var(--apm-input-text)", flexGrow: "1", minWidth: "80px", height: "22px", padding: "0", textTransform: "none" } })
               ]),
               el("div", { id: "cc-bulk-container", style: { display: "none" } }, [
@@ -19968,6 +20039,201 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
 
   // src/ui/settings-panel-autofill.js
   init_state();
+
+  // src/ui/chip-input.js
+  init_dom_helpers();
+  function createChipElement2(keyword, { onRemove } = {}) {
+    const chip = el("span", {
+      className: "cc-chip",
+      title: keyword,
+      style: {
+        display: "inline-flex",
+        alignItems: "center",
+        gap: "3px",
+        background: "var(--apm-surface-raised)",
+        border: "1px solid var(--apm-border)",
+        borderRadius: "10px",
+        padding: "1px 6px 1px 8px",
+        fontSize: "var(--apm-text-xs, 10px)",
+        color: "var(--apm-text-bright)",
+        maxWidth: "180px",
+        whiteSpace: "nowrap",
+        cursor: "default",
+        lineHeight: "18px"
+      }
+    }, [
+      el("span", { style: { overflow: "hidden", textOverflow: "ellipsis" } }, keyword),
+      el("span", {
+        className: "cc-chip-remove",
+        onclick: (e) => {
+          e.stopPropagation();
+          chip.remove();
+          if (onRemove) onRemove();
+        },
+        style: {
+          cursor: "pointer",
+          color: "var(--apm-text-muted)",
+          fontSize: "12px",
+          lineHeight: "1",
+          padding: "0 1px",
+          marginLeft: "2px",
+          borderRadius: "50%",
+          transition: "color 0.15s"
+        }
+      }, "\xD7")
+    ]);
+    chip.dataset.keyword = keyword;
+    return chip;
+  }
+  function createChipInput({ containerId, inputId, countId }) {
+    function getKeywords() {
+      const container = document.getElementById(containerId);
+      if (!container) return [];
+      return Array.from(container.querySelectorAll(".cc-chip")).map((chip) => chip.dataset.keyword || "").filter((s) => s);
+    }
+    function updateCount() {
+      if (!countId) return;
+      const badge = document.getElementById(countId);
+      if (!badge) return;
+      const count = getKeywords().length;
+      if (count >= 5) {
+        badge.textContent = `(${count} keywords)`;
+        badge.style.display = "";
+      } else {
+        badge.style.display = "none";
+      }
+      if (count > 10) {
+        const container = document.getElementById(containerId);
+        if (container) container.querySelectorAll(".cc-or-label").forEach((el2) => el2.remove());
+      }
+    }
+    function addKeyword(keyword, { onChange } = {}) {
+      const trimmed = keyword.trim();
+      if (!trimmed) return false;
+      const container = document.getElementById(containerId);
+      const input = document.getElementById(inputId);
+      if (!container || !input) return false;
+      const existing = getKeywords().map((k) => k.toLowerCase());
+      if (existing.includes(trimmed.toLowerCase())) return false;
+      const chip = createChipElement2(trimmed, {
+        onRemove: () => {
+          updateCount();
+          if (onChange) onChange();
+        }
+      });
+      container.insertBefore(chip, input);
+      const chips = container.querySelectorAll(".cc-chip");
+      if (chips.length > 1 && chips.length <= 10) {
+        const orLabel = el("span", {
+          className: "cc-or-label",
+          style: { fontSize: "9px", color: "var(--apm-text-muted)", fontStyle: "italic", userSelect: "none", padding: "0 1px" }
+        }, "or");
+        container.insertBefore(orLabel, chip);
+      }
+      updateCount();
+      if (onChange) onChange();
+      return true;
+    }
+    function clear() {
+      const container = document.getElementById(containerId);
+      if (!container) return;
+      container.querySelectorAll(".cc-chip, .cc-or-label").forEach((el2) => el2.remove());
+      updateCount();
+    }
+    function setKeywords(keywords, { onChange } = {}) {
+      clear();
+      if (!Array.isArray(keywords)) return;
+      keywords.forEach((kw) => addKeyword(kw, { onChange }));
+    }
+    function wireEvents({ onChange } = {}) {
+      const input = document.getElementById(inputId);
+      if (!input || input._apmChipKeysAttached) return;
+      document.addEventListener("keydown", (e) => {
+        if (!e.target || e.target.id !== inputId) return;
+        if (e.key !== "Tab") e.stopPropagation();
+        if (e.key === "Enter") {
+          e.preventDefault();
+          e.stopImmediatePropagation();
+          const inp = document.getElementById(inputId);
+          const val = inp?.value?.trim();
+          if (val) {
+            addKeyword(val, { onChange });
+            inp.value = "";
+          }
+          return;
+        }
+        if (e.key === "Backspace" && e.target.value === "") {
+          const container2 = document.getElementById(containerId);
+          if (!container2) return;
+          const chips = container2.querySelectorAll(".cc-chip");
+          if (chips.length === 0) return;
+          const lastChip = chips[chips.length - 1];
+          if (lastChip.classList.contains("cc-chip-selected")) {
+            const prev = lastChip.previousElementSibling;
+            if (prev && prev.classList.contains("cc-or-label")) prev.remove();
+            lastChip.remove();
+            updateCount();
+            if (onChange) onChange();
+          } else {
+            lastChip.classList.add("cc-chip-selected");
+            lastChip.style.outline = "1px solid var(--apm-accent)";
+          }
+        } else if (e.key !== "Backspace") {
+          const container2 = document.getElementById(containerId);
+          if (container2) {
+            container2.querySelectorAll(".cc-chip-selected").forEach((c) => {
+              c.classList.remove("cc-chip-selected");
+              c.style.outline = "";
+            });
+          }
+        }
+      }, true);
+      input.onpaste = (e) => {
+        e.preventDefault();
+        const text = (e.clipboardData || window.clipboardData).getData("text");
+        const parts = text.split(",").map((s) => s.trim()).filter((s) => s);
+        parts.forEach((p) => addKeyword(p, { onChange }));
+      };
+      const container = document.getElementById(containerId);
+      if (container) {
+        container.addEventListener("click", (e) => {
+          if (e.target === container || e.target.classList.contains("cc-or-label")) {
+            input.focus();
+          }
+        });
+      }
+      const addBtn = document.getElementById(containerId + "-add");
+      if (addBtn) {
+        addBtn.onclick = () => {
+          const val = input.value?.trim();
+          if (val) {
+            addKeyword(val, { onChange });
+            input.value = "";
+            input.focus();
+          }
+        };
+      }
+      input._apmChipKeysAttached = true;
+    }
+    return { get: getKeywords, add: addKeyword, set: setKeywords, clear, wireEvents };
+  }
+
+  // src/ui/settings-panel-autofill.js
+  var _woChips = null;
+  var _srChips = null;
+  function getWoChipInput() {
+    if (!_woChips) _woChips = createChipInput({ containerId: "apm-c-chip-container", inputId: "apm-c-chip-input" });
+    return _woChips;
+  }
+  function getSrChipInput() {
+    if (!_srChips) _srChips = createChipInput({ containerId: "apm-c-sr-chip-container", inputId: "apm-c-sr-chip-input" });
+    return _srChips;
+  }
+  function toKeywordArray(raw) {
+    if (Array.isArray(raw)) return raw;
+    if (typeof raw === "string" && raw.trim()) return raw.split(",").map((s) => s.trim()).filter((s) => s);
+    return [];
+  }
   var _activeScreen = "wo";
   var _loadedPresetData = null;
   function normalizeDecimal(v) {
@@ -19990,7 +20256,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
     const orgRow = document.getElementById("apm-c-org-row");
     if (kwRow) kwRow.style.display = checked ? "none" : "";
     if (kwHint) kwHint.style.display = checked ? "none" : "";
-    if (kwLabel) kwLabel.textContent = checked ? "WO Description" : "Auto-Match Keywords";
+    if (kwLabel) kwLabel.textContent = checked ? "WO Description" : "Title Match Keywords";
     if (titleRow) titleRow.style.display = checked ? "" : "none";
     if (titleHint) titleHint.style.display = checked ? "" : "none";
     if (orgRow) orgRow.style.display = checked ? "" : "none";
@@ -19999,8 +20265,8 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
     screen = screen || _activeScreen;
     if (!data) data = {};
     if (screen === "wo") {
+      getWoChipInput().set(toKeywordArray(data.keyword));
       const fields = [
-        "keyword",
         "dept",
         "org",
         "eq",
@@ -20048,11 +20314,11 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
       const initCb = document.getElementById("apm-c-repair-initiate");
       if (initCb) initCb.checked = !!data.initiateRepair;
     } else if (screen === "shiftReport") {
+      getSrChipInput().set(toKeywordArray(data.keyword));
       const setVal = (id, key) => {
         const el2 = document.getElementById(id);
         if (el2) el2.value = data[key] || "";
       };
-      setVal("apm-c-sr-keyword", "keyword");
       setVal("apm-c-sr-status", "status");
       setVal("apm-c-sr-act-10", "actChecks10");
       setVal("apm-c-sr-act-20", "actChecks20");
@@ -20082,7 +20348,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
     screen = screen || _activeScreen;
     if (screen === "wo") {
       return {
-        keyword: document.getElementById("apm-c-keyword")?.value?.toLowerCase() || "",
+        keyword: getWoChipInput().get().map((k) => k.toLowerCase()),
         dept: document.getElementById("apm-c-dept")?.value || "",
         org: document.getElementById("apm-c-org")?.value || "",
         eq: document.getElementById("apm-c-eq")?.value || "",
@@ -20118,7 +20384,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
     }
     if (screen === "shiftReport") {
       return {
-        keyword: document.getElementById("apm-c-sr-keyword")?.value?.toLowerCase() || "",
+        keyword: getSrChipInput().get().map((k) => k.toLowerCase()),
         status: document.getElementById("apm-c-sr-status")?.value || "",
         actChecks10: parseInt(document.getElementById("apm-c-sr-act-10")?.value, 10) || 0,
         actChecks20: parseInt(document.getElementById("apm-c-sr-act-20")?.value, 10) || 0
@@ -20129,7 +20395,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
   function getEmptyPresetData(screen) {
     if (screen === "wo") {
       return {
-        keyword: "",
+        keyword: [],
         dept: "",
         org: "",
         eq: "",
@@ -20158,7 +20424,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
       return { org: "", qty: 1, repairablePart: "", requestedBy: "", initiateRepair: false };
     }
     if (screen === "shiftReport") {
-      return { keyword: "", status: "", actChecks10: 0, actChecks20: 0 };
+      return { keyword: [], status: "", actChecks10: 0, actChecks20: 0 };
     }
     return {};
   }
@@ -20873,6 +21139,8 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
       const screen = () => getActiveScreen();
       const defaultCb = document.getElementById("apm-c-is-default");
       if (defaultCb) defaultCb.addEventListener("change", syncDefaultToggle);
+      getWoChipInput().wireEvents();
+      getSrChipInput().wireEvents();
       const laborInput = document.getElementById("apm-c-labor-hours");
       if (laborInput) laborInput.addEventListener("blur", () => {
         const v = laborInput.value.trim();
@@ -21417,7 +21685,8 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
         { name: "AutoFillObserver", flag: "autoFill", fn: initAutoFillObserver },
         { name: "TabGridOrder", flag: "tabGridOrder", noShell: true, fn: () => {
           applyGridConsistency();
-          applyTabConsistency();
+          applyTabConsistency().catch(() => {
+          });
         } },
         { name: "NativeToggle", onlyTop: true, fn: injectToggleBtnNatively },
         { name: "PtpStatus", flag: "ptpTimer", onlyTop: true, noShell: true, fn: checkPtpStatus }
@@ -21468,7 +21737,8 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
               buildSearchUI();
             }
             if (FeatureFlags.isEnabled("tabGridOrder")) {
-              applyTabConsistency();
+              applyTabConsistency().catch(() => {
+              });
               applyGridConsistency();
             }
             if (FeatureFlags.isEnabled("laborBooker") && !document.getElementById("apm-labor-trigger")) {
