@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         APM Master: Unified Tools
 // @namespace    https://w.amazon.com/bin/view/Users/rosendah/APM-Master/
-// @version      14.10.8
+// @version      14.10.9
 // @description  Quality of life and automation tool that uses native EAM ExtJS Framework functions for high reliability and capability. This is actively supported tool so Slack me or submit bug report/feature request through the bug report button in the menu.
 // @author       Jacob Rosendahl
 // @icon         https://media.licdn.com/dms/image/v2/D5603AQGdCV0_LQKRfQ/profile-displayphoto-scale_100_100/B56ZyZLvQ5HgAg-/0/1772096519061?e=1773878400&v=beta&t=eWO1Jiy0-WbzG_yBv-SBrmmsVOPMexF57-q1Xh_VXCk
@@ -117,7 +117,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
   });
 
   // src/core/constants.js
-  var KEY_THEME, CC_STORAGE_RULES, CC_STORAGE_SET, PRESET_STORAGE_KEY, STORAGE_KEY, APM_GENERAL_STORAGE, CURRENT_VERSION, VERSION_CHECK_URL, UPDATE_URL, LABOR_EMPS_STORAGE, LABOR_ACTIVE_STORAGE, LABOR_DOCK_STORAGE, LABOR_PREFS_STORAGE, LABOR_NIGHT_SHIFT_KEY, LABOR_LAST_EMP_KEY, SESSION_STORAGE_KEY, PTP_HISTORY_KEY, UPDATE_CHECK_KEY, MIGRATIONS_DONE_KEY, WELCOME_SEEN_KEY, SNAPSHOT_STORAGE_PREFIX, SNAPSHOT_TTL, BETA_VERSION_CHECK_URL, BETA_UPDATE_URL, LOG_LEVELS, DEFAULT_TENANT, _eamHostname, _regionMatch, EAM_REGION_PREFIX, EAM_BASE_URL, SESSION_TIMEOUT_URL, LINK_CONFIG, MIN_GRID_COLUMNS, MIN_TAB_ITEMS, ENTITY_REGISTRY, SCREEN_TITLES, AUTOFILL_SCREENS, AUTOFILL_SCREEN_LABELS;
+  var KEY_THEME, CC_STORAGE_RULES, CC_STORAGE_SET, PRESET_STORAGE_KEY, STORAGE_KEY, APM_GENERAL_STORAGE, CURRENT_VERSION, VERSION_CHECK_URL, UPDATE_URL, LABOR_EMPS_STORAGE, LABOR_ACTIVE_STORAGE, LABOR_DOCK_STORAGE, LABOR_PREFS_STORAGE, LABOR_NIGHT_SHIFT_KEY, LABOR_DECIMAL_SEP_KEY, LABOR_DECIMAL_DETECTED_KEY, LABOR_LAST_EMP_KEY, LABOR_SHIFT_END_KEY, LABOR_BOOKING_LOG_KEY, SESSION_STORAGE_KEY, PTP_HISTORY_KEY, UPDATE_CHECK_KEY, MIGRATIONS_DONE_KEY, WELCOME_SEEN_KEY, SNAPSHOT_STORAGE_PREFIX, SNAPSHOT_TTL, BETA_VERSION_CHECK_URL, BETA_UPDATE_URL, LOG_LEVELS, DEFAULT_TENANT, _eamHostname, _regionMatch, EAM_REGION_PREFIX, EAM_BASE_URL, SESSION_TIMEOUT_URL, LINK_CONFIG, MIN_GRID_COLUMNS, MIN_TAB_ITEMS, ENTITY_REGISTRY, SCREEN_TITLES, AUTOFILL_SCREENS, AUTOFILL_SCREEN_LABELS;
   var init_constants = __esm({
     "src/core/constants.js"() {
       KEY_THEME = "apm_v1_ui_theme";
@@ -126,7 +126,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
       PRESET_STORAGE_KEY = "apm_v1_autofill_presets";
       STORAGE_KEY = "apm_v1_forecast_prefs";
       APM_GENERAL_STORAGE = "apm_v1_general_settings";
-      CURRENT_VERSION = "14.10.8";
+      CURRENT_VERSION = "14.10.9";
       VERSION_CHECK_URL = "https://raw.githubusercontent.com/jaker788-create/APM-Master/main/forecast.user.js";
       UPDATE_URL = "https://raw.githubusercontent.com/jaker788-create/APM-Master/main/forecast.user.js";
       LABOR_EMPS_STORAGE = "apm_v1_labor_employees";
@@ -134,7 +134,11 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
       LABOR_DOCK_STORAGE = "apm_v1_labor_dock";
       LABOR_PREFS_STORAGE = "apm_v1_labor_prefs";
       LABOR_NIGHT_SHIFT_KEY = "apm_v1_labor_night_shift";
+      LABOR_DECIMAL_SEP_KEY = "apm_v1_labor_decimal_sep";
+      LABOR_DECIMAL_DETECTED_KEY = "apm_v1_labor_decimal_detected";
       LABOR_LAST_EMP_KEY = "apm_v1_labor_last_emp";
+      LABOR_SHIFT_END_KEY = "apm_v1_labor_shift_end";
+      LABOR_BOOKING_LOG_KEY = "apm_v1_labor_booking_log";
       SESSION_STORAGE_KEY = "apm_v1_session";
       PTP_HISTORY_KEY = "apm_v1_ptp_history";
       UPDATE_CHECK_KEY = "apm_v1_update_check";
@@ -1374,6 +1378,10 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
           shiftSummary: "Shift Summary",
           fetching: "Fetching...",
           nightShiftMode: "Night Shift Mode",
+          nightShiftSettings: "Night Shift Settings",
+          shiftEndTime: "End time",
+          formatLabel: "Format:",
+          decimalSep: "Decimal",
           managerMode: "Manager Mode",
           // ── Other UI ──
           autoFillBtn: "Auto Fill",
@@ -1476,7 +1484,11 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
           subtract: "Abzug (-)",
           shiftSummary: "Schicht\xFCbersicht",
           fetching: "Laden...",
-          nightShiftMode: "Schicht-Modus",
+          nightShiftMode: "Nachtschicht-Modus",
+          nightShiftSettings: "Nachtschicht-Einstellungen",
+          shiftEndTime: "Endzeit",
+          formatLabel: "Format:",
+          decimalSep: "Dezimal",
           managerMode: "Manager Mode",
           // ── Other UI ──
           autoFillBtn: "AutoFill",
@@ -1579,6 +1591,10 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
           shiftSummary: "R\xE9sum\xE9 du quart",
           fetching: "Chargement...",
           nightShiftMode: "Mode quart de nuit",
+          nightShiftSettings: "Param\xE8tres du quart de nuit",
+          shiftEndTime: "Heure de fin",
+          formatLabel: "Format :",
+          decimalSep: "D\xE9cimale",
           managerMode: "Manager Mode",
           // ── Other UI ──
           autoFillBtn: "AutoFill",
@@ -1681,6 +1697,10 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
           shiftSummary: "Resumen de turno",
           fetching: "Cargando...",
           nightShiftMode: "Modo turno nocturno",
+          nightShiftSettings: "Ajustes del turno nocturno",
+          shiftEndTime: "Hora final",
+          formatLabel: "Formato:",
+          decimalSep: "Decimal",
           managerMode: "Manager Mode",
           // ── Other UI ──
           autoFillBtn: "AutoFill",
@@ -1783,6 +1803,10 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
           shiftSummary: "Riepilogo turno",
           fetching: "Caricamento...",
           nightShiftMode: "Modalit\xE0 turno di notte",
+          nightShiftSettings: "Impostazioni turno di notte",
+          shiftEndTime: "Ora fine",
+          formatLabel: "Formato:",
+          decimalSep: "Decimale",
           managerMode: "Manager Mode",
           // ── Other UI ──
           autoFillBtn: "AutoFill",
@@ -1885,6 +1909,10 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
           shiftSummary: "Resumo do turno",
           fetching: "Carregando...",
           nightShiftMode: "Modo turno noturno",
+          nightShiftSettings: "Configura\xE7\xF5es do turno noturno",
+          shiftEndTime: "Hora final",
+          formatLabel: "Formato:",
+          decimalSep: "Decimal",
           managerMode: "Manager Mode",
           // ── Other UI ──
           autoFillBtn: "AutoFill",
@@ -1987,6 +2015,10 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
           shiftSummary: "\u30B7\u30D5\u30C8\u6982\u8981",
           fetching: "\u53D6\u5F97\u4E2D...",
           nightShiftMode: "\u591C\u52E4\u30E2\u30FC\u30C9",
+          nightShiftSettings: "\u591C\u52E4\u8A2D\u5B9A",
+          shiftEndTime: "\u7D42\u4E86\u6642\u523B",
+          formatLabel: "\u30D5\u30A9\u30FC\u30DE\u30C3\u30C8:",
+          decimalSep: "\u5C0F\u6570\u70B9",
           managerMode: "\u30DE\u30CD\u30FC\u30B8\u30E3\u30FC\u30E2\u30FC\u30C9",
           // ── Other UI ──
           autoFillBtn: "AutoFill",
@@ -3739,6 +3771,8 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
       init_utils();
       init_logger();
       init_eam_query();
+      init_storage();
+      init_constants();
       cleanEmployeeId = (id) => (id && id.includes("@") ? id.split("@")[0] : id || "").toUpperCase();
       LaborService = /* @__PURE__ */ (function() {
         let laborCache = {
@@ -3768,6 +3802,15 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
             laborCache.data = records;
             laborCache.employee = targetEmployee;
             laborCache.lastFetch = Date.now();
+            if (!APMStorage.get(LABOR_DECIMAL_DETECTED_KEY) && records.length > 0) {
+              const sample = records.find((r) => r.hrswork && String(r.hrswork).match(/[.,]/));
+              if (sample) {
+                const val = String(sample.hrswork);
+                const detected = val.includes(",") ? "comma" : "dot";
+                APMStorage.set(LABOR_DECIMAL_DETECTED_KEY, detected);
+                APMLogger.info("LaborService", `Auto-detected EAM decimal separator: ${detected} (from "${val}")`);
+              }
+            }
             APMLogger.info("LaborService", `Fetched ${records.length} record(s) for ${targetEmployee}`);
             return records;
           } catch (err) {
@@ -3818,8 +3861,18 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
   // src/modules/labor/labor-booker.js
   var labor_booker_exports = {};
   __export(labor_booker_exports, {
-    LaborBooker: () => LaborBooker
+    LaborBooker: () => LaborBooker,
+    useCommaDecimal: () => useCommaDecimal
   });
+  function useCommaDecimal() {
+    const override = APMStorage.get(LABOR_DECIMAL_SEP_KEY, "auto");
+    if (override === "comma") return true;
+    if (override === "dot") return false;
+    const detected = APMStorage.get(LABOR_DECIMAL_DETECTED_KEY);
+    if (detected === "comma") return true;
+    if (detected === "dot") return false;
+    return AppContext.isEU;
+  }
   var LaborBooker;
   var init_labor_booker = __esm({
     "src/modules/labor/labor-booker.js"() {
@@ -3840,16 +3893,38 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
       LaborBooker = (function() {
         const fmtDecimal = (n, digits = 2) => {
           const s = Number(n).toFixed(digits);
-          return AppContext.isEU ? s.replace(".", ",") : s;
+          return useCommaDecimal() ? s.replace(".", ",") : s;
         };
         let _laborWin = null;
         const getLaborWin = () => _laborWin || (_laborWin = apmGetGlobalWindow());
         let isRunning2 = false;
         let laborObservers = /* @__PURE__ */ new Map();
         const _basePresets = ["0.1", "0.25", "0.5", "0.75", "1", "1.5", "2", "2.5", "3"];
-        let hoursPresets = AppContext.isEU ? _basePresets.map((h) => h.replace(".", ",")) : _basePresets;
+        const getPresets2 = () => useCommaDecimal() ? _basePresets.map((h) => h.replace(".", ",")) : _basePresets;
         const RATE_DATE_DEFAULT = "0.|01/01/2020|01/01/2035";
         let _capturedDepartment = null;
+        function getBookingLog() {
+          return APMStorage.get(LABOR_BOOKING_LOG_KEY, []);
+        }
+        function appendBookingLog(datework, hours) {
+          const log = getBookingLog();
+          log.push({ datework, hours: String(hours), bookedAt: Date.now() });
+          const cutoff = Date.now() - 48 * 60 * 60 * 1e3;
+          const pruned = log.filter((e) => e.bookedAt >= cutoff);
+          APMStorage.set(LABOR_BOOKING_LOG_KEY, pruned);
+        }
+        function computeShiftBoundary(endTimeStr) {
+          const [h, m] = endTimeStr.split(":").map(Number);
+          const boundaryHour = h + 4;
+          const boundaryMin = m;
+          const now = /* @__PURE__ */ new Date();
+          const boundaryToday = new Date(now);
+          boundaryToday.setHours(boundaryHour, boundaryMin, 0, 0);
+          if (now < boundaryToday) {
+            boundaryToday.setDate(boundaryToday.getDate() - 1);
+          }
+          return boundaryToday.getTime();
+        }
         AjaxHooks.onBeforeRequest("labor-save", (win, conn, options) => {
           try {
             if (!FeatureFlags.isEnabled("laborBooker")) return;
@@ -3906,8 +3981,11 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
               return;
             }
             const existingCmp = win.Ext.getCmp("apm-quick-book-cmp");
-            if (existingCmp && existingCmp.getEl?.()?.dom && win.document.body.contains(existingCmp.getEl().dom)) return;
-            if (existingCmp && !existingCmp.isDestroyed) existingCmp.destroy();
+            if (existingCmp && !existingCmp.isDestroyed) {
+              const el2 = existingCmp.getEl?.()?.dom;
+              if (el2 && win.document.body.contains(el2)) return;
+              return;
+            }
             let toolbar = null;
             let insertIdx = -1;
             const actionsBtns = win.Ext.ComponentQuery.query("button:not([destroyed=true])", booTab);
@@ -4017,7 +4095,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
             formSide.appendChild(hint);
             const presetBox = win.document.createElement("div");
             presetBox.className = "apm-lb-presets";
-            hoursPresets.forEach((h) => {
+            getPresets2().forEach((h) => {
               const b = win.document.createElement("button");
               b.innerHTML = h;
               b.className = "apm-lb-preset";
@@ -4045,6 +4123,28 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
               };
               presetBox.appendChild(b);
             });
+            const fmtLabel = win.document.createElement("span");
+            fmtLabel.className = "apm-lb-fmt-label";
+            fmtLabel.textContent = t("formatLabel");
+            presetBox.appendChild(fmtLabel);
+            const decStates = ["auto", "dot", "comma"];
+            const decLabels = { auto: "Auto", dot: "Decimal", comma: "Comma" };
+            const fmtBtn = win.document.createElement("button");
+            fmtBtn.className = "apm-lb-preset apm-lb-fmt-btn";
+            const initSep = APMStorage.get(LABOR_DECIMAL_SEP_KEY, "auto");
+            fmtBtn.textContent = decLabels[initSep] || "Auto";
+            fmtBtn.title = t("decimalSep") || "Decimal separator";
+            fmtBtn.onclick = () => {
+              const cur = APMStorage.get(LABOR_DECIMAL_SEP_KEY, "auto");
+              const next = decStates[(decStates.indexOf(cur) + 1) % decStates.length];
+              APMStorage.set(LABOR_DECIMAL_SEP_KEY, next);
+              fmtBtn.textContent = decLabels[next];
+              presetBox.querySelectorAll(".apm-lb-preset:not(.apm-lb-fmt-btn)").forEach((p, i) => {
+                const presets = getPresets2();
+                if (presets[i]) p.textContent = presets[i];
+              });
+            };
+            presetBox.appendChild(fmtBtn);
             formSide.appendChild(presetBox);
             const hoursRow = win.document.createElement("div");
             hoursRow.className = "apm-lb-hours-row";
@@ -4115,17 +4215,48 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
                     <div class="apm-lb-summary-loading">${t("fetching")}</div>
                 </div>
                 <div class="apm-lb-summary-footer">
-                    <label class="apm-lb-night-label">
-                        <input id="apm-lb-night-toggle" type="checkbox" ${APMStorage.get(LABOR_NIGHT_SHIFT_KEY) === true ? "checked" : ""}>
-                        ${t("nightShiftMode")}
-                    </label>
+                    <button id="apm-lb-shift-cog" class="apm-lb-shift-cog" title="${t("nightShiftMode")}">&#9881;</button>
+                    <span class="apm-lb-shift-cog-label">${t("nightShiftSettings")}</span>
+                    <div id="apm-lb-shift-popover" class="apm-lb-shift-popover" style="display:none;">
+                        <label class="apm-lb-night-label">
+                            <input id="apm-lb-night-toggle" type="checkbox" ${APMStorage.get(LABOR_NIGHT_SHIFT_KEY) === true ? "checked" : ""}>
+                            ${t("nightShiftMode")}
+                        </label>
+                        <div class="apm-lb-shift-end-row">
+                            <label class="apm-lb-shift-end-label">${t("shiftEndTime")}</label>
+                            <input id="apm-lb-shift-end" type="time" class="apm-lb-shift-end-input"
+                                value="${APMStorage.get(LABOR_SHIFT_END_KEY, "")}"
+                                placeholder="06:00"
+                                ${APMStorage.get(LABOR_NIGHT_SHIFT_KEY) !== true ? "disabled" : ""}>
+                        </div>
+                    </div>
                 </div>
             `;
             popup.appendChild(sumSide);
             win.document.body.appendChild(popup);
+            const cogBtn = win.document.getElementById("apm-lb-shift-cog");
+            const cogLabel = popup.querySelector(".apm-lb-shift-cog-label");
+            const popover = win.document.getElementById("apm-lb-shift-popover");
+            const togglePopover = (e) => {
+              e.stopPropagation();
+              popover.style.display = popover.style.display === "none" ? "flex" : "none";
+            };
+            cogBtn.onclick = togglePopover;
+            if (cogLabel) cogLabel.onclick = togglePopover;
+            win.document.addEventListener("click", (e) => {
+              if (popover.style.display !== "none" && !popover.contains(e.target) && e.target !== cogBtn && e.target !== cogLabel) {
+                popover.style.display = "none";
+              }
+            });
             const nightToggle = win.document.getElementById("apm-lb-night-toggle");
+            const shiftEndInput = win.document.getElementById("apm-lb-shift-end");
             nightToggle.onchange = (e) => {
               APMStorage.set(LABOR_NIGHT_SHIFT_KEY, e.target.checked);
+              shiftEndInput.disabled = !e.target.checked;
+              fetchLaborSummary(win);
+            };
+            shiftEndInput.onchange = (e) => {
+              APMStorage.set(LABOR_SHIFT_END_KEY, e.target.value);
               fetchLaborSummary(win);
             };
           }
@@ -4168,7 +4299,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
                 return;
               }
               const hours = isCorrection ? `-${Math.abs(parsed)}` : Math.abs(parsed).toString();
-              const displayHrs = AppContext.isEU ? hours.replace(".", ",") : hours;
+              const displayHrs = useCommaDecimal() ? hours.replace(".", ",") : hours;
               const date = dateInput.value;
               const type = win.document.querySelector('input[name="lb-type"]').value;
               UIManager.closeAll(true);
@@ -4212,12 +4343,37 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
             const yesterday = /* @__PURE__ */ new Date();
             yesterday.setDate(yesterday.getDate() - 1);
             const yestIso = getLocalIsoDate(yesterday);
+            const shiftEnd = APMStorage.get(LABOR_SHIFT_END_KEY, "");
+            const hasShiftEnd = isNightShift && shiftEnd && shiftEnd !== "00:00";
+            let filteredRecords = records;
+            if (hasShiftEnd) {
+              const boundary = computeShiftBoundary(shiftEnd);
+              const log = getBookingLog();
+              filteredRecords = records.filter((r) => {
+                if (!r.datework) return false;
+                const hrs = String(r.hrswork ?? "").replace(",", ".");
+                const logEntry = log.find(
+                  (e) => e.datework === r.datework && e.hours === hrs
+                );
+                if (logEntry) {
+                  return logEntry.bookedAt >= boundary;
+                }
+                return true;
+              });
+            }
             let showYesterday = false;
             if (isNightShift) {
-              const currentHour = (/* @__PURE__ */ new Date()).getHours();
-              if (currentHour < 11) showYesterday = true;
+              if (hasShiftEnd) {
+                showYesterday = true;
+              } else {
+                const currentHour = (/* @__PURE__ */ new Date()).getHours();
+                if (currentHour < 11) showYesterday = true;
+              }
             }
-            const { total, breakdown } = LaborService.calculateTally(records, showYesterday ? 2 : 1);
+            const { total, breakdown } = LaborService.calculateTally(
+              filteredRecords,
+              showYesterday ? 2 : 1
+            );
             content.innerHTML = "";
             const datesToDisplay = showYesterday ? [todayIso, yestIso] : [todayIso];
             datesToDisplay.forEach((d) => {
@@ -4293,7 +4449,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
             const employee = extractEmployee();
             const eamDate = formatToEamDate(data.date);
             const targetHours = String(parseFloat(String(data.hours || "0.25").replace(",", ".")));
-            const targetHoursEAM = AppContext.isEU ? targetHours.replace(".", ",") : targetHours;
+            const targetHoursEAM = useCommaDecimal() ? targetHours.replace(".", ",") : targetHours;
             const targetType = data.type || "N";
             APMLogger.info("LaborBooker", `Booking: ${targetHours}h ${targetType} for ${employee} on ${eamDate}`);
             APMLogger.debug("LaborBooker", `Starting injection: emp=${employee}, hrs=${targetHours}, type=${targetType}`);
@@ -4473,6 +4629,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
                   employee,
                   octype: targetType
                 });
+                appendBookingLog(eamDate, targetHours);
               }
               setTimeout(() => {
                 window.dispatchEvent(new CustomEvent("APM_LABOR_SYNC", { detail: { source: "quick-book" } }));
@@ -4569,17 +4726,18 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
           let _mutTimer = null;
           const shouldCheck = () => {
             clearTimeout(_mutTimer);
-            _mutTimer = setTimeout(() => checkTabAndInject(win), 250);
+            _mutTimer = setTimeout(() => checkTabAndInject(win), 500);
           };
           const observer = new MutationObserver((mutations) => {
-            for (const m of mutations) {
+            outer: for (const m of mutations) {
               if (m.type === "childList") {
-                const hasRelevant = Array.from(m.addedNodes).some(
-                  (n) => n.nodeType === 1 && (n.tagName === "DIV" || n.tagName === "IFRAME")
-                );
-                if (hasRelevant) {
-                  shouldCheck();
-                  break;
+                const nodes = m.addedNodes;
+                for (let i = 0; i < nodes.length; i++) {
+                  const n = nodes[i];
+                  if (n.nodeType === 1 && (n.tagName === "DIV" || n.tagName === "IFRAME")) {
+                    shouldCheck();
+                    break outer;
+                  }
                 }
               }
             }
@@ -7186,7 +7344,9 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
     const viewId = view.getId?.() || "";
     if (grid.up?.("window")) return false;
     if (viewId.indexOf("checklistview") !== -1) return "linkify";
-    if (grid.up?.("uxtabcontainer")) return "linkify";
+    const parentTab = grid.up?.("uxtabcontainer");
+    if (parentTab?.itemId === "BOO") return false;
+    if (parentTab) return "linkify";
     return "full";
   }
   function resolveEntityColumn(doc) {
@@ -7443,6 +7603,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
           if (view.up?.("gridpanel") || view.up?.("treepanel")) continue;
           if (view.isTableView || view.ownerGrid) continue;
           if (view.up?.("window")) continue;
+          if (view.up?.("form")) continue;
           const nodes = view.getNodes?.();
           if (nodes?.length) {
             items.push(...nodes);
@@ -8460,7 +8621,11 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
       );
       if (targetItem && !targetItem.isDestroyed && targetItem.tab && targetItem.tab.isVisible()) {
         APMLogger.debug("TabGridOrder", `Restoring active tab to: ${activeTabName}`);
-        mainTabPanel.setActiveTab(targetItem);
+        try {
+          mainTabPanel.setActiveTab(targetItem);
+        } catch (e) {
+          APMLogger.debug("TabGridOrder", `setActiveTab threw (mid-transition): ${e.message}`);
+        }
       }
     }
   }
@@ -8505,9 +8670,13 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
       return result;
     };
     mainTabPanel.setActiveTab = function(item) {
-      if (_allowActiveTabChange) return originalSetActive.apply(this, arguments);
-      APMLogger.warn("TabGridOrder", `Blocked focus jump for "${normalizeTabName(item?.title || item?.text || "")}". Focus protected.`);
-      return originalSetActive.call(this, this.getActiveTab());
+      try {
+        if (_allowActiveTabChange) return originalSetActive.apply(this, arguments);
+        APMLogger.warn("TabGridOrder", `Blocked focus jump for "${normalizeTabName(item?.title || item?.text || "")}". Focus protected.`);
+        return originalSetActive.call(this, this.getActiveTab());
+      } catch (e) {
+        APMLogger.debug("TabGridOrder", `setActiveTab threw (mid-transition): ${e.message}`);
+      }
     };
     mainTabPanel.__apmConsistencyHook = true;
   }
@@ -11853,7 +12022,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
 .apm-lb-hint { font-size: var(--apm-text-xs); color: var(--apm-text-muted); margin: -4px 0 2px 0; font-style: italic; opacity: 0.8; }
 
 /* Preset buttons */
-.apm-lb-presets { display: flex; flex-wrap: wrap; gap: 4px; max-width: 250px; }
+.apm-lb-presets { display: flex; flex-wrap: wrap; gap: 4px; max-width: 340px; align-items: center; }
 .apm-lb-preset { padding: 5px 10px; background: var(--apm-surface-raised); border: 1px solid var(--apm-border); color: var(--apm-text-primary); border-radius: var(--apm-radius-sm); cursor: pointer; font-size: var(--apm-text-sm); font-weight: 600; transition: all 0.15s; }
 .apm-lb-preset:hover { border-color: var(--apm-accent); background: var(--apm-accent-subtle); color: var(--apm-accent); }
 .apm-lb-preset.active { border-color: var(--apm-accent); background: var(--apm-accent); color: var(--apm-text-on-accent); }
@@ -11872,6 +12041,10 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
 .apm-lb-correction:hover { background: rgba(231, 76, 60, 0.2); }
 .apm-lb-correction-text { font-size: var(--apm-text-sm); color: var(--apm-danger); font-weight: bold; white-space: nowrap; }
 .apm-lb-correction input[type="checkbox"] { cursor: pointer; width: 14px; height: 14px; margin: 0; accent-color: var(--apm-danger); }
+
+/* Format button styles */
+.apm-lb-fmt-label { margin-left: 8px; font-size: var(--apm-text-xs); color: var(--apm-text-muted); font-weight: 600; display: flex; align-items: center; }
+.apm-lb-fmt-btn { margin-left: 3px; min-width: 32px; text-align: center; font-size: var(--apm-text-xs); padding: 3px 6px; }
 
 /* Type toggle */
 .apm-lb-type-row { display: inline-flex; border: 1px solid var(--apm-border); border-radius: var(--apm-radius-sm); overflow: hidden; align-self: stretch; }
@@ -11892,9 +12065,17 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
 .apm-lb-summary-day { color: var(--apm-text-tertiary); }
 .apm-lb-summary-hours { color: var(--apm-success); font-weight: bold; }
 .apm-lb-summary-total { margin-top: auto; padding-top: 10px; font-weight: bold; font-size: var(--apm-text-lg); display: flex; justify-content: space-between; color: var(--apm-text-bright); }
-.apm-lb-summary-footer { border-top: 1px solid var(--apm-border); padding-top: 10px; margin-top: 10px; }
+.apm-lb-summary-footer { border-top: 1px solid var(--apm-border); padding-top: 10px; margin-top: 10px; display: flex; align-items: center; position: relative; }
+.apm-lb-shift-cog { background: none; border: none; color: var(--apm-text-disabled); cursor: pointer; font-size: 16px; padding: 2px 4px; transition: color 0.15s; }
+.apm-lb-shift-cog:hover { color: var(--apm-text-primary); }
+.apm-lb-shift-cog-label { font-size: var(--apm-text-sm); color: var(--apm-warning); cursor: pointer; margin-left: 4px; }
+.apm-lb-shift-popover { display: none; flex-direction: column; gap: 8px; position: absolute; bottom: 100%; right: 0; margin-bottom: 8px; background: var(--apm-surface-raised); border: 1px solid var(--apm-border-strong); border-radius: var(--apm-radius); padding: 10px 12px; box-shadow: var(--apm-shadow); z-index: 10; min-width: 180px; }
 .apm-lb-night-label { display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: var(--apm-text-sm); color: var(--apm-warning); }
 .apm-lb-night-label input[type="checkbox"] { accent-color: var(--apm-warning); }
+.apm-lb-shift-end-row { display: flex; align-items: center; gap: 8px; }
+.apm-lb-shift-end-label { font-size: var(--apm-text-sm); color: var(--apm-text-secondary); white-space: nowrap; }
+.apm-lb-shift-end-input { width: 80px; height: 26px; background: var(--apm-surface-sunken); border: 1px solid var(--apm-border); border-radius: var(--apm-radius-sm); color: var(--apm-text-primary); padding: 0 6px; font-size: var(--apm-text-sm); font-family: var(--apm-font-mono); }
+.apm-lb-shift-end-input:disabled { opacity: 0.4; cursor: not-allowed; }
 
 /* Summary states */
 .apm-lb-summary-loading { font-size: var(--apm-text-base); color: var(--apm-text-disabled); text-align: center; margin-top: 20px; }
@@ -16790,12 +16971,12 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
   init_utils();
   init_state();
   init_labor_service();
+  init_labor_booker();
   init_logger();
   init_ui_manager();
   init_constants();
   init_storage();
   init_feature_flags();
-  init_context();
   init_locale();
   var LaborTracker = (function() {
     if (!isTopFrame()) return { init: function() {
@@ -17114,7 +17295,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
       const { total, breakdown } = calculateLabor(activeTab);
       const fmtDec = (n) => {
         const s = n.toFixed(2);
-        return AppContext.isEU ? s.replace(".", ",") : s;
+        return useCommaDecimal() ? s.replace(".", ",") : s;
       };
       sumBox.textContent = "";
       sumBox.appendChild(document.createTextNode(fmtDec(total) + " "));
@@ -17796,10 +17977,27 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
     }
     return false;
   }
+  async function waitForNav(maxWait = 15e3) {
+    const interval = 500;
+    for (let elapsed = 0; elapsed < maxWait; elapsed += interval) {
+      for (const w of getExtWindows()) {
+        try {
+          if (w.EAM?.Nav && typeof w.EAM.Nav.launchScreen === "function") return true;
+        } catch (e) {
+        }
+      }
+      await delay(interval);
+    }
+    return false;
+  }
   async function executeRestore(snapshot) {
     APMLogger.info("Snapshot", `Restoring: navigating to ${snapshot.screen}`);
     await delay(2e3);
     dismissSystemPopups();
+    const navReady = await waitForNav(15e3);
+    if (!navReady) {
+      APMLogger.warn("Snapshot", "EAM.Nav not available after polling \u2014 falling back to URL navigation");
+    }
     if (snapshot.forecastProfileId) {
       const executeForecast2 = APMApi.get?.("executeForecast");
       if (executeForecast2) {
@@ -17820,20 +18018,20 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
               if (result2.success) {
                 await restoreActiveTab(snapshot.record?.activeTab);
                 showToast(t("restored", entry2.label, snapshot.record.entityId), "var(--apm-success, #27ae60)", false);
-                return;
+                return true;
               }
             }
           }
         }
         showToast(t("restoredProfile"), "var(--apm-success, #27ae60)", false);
-        return;
+        return true;
       }
     }
     if (snapshot.record && !snapshot.gridState) {
       const entry2 = ENTITY_REGISTRY[snapshot.record.entityType];
       if (entry2) {
         const jumped = await restoreViaNavGoTo(snapshot, entry2);
-        if (jumped) return;
+        if (jumped) return true;
         APMLogger.debug("Snapshot", "Nav.goTo unavailable, falling back to filter+run");
       }
     }
@@ -17848,8 +18046,15 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
       }
     }
     if (!navOk) {
+      APMLogger.warn("Snapshot", "launchScreenDirect failed \u2014 trying URL navigation fallback");
+      try {
+        navigateViaUrl(snapshot.screen);
+        return true;
+      } catch (e) {
+        APMLogger.error("Snapshot", "URL navigation fallback failed:", e);
+      }
       showToast(t("couldNotRestore"), "#e74c3c", false);
-      return;
+      return false;
     }
     await delay(2e3);
     dismissSystemPopups();
@@ -17883,7 +18088,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
               APMLogger.warn("Snapshot", `Record ${snapshot.record.entityId} not found in grid results`);
               showToast(`Restored filters \u2014 could not open ${snapshot.record.entityId}`, "#f39c12", false);
             }
-            return;
+            return true;
           } else {
             APMLogger.warn("Snapshot", "Grid empty or not found after restore \u2014 cannot open record");
           }
@@ -17893,24 +18098,24 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
         const entry2 = ENTITY_REGISTRY[snapshot.screen];
         const label = entry2 ? entry2.screenTitle : snapshot.screen;
         showToast(t("restoredFilters", label), "var(--apm-success, #27ae60)", false);
-        return;
+        return true;
       }
     }
     if (!snapshot.record) {
       const entry2 = ENTITY_REGISTRY[snapshot.screen];
       const label = entry2 ? entry2.screenTitle : snapshot.screen;
       showToast(t("restoredScreen", label), "var(--apm-success, #27ae60)", false);
-      return;
+      return true;
     }
     const entry = ENTITY_REGISTRY[snapshot.record.entityType];
     if (!entry) {
       showToast(`Unknown entity type: ${snapshot.record.entityType}`, "#e74c3c", false);
-      return;
+      return false;
     }
     const filterFieldName = FILTER_FIELD_MAP[snapshot.screen];
     if (!filterFieldName) {
       showToast(`No filter field mapped for ${snapshot.screen}`, "#e74c3c", false);
-      return;
+      return false;
     }
     const POLL_INTERVAL = 500;
     const maxPolls = Math.ceil(RESTORE_GRID_TIMEOUT / POLL_INTERVAL);
@@ -17933,12 +18138,12 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
     }
     if (!targetWin) {
       showToast("Could not restore \u2014 search fields unavailable", "#e74c3c", false);
-      return;
+      return false;
     }
     const fieldSet = setFilterField(targetWin.Ext, filterFieldName, snapshot.record.entityId);
     if (!fieldSet) {
       showToast("Could not restore \u2014 filter field not found", "#e74c3c", false);
-      return;
+      return false;
     }
     APMLogger.info("Snapshot", `Set ${filterFieldName}=${snapshot.record.entityId}, clicking Run`);
     const runBtns = targetWin.Ext.ComponentQuery.query("button[text=Run]:not([destroyed=true])");
@@ -17958,7 +18163,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
     const ctx = findMainGrid(true);
     if (!ctx || ctx.grid.getStore().getCount() === 0) {
       showToast(`Could not find ${entry.label} ${snapshot.record.entityId}`, "#e74c3c", false);
-      return;
+      return false;
     }
     const result = await openMatchingGridRecord(ctx.grid, ctx.win, entry.dataIndex, snapshot.record.entityId);
     if (result.success) {
@@ -17967,6 +18172,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
     } else {
       showToast(`Could not open ${entry.label} ${snapshot.record.entityId}`, "#e74c3c", false);
     }
+    return true;
   }
   async function restoreViaNavGoTo(snapshot, entry) {
     for (const win of getExtWindows()) {
@@ -18075,8 +18281,21 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
               APMStorage.remove(snapshotKeyUsed);
             } else if (autoRestore) {
               APMLogger.info("Snapshot", "Auto-restoring \u2014 user chose Restore from wake prompt.");
-              await executeRestore(snapshot);
-              APMStorage.remove(snapshotKeyUsed);
+              const ok = await executeRestore(snapshot);
+              if (ok) {
+                APMStorage.remove(snapshotKeyUsed);
+              } else {
+                APMLogger.warn("Snapshot", "Auto-restore failed \u2014 falling back to manual prompt.");
+                await delay(2e3);
+                const choice = await showRestorePrompt(snapshot);
+                await delay(350);
+                if (choice === "restore") {
+                  const retryOk = await executeRestore(snapshot);
+                  if (retryOk) APMStorage.remove(snapshotKeyUsed);
+                } else {
+                  APMStorage.remove(snapshotKeyUsed);
+                }
+              }
             } else {
               await delay(1e3);
               const activeScreen = detectActiveScreen();
@@ -18086,9 +18305,11 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
                 const choice = await showRestorePrompt(snapshot);
                 await delay(350);
                 if (choice === "restore") {
-                  await executeRestore(snapshot);
+                  const ok = await executeRestore(snapshot);
+                  if (ok) APMStorage.remove(snapshotKeyUsed);
+                } else {
+                  APMStorage.remove(snapshotKeyUsed);
                 }
-                APMStorage.remove(snapshotKeyUsed);
               }
             }
           }
