@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         APM Master: Unified Tools
 // @namespace    https://w.amazon.com/bin/view/Users/rosendah/APM-Master/
-// @version      14.10.9
+// @version      14.10.10
 // @description  Quality of life and automation tool that uses native EAM ExtJS Framework functions for high reliability and capability. This is actively supported tool so Slack me or submit bug report/feature request through the bug report button in the menu.
 // @author       Jacob Rosendahl
 // @icon         https://media.licdn.com/dms/image/v2/D5603AQGdCV0_LQKRfQ/profile-displayphoto-scale_100_100/B56ZyZLvQ5HgAg-/0/1772096519061?e=1773878400&v=beta&t=eWO1Jiy0-WbzG_yBv-SBrmmsVOPMexF57-q1Xh_VXCk
@@ -126,7 +126,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
       PRESET_STORAGE_KEY = "apm_v1_autofill_presets";
       STORAGE_KEY = "apm_v1_forecast_prefs";
       APM_GENERAL_STORAGE = "apm_v1_general_settings";
-      CURRENT_VERSION = "14.10.9";
+      CURRENT_VERSION = "14.10.10";
       VERSION_CHECK_URL = "https://raw.githubusercontent.com/jaker788-create/APM-Master/main/forecast.user.js";
       UPDATE_URL = "https://raw.githubusercontent.com/jaker788-create/APM-Master/main/forecast.user.js";
       LABOR_EMPS_STORAGE = "apm_v1_labor_employees";
@@ -2246,6 +2246,10 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
   });
 
   // src/core/utils.js
+  function escapeHtml(str) {
+    if (!str) return "";
+    return String(str).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;");
+  }
   function apmGetGlobalWindow() {
     return typeof unsafeWindow !== "undefined" ? unsafeWindow : window;
   }
@@ -3803,7 +3807,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
             laborCache.employee = targetEmployee;
             laborCache.lastFetch = Date.now();
             if (!APMStorage.get(LABOR_DECIMAL_DETECTED_KEY) && records.length > 0) {
-              const sample = records.find((r) => r.hrswork && String(r.hrswork).match(/[.,]/));
+              const sample = records.find((r) => r.hrswork && /[.,]/.test(String(r.hrswork)));
               if (sample) {
                 const val = String(sample.hrswork);
                 const detected = val.includes(",") ? "comma" : "dot";
@@ -3828,7 +3832,9 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
             const rDate = parseEamDate(r.datework);
             if (!rDate) return;
             rDate.setHours(0, 0, 0, 0);
-            const diffDays = Math.floor((now - rDate) / (1e3 * 3600 * 24));
+            const utcNow = Date.UTC(now.getFullYear(), now.getMonth(), now.getDate());
+            const utcR = Date.UTC(rDate.getFullYear(), rDate.getMonth(), rDate.getDate());
+            const diffDays = (utcNow - utcR) / 864e5;
             const maxDaysAgo = daysParam - 1;
             if (diffDays <= maxDaysAgo && diffDays >= 0) {
               const hrs = parseFloat(String(r.hrswork ?? "").replace(",", "."));
@@ -3877,7 +3883,6 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
   var init_labor_booker = __esm({
     "src/modules/labor/labor-booker.js"() {
       init_utils();
-      init_scheduler();
       init_logger();
       init_toast();
       init_locale();
@@ -4117,7 +4122,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
                 const type = win.document.querySelector('input[name="lb-type"]').value;
                 UIManager.closeAll(true);
                 setTimeout(() => {
-                  showToast(t("bookingHours", val) + " \u23F3", "#3498db");
+                  showToast(t("bookingHours", val) + " \u23F3", "var(--apm-info)");
                   executeBookingFlow({ hours: val, date: dInput, type }, win);
                 }, 10);
               };
@@ -4207,31 +4212,28 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
             bookBtn2.className = "apm-lb-book-btn";
             formSide.appendChild(bookBtn2);
             popup.appendChild(formSide);
-            const sumSide = win.document.createElement("div");
-            sumSide.className = "apm-lb-summary";
-            sumSide.innerHTML = `
-                <h4 class="apm-lb-summary-title">${t("shiftSummary")}</h4>
-                <div id="apm-lb-sum-content" class="apm-lb-summary-content">
-                    <div class="apm-lb-summary-loading">${t("fetching")}</div>
-                </div>
-                <div class="apm-lb-summary-footer">
-                    <button id="apm-lb-shift-cog" class="apm-lb-shift-cog" title="${t("nightShiftMode")}">&#9881;</button>
-                    <span class="apm-lb-shift-cog-label">${t("nightShiftSettings")}</span>
-                    <div id="apm-lb-shift-popover" class="apm-lb-shift-popover" style="display:none;">
-                        <label class="apm-lb-night-label">
-                            <input id="apm-lb-night-toggle" type="checkbox" ${APMStorage.get(LABOR_NIGHT_SHIFT_KEY) === true ? "checked" : ""}>
-                            ${t("nightShiftMode")}
-                        </label>
-                        <div class="apm-lb-shift-end-row">
-                            <label class="apm-lb-shift-end-label">${t("shiftEndTime")}</label>
-                            <input id="apm-lb-shift-end" type="time" class="apm-lb-shift-end-input"
-                                value="${APMStorage.get(LABOR_SHIFT_END_KEY, "")}"
-                                placeholder="06:00"
-                                ${APMStorage.get(LABOR_NIGHT_SHIFT_KEY) !== true ? "disabled" : ""}>
-                        </div>
-                    </div>
-                </div>
-            `;
+            const isNightShiftEnabled = APMStorage.get(LABOR_NIGHT_SHIFT_KEY) === true;
+            const shiftEndVal = APMStorage.get(LABOR_SHIFT_END_KEY, "");
+            const sumSide = el("div", { className: "apm-lb-summary" }, [
+              el("h4", { className: "apm-lb-summary-title" }, t("shiftSummary")),
+              el("div", { id: "apm-lb-sum-content", className: "apm-lb-summary-content" }, [
+                el("div", { className: "apm-lb-summary-loading" }, t("fetching"))
+              ]),
+              el("div", { className: "apm-lb-summary-footer" }, [
+                el("button", { id: "apm-lb-shift-cog", className: "apm-lb-shift-cog", title: t("nightShiftMode") }, "\u2699"),
+                el("span", { className: "apm-lb-shift-cog-label" }, t("nightShiftSettings")),
+                el("div", { id: "apm-lb-shift-popover", className: "apm-lb-shift-popover", style: { display: "none" } }, [
+                  el("label", { className: "apm-lb-night-label" }, [
+                    Object.assign(win.document.createElement("input"), { id: "apm-lb-night-toggle", type: "checkbox", checked: isNightShiftEnabled }),
+                    win.document.createTextNode(" " + t("nightShiftMode"))
+                  ]),
+                  el("div", { className: "apm-lb-shift-end-row" }, [
+                    el("label", { className: "apm-lb-shift-end-label" }, t("shiftEndTime")),
+                    Object.assign(win.document.createElement("input"), { id: "apm-lb-shift-end", type: "time", className: "apm-lb-shift-end-input", value: shiftEndVal, placeholder: "06:00", disabled: !isNightShiftEnabled })
+                  ])
+                ])
+              ])
+            ]);
             popup.appendChild(sumSide);
             win.document.body.appendChild(popup);
             const cogBtn = win.document.getElementById("apm-lb-shift-cog");
@@ -4291,7 +4293,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
             bookBtn.textContent = t("bookLabor");
             bookBtn.onclick = () => {
               const hRaw = hoursInput.value;
-              if (!hRaw || hRaw === "-") return showToast(t("enterHours"), "#e74c3c");
+              if (!hRaw || hRaw === "-") return showToast(t("enterHours"), "var(--apm-danger)");
               const isCorrection = win.document.getElementById("apm-lb-correction").checked;
               const parsed = parseFloat(hRaw.replace(/\s/g, "").replace(",", "."));
               if (isNaN(parsed) || parsed === 0) {
@@ -4304,7 +4306,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
               const type = win.document.querySelector('input[name="lb-type"]').value;
               UIManager.closeAll(true);
               setTimeout(() => {
-                showToast(t("bookingHours", displayHrs) + " \u23F3", "#3498db");
+                showToast(t("bookingHours", displayHrs) + " \u23F3", "var(--apm-info)");
                 executeBookingFlow({ hours, date, type }, win);
               }, 10);
             };
@@ -4597,48 +4599,46 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
               }
             }
             await waitForAjax(targetWin);
-            if (true) {
-              let saveVerified = false;
-              let postCount = -1;
-              if (booStore && preCount >= 0) {
-                await delay(300);
-                if (booStore.isLoading?.()) await waitForAjax(targetWin);
-                postCount = booStore.getCount();
-                APMLogger.debug("LaborBooker", `Post-save record count: ${postCount} (was ${preCount})`);
-                saveVerified = postCount > preCount;
-              }
-              const result = saveVerified ? "success" : preCount < 0 ? "unknown" : "failed";
-              if (!options.silent) {
-                if (result === "success") {
-                  showToast(t("laborBooked") + " \u26A1", "#1abc9c");
-                } else if (result === "unknown") {
-                  showToast(t("laborSent") + " \u26A1", "#1abc9c");
-                } else {
-                  showToast(t("laborFailed"), "#e74c3c");
-                }
-              }
-              if (result === "success") {
-                APMLogger.info("LaborBooker", `Booked ${targetHours}h successfully (records: ${preCount} \u2192 ${postCount})`);
-              } else if (result === "failed") {
-                APMLogger.warn("LaborBooker", "Save verification failed: grid record count did not increase");
-              }
-              if (result === "success") {
-                LaborService.addRecord({
-                  datework: eamDate,
-                  hrswork: targetHours,
-                  employee,
-                  octype: targetType
-                });
-                appendBookingLog(eamDate, targetHours);
-              }
-              setTimeout(() => {
-                window.dispatchEvent(new CustomEvent("APM_LABOR_SYNC", { detail: { source: "quick-book" } }));
-              }, 800);
-              return { result };
+            let saveVerified = false;
+            let postCount = -1;
+            if (booStore && preCount >= 0) {
+              await delay(300);
+              if (booStore.isLoading?.()) await waitForAjax(targetWin);
+              postCount = booStore.getCount();
+              APMLogger.debug("LaborBooker", `Post-save record count: ${postCount} (was ${preCount})`);
+              saveVerified = postCount > preCount;
             }
+            const result = saveVerified ? "success" : preCount < 0 ? "unknown" : "failed";
+            if (!options.silent) {
+              if (result === "success") {
+                showToast(t("laborBooked") + " \u26A1", "var(--apm-success)");
+              } else if (result === "unknown") {
+                showToast(t("laborSent") + " \u26A1", "var(--apm-success)");
+              } else {
+                showToast(t("laborFailed"), "var(--apm-danger)");
+              }
+            }
+            if (result === "success") {
+              APMLogger.info("LaborBooker", `Booked ${targetHours}h successfully (records: ${preCount} \u2192 ${postCount})`);
+            } else if (result === "failed") {
+              APMLogger.warn("LaborBooker", "Save verification failed: grid record count did not increase");
+            }
+            if (result === "success") {
+              LaborService.addRecord({
+                datework: eamDate,
+                hrswork: targetHours,
+                employee,
+                octype: targetType
+              });
+              appendBookingLog(eamDate, targetHours);
+            }
+            setTimeout(() => {
+              window.dispatchEvent(new CustomEvent("APM_LABOR_SYNC", { detail: { source: "quick-book" } }));
+            }, 800);
+            return { result };
           } catch (e) {
             APMLogger.error("LaborBooker", "executeBookingFlow Error:", e);
-            if (!options.silent) showToast("Error: " + e.message, "#e74c3c");
+            if (!options.silent) showToast("Error: " + e.message, "var(--apm-danger)");
             return { result: "error", error: e.message };
           } finally {
             clearTimeout(_safetyTimer);
@@ -4646,12 +4646,11 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
           }
         }
         function extractEmployee() {
-          const cleanId = (id) => (id && id.includes("@") ? id.split("@")[0] : id || "").toUpperCase();
           const session = AppState.session;
-          if (session.user) return cleanId(session.user);
+          if (session.user) return cleanEmployeeId(session.user);
           const stored = APMStorage.get(LABOR_LAST_EMP_KEY);
           if (stored) {
-            session.user = cleanId(stored);
+            session.user = cleanEmployeeId(stored);
             return session.user;
           }
           const win = apmGetGlobalWindow();
@@ -5131,6 +5130,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
       if (hookState.pollCount < 200) {
         state._pollTimeout = setTimeout(poll, 50);
       } else {
+        clearTimeout(state._pollTimeout);
         let slowPollCount = 0;
         state._pollInterval = setInterval(() => {
           if (state.hooksApplied) {
@@ -5991,7 +5991,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
       const now = Date.now();
       const gap = now - this._lastWallClock;
       this._lastWallClock = now;
-      if (gap > 6e4 && !this._probing && !this._wakePromptShown && AppContext.isEAM) {
+      if (gap > 9e5 && !this._probing && !this._wakePromptShown && AppContext.isEAM) {
         APMLogger.info("APM Session", `Wake detected \u2014 ${(gap / 1e3).toFixed(0)}s gap.`);
         if (gap > 18e5) {
           APMLogger.info("APM Session", "Gap exceeds 30 min \u2014 session expired. Showing prompt.");
@@ -6379,7 +6379,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
     apmFetch(check).then((response) => response.text()).then((text) => {
       window[FLAGS.UPDATE_CHECKED] = true;
       APMStorage.set(UPDATE_CHECK_KEY, today);
-      const match = text.match(/\/\/\s*@version\s+([0-9\.]+)/);
+      const match = text.match(/\/\/\s*@version\s+([0-9]+(?:\.[0-9]+)*)/);
       if (match && match[1]) {
         const remoteVersion = match[1];
         if (isNewerVersion(CURRENT_VERSION, remoteVersion)) {
@@ -6413,13 +6413,11 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
 
   // src/modules/ptp/ptp-timer.js
   init_state();
-  init_logger();
   init_feature_flags();
   init_locale();
   var countdownStart = null;
   var COUNTDOWN_DURATION = 120;
   var _ptpTimerRunning = false;
-  var _ptpDismissed = false;
   var _countdownInterval = null;
   function _getTopDoc() {
     try {
@@ -6444,7 +6442,6 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
         _countdownInterval = null;
       }
       _ptpTimerRunning = false;
-      _ptpDismissed = true;
       if (onClose) onClose();
     };
   }
@@ -6523,9 +6520,8 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
       _countdownInterval = null;
     }
     _ptpTimerRunning = false;
-    _ptpDismissed = true;
   }
-  function checkPtpStatus(hasHeartbeat = false) {
+  function checkPtpStatus() {
     if (!FeatureFlags.isEnabled("ptpTimer")) return;
     const topDoc = _getTopDoc();
     const timerUI = topDoc.getElementById("apm-ptp-timer");
@@ -6570,7 +6566,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
       if (msg.type === "APM_PTP_HEARTBEAT") {
         window._ptpLastHeartbeat = Date.now();
         if (AppContext.isTop && typeof checkPtpStatus === "function") {
-          checkPtpStatus(true);
+          checkPtpStatus();
         }
       }
       if (msg.type === "APM_GET_THEME" || msg.apmMaster === "getTheme") {
@@ -6710,7 +6706,14 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
         if (!kwString) continue;
         for (const kw of kwString.split(",")) {
           const trimmed = kw.trim().toLowerCase();
-          if (trimmed) map.set(trimmed, { screen, presetKey: key });
+          if (!trimmed) continue;
+          const existing = map.get(trimmed);
+          if (existing) {
+            if (!existing.some((e) => e.screen === screen && e.presetKey === key))
+              existing.push({ screen, presetKey: key });
+          } else {
+            map.set(trimmed, [{ screen, presetKey: key }]);
+          }
         }
       }
     }
@@ -7038,7 +7041,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
       }
     }
     if (!found) {
-      const walk = document.createTreeWalker(gridDom, NodeFilter.SHOW_TEXT, {
+      const walk = gridDom.ownerDocument.createTreeWalker(gridDom, NodeFilter.SHOW_TEXT, {
         acceptNode: function(node2) {
           return /Records:\s*\d+\s*of\s*\d+/.test(node2.nodeValue) ? NodeFilter.FILTER_ACCEPT : NodeFilter.FILTER_SKIP;
         }
@@ -7119,10 +7122,12 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
         store._apmCacheHook = true;
       }
       const count = store.getCount();
-      store.getTotalCount = function() {
-        return this.getCount();
-      };
-      forceFooterText(gridDom, count);
+      if (keywords.length > 0) {
+        store.getTotalCount = function() {
+          return this.getCount();
+        };
+        forceFooterText(gridDom, count);
+      }
       if (view && !view.__apmFooterHook) {
         view.on("refresh", () => {
           const currentFilter = getActiveNametagFilter();
@@ -7218,7 +7223,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
       rules.forEach((rule) => {
         if (!rule || !rule.id) return;
         const safeId = rule.id.toString().replace(/[^a-zA-Z0-9_-]/g, "_");
-        if (!/^#[0-9a-fA-F]{3,8}$/.test(rule.color)) return;
+        if (!/^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$/.test(rule.color)) return;
         root.style.setProperty(`--cc-color-${safeId}`, rule.color);
       });
       if (previewRule && previewRule.id && previewRule.color) {
@@ -10554,9 +10559,13 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
         const presets = getPresets();
         const kwIndex = getKeywordIndex();
         const srMatches = [];
-        for (const [kw, entry] of kwIndex) {
-          if (entry.screen !== "shiftReport") continue;
-          if (titleLower.includes(kw)) {
+        const seen = /* @__PURE__ */ new Set();
+        for (const [kw, entries] of kwIndex) {
+          if (!titleLower.includes(kw)) continue;
+          for (const entry of entries) {
+            if (entry.screen !== "shiftReport") continue;
+            if (seen.has(entry.presetKey)) continue;
+            seen.add(entry.presetKey);
             const prof = presets.autofill?.shiftReport?.[entry.presetKey];
             if (prof) srMatches.push({ ...prof, name: entry.presetKey });
           }
@@ -10733,10 +10742,14 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
       const presets = getPresets();
       if (!matchedData) {
         const allMatches = [];
+        const seen = /* @__PURE__ */ new Set();
         const kwIndex = getKeywordIndex();
-        for (const [kw, entry] of kwIndex) {
-          if (entry.screen !== screenType) continue;
-          if (titleLower.includes(kw)) {
+        for (const [kw, entries] of kwIndex) {
+          if (!titleLower.includes(kw)) continue;
+          for (const entry of entries) {
+            if (entry.screen !== screenType) continue;
+            if (seen.has(entry.presetKey)) continue;
+            seen.add(entry.presetKey);
             const prof = presets.autofill?.[entry.screen]?.[entry.presetKey];
             if (prof) allMatches.push({ ...prof, name: entry.presetKey });
           }
@@ -10947,11 +10960,12 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
         } else {
           if (foundTitleLocal) {
             const kwIndex = getKeywordIndex();
-            for (const [kw, entry] of kwIndex) {
-              if (entry.screen !== screenType) continue;
+            for (const [kw, entries] of kwIndex) {
               if (foundTitleLocal === kw || foundTitleLocal.includes(kw)) {
-                hasMatch = true;
-                break;
+                if (entries.some((e) => e.screen === screenType)) {
+                  hasMatch = true;
+                  break;
+                }
               }
             }
           }
@@ -11674,9 +11688,9 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
 .apm-tab-content-scroll::-webkit-scrollbar-thumb:hover { background: var(--apm-control-bg-hover); }
 .apm-template-box { background: var(--apm-surface-sunken); padding: 8px 10px; border-radius: var(--apm-radius); margin-bottom: 12px; border: 1px solid var(--apm-border); }
 .apm-template-label { font-size: var(--apm-text-xs); color: var(--apm-text-secondary); margin-bottom: 4px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.6px; }
-.apm-template-row { display: flex; gap: 5px; align-items: center; }
-.apm-template-select { flex-grow:1; height: 28px; padding:0 6px; border-radius:var(--apm-radius-sm); border:1px solid var(--apm-input-border); font-weight:bold; cursor:pointer; font-size:var(--apm-text-sm); background: var(--apm-input-bg); color: var(--apm-input-text); box-sizing:border-box; }
-.apm-template-btn-update, .apm-template-btn-new, .apm-template-btn-del { border: none; border-radius: var(--apm-radius-sm); cursor: pointer; font-size: var(--apm-text-sm); font-weight: bold; transition: filter 0.15s; height: 28px; box-sizing: border-box; }
+.apm-template-row { display: flex; gap: 5px; align-items: center; flex-wrap: wrap; }
+.apm-template-select { flex:1 1 0; min-width: 0; height: 28px; padding:0 6px; border-radius:var(--apm-radius-sm); border:1px solid var(--apm-input-border); font-weight:bold; cursor:pointer; font-size:var(--apm-text-sm); background: var(--apm-input-bg); color: var(--apm-input-text); box-sizing:border-box; }
+.apm-template-btn-update, .apm-template-btn-new, .apm-template-btn-del { border: none; border-radius: var(--apm-radius-sm); cursor: pointer; font-size: var(--apm-text-sm); font-weight: bold; transition: filter 0.15s; height: 28px; box-sizing: border-box; flex-shrink: 0; white-space: nowrap; }
 .apm-template-btn-update:hover, .apm-template-btn-new:hover { filter: brightness(1.15); }
 .apm-template-btn-del:hover { filter: brightness(1.2); } /* red needs stronger bump \u2014 lower perceived luminance */
 .apm-template-btn-update { background:var(--apm-accent); color:white; padding: 4px 10px; }
@@ -12486,7 +12500,9 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
     try {
       const next = JSON.parse(data);
       const existingFlags = apmGeneralSettings.flags ? { ...apmGeneralSettings.flags } : {};
-      Object.assign(apmGeneralSettings, next);
+      for (const key of Object.keys(next)) {
+        apmGeneralSettings[key] = next[key];
+      }
       if (next.flags && typeof next.flags === "object" && Object.keys(next.flags).length > 0) {
         apmGeneralSettings.flags = { ...existingFlags, ...next.flags };
       } else {
@@ -12751,11 +12767,11 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
     }
   }
   function togglePrefix(id, prefix) {
-    const el2 = document.getElementById(id);
-    if (!el2) return;
-    const start = el2.selectionStart;
-    const end = el2.selectionEnd;
-    let fullVal = el2.value;
+    const field = document.getElementById(id);
+    if (!field) return;
+    const start = field.selectionStart;
+    const end = field.selectionEnd;
+    let fullVal = field.value;
     if (start !== end) {
       let selected = fullVal.substring(start, end).trim();
       if (selected.startsWith(prefix)) {
@@ -12766,20 +12782,20 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
         }
         selected = prefix + selected;
       }
-      el2.value = fullVal.substring(0, start) + selected + fullVal.substring(end);
-      el2.setSelectionRange(start, start + selected.length);
+      field.value = fullVal.substring(0, start) + selected + fullVal.substring(end);
+      field.setSelectionRange(start, start + selected.length);
     } else {
       let val = fullVal.trim();
       if (val.startsWith(prefix)) {
-        el2.value = val.substring(prefix.length).trim();
+        field.value = val.substring(prefix.length).trim();
       } else {
         if (val.startsWith("!") || val.startsWith("=") || val.startsWith("^")) {
           val = val.substring(1).trim();
         }
-        el2.value = prefix + val;
+        field.value = prefix + val;
       }
     }
-    el2.focus();
+    field.focus();
   }
   function setupModalListeners(modal) {
     modal.querySelector("#apm-spies-close").onclick = () => {
@@ -12803,7 +12819,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
     modal.querySelector("#spy-btn-save").onclick = () => {
       const name = modal.querySelector("#spy-name").value.trim();
       if (!name) {
-        alert("Please enter a profile name.");
+        showToast("Please enter a profile name.", "var(--apm-warning)");
         return;
       }
       const id = spyMgrSelect.value || "prof_" + Date.now();
@@ -13709,6 +13725,12 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
             const isMatch = url2.includes("WSJOBS.xmlhttp") || url2.includes("CTJOBS.xmlhttp");
             const isCache = url2.includes("GETCACHE") || body && typeof body === "string" && body.includes("COMPONENT_INFO_TYPE_MODE=CACHE");
             if (isMatch && !isCache) {
+              const ourAliases = Object.keys(maddonParams).filter((k) => k.startsWith("MADDON_FILTER_ALIAS_NAME_")).map((k) => maddonParams[k]);
+              if (ourAliases.length > 0 && ourAliases.every((a) => body && body.includes(a))) {
+                consumed = true;
+                cleanup();
+                return origSend.call(this, body);
+              }
               consumed = true;
               if (body && typeof body === "string") {
                 const shifted = buildShiftedParams(body);
@@ -15021,7 +15043,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
   function renderOrgs(container) {
     const select = container.querySelector("#eam-org-select");
     if (!select) return;
-    select.innerHTML = "";
+    select.replaceChildren();
     select.appendChild(el("option", { value: "" }, "-- All Sites --"));
     savedOrgs.forEach((org) => {
       select.appendChild(el("option", { value: org, selected: org === selectedOrg }, org));
@@ -15125,7 +15147,6 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
   }
   function buildForecastUI() {
     try {
-      APMApi.register("buildForecastUI", buildForecastUI);
       if (window.self !== window.top) return;
       injectForecastStyles();
       let panel = document.getElementById("eam-forecast-panel");
@@ -15229,6 +15250,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
       APMLogger.error("Forecast", "Failed to build forecast UI:", e);
     }
   }
+  APMApi.register("buildForecastUI", buildForecastUI);
   function setModeUI(panel, viewMode) {
     const advProfile = panel.querySelector("#eam-adv-profile");
     const advSite = panel.querySelector("#eam-adv-site");
@@ -15485,7 +15507,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
       });
       const count = store.getCount();
       store.getTotalCount = function() {
-        return count;
+        return this.getCount();
       };
       updateFooterTextNatively(grid, count);
       store.resumeEvents();
@@ -15672,7 +15694,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
       }
       const groupRules = rules.filter((r) => group.ruleIds.includes(r.id));
       result.push({
-        id: Date.now() + Math.random(),
+        id: Date.now().toString(36) + Math.random().toString(36).slice(2),
         search: group.mergedKeywords,
         tag: group.tag,
         color: group.averagedColor,
@@ -17289,7 +17311,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
         span.className = cls;
         span.textContent = errorMsg;
         sumBox.appendChild(span);
-        list.innerHTML = "";
+        list.replaceChildren();
         return;
       }
       const { total, breakdown } = calculateLabor(activeTab);
@@ -17562,6 +17584,8 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
       return false;
     }
     const ext = targetWin.Ext;
+    await waitForAjax(targetWin);
+    await delay(300);
     if (gridState.dataspyId) {
       const allCombos = ext.ComponentQuery.query("combobox:not([destroyed=true])");
       let dataspyCombo = allCombos.find((c) => (c.itemId || "").toLowerCase().includes("dataspy"));
@@ -17725,8 +17749,8 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
     const contextSuffix = contextParts.length > 0 ? t("withContext", contextParts.join(" + ")) : "";
     if (snapshot.record) {
       const entry2 = ENTITY_REGISTRY[snapshot.record.entityType];
-      const label = entry2 ? entry2.label : snapshot.record.entityType;
-      return t("restorePromptRecord", `${label} ${snapshot.record.entityId}`, contextSuffix);
+      const label = entry2 ? entry2.label : escapeHtml(snapshot.record.entityType);
+      return t("restorePromptRecord", `${label} ${escapeHtml(snapshot.record.entityId)}`, contextSuffix);
     }
     const entry = ENTITY_REGISTRY[snapshot.screen];
     const screenLabel = entry ? entry.screenTitle : snapshot.screen;
@@ -18053,7 +18077,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
       } catch (e) {
         APMLogger.error("Snapshot", "URL navigation fallback failed:", e);
       }
-      showToast(t("couldNotRestore"), "#e74c3c", false);
+      showToast(t("couldNotRestore"), "var(--apm-danger)", false);
       return false;
     }
     await delay(2e3);
@@ -18072,9 +18096,15 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
         const entry2 = ENTITY_REGISTRY[snapshot.record.entityType];
         if (entry2) {
           let ctx2 = null;
+          let popupDetected = false;
           for (let i = 0; i < 10; i++) {
             ctx2 = findMainGrid(true);
             if (ctx2 && ctx2.grid.getStore().getCount() > 0) break;
+            if (dismissSystemPopups()) {
+              popupDetected = true;
+              ctx2 = null;
+              break;
+            }
             ctx2 = null;
             await delay(500);
           }
@@ -18086,11 +18116,84 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
               showToast(t("restored", entry2.label, snapshot.record.entityId), "var(--apm-success, #27ae60)", false);
             } else {
               APMLogger.warn("Snapshot", `Record ${snapshot.record.entityId} not found in grid results`);
-              showToast(`Restored filters \u2014 could not open ${snapshot.record.entityId}`, "#f39c12", false);
+              showToast(`Restored filters \u2014 could not open ${snapshot.record.entityId}`, "var(--apm-warning)", false);
             }
             return true;
           } else {
-            APMLogger.warn("Snapshot", "Grid empty or not found after restore \u2014 cannot open record");
+            APMLogger.warn("Snapshot", "Grid empty after filter restore \u2014 attempting recovery");
+            if (!popupDetected) dismissSystemPopups();
+            const recoverWin = getExtWindows().find((w) => {
+              try {
+                return w.Ext?.ComponentQuery?.query("button[text=Run]:not([destroyed=true])")?.length > 0;
+              } catch (_e) {
+                return false;
+              }
+            });
+            if (recoverWin && snapshot.gridState?.filterFields) {
+              APMLogger.info("Snapshot", "Retrying search with existing filters");
+              const clickRun = () => {
+                const rBtns = recoverWin.Ext.ComponentQuery.query("button[text=Run]:not([destroyed=true])");
+                if (rBtns.length > 0) {
+                  const rBtn = rBtns[0];
+                  if (rBtn.handler) rBtn.handler.call(rBtn.scope || rBtn, rBtn);
+                  else rBtn.fireEvent("click", rBtn);
+                }
+              };
+              clickRun();
+              await delay(300);
+              await waitForAjax(recoverWin);
+              await delay(300);
+              dismissSystemPopups();
+              for (let r = 0; r < 6; r++) {
+                ctx2 = findMainGrid(true);
+                if (ctx2 && ctx2.grid.getStore().getCount() > 0) break;
+                if (dismissSystemPopups()) {
+                  ctx2 = null;
+                  break;
+                }
+                ctx2 = null;
+                await delay(500);
+              }
+              if (ctx2) {
+                APMLogger.info("Snapshot", `Filters applied on retry (${ctx2.grid.getStore().getCount()} rows)`);
+                const result2 = await openMatchingGridRecord(ctx2.grid, ctx2.win, entry2.dataIndex, snapshot.record.entityId);
+                if (result2.success) {
+                  await restoreActiveTab(snapshot.record?.activeTab);
+                  showToast(t("restored", entry2.label, snapshot.record.entityId), "var(--apm-success, #27ae60)", false);
+                } else {
+                  showToast(`Restored filters \u2014 could not open ${snapshot.record.entityId}`, "var(--apm-warning)", false);
+                }
+                return true;
+              }
+              APMLogger.warn("Snapshot", "Retry failed \u2014 clearing filters to recover");
+              for (const fieldName of Object.keys(snapshot.gridState.filterFields)) {
+                setFilterField(recoverWin.Ext, fieldName, "");
+              }
+              clickRun();
+              await delay(300);
+              await waitForAjax(recoverWin);
+              await delay(300);
+              dismissSystemPopups();
+              for (let r = 0; r < 6; r++) {
+                ctx2 = findMainGrid(true);
+                if (ctx2 && ctx2.grid.getStore().getCount() > 0) break;
+                ctx2 = null;
+                await delay(500);
+              }
+              if (ctx2) {
+                APMLogger.info("Snapshot", `Grid recovered (${ctx2.grid.getStore().getCount()} rows) \u2014 stale filters cleared`);
+                const result2 = await openMatchingGridRecord(ctx2.grid, ctx2.win, entry2.dataIndex, snapshot.record.entityId);
+                if (result2.success) {
+                  await restoreActiveTab(snapshot.record?.activeTab);
+                  showToast(`Restored ${entry2.label} \u2014 saved filters were cleared`, "var(--apm-warning)", false);
+                } else {
+                  showToast(`Restored ${entry2.label} screen \u2014 saved filters were cleared (record not in view)`, "var(--apm-warning)", false);
+                }
+                return true;
+              }
+            }
+            showToast("Could not restore \u2014 saved filters caused a server error", "var(--apm-danger)", false);
+            return false;
           }
         }
       }
@@ -18109,12 +18212,12 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
     }
     const entry = ENTITY_REGISTRY[snapshot.record.entityType];
     if (!entry) {
-      showToast(`Unknown entity type: ${snapshot.record.entityType}`, "#e74c3c", false);
+      showToast(`Unknown entity type: ${snapshot.record.entityType}`, "var(--apm-danger)", false);
       return false;
     }
     const filterFieldName = FILTER_FIELD_MAP[snapshot.screen];
     if (!filterFieldName) {
-      showToast(`No filter field mapped for ${snapshot.screen}`, "#e74c3c", false);
+      showToast(`No filter field mapped for ${snapshot.screen}`, "var(--apm-danger)", false);
       return false;
     }
     const POLL_INTERVAL = 500;
@@ -18137,12 +18240,12 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
       await delay(POLL_INTERVAL);
     }
     if (!targetWin) {
-      showToast("Could not restore \u2014 search fields unavailable", "#e74c3c", false);
+      showToast("Could not restore \u2014 search fields unavailable", "var(--apm-danger)", false);
       return false;
     }
     const fieldSet = setFilterField(targetWin.Ext, filterFieldName, snapshot.record.entityId);
     if (!fieldSet) {
-      showToast("Could not restore \u2014 filter field not found", "#e74c3c", false);
+      showToast("Could not restore \u2014 filter field not found", "var(--apm-danger)", false);
       return false;
     }
     APMLogger.info("Snapshot", `Set ${filterFieldName}=${snapshot.record.entityId}, clicking Run`);
@@ -18162,7 +18265,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
     }
     const ctx = findMainGrid(true);
     if (!ctx || ctx.grid.getStore().getCount() === 0) {
-      showToast(`Could not find ${entry.label} ${snapshot.record.entityId}`, "#e74c3c", false);
+      showToast(`Could not find ${entry.label} ${snapshot.record.entityId}`, "var(--apm-danger)", false);
       return false;
     }
     const result = await openMatchingGridRecord(ctx.grid, ctx.win, entry.dataIndex, snapshot.record.entityId);
@@ -18170,7 +18273,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
       await restoreActiveTab(snapshot.record?.activeTab);
       showToast(t("restored", entry.label, snapshot.record.entityId), "var(--apm-success, #27ae60)", false);
     } else {
-      showToast(`Could not open ${entry.label} ${snapshot.record.entityId}`, "#e74c3c", false);
+      showToast(`Could not open ${entry.label} ${snapshot.record.entityId}`, "var(--apm-danger)", false);
     }
     return true;
   }
@@ -18215,7 +18318,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
           }
           await delay(500);
         }
-        showToast(`Navigated to ${entry.label} \u2014 could not open ${snapshot.record.entityId}`, "#f39c12", false);
+        showToast(`Navigated to ${entry.label} \u2014 could not open ${snapshot.record.entityId}`, "var(--apm-warning)", false);
         return true;
       } catch (e) {
         APMLogger.debug("Snapshot", "Nav.goTo restore failed:", e.message);
@@ -18897,7 +19000,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
         el("div", { id: "apm-c-wo-title-row", className: "field-row", style: { margin: "0", display: "none" } }, [
           el("input", { type: "text", id: "apm-c-wo-title", className: "field-input", title: "Title to set on the new work order", placeholder: "e.g., 13 Week PM \u2014 Line 1", style: { height: "28px", padding: "0 8px" } })
         ]),
-        el("div", { id: "apm-c-keyword-hint", style: { fontSize: "var(--apm-text-xs)", color: "var(--apm-text-muted)", marginTop: "3px" } }, "When a WO title contains these words, this template is suggested automatically."),
+        el("div", { id: "apm-c-keyword-hint", style: { fontSize: "var(--apm-text-xs)", color: "var(--apm-text-muted)", marginTop: "3px" } }, "When a WO title contains these words, this template is suggested automatically. If multiple templates match, a picker lets you choose."),
         el("div", { id: "apm-c-wo-title-hint", style: { fontSize: "var(--apm-text-xs)", color: "var(--apm-text-muted)", marginTop: "3px", display: "none" } }, "This template appears on new blank records. The title above will fill the WO description.")
       ]),
       // ── Work Order Fields ──
@@ -19496,7 +19599,11 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
     closeInfoTip();
     const bubble = document.createElement("div");
     bubble.className = "apm-info-bubble";
-    bubble.innerHTML = DIAG_TIPS[key] || key;
+    if (DIAG_TIPS[key]) {
+      bubble.innerHTML = DIAG_TIPS[key];
+    } else {
+      bubble.textContent = key;
+    }
     const host = document.getElementById("apm-settings-panel") || document.body;
     host.appendChild(bubble);
     const tipRect = tipEl.getBoundingClientRect();
@@ -19682,7 +19789,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
   init_utils();
   function renderDragList(state, colListContainer, itemsArray, emptyMsg) {
     let _draggingEl = null;
-    colListContainer.innerHTML = "";
+    colListContainer.replaceChildren();
     if (itemsArray.length === 0) {
       const emptyDiv = document.createElement("div");
       emptyDiv.style.cssText = "color:var(--apm-text-disabled); text-align:center; padding:10px;";
@@ -19863,6 +19970,10 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
   init_state();
   var _activeScreen = "wo";
   var _loadedPresetData = null;
+  function normalizeDecimal(v) {
+    if (typeof v === "string" && /^\.\d/.test(v.trim())) return "0" + v.trim();
+    return v;
+  }
   function getActiveScreen() {
     return _activeScreen;
   }
@@ -19989,7 +20100,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
         start: document.getElementById("apm-c-start")?.value || "",
         end: document.getElementById("apm-c-end")?.value || "",
         close: document.getElementById("apm-c-close")?.value || "",
-        laborHours: document.getElementById("apm-c-labor-hours")?.value || "",
+        laborHours: normalizeDecimal(document.getElementById("apm-c-labor-hours")?.value || ""),
         isDefault: document.getElementById("apm-c-is-default")?.checked || false,
         woTitle: document.getElementById("apm-c-wo-title")?.value || "",
         createFollowUp: document.getElementById("apm-c-create-followup")?.checked || false,
@@ -20762,6 +20873,11 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
       const screen = () => getActiveScreen();
       const defaultCb = document.getElementById("apm-c-is-default");
       if (defaultCb) defaultCb.addEventListener("change", syncDefaultToggle);
+      const laborInput = document.getElementById("apm-c-labor-hours");
+      if (laborInput) laborInput.addEventListener("blur", () => {
+        const v = laborInput.value.trim();
+        if (/^\.\d/.test(v)) laborInput.value = "0" + v;
+      });
       const pillContainer = document.getElementById("apm-screen-pills");
       if (pillContainer) {
         pillContainer.addEventListener("click", (e) => {
@@ -21477,14 +21593,14 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
     }
     
     /* Info \u201Ci\u201D icons */
-    #root [data-link="true"] .awsui_icon_h11ix_1mfw9_189 svg circle,
-    #root [class*="awsui_trigger_"] .awsui_icon_h11ix_1mfw9_189 svg circle {
+    #root [data-link="true"] [class*="awsui_icon_"] svg circle,
+    #root [class*="awsui_trigger_"] [class*="awsui_icon_"] svg circle {
       fill: #263333 !important;
       stroke: var(--tickmark) !important;
     }
 
-    #root [data-link="true"] .awsui_icon_h11ix_1mfw9_189 svg path,
-    #root [class*="awsui_trigger_"] .awsui_icon_h11ix_1mfw9_189 svg path {
+    #root [data-link="true"] [class*="awsui_icon_"] svg path,
+    #root [class*="awsui_trigger_"] [class*="awsui_icon_"] svg path {
       stroke: var(--tickmark) !important;
     }    
     
@@ -21880,7 +21996,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
     }
   }
   function initPtpSandbox() {
-    const isPTP2 = /\.ptp\.amazon\.dev|insights/i.test(window.location.hostname);
+    const isPTP2 = /\.ptp\.amazon\.dev|\.insights\./i.test(window.location.hostname);
     if (!isPTP2) return;
     APMLogger.info("APM Master", `PTP Sandbox detected on: ${window.location.hostname}`);
     let lastCompletedWo = null;
@@ -22233,15 +22349,15 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
       const woNum = icon.closest("[data-wo-num]")?.getAttribute("data-wo-num") || "";
       APMLogger.debug("Core", `Icon click detected: ${woNum} \u2192 ${url2}`);
       if (url2 && woNum) {
-        const html = `<a href="${url2}">${woNum}</a>`;
-        const blob = new Blob([html], { type: "text/html" });
-        const textBlob = new Blob([woNum], { type: "text/plain" });
         const showCheck = () => {
           icon.classList.add("apm-copy-success");
           setTimeout(() => icon.classList.remove("apm-copy-success"), 1500);
         };
         const temp = document.createElement("span");
-        temp.innerHTML = html;
+        const a = document.createElement("a");
+        a.href = url2;
+        a.textContent = woNum;
+        temp.appendChild(a);
         temp.style.cssText = "position:fixed;left:-9999px;opacity:0";
         document.body.appendChild(temp);
         const range = document.createRange();
