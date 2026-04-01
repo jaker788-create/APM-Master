@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         APM Master: Unified Tools
 // @namespace    https://w.amazon.com/bin/view/Users/rosendah/APM-Master/
-// @version      14.10.11
+// @version      14.10.12
 // @description  Quality of life and automation tool that uses native EAM ExtJS Framework functions for high reliability and capability. This is actively supported tool so Slack me or submit bug report/feature request through the bug report button in the menu.
 // @author       Jacob Rosendahl
 // @icon         https://media.licdn.com/dms/image/v2/D5603AQGdCV0_LQKRfQ/profile-displayphoto-scale_100_100/B56ZyZLvQ5HgAg-/0/1772096519061?e=1773878400&v=beta&t=eWO1Jiy0-WbzG_yBv-SBrmmsVOPMexF57-q1Xh_VXCk
@@ -126,7 +126,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
       PRESET_STORAGE_KEY = "apm_v1_autofill_presets";
       STORAGE_KEY = "apm_v1_forecast_prefs";
       APM_GENERAL_STORAGE = "apm_v1_general_settings";
-      CURRENT_VERSION = "14.10.11";
+      CURRENT_VERSION = "14.10.12";
       VERSION_CHECK_URL = "https://raw.githubusercontent.com/jaker788-create/APM-Master/main/forecast.user.js";
       UPDATE_URL = "https://raw.githubusercontent.com/jaker788-create/APM-Master/main/forecast.user.js";
       LABOR_EMPS_STORAGE = "apm_v1_labor_employees";
@@ -925,12 +925,56 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
           return { logs: allLogs, errors: allErrors };
         },
         /**
+         * Restore previous session's diagnostic buffers from sessionStorage.
+         * Call early in boot before new logs accumulate. Injects a boundary
+         * marker so the report shows where the session reload happened.
+         */
+        restoreFromSession() {
+          try {
+            const raw = sessionStorage.getItem("apm_diagnostics_buffer");
+            if (!raw) return;
+            const prev = JSON.parse(raw);
+            if (prev.logs && prev.logs.length) {
+              const boundary = {
+                timestamp: (/* @__PURE__ */ new Date()).toISOString(),
+                level: "BOUNDARY",
+                tag: "Session",
+                message: "\u2500\u2500 session reload \u2500\u2500"
+              };
+              this.logs = [boundary, ...prev.logs].slice(0, MAX_LOGS);
+            }
+            if (prev.errors && prev.errors.length) {
+              this.errors = [...prev.errors].slice(0, MAX_ERRORS);
+            }
+            if (prev.bootTimings) {
+              this._previousBootTimings = prev.bootTimings;
+            }
+          } catch (e) {
+          }
+        },
+        /**
+         * Flush current diagnostic buffers to sessionStorage. Called on a 3s
+         * piggyback (session-snapshot task) and beforeunload. Aggregates
+         * sub-frame data before writing so cross-frame logs survive.
+         */
+        flushToSession() {
+          try {
+            const { logs, errors } = this._aggregateFrameData();
+            sessionStorage.setItem("apm_diagnostics_buffer", JSON.stringify({
+              logs,
+              errors,
+              bootTimings: this.bootTimings
+            }));
+          } catch (e) {
+          }
+        },
+        /**
          * Aggregates all diagnostic data into a single object.
          * @returns {Object}
          */
         toJSON() {
           const { logs, errors } = this._aggregateFrameData();
-          return {
+          const result = {
             version: CURRENT_VERSION,
             timestamp: (/* @__PURE__ */ new Date()).toISOString(),
             uptime: Math.floor((Date.now() - this.startTime) / 1e3),
@@ -942,6 +986,10 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
             userAgent: navigator.userAgent,
             url: window.location.href
           };
+          if (this._previousBootTimings) {
+            result.previousBootTimings = this._previousBootTimings;
+          }
+          return result;
         }
       };
       APMApi.register("diagnostics", Diagnostics);
@@ -1346,7 +1394,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
           profileSaved: "Profile saved!",
           profileDeleted: "Profile deleted",
           settingsDownloaded: "Settings downloaded!",
-          reportCopied: "Report copied to clipboard!",
+          reportCopied: "Report downloaded!",
           copiedToClipboard: "Base64 backup copied to clipboard!",
           // ── Forecast ──
           dataspyActive: "Dataspy: {0} ({1})",
@@ -1454,7 +1502,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
           profileSaved: "Profil gespeichert!",
           profileDeleted: "Profil gel\xF6scht",
           settingsDownloaded: "Einstellungen heruntergeladen!",
-          reportCopied: "Bericht in Zwischenablage kopiert!",
+          reportCopied: "Bericht heruntergeladen!",
           copiedToClipboard: "Base64-Sicherung in Zwischenablage kopiert!",
           dataspyActive: "Dataspy: {0} ({1})",
           clickToClear: "Zum L\xF6schen klicken",
@@ -1560,7 +1608,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
           profileSaved: "Profil sauvegard\xE9 !",
           profileDeleted: "Profil supprim\xE9",
           settingsDownloaded: "Param\xE8tres t\xE9l\xE9charg\xE9s !",
-          reportCopied: "Rapport copi\xE9 dans le presse-papiers !",
+          reportCopied: "Rapport t\xE9l\xE9charg\xE9 !",
           copiedToClipboard: "Sauvegarde Base64 copi\xE9e !",
           dataspyActive: "Dataspy : {0} ({1})",
           clickToClear: "Cliquer pour effacer",
@@ -1666,7 +1714,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
           profileSaved: "\xA1Perfil guardado!",
           profileDeleted: "Perfil eliminado",
           settingsDownloaded: "\xA1Configuraci\xF3n descargada!",
-          reportCopied: "\xA1Informe copiado al portapapeles!",
+          reportCopied: "\xA1Informe descargado!",
           copiedToClipboard: "\xA1Copia Base64 en portapapeles!",
           dataspyActive: "Dataspy: {0} ({1})",
           clickToClear: "Clic para borrar",
@@ -1772,7 +1820,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
           profileSaved: "Profilo salvato!",
           profileDeleted: "Profilo eliminato",
           settingsDownloaded: "Impostazioni scaricate!",
-          reportCopied: "Report copiato negli appunti!",
+          reportCopied: "Report scaricato!",
           copiedToClipboard: "Backup Base64 copiato negli appunti!",
           dataspyActive: "Dataspy: {0} ({1})",
           clickToClear: "Clicca per cancellare",
@@ -1878,7 +1926,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
           profileSaved: "Perfil salvo!",
           profileDeleted: "Perfil exclu\xEDdo",
           settingsDownloaded: "Configura\xE7\xF5es baixadas!",
-          reportCopied: "Relat\xF3rio copiado!",
+          reportCopied: "Relat\xF3rio baixado!",
           copiedToClipboard: "Backup Base64 copiado!",
           dataspyActive: "Dataspy: {0} ({1})",
           clickToClear: "Clique para limpar",
@@ -1984,7 +2032,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
           profileSaved: "\u30D7\u30ED\u30D5\u30A1\u30A4\u30EB\u3092\u4FDD\u5B58\u3057\u307E\u3057\u305F",
           profileDeleted: "\u30D7\u30ED\u30D5\u30A1\u30A4\u30EB\u3092\u524A\u9664\u3057\u307E\u3057\u305F",
           settingsDownloaded: "\u8A2D\u5B9A\u3092\u30C0\u30A6\u30F3\u30ED\u30FC\u30C9\u3057\u307E\u3057\u305F",
-          reportCopied: "\u30EC\u30DD\u30FC\u30C8\u3092\u30AF\u30EA\u30C3\u30D7\u30DC\u30FC\u30C9\u306B\u30B3\u30D4\u30FC\u3057\u307E\u3057\u305F",
+          reportCopied: "\u30EC\u30DD\u30FC\u30C8\u3092\u30C0\u30A6\u30F3\u30ED\u30FC\u30C9\u3057\u307E\u3057\u305F",
           copiedToClipboard: "Base64\u30D0\u30C3\u30AF\u30A2\u30C3\u30D7\u3092\u30B3\u30D4\u30FC\u3057\u307E\u3057\u305F",
           dataspyActive: "Dataspy: {0}\uFF08{1}\uFF09",
           clickToClear: "\u30AF\u30EA\u30C3\u30AF\u3067\u89E3\u9664",
@@ -2229,8 +2277,8 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
         // 'us', 'eu', or 'mon' — auto-detected on EU domains
         dateSeparator: detectDateSeparator(),
         dateOverrideEnabled: true,
-        language: "auto",
-        // 'auto' = system language, or 'en', 'de', 'fr', 'es', 'it', 'pt', 'ja'
+        language: "en",
+        // 'en' default (EU users expect English), or 'auto', 'de', 'fr', 'es', 'it', 'pt', 'ja'
         logLevel: "error",
         // error, warn, info, debug, verbose
         updateTrack: "stable",
@@ -6670,6 +6718,9 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
     broadcast(window.top);
   }
 
+  // src/index.js
+  init_diagnostics();
+
   // src/core/frame-manager.js
   init_utils();
   init_logger();
@@ -8276,6 +8327,8 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
   var _cachedColumnsTime = 0;
   var _systemDefaults = { tabs: {}, columns: {} };
   var _tabNameCache = /* @__PURE__ */ new Map();
+  var _failedPluginRestorations = /* @__PURE__ */ new Set();
+  var _lastPluginRestoreScreen = "";
   function normalizeTabName(rawName) {
     if (!rawName) return "";
     if (_tabNameCache.has(rawName)) return _tabNameCache.get(rawName);
@@ -8568,9 +8621,13 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
       }
     }
   }
-  async function restorePluginTabs(mainTabPanel, hiddenTabs, preferredOrder) {
+  async function restorePluginTabs(mainTabPanel, hiddenTabs, preferredOrder, funcName) {
     const tabMenuPlugin = mainTabPanel.plugins?.find?.((p) => p.ptype === "uxtabmenu");
     if (!tabMenuPlugin?.tabsMenu?.items) return;
+    if (funcName !== _lastPluginRestoreScreen) {
+      _failedPluginRestorations.clear();
+      _lastPluginRestoreScreen = funcName;
+    }
     const menuItems = tabMenuPlugin.tabsMenu.items.items;
     let restorationHappened = false;
     let restorationCount = 0;
@@ -8582,6 +8639,8 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
         break;
       }
       const tabName = normalizeTabName(mi.text);
+      const failKey = `${funcName}::${tabName}`;
+      if (_failedPluginRestorations.has(failKey)) continue;
       const isHiddenInPresets = hiddenTabs.includes(tabName);
       const isUserOrdered = preferredOrder.includes(tabName);
       if (!isHiddenInPresets && isUserOrdered) {
@@ -8598,8 +8657,19 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
             restorationCount++;
             const win = mainTabPanel.el?.dom?.ownerDocument?.defaultView || window;
             await waitForCondition(() => !win.Ext?.Ajax?.isLoading(), RESTORATION_TIMEOUT_MS);
+            const wasAdded = mainTabPanel.items.items.some((t2) => {
+              if (!t2 || t2.isDestroyed) return false;
+              return normalizeTabName(t2.title || t2.text || t2.tab && t2.tab.getText?.()) === tabName;
+            });
+            if (!wasAdded) {
+              _failedPluginRestorations.add(failKey);
+              APMLogger.warn("TabGridOrder", `Handler for "${tabName}" did not add the tab \u2014 marking as failed (no retry).`);
+              break;
+            }
           } catch (e) {
-            APMLogger.warn("TabGridOrder", `Handler restoration failed for "${tabName}"`, e);
+            _failedPluginRestorations.add(failKey);
+            APMLogger.warn("TabGridOrder", `Handler restoration failed for "${tabName}": ${e.message}`);
+            break;
           } finally {
             _allowActiveTabChange = true;
           }
@@ -8758,14 +8828,24 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
       }
       let _isBlankRecord = false;
       if (hdrTab) {
-        const rvForms = win.Ext?.ComponentQuery?.query("form[id*=recordview]") || [];
-        const activeForm = rvForms.find((f) => f.rendered && !f.isDestroyed && f.isVisible?.(true));
-        if (activeForm) {
-          const rec = activeForm.getRecord?.();
-          const recId = rec?.getId?.() ?? rec?.get?.("code") ?? rec?.get?.("workordernum") ?? null;
-          if (!rec || rec.phantom || !recId) {
+        const activeView = win.EAM?.FocusManager?.activeView;
+        if (activeView && activeView.isRecordView && !activeView.lastRecordid) {
+          _isBlankRecord = true;
+          APMLogger.debug("TabGridOrder", "activeView.lastRecordid empty \u2014 new/blank record, plugin tab restoration will be skipped.");
+        }
+        if (!_isBlankRecord) {
+          const rvForms = win.Ext?.ComponentQuery?.query("form[id*=recordview]") || [];
+          const activeForm = rvForms.find((f) => f.rendered && !f.isDestroyed && f.isVisible?.(true));
+          if (activeForm) {
+            const rec = activeForm.getRecord?.();
+            const recId = rec?.getId?.() ?? rec?.get?.("code") ?? rec?.get?.("workordernum") ?? null;
+            if (!rec || rec.phantom || !recId) {
+              _isBlankRecord = true;
+              APMLogger.debug("TabGridOrder", "Blank/new record detected \u2014 plugin tab restoration will be skipped.");
+            }
+          } else {
             _isBlankRecord = true;
-            APMLogger.debug("TabGridOrder", "Blank/new record detected \u2014 plugin tab restoration will be skipped.");
+            APMLogger.debug("TabGridOrder", "No record form found in HDR view \u2014 plugin tab restoration will be skipped.");
           }
         }
       }
@@ -8817,7 +8897,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
       if (hasHidden || hasOrder) {
         hideAndShowTabs(mainTabPanel, hiddenTabs, preferredOrder);
         if (!_isBlankRecord) {
-          await restorePluginTabs(mainTabPanel, hiddenTabs, preferredOrder);
+          await restorePluginTabs(mainTabPanel, hiddenTabs, preferredOrder, funcName);
         }
       }
       reorderTabs(mainTabPanel, preferredOrder, win);
@@ -8853,6 +8933,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
     const defaultOrder = _systemDefaults.tabs[funcName] || APMApi.get("systemDefaultTabOrder");
     _isApplyingTabConsistency = true;
     _ignoreNativeEvents = true;
+    _failedPluginRestorations.clear();
     try {
       mainTabPanel.items.items.forEach((item) => {
         if (item.isDestroyed || !item.tab) return;
@@ -11026,11 +11107,15 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
               }
             }
           }
-          if (!hasMatch && !foundTitleLocal && rvForm && screenType === "wo") {
-            const defaults = getDefaultProfiles("wo");
-            if (defaults.length > 0) {
-              hasMatch = true;
-              APMLogger.debug("AutoFill", `Blank record detected \u2014 ${defaults.length} default profile(s) available`);
+          if (!hasMatch && !foundTitleLocal && screenType === "wo") {
+            const activeView = win.EAM?.FocusManager?.activeView;
+            const isNewRecord = rvForm || activeView?.isRecordView && !activeView.lastRecordid;
+            if (isNewRecord) {
+              const defaults = getDefaultProfiles("wo");
+              if (defaults.length > 0) {
+                hasMatch = true;
+                APMLogger.debug("AutoFill", `Blank record detected \u2014 ${defaults.length} default profile(s) available`);
+              }
             }
           }
         }
@@ -11045,18 +11130,16 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
         removeExisting();
         let parentContainer = null;
         let insertIdx = -1;
-        if (rvForm) {
-          const recordPanel = rvForm.up("panel");
-          if (recordPanel) {
-            const dockedToolbars = recordPanel.getDockedItems?.('toolbar[dock="top"]') || [];
-            for (const tb of dockedToolbars) {
-              if (!tb.rendered || tb.isDestroyed || !tb.isVisible?.()) continue;
-              if (tb.items && tb.items.getCount() > 0) {
-                parentContainer = tb;
-                insertIdx = tb.items.getCount();
-                APMLogger.debug("AutoFill", `Strategy 1a: Found record toolbar via getDockedItems (${tb.id})`);
-                break;
-              }
+        const recordPanel = rvForm?.up?.("panel") || (win.EAM?.FocusManager?.activeView?.isRecordView ? win.EAM.FocusManager.activeView : null);
+        if (recordPanel) {
+          const dockedToolbars = recordPanel.getDockedItems?.('toolbar[dock="top"]') || [];
+          for (const tb of dockedToolbars) {
+            if (!tb.rendered || tb.isDestroyed || !tb.isVisible?.()) continue;
+            if (tb.items && tb.items.getCount() > 0) {
+              parentContainer = tb;
+              insertIdx = tb.items.getCount();
+              APMLogger.debug("AutoFill", `Strategy 1a: Found record toolbar via ${rvForm ? "form" : "activeView"} (${tb.id})`);
+              break;
             }
           }
         }
@@ -17539,6 +17622,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
   init_locale();
   init_dom_helpers();
   init_feature_flags();
+  init_diagnostics();
   var CAPTURE_INTERVAL = 3e3;
   var RESTORE_GRID_TIMEOUT = 1e4;
   var PROMPT_AUTO_DISMISS = 15e3;
@@ -18391,8 +18475,9 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
   var SessionSnapshot = {
     async init() {
       if (!isTopFrame()) return;
-      if (window.location.pathname.toLowerCase().includes("/login")) {
-        APMLogger.debug("Snapshot", "Login page detected \u2014 skipping init to preserve snapshot.");
+      const pagePath = window.location.pathname.toLowerCase();
+      if (pagePath.includes("/login") || pagePath.endsWith("/ssoservlet")) {
+        APMLogger.debug("Snapshot", "Login/SSO page detected \u2014 skipping init to preserve snapshot.");
         return;
       }
       const previousTabId = sessionStorage.getItem("apm_tab_id");
@@ -18482,6 +18567,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
       setTimeout(() => {
         APMScheduler.registerTask("session-snapshot", CAPTURE_INTERVAL, () => {
           captureState(tabId);
+          Diagnostics.flushToSession();
         });
         window.addEventListener("APM_VIEW_TRANSITION", () => {
           setTimeout(() => captureState(tabId), 300);
@@ -19582,7 +19668,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
       el("div", { className: "apm-tab-content-scroll" }, [
         el("div", { className: "apm-diagnostics-header", style: { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "10px" } }, [
           el("span", { style: { color: "var(--apm-success)", fontWeight: "600", fontSize: "var(--apm-text-base)" } }, "Runtime Telemetry"),
-          el("button", { id: "diag-btn-copy", className: "apm-footer-help-btn-box", style: { padding: "4px 10px", fontSize: "var(--apm-text-xs)", width: "auto" } }, "\u{1F4CB} Copy Report")
+          el("button", { id: "diag-btn-copy", className: "apm-footer-help-btn-box", style: { padding: "4px 10px", fontSize: "var(--apm-text-xs)", width: "auto" } }, "\u{1F4BE} Download Report")
         ]),
         el("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "10px", padding: "6px 8px", background: "var(--apm-overlay-dark)", borderRadius: "var(--apm-radius-sm)" } }, [
           el("div", { style: { flex: "1" } }, [
@@ -19632,7 +19718,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
         el("a", { id: "apm-footer-update-link", href: UPDATE_URL, target: "_blank", className: "apm-footer-update-btn" }, "\u2728 Update Available")
       ]),
       el("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "center", width: "100%", padding: "0 8px" } }, [
-        el("a", { href: "https://github.com/jaker788-create/APM-Master/issues/new/choose", target: "_blank", className: "apm-footer-bug-link", style: { flex: "1", color: "var(--apm-accent)", fontSize: "11px", textDecoration: "none", fontWeight: "bold", textAlign: "left" } }, "\u{1F41B} Bug / Feature Request"),
+        el("a", { href: "slack://channel?team=E015GUGD2V6&id=C0AQ158AYCS", target: "_blank", className: "apm-footer-bug-link", style: { flex: "1", color: "var(--apm-accent)", fontSize: "11px", textDecoration: "none", fontWeight: "bold", textAlign: "left" } }, "\u{1F41B} Bug / Feature Request"),
         el("div", { style: { flex: "1", display: "flex", justifyContent: "center" } }, [
           el("button", { id: "apm-c-btn-help", className: "apm-footer-help-btn-box", style: { padding: "6px 14px", fontSize: "12px", minWidth: "80px" } }, "\u2139\uFE0F Help & Tips")
         ]),
@@ -21069,10 +21155,19 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
       const copyBtn = document.getElementById("diag-btn-copy");
       if (copyBtn) {
         copyBtn.onclick = () => {
-          const data = JSON.stringify(Diagnostics.toJSON(), null, 2);
-          navigator.clipboard.writeText(data).then(() => {
+          try {
+            const data = JSON.stringify(Diagnostics.toJSON(), null, 2);
+            const blob = new Blob([data], { type: "application/json" });
+            const url2 = URL.createObjectURL(blob);
+            const link = document.createElement("a");
+            link.href = url2;
+            link.download = `apm-diagnostics-${(/* @__PURE__ */ new Date()).toISOString().split("T")[0]}.json`;
+            link.click();
+            URL.revokeObjectURL(url2);
             showToast(t("reportCopied"), "var(--apm-success)");
-          }).catch(() => showToast("Failed to copy to clipboard", "var(--apm-danger)"));
+          } catch (e) {
+            showToast("Download error: " + e.message, "var(--apm-danger)");
+          }
         };
       }
       const downloadBtn = document.getElementById("cc-export-download-btn");
@@ -22501,6 +22596,8 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
   } finally {
     BootManager.markReady("settings");
   }
+  Diagnostics.restoreFromSession();
+  window.addEventListener("beforeunload", () => Diagnostics.flushToSession());
   FeatureFlags.registerDefaults();
   try {
     SessionMonitor.init();
