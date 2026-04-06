@@ -4,7 +4,7 @@
 // @version      14.11.8
 // @description  Quality of life and automation tool that uses native EAM ExtJS Framework functions for high reliability and capability. This is actively supported tool so Slack me or submit bug report/feature request through the bug report button in the menu.
 // @author       Jacob Rosendahl
-// @icon         https://drive-render.corp.amazon.com/view/rosendah@/greasemonkey_scripts/APM-Master/IMG_1775356332388.jpg
+// @icon         https://drive-render.corp.amazon.com/view/rosendah@/greasemonkey_scripts/APM-Master/E015GUGD2V6-U049R1HCEQ0-f37ae3846bae-512.jpg
 // @match        https://*.eam.hxgnsmartcloud.com/*
 // @match        https://*.sso.eam.hxgnsmartcloud.com/*
 // @match        https://*.eam.aws.a2z.com/*
