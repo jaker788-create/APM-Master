@@ -1,0 +1,81 @@
+name: Feature Request
+description: Suggest a new feature or improvement
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Got an idea? Tell me what you need — even rough ideas are welcome.
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: What problem does this solve?
+      description: What's annoying, slow, or missing? Describe the pain point.
+      placeholder: |
+        Example: "Every time I open a work order I have to manually fill in
+        the same 5 fields. It takes forever when I'm processing a batch."
+    validations:
+      required: true
+
+  - type: textarea
+    id: solution
+    attributes:
+      label: What would you like to happen?
+      description: Describe your ideal solution. Don't worry about feasibility — just describe what would help.
+      placeholder: |
+        Example: "A button that auto-fills the common fields based on the
+        equipment type, or a way to save fill profiles for different scenarios."
+    validations:
+      required: true
+
+  - type: dropdown
+    id: screen
+    attributes:
+      label: Which screen or area?
+      description: Where would this feature live?
+      options:
+        - Work Orders (WSJOBS)
+        - Compliance Work Orders (CTJOBS)
+        - Parts (SSPART)
+        - Repair Receipts (SSRCVI)
+        - PO Receipts (SSRECV)
+        - Equipment (OSOBJS / OSOBJA / OSOBJP)
+        - Settings panel
+        - Forecast / Quick Search
+        - Labor Tracker
+        - PTP
+        - Toolbar / General UI
+        - Other / Not sure
+    validations:
+      required: false
+
+  - type: dropdown
+    id: priority
+    attributes:
+      label: How important is this to you?
+      options:
+        - Nice to have
+        - Would save me time daily
+        - Blocking my workflow
+    validations:
+      required: false
+
+  - type: textarea
+    id: workaround
+    attributes:
+      label: Current workaround
+      description: How do you handle this today, if at all?
+      placeholder: |
+        Example: "I keep a notepad with the values and copy-paste them
+        one by one. Takes about 2 minutes per work order."
+    validations:
+      required: false
+
+  - type: textarea
+    id: screenshot
+    attributes:
+      label: Screenshot or mockup
+      description: If it helps explain, paste a screenshot or sketch here (Ctrl+V works).
+    validations:
+      required: false
