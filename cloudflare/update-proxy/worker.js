@@ -1,19 +1,18 @@
 /**
- * APM Master — Update Check Analytics Proxy
+ * APM Master — Update Check Analytics Proxy (D1)
  *
- * Proxies version check requests to GitHub raw, logs telemetry to KV.
+ * Proxies version check requests to GitHub raw, logs telemetry to D1.
  * Routes:
  *   GET /check/stable?v=...&id=...&r=...&t=...&b=...  → proxy + log
  *   GET /check/beta?v=...&id=...&r=...&t=...&b=...    → proxy + log
  *   GET /stats?key=SECRET                               → analytics JSON
+ *   GET /stats?key=SECRET&days=N                        → custom range (default 30)
  */
 
 const GITHUB_URLS = {
 	stable: 'https://raw.githubusercontent.com/jaker788-create/APM-Master/main/forecast.user.js',
 	beta: 'https://raw.githubusercontent.com/jaker788-create/APM-Master/Beta/forecast.user.js',
 };
-
-const KV_TTL = 90 * 24 * 60 * 60; // 90 days in seconds
 
 export default {
 	async fetch(request, env) {
@@ -23,7 +22,7 @@ export default {
 		// --- Version check proxy ---
 		if (path === '/check/stable' || path === '/check/beta') {
 			const track = path === '/check/beta' ? 'beta' : 'stable';
-			return handleCheck(url, track, env);
+			return handleCheck(url, track, request, env);
 		}
 
 		// --- Stats endpoint ---
@@ -31,12 +30,16 @@ export default {
 			return handleStats(url, env);
 		}
 
+		// --- Init endpoint (one-time DB setup) ---
+		if (path === '/init') {
+			return handleInit(url, env);
+		}
+
 		return new Response('Not found', { status: 404 });
 	},
 };
 
-async function handleCheck(url, track, env) {
-	// Extract telemetry from query params
+async function handleCheck(url, track, request, env) {
 	const params = {
 		v: url.searchParams.get('v') || 'unknown',
 		id: url.searchParams.get('id') || 'unknown',
@@ -45,8 +48,11 @@ async function handleCheck(url, track, env) {
 		b: url.searchParams.get('b') || 'unknown',
 	};
 
-	// Log telemetry to KV (non-blocking, analytics failure is non-fatal)
-	const logPromise = logTelemetry(params, env).catch(() => {});
+	// Cloudflare provides country from the request
+	const country = request.cf?.country || 'unknown';
+
+	// Log telemetry to D1 (non-blocking, analytics failure is non-fatal)
+	const logPromise = logTelemetry(params, country, env).catch(() => {});
 
 	// Proxy the real file from GitHub
 	let response;
@@ -67,81 +73,132 @@ async function handleCheck(url, track, env) {
 		response = new Response('Upstream fetch failed', { status: 502 });
 	}
 
-	// Wait for telemetry write to finish (best-effort)
 	await logPromise;
 	return response;
 }
 
-async function logTelemetry(params, env) {
-	if (!env.APM_ANALYTICS) return;
+async function logTelemetry(params, country, env) {
+	if (!env.APM_DB) return;
 
-	const today = new Date().toISOString().split('T')[0];
-	const key = `stats:${today}`;
-
-	// Read existing daily aggregate
-	let data = await env.APM_ANALYTICS.get(key, { type: 'json' });
-	if (!data) data = { users: {} };
-
-	// Upsert this user's entry
-	data.users[params.id] = {
-		v: params.v,
-		r: params.r,
-		t: params.t,
-		b: params.b,
-		ts: Date.now(),
-	};
-
-	await env.APM_ANALYTICS.put(key, JSON.stringify(data), { expirationTtl: KV_TTL });
+	await env.APM_DB.prepare(`
+		INSERT INTO checks (user_id, version, region, track, browser, country, checked_at)
+		VALUES (?, ?, ?, ?, ?, ?, datetime('now'))
+	`).bind(params.id, params.v, params.r, params.t, params.b, country).run();
 }
 
-async function handleStats(url, env) {
-	// Simple secret-based auth
+async function handleInit(url, env) {
 	const secret = env.STATS_SECRET || '';
 	if (secret && url.searchParams.get('key') !== secret) {
 		return new Response('Unauthorized', { status: 401 });
 	}
 
-	if (!env.APM_ANALYTICS) {
-		return jsonResponse({ error: 'KV not configured' }, 500);
+	if (!env.APM_DB) {
+		return jsonResponse({ error: 'D1 not configured' }, 500);
 	}
 
-	// Gather last 14 days
-	const days = [];
-	const now = new Date();
-	for (let i = 0; i < 14; i++) {
-		const d = new Date(now);
-		d.setDate(d.getDate() - i);
-		days.push(d.toISOString().split('T')[0]);
+	await env.APM_DB.exec(`
+		CREATE TABLE IF NOT EXISTS checks (
+			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			user_id TEXT NOT NULL,
+			version TEXT NOT NULL,
+			region TEXT NOT NULL DEFAULT 'unknown',
+			track TEXT NOT NULL DEFAULT 'stable',
+			browser TEXT NOT NULL DEFAULT 'unknown',
+			country TEXT NOT NULL DEFAULT 'unknown',
+			checked_at TEXT NOT NULL DEFAULT (datetime('now'))
+		);
+		CREATE INDEX IF NOT EXISTS idx_checks_date ON checks (checked_at);
+		CREATE INDEX IF NOT EXISTS idx_checks_user ON checks (user_id);
+		CREATE INDEX IF NOT EXISTS idx_checks_version ON checks (version);
+	`);
+
+	return jsonResponse({ ok: true, message: 'Database initialized' });
+}
+
+async function handleStats(url, env) {
+	const secret = env.STATS_SECRET || '';
+	if (secret && url.searchParams.get('key') !== secret) {
+		return new Response('Unauthorized', { status: 401 });
 	}
 
-	const results = {};
-	let totalUnique = new Set();
-	let versionCounts = {};
-	let regionCounts = {};
-	let browserCounts = {};
-
-	for (const day of days) {
-		const data = await env.APM_ANALYTICS.get(`stats:${day}`, { type: 'json' });
-		const userCount = data ? Object.keys(data.users).length : 0;
-		results[day] = userCount;
-
-		if (data) {
-			for (const [id, info] of Object.entries(data.users)) {
-				totalUnique.add(id);
-				versionCounts[info.v] = (versionCounts[info.v] || 0) + 1;
-				regionCounts[info.r] = (regionCounts[info.r] || 0) + 1;
-				browserCounts[info.b] = (browserCounts[info.b] || 0) + 1;
-			}
-		}
+	if (!env.APM_DB) {
+		return jsonResponse({ error: 'D1 not configured' }, 500);
 	}
+
+	const days = Math.min(parseInt(url.searchParams.get('days')) || 30, 90);
+
+	// Run all queries in parallel
+	const [daily, versions, regions, browsers, totals, newUsers] = await Promise.all([
+		// Daily active users
+		env.APM_DB.prepare(`
+			SELECT date(checked_at) as day, COUNT(DISTINCT user_id) as users
+			FROM checks
+			WHERE checked_at >= datetime('now', ?)
+			GROUP BY day ORDER BY day DESC
+		`).bind(`-${days} days`).all(),
+
+		// Version distribution (latest check per user in the period)
+		env.APM_DB.prepare(`
+			SELECT version, COUNT(*) as users FROM (
+				SELECT user_id, version FROM checks
+				WHERE checked_at >= datetime('now', ?)
+				GROUP BY user_id
+				HAVING checked_at = MAX(checked_at)
+			) GROUP BY version ORDER BY users DESC
+		`).bind(`-${days} days`).all(),
+
+		// Region breakdown
+		env.APM_DB.prepare(`
+			SELECT region, COUNT(DISTINCT user_id) as users
+			FROM checks
+			WHERE checked_at >= datetime('now', ?)
+			GROUP BY region ORDER BY users DESC
+		`).bind(`-${days} days`).all(),
+
+		// Browser breakdown
+		env.APM_DB.prepare(`
+			SELECT browser, COUNT(DISTINCT user_id) as users
+			FROM checks
+			WHERE checked_at >= datetime('now', ?)
+			GROUP BY browser ORDER BY users DESC
+		`).bind(`-${days} days`).all(),
+
+		// Totals: unique users for DAU (today), WAU (7d), MAU (30d)
+		env.APM_DB.prepare(`
+			SELECT
+				COUNT(DISTINCT CASE WHEN checked_at >= datetime('now', '-1 day') THEN user_id END) as dau,
+				COUNT(DISTINCT CASE WHEN checked_at >= datetime('now', '-7 days') THEN user_id END) as wau,
+				COUNT(DISTINCT CASE WHEN checked_at >= datetime('now', '-30 days') THEN user_id END) as mau,
+				COUNT(DISTINCT user_id) as total_all_time
+			FROM checks
+		`).all(),
+
+		// New users (first seen in the period)
+		env.APM_DB.prepare(`
+			SELECT date(first_seen) as day, COUNT(*) as new_users FROM (
+				SELECT user_id, MIN(checked_at) as first_seen
+				FROM checks GROUP BY user_id
+			)
+			WHERE first_seen >= datetime('now', ?)
+			GROUP BY day ORDER BY day DESC
+		`).bind(`-${days} days`).all(),
+	]);
+
+	const t = totals.results?.[0] || {};
 
 	return jsonResponse({
-		period: { from: days[days.length - 1], to: days[0] },
-		dailyActive: results,
-		uniqueUsers14d: totalUnique.size,
-		versions: versionCounts,
-		regions: regionCounts,
-		browsers: browserCounts,
+		period: { days, generated: new Date().toISOString() },
+		summary: {
+			dau: t.dau || 0,
+			wau: t.wau || 0,
+			mau: t.mau || 0,
+			totalAllTime: t.total_all_time || 0,
+		},
+		dailyActive: Object.fromEntries((daily.results || []).map(r => [r.day, r.users])),
+		newUsers: Object.fromEntries((newUsers.results || []).map(r => [r.day, r.new_users])),
+		versions: Object.fromEntries((versions.results || []).map(r => [r.version, r.users])),
+		regions: Object.fromEntries((regions.results || []).map(r => [r.region, r.users])),
+		browsers: Object.fromEntries((browsers.results || []).map(r => [r.browser, r.users])),
 	});
 }
 

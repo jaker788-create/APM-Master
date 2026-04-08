@@ -1,8 +1,12 @@
 name = "apm-master"
 main = "worker.js"
 compatibility_date = "2024-01-01"
-[[kv_namespaces]]
-binding = "APM_ANALYTICS"
-id = "6ac8ee728c8547f4a2480f079a7a81f8"
-[vars]
-STATS_SECRET = ""
+
+# D1 database for analytics
+# Create with: wrangler d1 create apm-analytics
+# Then paste the returned database_id here.
+
+[[d1_databases]]
+binding = "APM_DB"
+database_name = "apm-analytics"
+database_id = "83b4c972-8f89-4f9e-8c70-be711a43392b"
