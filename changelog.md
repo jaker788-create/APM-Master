@@ -1,5 +1,55 @@
 # APM Master v14 Changelog
 
+## v14.12.1 — Autofill Reliability, Screen-Cache Visibility, CTJOBS Snapshot (2026-04-08)
+
+### Correctness
+- **`autofill-engine.js` — `store.load()` for activity combo switching** — Replaced `ExtUtils.ensureStoreLoaded` (indirect `doQuery`/`onTriggerClick`) with direct `combo.getStore().load({ callback })` for both WO (`switchActivity`) and shift report (`executeShiftReportChecklists`) combo loading. More reliable, confirmed via live probe. Removed `ExtUtils` import.
+- **`autofill-triggers.js` — Button injection screen-cache visibility fix** — `hasExisting()` now checks `existingCmp.isVisible(true)` instead of `isComponentOnActiveScreen` to detect buttons on wrong screen. Strategy 1b loops `querySelectorAll('.toolbarExpandRight')` with visibility filter. Strategy 2 filters tabpanels by `tp.isVisible(true)`. Uses direct visibility checks because autofill needs "visually visible" not "same screen."
+- **`session-snapshot.js` — CTJOBS record capture via systemFunc alias** — Record guard now checks `ENTITY_REGISTRY[screen].systemFunc` alias (CTJOBS's `systemFunc` is `WSJOBS`) instead of discarding records as stale. Also preserves `_lastGridStateHash` during list→record transitions when `captureGridState` returns null (card layout hides filter/dataspy combos on CTJOBS).
+- **`isComponentOnActiveScreen` reverted to original** — Returns `true` when no tabpanel ancestor. Snapshot/module-guard need the looser "same screen" check; autofill injection uses `comp.isVisible(true)` for "actually visible now." These serve different purposes and must not be conflated.
+
+## v14.12.0 — ModuleGuard Migration & Shared-Iframe Fixes (2026-04-07)
+
+### Critical
+- **`forecast-engine.js` — CTJOBS shared-iframe grid detection via title cross-check** — `isGridReady`, `returnToListView`, and `applyForecastFiltersExtJS` previously accepted mismatched frames when `_WO_FUNCS` equivalence passed (CTJOBS grid accepted when targeting WSJOBS). Replaced with `resolveScreenFunc()` title cross-check — only accepts a frame with stale `initpath` if the title observer confirms the target screen is active. Title observer is O(1) cached, authoritative over `initpath` which is set at iframe load time and never updates when EAM reuses the frame.
+- **`forecast-engine.js` — Skip redundant navigation when already on target** — `executeForecast` always called `navigateTo` even when user was already on the target screen, causing grid column reset → re-order flash. Now checks `resolveScreenFunc() === currentTarget` before navigating. Post-navigation verification via `detectActiveTarget()` force-navigates via `launchScreenDirect` if screen-cache tab click was a no-op.
+- **`forecast-engine.js` — `returnToListView` early exit** — Added `if (getEamViewState().view === 'list') return` guard. Without it, strategies 1-2 (listdetailview API, expand buttons) found nothing when already in list view, falling through to strategy 3 (`launchScreenDirect`) — full screen reload.
+- **`autofill-engine.js` — `do1Tech` checkbox modification counting** — Unchecking the opposite checkbox (e.g., unchecking "No" when setting LOTO to "Yes") was not counted in `modifiedCount`. When all rows had the correct box already checked but the wrong box also checked, `modifiedCount` stayed 0, `saveGridData()` was skipped, and EAM showed unsaved-changes popup on activity switch. Both checkbox operations now increment `modifiedCount`.
+
+### Correctness
+- **`eam-title-observer.js` — `getEamViewState()` enriched with `screen` and `tab` derived fields** — New `screen` field: `SCREEN_TITLE_TO_FUNC[screenTitle]` (O(1) lookup, same as `resolveScreenFunc()`). New `tab` field: `TAB_MAP[subTab]` normalized to `'HDR'|'ACK'|'LABOR'|'LIST'|'UNKNOWN'` with `view === 'list'` fallback — fixes the UNKNOWN-for-list-view gap that caused `detectActiveTab` to skip the list view handling path. Callers now use `getEamViewState().screen || detectActiveScreen()` instead of the manual `SCREEN_TITLE_TO_FUNC[screenTitle]` assembly pattern.
+- **`autofill-engine.js` — Strict record-view confirmation on `isConfirmedRecordView`** — `queryActiveView('span.recorddesc')` could match stale elements from the top frame or screen-cache frames during transitions. Previously checked `view !== 'list'` which still passed during `'unknown'` transition states (shared-iframe CTJOBS→WSJOBS). Now requires `view === 'record'` — only trusts the recorddesc match when the title observer positively confirms record view.
+- **`autofill-triggers.js` — Reset healthy cooldown on screen change** — `_lastAutoFillButtonHealthy` persisted across screen switches (WSJOBS→CTJOBS). The 3-second "healthy" cooldown blocked retry scans on the new screen — first retry set `_lastAutoFillScreen` to the new screen, subsequent retries (1s apart) were blocked because `1000 < 3000`. Now resets to `false` when `funcName` changes, dropping cooldown to 400ms for immediate retry responsiveness.
+- **`autofill-engine.js` — List view fallback handles UNKNOWN tab** — `detectActiveTab()` returns UNKNOWN (not LIST) when `subTab` is null. The graceful exit path (`context.tab === 'LIST'`) never fired. Now also checks `context.tab === 'UNKNOWN' && eamView === 'list'` to catch this case.
+- **`ext-consistency.js` — `triggerInjections` guards against AutoFill flow** — `getIsAutoFillRunning()` check prevents `injectAutoFillTriggers` from being scheduled during the flow. Previously, the check only happened 100ms later when the debounced callback fired — by which time the flow may have crashed and reset the flag in its `finally` block, allowing a second crash cascade via `toolbar.insert()` during mid-transition layout.
+- **`autofill-engine.js` — `getAccessibleDocs` title lookup consolidated** — 12-line `getAccessibleDocs()` loop with inline `getComputedStyle` visibility checks in `executeShiftReportFlow` replaced with `queryActiveView('input[name="description"]', { readOnly: true })`.
+- **`labor-booker.js` — ModuleGuard migration** — Replaced `checkAllFrames()` + `checkTabAndInject(win)` frame iteration with `guard.queryDOM('.uft-id-newrec[data-qtip="Add Labor"]')`. ModuleGuard's 6-step guard chain (feature flag → nav guard → screen match → view → frame visibility → element visibility) replaces inline `isActiveFrame` + `detectActiveScreen` checks. Export changed from `checkTabAndInject` to `injectQuickBook`.
+- **`closing-comments-counter.js` — Removed redundant `queryActiveView`** — `isPmType(doc)` already receives `doc` from the `guard.queryDOM` callback. Replaced `queryActiveView('input[name="workordertype"]')` (which re-ran frame iteration) with `doc.querySelector(...)` — O(1) lookup in the already-resolved document.
+
+### Convention
+- **`autofill-triggers.js` / `autofill-prefs.js` / `autofill-engine.js` — `getEamViewState().screen` replaces manual title-first pattern** — Removed `SCREEN_TITLE_TO_FUNC` imports from 3 autofill files. Screen detection now uses `getEamViewState().screen || detectActiveScreen()` — one-liner instead of 3-line destructure + lookup + fallback.
+
+Unreleased Dev Branch Above
+========================================================================================================================================================================================
+
+## v14.11.12 — No Date Filter, Record Auto-Open Fix, URL Updates (2026-04-08)
+
+*Backported to main distribution branch.*
+
+### Feature
+- **No Date Filter in forecast search** — New `"No Date Filter"` option in the week selector dropdown (both manual mode and dataspy builder). Unchecking all days auto-selects it; selecting a week offset restores Mon-Fri defaults. Dataspy builder toggle hides week/day controls when enabled. MADDON non-date filters (equipment, desc, org) still apply normally.
+- **`forecast-profile-manager.js` — Profile summary shows "No Date Filter"** — `buildDateSummary()` returns `'No Date Filter'` for profiles with `weeks === 'none'`.
+
+### Correctness
+- **Consolidated record auto-open** — New shared `waitAndOpenSingleResult()` replaces 3 competing `openFirstGridRecord` callers (Boot, `goToRecordDirect`, quick search fallback). `_autoOpenInProgress` flag prevents concurrent `itemdblclick` events that caused blank record fields. Quick search fallback path (filter injection after Nav.goTo) removed entirely.
+- **`goToRecordDirect` — 2s settle delay after Nav.goTo** — Prevents opening on the old iframe before the reload completes. Without it, the poll found the stale grid, fired `itemdblclick`, then Nav.goTo destroyed the iframe.
+- **`filter-builder.js` — Save validation allows no-date-filter profiles** — Skips "select at least one day" check when `weeks === 'none'`.
+
+### Configuration
+- **Tampermonkey update/download URLs** → `drive.corp.amazon.com/view/rosendah@/greasemonkey_scripts/APM-Master/forecast.user.js`
+- **Bug report Slack link** → `https://amazon.enterprise.slack.com/archives/C0AQ158AYCS`
+- **Cloudflare Worker URLs** — Replaced placeholder with deployed `apm-master.jaker788.workers.dev` endpoints.
+
 ## v14.11.7 — Anchor-Based Screen-Cache Safety & WSBOOK Detection (2026-04-05)
 
 ### Critical
