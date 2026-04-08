@@ -1,6 +1,0 @@
-node_modules/
-dist/
-forecast.user.js
-apm-diagnostics-*.json
-.claude/plans/
-.claude/worktrees/
