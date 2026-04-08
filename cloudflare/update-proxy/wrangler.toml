@@ -1,18 +1,8 @@
 name = "apm-master"
 main = "worker.js"
 compatibility_date = "2024-01-01"
-
-# After creating the KV namespace, replace the id below:
-#   wrangler kv:namespace create APM_ANALYTICS
-# Then paste the returned id here.
-
 [[kv_namespaces]]
 binding = "APM_ANALYTICS"
 id = "6ac8ee728c8547f4a2480f079a7a81f8"
-
-# Optional: set a secret for the /stats endpoint
-# Run: wrangler secret put STATS_SECRET
-# Then access /stats?key=YOUR_SECRET
-
 [vars]
 STATS_SECRET = ""
