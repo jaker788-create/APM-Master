@@ -96,21 +96,12 @@ async function handleInit(url, env) {
 		return jsonResponse({ error: 'D1 not configured' }, 500);
 	}
 
-	await env.APM_DB.exec(`
-		CREATE TABLE IF NOT EXISTS checks (
-			id INTEGER PRIMARY KEY AUTOINCREMENT,
-			user_id TEXT NOT NULL,
-			version TEXT NOT NULL,
-			region TEXT NOT NULL DEFAULT 'unknown',
-			track TEXT NOT NULL DEFAULT 'stable',
-			browser TEXT NOT NULL DEFAULT 'unknown',
-			country TEXT NOT NULL DEFAULT 'unknown',
-			checked_at TEXT NOT NULL DEFAULT (datetime('now'))
-		);
-		CREATE INDEX IF NOT EXISTS idx_checks_date ON checks (checked_at);
-		CREATE INDEX IF NOT EXISTS idx_checks_user ON checks (user_id);
-		CREATE INDEX IF NOT EXISTS idx_checks_version ON checks (version);
-	`);
+	await env.APM_DB.batch([
+		env.APM_DB.prepare("CREATE TABLE IF NOT EXISTS checks (id INTEGER PRIMARY KEY AUTOINCREMENT, user_id TEXT NOT NULL, version TEXT NOT NULL, region TEXT NOT NULL DEFAULT 'unknown', track TEXT NOT NULL DEFAULT 'stable', browser TEXT NOT NULL DEFAULT 'unknown', country TEXT NOT NULL DEFAULT 'unknown', checked_at TEXT NOT NULL DEFAULT (datetime('now')))"),
+		env.APM_DB.prepare("CREATE INDEX IF NOT EXISTS idx_checks_date ON checks (checked_at)"),
+		env.APM_DB.prepare("CREATE INDEX IF NOT EXISTS idx_checks_user ON checks (user_id)"),
+		env.APM_DB.prepare("CREATE INDEX IF NOT EXISTS idx_checks_version ON checks (version)"),
+	]);
 
 	return jsonResponse({ ok: true, message: 'Database initialized' });
 }
