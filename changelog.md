@@ -2,11 +2,22 @@
 
 ## v14.12.1 — Autofill Reliability, Screen-Cache Visibility, CTJOBS Snapshot (2026-04-08)
 
+### Feature
+- **No Date Filter in forecast search** — New `"No Date Filter"` option in the week selector dropdown (both manual mode and dataspy builder). Unchecking all days auto-selects it; selecting a week offset restores Mon-Fri defaults. Dataspy builder toggle hides week/day controls when enabled. MADDON non-date filters (equipment, desc, org) still apply normally.
+- **`forecast-profile-manager.js` — Profile summary shows "No Date Filter"** — `buildDateSummary()` returns `'No Date Filter'` for profiles with `weeks === 'none'`.
+
 ### Correctness
+- **Consolidated record auto-open** — New shared `waitAndOpenSingleResult()` replaces 3 competing `openFirstGridRecord` callers (Boot, `goToRecordDirect`, quick search fallback). `_autoOpenInProgress` flag prevents concurrent `itemdblclick` events that caused blank record fields. Quick search fallback path (filter injection after Nav.goTo) removed entirely.
+- **`goToRecordDirect` — 2s settle delay after Nav.goTo** — Prevents opening on the old iframe before the reload completes. Without it, the poll found the stale grid, fired `itemdblclick`, then Nav.goTo destroyed the iframe.
 - **`autofill-engine.js` — `store.load()` for activity combo switching** — Replaced `ExtUtils.ensureStoreLoaded` (indirect `doQuery`/`onTriggerClick`) with direct `combo.getStore().load({ callback })` for both WO (`switchActivity`) and shift report (`executeShiftReportChecklists`) combo loading. More reliable, confirmed via live probe. Removed `ExtUtils` import.
 - **`autofill-triggers.js` — Button injection screen-cache visibility fix** — `hasExisting()` now checks `existingCmp.isVisible(true)` instead of `isComponentOnActiveScreen` to detect buttons on wrong screen. Strategy 1b loops `querySelectorAll('.toolbarExpandRight')` with visibility filter. Strategy 2 filters tabpanels by `tp.isVisible(true)`. Uses direct visibility checks because autofill needs "visually visible" not "same screen."
 - **`session-snapshot.js` — CTJOBS record capture via systemFunc alias** — Record guard now checks `ENTITY_REGISTRY[screen].systemFunc` alias (CTJOBS's `systemFunc` is `WSJOBS`) instead of discarding records as stale. Also preserves `_lastGridStateHash` during list→record transitions when `captureGridState` returns null (card layout hides filter/dataspy combos on CTJOBS).
 - **`isComponentOnActiveScreen` reverted to original** — Returns `true` when no tabpanel ancestor. Snapshot/module-guard need the looser "same screen" check; autofill injection uses `comp.isVisible(true)` for "actually visible now." These serve different purposes and must not be conflated.
+
+### Configuration
+- **Tampermonkey update/download URLs** → `drive.corp.amazon.com/view/rosendah@/greasemonkey_scripts/APM-Master/forecast.user.js`
+- **Bug report Slack link** → `https://amazon.enterprise.slack.com/archives/C0AQ158AYCS`
+- **Cloudflare Worker URLs** — Replaced placeholder with deployed `apm-master.jaker788.workers.dev` endpoints.
 
 ## v14.12.0 — ModuleGuard Migration & Shared-Iframe Fixes (2026-04-07)
 
@@ -29,26 +40,6 @@
 ### Convention
 - **`autofill-triggers.js` / `autofill-prefs.js` / `autofill-engine.js` — `getEamViewState().screen` replaces manual title-first pattern** — Removed `SCREEN_TITLE_TO_FUNC` imports from 3 autofill files. Screen detection now uses `getEamViewState().screen || detectActiveScreen()` — one-liner instead of 3-line destructure + lookup + fallback.
 
-Unreleased Dev Branch Above
-========================================================================================================================================================================================
-
-## v14.11.12 — No Date Filter, Record Auto-Open Fix, URL Updates (2026-04-08)
-
-*Backported to main distribution branch.*
-
-### Feature
-- **No Date Filter in forecast search** — New `"No Date Filter"` option in the week selector dropdown (both manual mode and dataspy builder). Unchecking all days auto-selects it; selecting a week offset restores Mon-Fri defaults. Dataspy builder toggle hides week/day controls when enabled. MADDON non-date filters (equipment, desc, org) still apply normally.
-- **`forecast-profile-manager.js` — Profile summary shows "No Date Filter"** — `buildDateSummary()` returns `'No Date Filter'` for profiles with `weeks === 'none'`.
-
-### Correctness
-- **Consolidated record auto-open** — New shared `waitAndOpenSingleResult()` replaces 3 competing `openFirstGridRecord` callers (Boot, `goToRecordDirect`, quick search fallback). `_autoOpenInProgress` flag prevents concurrent `itemdblclick` events that caused blank record fields. Quick search fallback path (filter injection after Nav.goTo) removed entirely.
-- **`goToRecordDirect` — 2s settle delay after Nav.goTo** — Prevents opening on the old iframe before the reload completes. Without it, the poll found the stale grid, fired `itemdblclick`, then Nav.goTo destroyed the iframe.
-- **`filter-builder.js` — Save validation allows no-date-filter profiles** — Skips "select at least one day" check when `weeks === 'none'`.
-
-### Configuration
-- **Tampermonkey update/download URLs** → `drive.corp.amazon.com/view/rosendah@/greasemonkey_scripts/APM-Master/forecast.user.js`
-- **Bug report Slack link** → `https://amazon.enterprise.slack.com/archives/C0AQ158AYCS`
-- **Cloudflare Worker URLs** — Replaced placeholder with deployed `apm-master.jaker788.workers.dev` endpoints.
 
 ## v14.11.7 — Anchor-Based Screen-Cache Safety & WSBOOK Detection (2026-04-05)
 
