@@ -67,6 +67,7 @@
 - **`getCurrentTarget()`** — now a warn-once shim in `engine/compat.js`. Returns the most-recently published context's target as a best-effort fallback. Scheduled for removal in a follow-up PR once all internal callers are migrated to `getActiveContext(target)` or `getEamViewState().screen`.
 
 ### Not in scope (deferred)
+- Unit test infrastructure for the pure functions (`resolveTarget`, `buildMaddonFilters`, `Strategy.buildIntent`, `Contributor.contribute`, `resolveRequestTarget`, `mergeFilterSet`, `shouldPublishContext`) — the architecture makes these trivially testable but Vitest setup is a follow-up PR.
 - Profile storage schema changes — `forecast-prefs.js` v2 format unchanged.
 - UI rewrites — `forecast-ui.js`, `filter-builder.js`, `forecast-search-form.js`, `forecast-profile-manager.js`, `forecast-quick-search.js`, `forecast-filter.js` all unchanged except for three import path updates.
 
