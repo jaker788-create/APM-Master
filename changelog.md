@@ -8,10 +8,10 @@
 - **`chip-input.js` — `textTransform` option** — `createChipInput()` and `createChipElement()` accept `textTransform` parameter (default `'capitalize'`). Equipment chips pass `'uppercase'`; title/SR chips use default.
 
 ### Correctness
-- **AutoFill button never removed in list view** — Screen-cache keeps record card DOM alive with valid `getBoundingClientRect()` even in list view, so `isElementInActiveView(span.recorddesc)` lied → `hasVisibleRecord` stuck true → stale equipment LOV read → button persisted. Fixed by gating `span.recorddesc` scan behind `getEamViewState().view !== 'list'` (authoritative, from EAM's `document.title`). Equipment LOV reads are also skipped in list view (gated by `hasVisibleRecord`).
-- **AutoFill button sluggish in list view** — The 3-second "healthy button" cooldown throttled rescans. Changed to 400ms in list view: `(_lastAutoFillButtonHealthy && !isListView) ? 3000 : AUTOFILL_SCAN_COOLDOWN_MS`. Combined with existing `selectionchange` → `triggerInjections()`, button responds within ~500ms of row change.
+- **AutoFill button never removed in list view** — Screen-cache keeps record card form alive in list view, so equipment LOV `ComponentQuery` returned stale data → false keyword match → button persisted. Fixed by gating equipment LOV read behind `hasVisibleRecord && !isListView`.
+- **AutoFill button stuck after next-record navigation** — The 3s "healthy button" cooldown blocked event-driven rescans (`onViewChange` retries, `.HDR` AJAX hook) during same-screen record navigation. Fixed: both hooks now reset `_lastAutoFillButtonHealthy = false` before scanning, dropping cooldown to 400ms. Title and equipment caches also cleared on every view change to prevent stale cache matches.
+- **AutoFill button sluggish in list view** — Healthy-button cooldown changed to 400ms in list view: `(_lastAutoFillButtonHealthy && !isListView) ? 3000 : AUTOFILL_SCAN_COOLDOWN_MS`. Combined with existing `selectionchange` → `triggerInjections()`, button responds within ~500ms of row change.
 - **`kwHint` not restoring on "New record template" uncheck** — `syncDefaultToggle` hid `kwHint.style.display = 'none'` when checked but the else-branch never restored it. One-line fix: `if (kwHint) kwHint.style.display = '';`.
-- **Labor save verification simplified** — Removed unreliable `booStore.on('load')` path (EAM stores don't fire `load` reliably after `callSave`). Now response interception only, with timeout treated as "probably succeeded" (orange "Labor sent — unverified" toast). Returns `{ saveVerified, method }` instead of `{ saveVerified, preCount, postCount, method }`.
 - **Labor save response detection hardened** — Checks `pageaction=SAVE` in both `options.url` AND `options.params` (ExtJS may split them). Also handles string-encoded params.
 - **Labor failure toast updated** — "record count unchanged" → "check EAM error" across all 7 locales. More actionable when the server rejects a booking.
 
@@ -22,8 +22,7 @@
 ## v14.13.3 — PTP Completion Guard, Flip Ticket (2026-04-13)
 
 ### Feature
-- **PTP completion guard on labor booking** — AutoFill's labor booking step is gated by PTP completion status. `isPtpCompleted(woNum)` checks `PTP_HISTORY_KEY` storage. When tracking is enabled and PTP is incomplete, labor booking is skipped with a warning toast.
-- **Flip Ticket button** — New "Flip Ticket" button injected alongside AutoFill button. Triggers `executeFlipTicket()` which navigates to the next WO in the grid by firing `itemdblclick` on the next row.
+- **PTP completion guard on labor booking** — AutoFill's labor booking step is gated by PTP completion status. `isPtpCompleted(woNum)` checks `PTP_HISTORY_KEY` storage. When tracking is enabled and PTP is incomplete, labor booking is skipped with a warning toast. 
 - **PTP completion status in Quick Book popup** — Badge next to "Quick Book Labor" title shows green "PTP completed X.Xh ago" or orange "No PTP completed". Hidden when PTP tracking disabled.
 
 ## v14.13.2 — Advanced Per-Row Checklist Config (2026-04-13)
@@ -42,7 +41,6 @@
 
 ### Feature
 - **Checklist bulk-action buttons** — Yes/No/Clear segmented button group injected into ChecklistGrid's dataspy toolbar on the ACK (Checklist) tab. Uses `getDataspy()` for direct toolbar access, title-gate (`getEamViewState().tab !== 'ACK'`) for zero-cost bail on non-checklist tabs, and scoped grid checkbox manipulation with scroll-loading and mutual exclusion (Yes unchecks No, etc.).
-- **Alt+1/2/X keyboard shortcuts** — `registerChecklistShortcuts()` registers Alt+1 (Yes All), Alt+2 (No All), Alt+X (Clear All). Same ACK tab gate, registered once in `initAutoFillObserver`. Guard-gated for feature flag respect.
 
 ### Correctness
 - **Checklist "No" button no longer selects Follow-up checkbox on Completed-only rows** — `row.querySelectorAll('input[type="checkbox"]')` grabbed all checkboxes including the Follow-up column. On "Completed:" rows (1 result checkbox + 1 follow-up), `checkboxes[1]` was the Follow-up. Fixed by scoping query to the Result column `<td>` (matched via `/Yes:|No:|Completed:/i` text content) and gating Yes/No actions on `hasYesNo` (3+ checkboxes).
