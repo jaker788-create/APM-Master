@@ -8,9 +8,6 @@
 - **`chip-input.js` — `textTransform` option** — `createChipInput()` and `createChipElement()` accept `textTransform` parameter (default `'capitalize'`). Equipment chips pass `'uppercase'`; title/SR chips use default.
 
 ### Correctness
-- **AutoFill button never removed in list view** — Screen-cache keeps record card form alive in list view, so equipment LOV `ComponentQuery` returned stale data → false keyword match → button persisted. Fixed by gating equipment LOV read behind `hasVisibleRecord && !isListView`.
-- **AutoFill button stuck after next-record navigation** — The 3s "healthy button" cooldown blocked event-driven rescans (`onViewChange` retries, `.HDR` AJAX hook) during same-screen record navigation. Fixed: both hooks now reset `_lastAutoFillButtonHealthy = false` before scanning, dropping cooldown to 400ms. Title and equipment caches also cleared on every view change to prevent stale cache matches.
-- **AutoFill button sluggish in list view** — Healthy-button cooldown changed to 400ms in list view: `(_lastAutoFillButtonHealthy && !isListView) ? 3000 : AUTOFILL_SCAN_COOLDOWN_MS`. Combined with existing `selectionchange` → `triggerInjections()`, button responds within ~500ms of row change.
 - **`kwHint` not restoring on "New record template" uncheck** — `syncDefaultToggle` hid `kwHint.style.display = 'none'` when checked but the else-branch never restored it. One-line fix: `if (kwHint) kwHint.style.display = '';`.
 - **Labor save response detection hardened** — Checks `pageaction=SAVE` in both `options.url` AND `options.params` (ExtJS may split them). Also handles string-encoded params.
 - **Labor failure toast updated** — "record count unchanged" → "check EAM error" across all 7 locales. More actionable when the server rejects a booking.
