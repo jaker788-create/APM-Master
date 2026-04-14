@@ -1,5 +1,100 @@
 # APM Master v14 Changelog
 
+## v14.13.4 — Equipment Keyword Matching, List View Fix (2026-04-14)
+
+### Feature
+- **Equipment keyword matching with AND logic** — AutoFill profiles now support `equipmentKeyword` arrays alongside title keywords. When a profile has both configured, both must match (AND). When only one type is configured, only that type needs to match. Equipment is read from: (1) `[name="equipment"]` LOV field in record view, (2) grid store `equipment`/`equipmentno` field from selected row, (3) cached fallback. Dual compiled keyword index (`getEquipmentKeywordIndex()`) mirrors the title index.
+- **Equipment keyword chip input** — Title ↔ Equipment toggle switch in settings panel. Equipment chips display uppercase (`textTransform: 'uppercase'`). Dynamic hint text explains AND vs single-type matching based on which keyword types are populated. Chip counts in toggle labels update in real-time via MutationObserver.
+- **`chip-input.js` — `textTransform` option** — `createChipInput()` and `createChipElement()` accept `textTransform` parameter (default `'capitalize'`). Equipment chips pass `'uppercase'`; title/SR chips use default.
+
+### Correctness
+- **AutoFill button never removed in list view** — Screen-cache keeps record card DOM alive with valid `getBoundingClientRect()` even in list view, so `isElementInActiveView(span.recorddesc)` lied → `hasVisibleRecord` stuck true → stale equipment LOV read → button persisted. Fixed by gating `span.recorddesc` scan behind `getEamViewState().view !== 'list'` (authoritative, from EAM's `document.title`). Equipment LOV reads are also skipped in list view (gated by `hasVisibleRecord`).
+- **AutoFill button sluggish in list view** — The 3-second "healthy button" cooldown throttled rescans. Changed to 400ms in list view: `(_lastAutoFillButtonHealthy && !isListView) ? 3000 : AUTOFILL_SCAN_COOLDOWN_MS`. Combined with existing `selectionchange` → `triggerInjections()`, button responds within ~500ms of row change.
+- **`kwHint` not restoring on "New record template" uncheck** — `syncDefaultToggle` hid `kwHint.style.display = 'none'` when checked but the else-branch never restored it. One-line fix: `if (kwHint) kwHint.style.display = '';`.
+- **Labor save verification simplified** — Removed unreliable `booStore.on('load')` path (EAM stores don't fire `load` reliably after `callSave`). Now response interception only, with timeout treated as "probably succeeded" (orange "Labor sent — unverified" toast). Returns `{ saveVerified, method }` instead of `{ saveVerified, preCount, postCount, method }`.
+- **Labor save response detection hardened** — Checks `pageaction=SAVE` in both `options.url` AND `options.params` (ExtJS may split them). Also handles string-encoded params.
+- **Labor failure toast updated** — "record count unchanged" → "check EAM error" across all 7 locales. More actionable when the server rejects a booking.
+
+### Quality
+- **EAM popup auto-dismiss in labor booking** — `dismissEamPopups()` handles date-in-past confirmation popups during the field-setting phase. Two strategies: ExtJS ComponentQuery across all frames + DOM fallback. Only auto-clicks "Yes" on confirmation dialogs (Yes+No buttons). Error/alert dialogs left for the user. Called pre-save only.
+- **Settings hint text bumped to 12px** — 11 hint elements across `settings-panel-tabs.js` and `settings-panel.js` updated from `var(--apm-text-xs)` (10px) to `12px` for readability.
+
+## v14.13.3 — PTP Completion Guard, Flip Ticket (2026-04-13)
+
+### Feature
+- **PTP completion guard on labor booking** — AutoFill's labor booking step is gated by PTP completion status. `isPtpCompleted(woNum)` checks `PTP_HISTORY_KEY` storage. When tracking is enabled and PTP is incomplete, labor booking is skipped with a warning toast.
+- **Flip Ticket button** — New "Flip Ticket" button injected alongside AutoFill button. Triggers `executeFlipTicket()` which navigates to the next WO in the grid by firing `itemdblclick` on the next row.
+- **PTP completion status in Quick Book popup** — Badge next to "Quick Book Labor" title shows green "PTP completed X.Xh ago" or orange "No PTP completed". Hidden when PTP tracking disabled.
+
+## v14.13.2 — Advanced Per-Row Checklist Config (2026-04-13)
+
+### Feature
+- **Advanced per-row checklist configuration** — Modal popup (`openAdvancedModal`) for LOTO, 5-Tech, and 10-Tech with mutually-exclusive Yes/No checkboxes, Notes text input, and Follow Up checkbox per row. LOTO has fixed 2 rows with no Follow Up column. New rows default to Yes checked; "Unchecked rows will be skipped" hint in modal footer.
+- **LOTO dropdown → "Custom"** — When advanced LOTO config is saved, the dropdown shows "Custom" (disabled `<option>`, set programmatically). Reverts to "- Ignore -" on clear. Syncs correctly on preset load via `applyPresetData`.
+- **Follow-up WO creation per-activity** — Rows with `followUp: true` in advanced config trigger `Actions → Create Follow-up WO` inside `do5Tech`/`do10Tech`, after `processCheckboxes` and before save. Supports multiple follow-up rows per activity.
+
+### Correctness
+- **Settings panel stays open during modal** — Added `.apm-adv-modal-backdrop` to UIManager's system exclusion list (`ui-manager.js`). Modal is appended to `document.body` outside the panel DOM; without the exclusion, UIManager's click-outside handler closed the settings panel.
+- **Legacy `createFollowUp` migration** — `MigrationManager.migrateAutofillV3()` converts old `createFollowUp`/`followUpNotes` profile fields to `advancedChecklist10` per-row config (first row gets notes + followUp, all rows default to yes). Runs once at boot, persists result.
+- **Old `createFollowUp` engine block removed** — Dead code after migration; the per-activity follow-up WO creation in `do5Tech`/`do10Tech` replaces it.
+
+## v14.13.1 — Checklist Bulk Actions (2026-04-12)
+
+### Feature
+- **Checklist bulk-action buttons** — Yes/No/Clear segmented button group injected into ChecklistGrid's dataspy toolbar on the ACK (Checklist) tab. Uses `getDataspy()` for direct toolbar access, title-gate (`getEamViewState().tab !== 'ACK'`) for zero-cost bail on non-checklist tabs, and scoped grid checkbox manipulation with scroll-loading and mutual exclusion (Yes unchecks No, etc.).
+- **Alt+1/2/X keyboard shortcuts** — `registerChecklistShortcuts()` registers Alt+1 (Yes All), Alt+2 (No All), Alt+X (Clear All). Same ACK tab gate, registered once in `initAutoFillObserver`. Guard-gated for feature flag respect.
+
+### Correctness
+- **Checklist "No" button no longer selects Follow-up checkbox on Completed-only rows** — `row.querySelectorAll('input[type="checkbox"]')` grabbed all checkboxes including the Follow-up column. On "Completed:" rows (1 result checkbox + 1 follow-up), `checkboxes[1]` was the Follow-up. Fixed by scoping query to the Result column `<td>` (matched via `/Yes:|No:|Completed:/i` text content) and gating Yes/No actions on `hasYesNo` (3+ checkboxes).
+- **Checklist bulk-action toasts now auto-dismiss** — `showToast(msg, color, true)` kept toasts permanent (`keepOpen=true` = progress indicator). Completion messages now omit `keepOpen`, auto-dismissing after 5 seconds.
+
+## v14.13.0 — Forecast Engine Rewrite (2026-04-11)
+
+### Convention
+- **Forecast module migrated to a 5-stage pipeline** — `src/modules/forecast/forecast-engine.js` (1,312 LOC) replaced by `src/modules/forecast/engine/` — 24 files under 200 LOC each, single responsibilities, bottom-up dependency order. Pipeline stages: `resolveIntent` → `collectFilters` → `execute` → `publishContext` → `persist`. Only Stage 3 (`execution.js`) is async and touches the DOM/ExtJS; Stages 1, 2, 4, 5 are synchronous and reason-locally. Modes are Strategies (`strategies/{normal,today,quick,clear}.js`), filter sources are Contributors (`filters/{profile,manual,date}-source.js`) — adding a new mode or filter source = create one file + add one line to a registry barrel.
+- **Single-shot DOM snapshot** — `intent.snapshotUIState()` reads every DOM field the pipeline needs up front, freezes the Intent, and never touches the DOM again. Eliminates the class of bug where a user DOM change during `await delay()` leaks into a later pipeline stage.
+- **ModuleGuard adopted for forecast** — `engine/guard.js` exports a shared `ModuleGuard` instance used at the execution gate and inside `hooks.js`. Forecast was the last major module without ModuleGuard after the v14.12 migration.
+
+### Correctness
+- **Dual active filter contexts** — `engine/context.js` maintains a `Map<target, ActiveFilterContext>` keyed by WSJOBS/CTJOBS. `hooks.js` reads the target from the request URL (not from a global `currentTarget`) and looks up the matching context, so WSJOBS and CTJOBS can have independent active profiles simultaneously. Switching between the two screens no longer invalidates either context.
+- **Centralized two-layer frame check** — `engine/nav.js:getActiveWoFrame(target)` replaces four near-identical implementations in the old `forecast-engine.js` (lines 486, 698, 806, 201 in v14.12). Includes the Layer 3 `isComponentOnActiveScreen` check that the old forecast code was missing, bringing it in line with `ModuleGuard.queryExt`.
+- **`todayStrict` becomes declarative** — Alt+T with a `dateOverride` profile now builds an Intent with `profile: null, todayStrict: true` in `strategies/today.js:buildIntent`. The `today.postExecute` hook is the ONLY imperative DOM side effect in the whole Strategy/Contributor pipeline. Replaces the old mid-pipeline DOM mutation that set `filtersActive = false` and clobbered the dropdown from within `executeForecast`.
+- **`waitForGridReady` timeout reduced 15s → 7s** — if the grid isn't ready in 7s the operation has already failed; waiting longer delayed user feedback without improving success rate.
+- **Post-nav verification folded into `navigateToWoScreen`** — the shared-iframe tab-click-is-a-no-op fix (v14.12) moves from inline orchestrator code into the nav utility. `session-snapshot` can now reuse `navigateToWoScreen` directly for navigation-only restore cases.
+
+### Cleanup
+- **Dead code removed** — `isStopped` variable (set once, never read), `_WO_FUNCS` Set (replaced by inline `resolveScreenFunc() === target` check), unused imports `injectMaddonFilter`/`clearMaddonFilters`/`buildEamScreenUrl`.
+- **`isRunning` + `filtersActive` replaced** — `_pipelineLock` handles re-entrance prevention, `ActiveFilterContext` Map handles hook state. The two concerns were entangled in the single `isRunning` flag in the old code.
+- **`returnToListView` strategy 3 removed** — the nuclear `launchScreen` full-reload fallback is gone; `waitForGridReady` surfaces failures via `GridTimeoutError` / `setStatus` instead.
+- **Recursive `executeForecast('clear')` in toast callback replaced** — the persistent-toast click handler now calls `clearForecast(target)` directly (cleanup item #4).
+- **Error surfacing unified** — all pipeline errors are caught in `orchestrator.executeForecast` and surfaced via `setStatus(e.userMessage, '#e74c3c')`. No exception escapes to hotkey handlers or `APMApi` consumers.
+
+### Deprecation
+- **`getCurrentTarget()`** — now a warn-once shim in `engine/compat.js`. Returns the most-recently published context's target as a best-effort fallback. Scheduled for removal in a follow-up PR once all internal callers are migrated to `getActiveContext(target)` or `getEamViewState().screen`.
+
+### Not in scope (deferred)
+- Unit test infrastructure for the pure functions (`resolveTarget`, `buildMaddonFilters`, `Strategy.buildIntent`, `Contributor.contribute`, `resolveRequestTarget`, `mergeFilterSet`, `shouldPublishContext`) — the architecture makes these trivially testable but Vitest setup is a follow-up PR.
+- Profile storage schema changes — `forecast-prefs.js` v2 format unchanged.
+- UI rewrites — `forecast-ui.js`, `filter-builder.js`, `forecast-search-form.js`, `forecast-profile-manager.js`, `forecast-quick-search.js`, `forecast-filter.js` all unchanged except for three import path updates.
+
+## v14.12.3 — Tab Disappearance Fix (2026-04-11)
+
+### Critical
+- **`autofill-prefs.js` — Non-deterministic legacy `hiddenTabs` migration was silently assigning tabs to the wrong screen silo** — Users reporting "missing tabs" they never explicitly hid were hitting this: a legacy flat-array `hiddenTabs = ["TabName"]` (meaning "hide everywhere" in the pre-per-screen format) was migrated via `funcName = getEamViewState().screen || detectActiveScreen() || 'GLOBAL'` at read time inside `getPresets()`. The detected `funcName` depended on **which frame called `getPresets()` first** and **whether the EAM title observer had fired yet** — effectively random. The result was `hiddenTabs = { [random_screen]: [previously_hidden_tabs] }`, causing those tabs to disappear on one arbitrary screen while reappearing on the screens the user originally intended. New `discardLegacyHiddenTabs(config)` helper replaces `normalizeHiddenTabs`: any legacy flat array is dropped entirely and reset to `{}` at every storage boundary (`loadPresets`, `getPresets`, `getPresetsReadOnly` hydration, `savePresets` recovery). Legacy users whose data is discarded see the "do nothing" default — all tabs visible — and can re-hide per screen if needed.
+- **`migration-manager.js` — Wrapped legacy presets initialized `hiddenTabs: []` instead of `{}`** — Inconsistent with `state.js` default (`hiddenTabs: {}`) and triggered the broken migration path unnecessarily. Now matches the canonical object format.
+
+### Correctness
+- **`tab-grid-order.js` / `ext-consistency.js` / `settings-panel-draglist.js` — Removed dead `Array.isArray(hiddenTabs)` branches** — Three downstream readers had defensive legacy-array handling that became dead code once `getPresets()` normalizes at the boundary. The settings-panel-draglist variant contained `{ ...legacyArray }` → `{0: "tab", 1: "tab"}` garbage-object mutations that silently corrupted `hiddenTabs` with numeric keys if reached. Simplified all three to direct `hiddenTabs?.[funcName] || []` reads.
+- **`autofill-prefs.js` — Removed unused screen-detection imports** — `detectActiveScreen` and `getEamViewState` were only used by the removed broken migration. Screen detection still happens at consumer sites (`tab-grid-order.js`, `settings-panel-draglist.js`, `ext-consistency.js`) where it belongs. `autofill-prefs.js` is now a pure storage/serialization layer with no per-screen logic.
+
+## v14.12.2 — Labor Tally Double-Count Fix (2026-04-11)
+
+### Critical
+- **`labor-service.js` — Synthetic record merge matched against a non-existent field, doubling every Quick Book entry** — `_syntheticRecords.filter()` required `(r.employee || '').toUpperCase() === sEmp` to confirm a synthetic against its server record. But the WSBOOK HDR dataspy (100696) is already employee-scoped by the query's `employee=` parameter and does **not** echo `employee` back in `GRID.DATA[]` — every server record had `r.employee === undefined`, so the predicate compared `"" === "DANIEDKR"` and returned false for every synthetic. The filter then pushed the synthetic into `laborCache.data` alongside the server's real copy, and `calculateTally()` summed both, doubling every Quick Book booking's hours in the Labor Tally panel (e.g. booking 0.25h on top of 4h displayed 4.5 instead of 4.25). The bug looked "intermittent" because it only surfaced after the server actually had the matching record — before that window, the synthetic was legitimately the only copy. Small values like .1/.15/.25 were where users noticed the doubling most clearly because the delta is visually obvious; integer bookings were doubled identically but harder to catch by eye.
+- **`labor-booker.js` — Synthetic records stamped with active `workordernum`** — New `extractWorkorderNum(win)` helper reads the current WO number from the parent HDR form (same `ComponentQuery.query('uxtabcontainer[itemId=HDR]')` pattern as `extractCompletionDate`). `executeBookingFlow` captures it before the booking flow runs and includes it in the `LaborService.addRecord()` payload. This gives the merge loop a tight, per-booking discriminator that distinguishes same-hours-same-day bookings on different WOs.
+- **`labor-service.js` — Merge loop uses `workordernum` as primary key and `udfchar02` for employee cross-check** — When the synthetic has a WO number, the server record must match on `workordernum` too. The actual employee identifier on server records lives in `udfchar02` as `"USER@DOMAIN"` (e.g. `"ROSENDAH@AMAZON.COM"`); `cleanEmployeeId()` normalizes it to the synthetic's `"USER"` form. Manager Mode: synthetics are now filtered by `cleanEmployeeId(s.employee) === cleanEmployeeId(targetEmployee)` before merging — prevents a self-booking from leaking into another employee's cache when the tracker switches context.
+- **`labor-service.js` — Format-agnostic hours/date comparison via `toHrs`/`toIso`** — Defense-in-depth against tenants whose EAM returns padded decimals (`"1.00"` vs synthetic `"1"`, `"0.10"` vs `"0.1"`) or cross-format dates (`"11-APR-2026"` vs `"04/11/2026"`). Mirrors the normalization pattern already used by `labor-booker.js`'s booking log injection.
+
 ## v14.12.1 — Autofill Reliability, Screen-Cache Visibility, CTJOBS Snapshot (2026-04-08)
 
 ### Feature
