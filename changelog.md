@@ -41,7 +41,6 @@
 
 ### Correctness
 - **Checklist "No" button no longer selects Follow-up checkbox on Completed-only rows** — `row.querySelectorAll('input[type="checkbox"]')` grabbed all checkboxes including the Follow-up column. On "Completed:" rows (1 result checkbox + 1 follow-up), `checkboxes[1]` was the Follow-up. Fixed by scoping query to the Result column `<td>` (matched via `/Yes:|No:|Completed:/i` text content) and gating Yes/No actions on `hasYesNo` (3+ checkboxes).
-- **Checklist bulk-action toasts now auto-dismiss** — `showToast(msg, color, true)` kept toasts permanent (`keepOpen=true` = progress indicator). Completion messages now omit `keepOpen`, auto-dismissing after 5 seconds.
 
 ## v14.13.0 — Forecast Engine Rewrite (2026-04-11)
 
@@ -68,7 +67,6 @@
 - **`getCurrentTarget()`** — now a warn-once shim in `engine/compat.js`. Returns the most-recently published context's target as a best-effort fallback. Scheduled for removal in a follow-up PR once all internal callers are migrated to `getActiveContext(target)` or `getEamViewState().screen`.
 
 ### Not in scope (deferred)
-- Unit test infrastructure for the pure functions (`resolveTarget`, `buildMaddonFilters`, `Strategy.buildIntent`, `Contributor.contribute`, `resolveRequestTarget`, `mergeFilterSet`, `shouldPublishContext`) — the architecture makes these trivially testable but Vitest setup is a follow-up PR.
 - Profile storage schema changes — `forecast-prefs.js` v2 format unchanged.
 - UI rewrites — `forecast-ui.js`, `filter-builder.js`, `forecast-search-form.js`, `forecast-profile-manager.js`, `forecast-quick-search.js`, `forecast-filter.js` all unchanged except for three import path updates.
 
