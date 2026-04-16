@@ -1,5 +1,83 @@
 # APM Master v14 Changelog
 
+## v14.13.9 — PTP Sandbox Decoupling, Status Capture Hardening (2026-04-16)
+
+### Feature
+- **`ptpTimerEnabled` preference** — New toggle lets users disable the PTP countdown timer without losing status tracking and theme sync. Disabling the parent `ptpSandbox` flag greys out and disables both PTP prefs with explanatory hint text.
+
+### Correctness
+- **`ptpTimer` flag renamed to `ptpSandbox`** — The flag gates theme sync, status tracking, and the timer — not just the timer. Automatic migration converts `ptpTimer` → `ptpSandbox` for existing users.
+- **PTP completion guard re-enabled** — `isPtpCompleted()` restored (was bypassed in v14.13.8) with an explicit `ptpSandbox` check: when the sandbox is off, `isPtpCompleted()` returns `true` so labor booking proceeds normally.
+- **Theme responder always replies** — Even when theme is `'default'`, the EAM parent now sends a response so the PTP sandbox can establish `_parentOrigin`. Previously, default-theme users got a null `_parentOrigin`, silently dropping all PTP status messages (start, completion, cancel, heartbeat).
+- **COMPLETE is permanent** — `updatePtpHistory()` now blocks all writes (including re-completions) on WOs that already have COMPLETE status. Preserves the original completion timestamp regardless of subsequent assessment activity on the same WO.
+- **`lastCompletedWo` guard moved inside `_parentOrigin` check** — Duplicate guard only sets after a successful postMessage send. If `_parentOrigin` was null at completion time, the message was never delivered, so re-sending is allowed once the handshake completes.
+- **Fixed INCOMPLETE false-positive in text fallback** — Text-based status detection now uses `/"COMPLETE"/` regex instead of bare `includes('COMPLETE')`, which matched the `COMPLETE` substring inside `INCOMPLETE`.
+- **Deeper status extraction chain** — Added `update_results.details_update`, `update_results.assessment_update`, and `screen_insert.screen_data` response paths for more reliable completion detection after submission.
+- **`get_all_assessment` safety net** — When the user returns to the assessment list, checks if the current user has any COMPLETE assessment for the WO and backfills PTP history. Catches missed completions from race conditions or partial status capture.
+
+### Cleanup
+- **Removed `get_revisions` endpoint interception** — Revision `inactive` status does not reliably indicate assessment cancellation, and the WO was always null in that context.
+- **Removed INCOMPLETE → `triggerStart` on API responses** — Only `create_assessment` (HTTP 200) triggers the start signal now. INCOMPLETE status during question-answering was generating ~12 redundant `APM_PTP_START` messages per assessment lifecycle.
+
+## v14.13.8 — Bypass PTP Completion Check (2026-04-16)
+
+### Correctness
+- **Temporarily disabled PTP completion check in AutoFill** — `isPtpCompleted()` now always returns `true`. PTP capture is unreliable and needs work, blocking users from booking labor. Original logic commented out with `// TEMPORARY` marker for easy restoration.
+
+## v14.13.7 — Storage Key Convention Cleanup (2026-04-15)
+
+### Convention
+- **Centralized all storage and cookie key strings in `constants.js`** — `apm_theme_hint` (GM+cookie hybrid), `apm_v1_install_id`, `apm_gen_settings` (cookie), and `apm_transition_active` (cookie) were hardcoded across 6 files. Now defined as `THEME_HINT_KEY`, `INSTALL_ID_KEY`, `COOKIE_GEN_SETTINGS`, and `COOKIE_TRANSITION_ACTIVE` constants.
+
+## v14.13.6 — Tab Suppression Fix, Labor Refactor (2026-04-15)
+
+### Correctness
+- **Tab activation suppression during plugin restoration** — Widened the `allowActiveTabChange = false` window to cover the entire `applyTabConsistency` orchestration (was ~10ms per-tab, now full orchestration). EAM's deferred `setActiveTab` calls from async menu handlers are now blocked by the monkey-patch for the full duration. Prevents the visual flash where a newly-added plugin tab briefly steals focus before the script switches back.
+- **Session restore respects saved active tab** — Hooks now install before phases (not after), so the `setActiveTab` monkey-patch is active during the first consistency run. Blocked external tab changes (session restore, user clicks) are tracked and re-applied after orchestration completes. Fixes: restoring a snapshot to "Comments" tab no longer reverts to "Record View".
+- **`beforetabchange` defense-in-depth** — Added a high-priority `beforetabchange` listener that returns `false` when suppression is active, catching tab changes that bypass the `setActiveTab` monkey-patch (e.g., cached original references, TabBar direct activation).
+- **Monkey-patch full swallow** — Blocked `setActiveTab` calls no longer re-enter the ExtJS framework (was calling `originalSetActive(this.getActiveTab())`). Now returns `this.getActiveTab()` directly — zero visual work, zero spurious `tabchange` events.
+
+### Convention
+- **`resetTabDefaults` suppression** — Added `allowActiveTabChange = false` to `resetTabDefaults()` to block EAM's deferred activation when restoring system default tabs.
+
+### Correctness
+- **API proxy methods bound to real target** — `unsafeWindow.APMApi` Proxy returned unbound methods — `this` inside `get()` referred to the Proxy (which blocks `_api` reads/writes), not the real APMApi object. `APMApi.get()` from the browser console always threw "this._api is undefined". Methods are now bound to the real target.
+- **Colorcode row-cache infinite reprocess fix** — Entity-less checklist rows were re-processed every cycle. Now skipped after first pass.
+- **Colorcode PO Receipts drillback flag** — Fixed flag check preventing color rules from applying on PO Receipt drillback grids.
+- **Guard `applyGridConsistency` against checklist grids** — Checklist grids (with widget columns) were being processed by tab-grid-order's column reordering, destroying checklist cell widgets. Now excluded.
+
+### Refactor
+- **Colorcode entity-engine extraction** — Extracted the entity linkification system (WO, equipment, part, employee links) from the monolithic `colorcode-engine.js` into a dedicated `entity-engine.js`. Wired into the main engine with a debug snapshot for diagnostics.
+- **Tab-grid-order internal refactor** — Consolidated `_state` object, extracted helpers, added correlation IDs for tracing tab operations, removed redundant `tabchange` events.
+
+### Cleanup
+- **Exported `fmtDecimal`, `parseCompletionDateValue`** from `labor-booker.js` — moved from IIFE-private to module-level exports for reuse/testability.
+- **Exported `stampRecords`** from `labor-service.js` — moved from IIFE-private to module-level export.
+- **Exported `isTransitionError`** from `eam-nav.js` — was private, now available for external callers.
+
+### Quality
+- **Vitest test suite expansion** — Added 10 test files covering core modules (`eam-nav`, `eam-query`, `eam-title-observer`, `feature-flags`, `locale`, `migration-manager`, `origin-guard`, `settings-io`, `utils`) and module tests (`colorcode-consolidate`, `colorcode-engine`, `entity-engine`, `labor-booker`, `labor-service`).
+- **Live grid preview on color/tag input** — ColorCode settings now preview rule changes on the active grid in real-time when editing color or nametag inputs.
+
+## v14.13.5 — Unit Tests, Dark-Mode Hardening, Cache Fixes (2026-04-14)
+
+### Correctness
+- **Stale autofill on same-screen record navigation** — View-change handler now clears both `lastKnownTitle` and `lastKnownEquipment` caches on every view change (not just screen changes), and resets `_lastAutoFillButtonHealthy` on view change + `.HDR` Ajax. Previously, navigating between records on the same screen kept stale equipment/title from the prior record.
+- **`syncKeywordMode` MutationObserver conflict** — When "New record template" is checked, `syncKeywordMode()` now early-returns so the chip-container MutationObserver doesn't re-show rows that `syncDefaultToggle` intentionally hid.
+- **Simplified `recorddesc` scanning** — Removed the `isListView` gate on `span.recorddesc` header scanning (was masking legitimate record cards). Equipment LOV read is still gated by `hasVisibleRecord && !isListView` — screen-cache keeps LOV fields alive on hidden record cards, but `isElementInActiveView` correctly handles header visibility.
+
+### Convention
+- **Dark-mode safe focus states** — Replaced 4 hardcoded `#ffffff` focus backgrounds with `var(--apm-surface-raised)` and added `color: var(--apm-text-primary)` on `.apm-textarea-input:focus`, `.eam-fc-desc-input:focus`, `#apm-creator-panel .field-input:focus`, `.fb-keyword-input:focus`. Quick search input (`apm-qs-input`) now uses `--apm-input-bg` / `--apm-border` tokens.
+- **Number spinner always visible** — Chrome hides `input[type=number]` spinners until hover; added `-webkit-inner/outer-spin-button { opacity: 1 }` for panel and forecast inputs.
+- **Placeholder selectors modernized** — Replaced IE-specific `:-ms-input-placeholder` / `::-ms-input-placeholder` with standard `::placeholder`. Added coverage for `#apm-creator-panel` and individual input classes.
+
+### Cleanup
+- **Removed checklist keyboard shortcuts** — Deleted `registerChecklistShortcuts()` and Alt+1/2/X tooltip hints from bulk buttons. Shortcuts were unreliable with ExtJS focus management.
+
+### Quality
+- **Vitest unit test infrastructure** — 112 tests across 7 files covering all forecast engine pure functions: `resolveTarget`, `buildMaddonFilters`, `resolveRequestTarget`, `mergeFilterSet`, `shouldPublishContext`, 4× `Strategy.buildIntent`, 3× `Contributor.contribute`. Run via `npm test`. Core DOM modules mocked at test boundary so pure pipeline logic runs in Node without `window`.
+- **Exported 3 internal functions for testability** — `mergeFilterSet` (filter-set.js), `shouldPublishContext` (context.js), `resolveRequestTarget` (hooks.js).
+
 ## v14.13.4 — Equipment Keyword Matching, List View Fix (2026-04-14)
 
 ### Feature
