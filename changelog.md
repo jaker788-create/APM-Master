@@ -1,5 +1,33 @@
 # APM Master v14 Changelog
 
+## v14.13.11 — Forecast Screen-Cache Scoping Fix (2026-04-16)
+
+### Critical
+- **Forecast no longer targets the wrong screen in screen-cache mode** — When running forecast for WSJOBS while ADJOBS was loaded in the top frame, `waitForGridReady` picked the top frame's grid (ADJOBS) because it was the first active frame iterated. All filter injection and Run clicks then operated on ADJOBS instead of WSJOBS. Fixed with three changes:
+  - `waitForGridReady` now collects all candidate grids and prefers content iframes over the top/shell frame, sorted by column count.
+  - `applyExtjsFilters` and `clickRunWithMaddon` scope ComponentQuery results to the target grid's `ownerDocument`, preventing cross-frame field/button leakage.
+  - XHR MADDON intercept guards on `USER_FUNCTION_NAME` so ADJOBS requests (sharing the `WSJOBS.xmlhttp` endpoint) don't consume the one-shot intercept.
+
+### Convention
+- **Infrastructure skill updated** — Documented proven failure modes for `isActiveFrame`, `isElementInActiveView`, `isComponentOnActiveScreen`, and FocusManager. Added Screen Scoping section with failure matrix and two-layer pattern (document identity + DOM rect).
+
+## v14.13.10 — Forecast Guard Fix, Flip Ticket Flex Layout (2026-04-16)
+
+### Correctness
+- **Forecast MADDON filters no longer contaminate ADJOBS/CPJOBS** — Screens with `systemFunc: 'WSJOBS'` (RME Audit, Compliance WO) route through `WSJOBS.xmlhttp`. Both the Ext.Ajax hook (`resolveRequestTarget`) and XHR hook now check `GRID_NAME` and skip injection for non-forecast screens.
+- **Column sort/page no longer drops MADDON filters** — The XHR hook's body regex guard bailed on empty `GRID_NAME=` values (common in sort requests). Changed from `gnMatch && gnMatch[1] !== 'WSJOBS'` to a truthy-first check matching `resolveRequestTarget` semantics.
+- **Fast-mode labor booking no longer dirties blank record** — After save, the activity cascade Ajax response can arrive after EAM resets to a blank form, populating `booactivity` and blocking navigation. Post-save cleanup now waits for pending Ajax and resets dirty field state.
+- **PTP timer setting split migration** — Users who disabled the old `ptpTimer` flag now get `ptpSandbox` re-enabled with `ptpTimerEnabled` off, preserving theme sync and status tracking while respecting the timer preference.
+
+### Feature
+- **Feature flag reload dialog** — Toggling a feature flag now prompts for page refresh with explanation text, instead of silently requiring a manual reload.
+
+### Cleanup
+- **Flip Ticket button uses flex layout** — Replaced absolute positioning with flex sibling injection alongside colorcode's PTP header tag. Both coexist as flex children of the description field container.
+
+### Quality
+- **Forecast hooks test expansion** — Added tests for ADJOBS/CPJOBS derived screen rejection, empty GRID_NAME handling, and GRID_NAME confirmation on shared endpoint. 12 tests total.
+
 ## v14.13.9 — PTP Sandbox Decoupling, Status Capture Hardening (2026-04-16)
 
 ### Feature
