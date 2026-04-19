@@ -1,5 +1,154 @@
 # APM Master v14 Changelog
 
+## v14.14.10 — Checklist Text-Result, Bulk Buttons, Relative Dates (2026-04-19)
+
+### Critical
+- **Checklist advanced config: Text result option** — Added a 3rd action type for per-row checklist config. Rows with text-input results (uxnumber fields) instead of Yes/No checkboxes can now be filled via a "Text" toggle. When selected, Yes/No hides and an inline text input appears for the result value. Notes remain separate. Result targets `uxnumber` widgets; notes target `textfield[maxlength=4000]`.
+- **Bulk Yes/No/Clear buttons moved into Result column header** — Previously injected into the dataspy toolbar with absolute positioning, which overlapped the dataspy combobox at zoom levels above 80%. Now appended directly inside the Result column header element. No positioning math, no overlap.
+- **Autofill scheduled dates: relative day offsets** — Start and End date fields replaced with a relative-day system. Each field has a Skip checkbox (default: checked, leaves EAM date untouched) and a numeric input for days from today (0 = today, 5 = 5 days from now). Dates resolve to absolute values at execution time. Migration clears any previously saved absolute date strings to skip state.
+
+### Correctness
+- **Shift end clear button now reads "Clear"** — Replaced the `×` glyph with text to avoid confusion with a menu close button.
+- **Enter key closes night shift popover** — Pressing Enter in the shift end time input now closes the popover, matching click-away behavior.
+- **Shift view toggle hidden when night shift is off** — The toggle in the labor tally panel is only visible when night shift mode is enabled. Disabling night shift resets shift view state to prevent stale filtering.
+- **Night shift caveat text updated** — Changed from "First shift may be incomplete" to clarify that yesterday's hours won't be filtered until the next shift on first config.
+
+## v14.14.9 — Description Autocomplete & Dataspy Persistence (2026-04-19)
+
+### Critical
+- **Description autocomplete** — The forecast description field now has a custom autocomplete dropdown. Shows saved terms on focus, filters as you type. Terms are auto-saved after each search (max 10 recent). Pin frequently used terms so they always appear first. Each item has a star toggle (pin/unpin) and x button (delete).
+- **Dataspy mode now persists across sessions** — The non-advanced "Change" popover selection (Open WOs vs active dataspy) was saved to storage but never restored on load. Added `dataspyMode` to the `loadPreferences()` state rebuild and syncs the radio buttons in `syncPreferences()`.
+
+### Correctness
+- **Description field no longer persists** — With autocomplete available, the text field starts empty each session instead of restoring the last search term. Users select from the autocomplete menu instead.
+- **Description field clears after search** — Run Search button and Enter key both clear the description input after executing, keeping the field ready for the next search.
+
+### Cleanup
+- Autocomplete dropdown uses `--apm-input-bg`/`--apm-input-text` tokens with `--apm-accent-subtle` hover highlight for visual consistency with input fields.
+
+## v14.14.8 — Grid Column Width Persistence Fix (2026-04-19)
+
+### Critical
+- **Column widths now save and restore correctly** — `saveState()` was writing widths to a `structuredClone` returned by `getPresets()`, so writes were silently discarded. Switched to `getPresetsReadOnly()` which returns the real `AppState` reference. Both save and read paths now use the same object.
+- **Flex clearing uses `col.flex = 0` instead of `delete col.flex`** — `delete` removed the own property, exposing `flex: 1` from the prototype (EAM's column class default). `0` is falsy so the ColumnLayout skips the flex branch, but it shadows the prototype value.
+
+### Correctness
+- **`minWidth` cleared before applying saved width** — EAM sets `minWidth` on some columns (e.g., date columns), preventing `setWidth()` from going below the minimum. `clearFlex()` now also sets `col.minWidth = 0`.
+- **Screen detection fallbacks in `initComponent`** — When `detectActiveScreen()` returns empty during grid creation, falls back to the grid's own store proxy `extraParams.USER_FUNCTION_NAME`, then to the LST intercept's `__apmLstColumnsDone` flag.
+- **LST intercept uses `getPresetsReadOnly()`** — Avoids unnecessary `structuredClone` overhead on every `.LST` response.
+
+### Cleanup
+- **Removed all diagnostic `console.warn` breadcrumbs** from `grid-column-override.js` and `lst-intercept.js`.
+
+## v14.14.7 — Dataspy Mode Awareness & Direction Toggle Fix (2026-04-19)
+
+### Critical
+- **Dataspy mode popover** — Non-advanced modes now offer a "Change" popover with two options: "Always Open WOs" (default) or "Use active dataspy". Active mode reads the EAM native dataspy combobox to determine which dataspy is selected, and reflects the actual name in the context status line instead of the generic label.
+- **Active dataspy live sync** — When the forecast panel opens in active dataspy mode, an ExtJS `change` listener attaches to EAM's `dataspylist` combobox. Changing the dataspy in EAM immediately updates the direction toggle and context status text. Listener detaches when the panel closes (zero overhead when hidden).
+
+### Correctness
+- **Direction toggle clears on mode switch** — Leaving advanced mode now properly hides the past/future chip when the reset dataspy (Open WOs) doesn't support direction toggling. Previously the chip remained visible with stale state.
+- **Context status text reflects current state** — `setModeUI()` now runs after dataspy/dateDirection state updates, so `refreshContextStatus()` reads current values instead of stale pre-reset ones.
+- **`readEamActiveDataspy` extracted to `forecast-prefs.js`** — Shared between the engine (`intent.js`) and UI layers, eliminating the duplicate implementation. Both the execution pipeline and the UI read the same EAM combo resolution logic.
+- **`APM_DATASPY_MODE_CHANGE` event** — Switching dataspy mode via the popover while the panel is open re-attaches or detaches the EAM combo listener, and resets `dateDirection` to avoid stale overrides.
+
+## v14.14.6 — Forecast Past-Date Auto-Detection (2026-04-19)
+
+### Critical
+- **Past-date auto-detection for dataspies** — Selecting a past-facing dataspy (Closed WOs, All WOs) automatically flips week labels to "Last Week" / "Last 2 Weeks" etc. and reverses date computation in `getDateRange()` via a new `direction` parameter. No user toggle needed for the default behavior — detection is driven by `isPastFacing()` checking the dataspy's display name.
+- **Direction toggle for bidirectional dataspies** — A `◀ Past` / `▶ Future` toggle button appears next to the week selector when the active dataspy supports both directions: All WOs, Closed WOs (default past), and Open Follow Up, Open SIM-T, Open Reactive (default future, `toggleable: true` flag). Override persists in `forecastState.dateDirection` and resets on dataspy/screen change.
+
+### Correctness
+- **Profile builder direction-aware** — `getWeekOptions(isPast)` replaces static `WEEK_OPTIONS`. Profile loading, preview text, `computeDateInclusions()`, and dataspy change handler in the builder all respond to direction. Profile manager summary (`buildDateSummary`) uses past/future label maps.
+- **Intent snapshot captures direction** — `snapshotUIState()` now reads `data-direction` from `#eam-week-select`. `normal.js` strategy uses the snapshot direction for manual searches; profile path still derives direction from the profile's own dataspy via `isPastFacing()`.
+- **Custom date pre-fill respects direction** — Switching from relative to custom date mode passes the active direction to `getDateRange()`, so pre-filled dates match the visible week labels.
+
+## v14.14.5 — Assign To Me, Night Shift Bootstrap, PTP Anti-Flash (2026-04-19)
+
+### Critical
+- **"Flip Ticket" renamed to "Assign To Me"** — Button now shows on all WO records in record view (previously gated by SIM-T field). Only changes WO type to Corrective if current type is Breakdown; skips org/execution/safety fields when already populated. MutationObserver re-injects the button if ExtJS layout recalculation removes it.
+- **Night shift bootstrap seeds record registry with real timestamps** — New `bootstrapNightShift()` in LaborService fetches the "today" dataspy (ID 1723) on first popup open when night shift + shift end time are configured. Seeds `dateentered` timestamps into the record registry so shift-end filtering uses actual booking times instead of `Date.now()` defaults.
+- **PTP anti-flash guard** — Reads cached theme immediately on sandbox init (before React renders) and applies dark background on `<html>` plus `awsui-dark-mode` class on `<body>` creation via MutationObserver. Eliminates white flash on PTP page load for dark theme users. Guard stylesheet removed once the real theme handshake completes.
+
+### Correctness
+- **Checklist bulk buttons aligned to Result column header** — Yes/No/Clear button group now positioned absolutely above the Result column header using `getBoundingClientRect()` alignment, instead of inserting at a fixed toolbar index. New CSS class `apm-ack-bulk-col-align` handles positioning.
+- **PM Check sync triggers grid save** — After syncing checklist modifications, `executeChecklistsNative` now calls `waitForPaint()` + `saveGridData()` to persist changes immediately instead of relying on the user to manually save.
+- **PTP question card darkify observer runs unconditionally** — MutationObserver for stripping React inline styles on question cards now installs regardless of current theme, checking `currentMemTheme` dynamically. Fixes cards staying light-styled when theme handshake completes after `start()`.
+- **Night shift hint text updated** — Simplified to "Tallies yesterday and today" with orange caveat "First shift may be incomplete." Shift end clear button (×) added next to the time input.
+
+## v14.14.4 — Forecast Dataspy Target Dropdown (2026-04-19)
+
+### Critical
+- **New "Target" dataspy dropdown in forecast advanced panel** — Selects which EAM dataspy to search against (e.g., Open WOs, Closed WOs, All WOs). Options vary by screen: WSJOBS has 8 dataspies, CTJOBS has 4. The previous "Target" dropdown (WSJOBS/CTJOBS) is renamed to "Screen". Dataspy selection flows through the intent → filter-set pipeline and drives the EAM combo selection in `execution.js` via the existing `targetDataspy` mechanism.
+- **Dataspy integrated into profiles** — Profile editor gains a "Dataspy" dropdown that repopulates based on the profile's target screen. Profiles store an optional `dataspy` field (value code). When a profile is selected, its dataspy overrides the manual dropdown. Profile summary shows the active dataspy name.
+- **`DATASPIES` registry with dual display names** — `display` holds the full EAM combo name for pipeline matching; `short` holds abbreviated names for compact UI rendering. Helpers: `getDefaultDataspy(screen)`, `getDataspyDisplay(screen, value)`.
+
+### Correctness
+- **Screen change resets dataspy to default** — Switching between Work Orders and Compliance repopulates the Target dropdown and resets to that screen's default dataspy.
+- **Screen navigation syncs dataspy** — `APM_EAM_VIEW_CHANGE` handler repopulates dropdown options and validates the current selection, falling back to default if the saved value isn't valid for the new screen.
+- **Context status line updated** — Simple/standard mode status now shows "Searching: {Screen} · {Dataspy} · {Site}" instead of just screen and site.
+
+## v14.14.3 — Quick Book Navigation Fix (2026-04-19)
+
+### Correctness
+- **Fixed navigation blocked after quick-booking labor** — Post-save cleanup called `setValue('')` on the activity field without suspending events, triggering an EAM cascade that re-dirtied the blank BOO record after cleanup completed. Now wraps `setValue` in `suspendEvents(false)` / `resumeEvents()` to prevent cascade triggers. Added Phase 5 secondary cleanup pass (1s delayed) to catch any late-arriving cascades.
+
+## v14.14.2 — LST Response Intercept for Column Control (2026-04-18)
+
+### Correctness
+- **Labor save capture hardened with XHR-level response interception** — Added Layer 2 (XHR `load` listener) and Layer 3 (form-state `pagemode` check) to `triggerSaveAndVerify`, racing alongside the existing Ext.Ajax `requestcomplete` hook. Screen-cache replaces `Ext.Ajax` in content iframes, silently dropping Method 1/2 hooks — the XHR-level capture operates on the raw `XMLHttpRequest` prototype and survives replacement. Timeout increased from 5s to 8s.
+- **Immediate labor tally on verify failure** — When save verification times out, cache is invalidated and a forced server fetch runs after 2s before dispatching `APM_LABOR_SYNC`. Previously the tally used stale 30s-cached data, leaving hours mismatched until the next manual refresh.
+- **CTJOBS BOO save detection** — Save response matching now includes `CTJOBS.BOO` / `CTJOBS_BOO` patterns alongside WSJOBS. Previously only WSJOBS saves were intercepted.
+
+### Critical
+- **LST response intercept rewrites column order before grid creation** — New `lst-intercept.js` intercepts `.LST` Ajax responses at the XHR prototype level (not Ext.Ajax events), rewriting the FIELD array (order, visibility, width) to match saved column preferences before ExtJS processes the response. Eliminates all post-render column moves on first load (previously up to 30 `headerCt.move()` calls). Uses `Object.defineProperty` to shadow the read-only `responseText` getter on the XHR instance. Installed early alongside `installGridColumnOverride` to catch the first `.LST` request in each frame.
+- **Column show/hide via LST rewrite** — Server-hidden fields (`order: "-2"`) can now be promoted to visible by setting positive order and `visible: "+"` in the response. Visible columns can be demoted by setting `order: "-2"` and `visible: "-"`. Previously impossible — `initComponent` override could only reorder existing columns.
+- **Reliable screen identity from request URL** — `USER_FUNCTION_NAME` parsed from the `.LST` request URL, replacing heuristic `detectActiveScreen()` for column order lookups. Eliminates misidentification in shared-iframe and screen-cache scenarios.
+
+### Correctness
+- **initComponent override skips when LST handled** — `grid-column-override.js` checks `win.__apmLstColumnsDone` Set before applying `restoreColumnOrder`. Save listeners still attach on `afterrender` regardless, so user changes are captured.
+- **Graceful fallback on intercept failure** — If `Object.defineProperty` fails or response parsing errors, the handler returns silently and `initComponent` handles column order as before.
+
+## v14.14.1 — Pre-Render Column Order (2026-04-18)
+
+### Critical
+- **Grid columns restored before first render** — `Ext.override` on `ReadOnlyGrid.initComponent` applies saved column order after `callParent()` but before `render`, eliminating the visible column reorder flicker on every screen load. No `view.refresh()` needed for initial render.
+- **Removed post-render column reorder path** — Deleted `reorderColumns` retry loop, `hookColumnResize`, `applyColumnWidths`, and the `columnmove → applyGridConsistency` feedback hook in ext-consistency.js. Column save now handled by `afterrender` listeners in the override.
+
+### Correctness
+- **Cross-frame preset sync retained** — `APM_PRESETS_SYNC_REQUIRED` still triggers `reapplyColumnOrder` for already-rendered grids (uses `suspendLayouts` + `view.refresh()`, acceptable for explicit sync events).
+- **System defaults capture preserved** — `applyGridConsistency` retained for capturing default column order on first load (needed for Reset to Default in settings panel).
+
+## v14.14.0 — ScreenScope Unified Screen Detection (2026-04-17)
+
+### Critical
+- **New `ScreenScope` class unifies screen detection** — Single API (`active()`, `forScreen(target)`, `from(ref)`) replaces manual frame iteration + visibility checks scattered across modules. Three-pass `forScreen` resolution: (1) content iframes via initpath identity with grid-store fallback for shared-iframe, (2) top frame grid-store identity, (3) title-observer fallback for no-screen-cache and mixed modes.
+- **Forecast no longer fails on CTJOBS in shared-iframe or no-iframe mode** — `forScreen('CTJOBS')` now finds the correct frame when CTJOBS lives in the same iframe as WSJOBS (grid-store fallback in pass 1) or when CTJOBS is hosted directly in the top frame while WSJOBS is screen-cached (title-observer fallback in pass 3).
+- **`returnToListView` no longer expands the wrong screen** — Previously iterated frames top-first and found SSPART's `listdetailview` before WSJOBS's, switching the visible screen away. Now scoped to the target screen via `ScreenScope.forScreen(target)`.
+
+### Correctness
+- **ModuleGuard `queryDOM`/`queryExt`/`withActiveFrame` delegate to ScreenScope** — Removed manual `getExtWindows` + `isActiveFrame` + visibility check loops. Callback signatures preserved — no downstream breakage.
+- **Forecast nav functions (`getActiveWoFrame`, `waitForGridReady`, `returnToListView`) use `ScreenScope.forScreen`** — Replaced frame-first iteration with screen-first scoping. Grid timeout diagnostics now report `no-scope` reason when no frame matches.
+- **PTP auth gate messages use `'*'` fallback** — `_parentOrigin` is null at eval time (before theme handshake); messages now send with `_parentOrigin || '*'`. Safe: MessageRouter validates via `isTrustedOrigin()` independently.
+
+### Convention
+- **Diagnostics panel expanded** — Environment section (region, screen, view), boot gates grid, and session info added to the diagnostics report and settings panel UI. Download button repositioned with full-width layout.
+
+## v14.13.12 — Labor Save Response Extraction, PTP Auth Gate, Build Cleanup (2026-04-17)
+
+### Critical
+- **Labor tally now extracts confirmed records from SAVE response** — Replaced synthetic record approach with real server data extraction. The SAVE response grid carries all booked labor with server-assigned bookingcodes. `extractConfirmedRecord` picks the highest bookingcode for the current employee — exact dedup, no heuristic matching. Fixed `pageData.grid` path (was missing `pageData` prefix). Three-layer WO fallback: response grid `event` > `pageData.values.workordernum` > request params.
+- **Labor service dedup simplified to bookingcode Set lookup** — Removed 55-line synthetic merge loop with fragile format normalization. Pending records now carry real bookingcodes from the server response — dedup is an exact Set membership check.
+
+### Correctness
+- **PTP Cognito auth gate prevents API-before-refresh race** — On page load with expired Cognito tokens, `execute-api` calls (both XHR and fetch) are queued until the accessToken refreshes (polled every 500ms, 15s timeout). Prevents 401 cascades during token refresh. Includes one-shot diagnostic logging of Cognito token state.
+- **PTP auth diagnostic and gate messages routed through MessageRouter** — New `APM_PTP_AUTH_DIAG` and `APM_PTP_AUTH_GATE` message types logged in the parent frame for visibility.
+
+### Cleanup
+- **Build: removed `identifierNamesGenerator: 'hexadecimal'`** — Default identifier generation is sufficient; hexadecimal mode added unnecessary output size.
+- **Build: disabled `unicodeEscapeSequence`** — Reduces obfuscated output size without meaningful security trade-off.
+- **Night shift hint label clarified** — "End time" → "Shift end time" for clarity. Removed italic style from hint text.
+
 ## v14.13.11 — Forecast Screen-Cache Scoping Fix (2026-04-16)
 
 ### Critical
