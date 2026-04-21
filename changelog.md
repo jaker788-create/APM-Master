@@ -1,5 +1,10 @@
 # APM Master v14 Changelog
 
+## v14.14.16 — Update Link No Longer Leaves Blank Tab (2026-04-21)
+
+### Correctness
+- **Update link opened two tabs: one blank, one Tampermonkey install** — Clicking "✨ Update Available" (settings footer, forecast panel, switch-track install, outdated-bug-report modal) called `window.open(updateInfo.url, '_blank')`. Tampermonkey intercepts the `.user.js` request and routes the install prompt through its own extension tab, which left the tab created by `window.open` on `about:blank` indefinitely. Fix: added `@grant GM_openInTab` and a new `openUpdateUrl()` helper in `updater.js` that prefers `GM_openInTab(url, { active: true, insert: true })` — Tampermonkey renders the install prompt directly in the tab it opens, so no orphan blank tab is produced. Falls back to `window.open` if the grant is unavailable (e.g., Violentmonkey, though it typically handles the case the same way). Replaced at 4 call sites: `settings-panel.js` track-switch confirm, footer update link, outdated modal "Update Now" button, and `forecast-ui.js` forecast-panel update anchor.
+
 ## v14.14.15 — Profile Dataspy Honored in Non-Advanced Mode (2026-04-21)
 
 ### Correctness
