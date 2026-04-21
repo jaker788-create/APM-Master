@@ -4,10 +4,20 @@ Detailed developer changelog with root-cause analysis: [changelog.md](https://gi
 
 ---
 
-## v14.14.11 (2026-04-20)
+## v14.14.15 (2026-04-21)
 
 ### Features
-- Book labor by scheduled hours — new "Scheduled" mode fetches the WO's scheduled labor tab and books the remaining difference automatically
+- Book labor by scheduled hours — new "Scheduled" mode fetches the WO's scheduled labor tab and books the remaining difference automatically. Supports a fraction multiplier (e.g. 0.5 = book half) and an "Ignore booked" toggle to book against the raw total instead of remaining hours.
+- What's New modal now pulls live release notes from GitHub — stable users see release notes, beta users see the developer changelog
+
+### Fixes
+- Scheduled hours fetch no longer returns 0 rows when a user's sticky dataspy filters the view — pinned to the global "All Records" dataspy
+- Scheduled hours fetch is deterministic (was intermittently returning HTML instead of JSON)
+- Forecast profile's saved dataspy is honored in standard/simple forecast view (was silently falling back to the screen default)
+- Quick book save verification actively fetches server state when the response intercept misses — toast confirms match or warns if no record is found
+
+### Improvements
+- Removed the form-state verification layer from labor save — fetch-based fallback now provides definitive confirmation
 
 ---
 
