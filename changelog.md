@@ -1,5 +1,34 @@
 # APM Master v14 Changelog
 
+## v14.14.15 — Profile Dataspy Honored in Non-Advanced Mode (2026-04-21)
+
+### Correctness
+- **Profile's dataspy ignored in standard/simple view** — `resolveDataspyValue` in `intent.js` only consulted the `#eam-dataspy-select` dropdown when Advanced mode was visible. In non-advanced mode it skipped straight to `getDefaultDataspy(screen)` / `readEamActiveDataspy(screen)`, silently dropping the profile's saved dataspy. A user who selected a custom profile with `dataspy="100680"` (Open SIM-T) and hit Run would see the pipeline target "Open Work Orders" (100367) instead, and if the profile had no other filter fields set, the search collapsed to "every open WO with today's scheduled start date". Fix: `resolveDataspyValue` now accepts an `activeProfile` argument and prefers `activeProfile.dataspy` over the screen default / EAM native combo when the Advanced panel is hidden. `snapshotUIState` resolves the active profile from `savedProfiles` by the `#eam-profile-select` value and passes it in. `today.js` re-resolves with `activeProfile=null` when `todayStrict` is set so the profile is bypassed consistently (dataspy included). Moved `resolveDataspyValue` to `forecast-prefs.js` to avoid a circular import between `intent.js` and `today.js`.
+
+## v14.14.14 — Scheduled Hours Grid Binding (2026-04-21)
+
+### Correctness
+- **Scheduled hours fetch: 0 rows returned despite scheduled labor existing** — `fetchScheduledHours` hand-rolled the WSJOBS.SCH request without `GRID_ID` / `GRID_NAME` / `DATASPY_ID`. Without those params EAM fell back to each user's sticky dataspy on the SCH grid; any user whose last-selected dataspy filtered the view (or whose scheduled rows didn't match the default dataspy's filter) got an empty `GRID.DATA` response and saw "No remaining scheduled hours to book" even when scheduled labor existed. Now routed through `eamQuery` with the "All Records" global dataspy (209), grid id 205, grid name `WSJOBS_SCH` — matches the pattern labor-service.js uses for `WSBOOK.HDR`. Also drops the redundant `apmFetch` / `extractJson` / `AppState.session` imports that were only used by this function.
+
+## v14.14.13 — Quick Book Fetch Verification (2026-04-21)
+
+### Correctness
+- **Quick book: fetch-based save verification** — When response interception (Layers 1-2) misses the save response, the fallback now actively fetches booked labor from the server (2-day WSBOOK query) and matches against date+hours+WO to confirm the booking. Previously the timeout path showed a passive "Labor sent — unverified" toast and silently fetched in the background without reporting the result. Now: orange toast announces the fetch, green toast confirms on match, red toast warns if no matching record found. Also fixes the downstream flow — failed fetch verification now correctly sets `presumedOk = false`, preventing phantom records in the tally cache.
+- **Remove form-state verification layer** — The Layer 3 form-state check (`pagemode === 'display'`) removed from save verification. It was unreliable in screen-cache scenarios and redundant now that the fetch-based fallback provides definitive confirmation from the server.
+
+## v14.14.12 — Scheduled Labor Options (2026-04-21)
+
+### Critical
+- **Scheduled labor: fraction and ignore-booked options** — When labor mode is "Scheduled", two new controls appear inline: a fraction multiplier (e.g. 0.5 = book half of total scheduled hours) and an "Ignore booked" checkbox that books against total scheduled hours instead of subtracting already-booked hours. Both are applied to the raw scheduled total from the SCH tab before booking. Default behavior (fraction=1, ignore-booked=off) is unchanged from v14.14.11.
+
+### Correctness
+- **Scheduled hours fetch: intermittent empty response** — `WSJOBS.SCH.xmlhttp` requires both `.xmlhttp` suffix and `COMPONENT_INFO_TYPE=DATA_ONLY` in the request. Without both, EAM non-deterministically returns HTML instead of JSON, causing the scheduled hours lookup to fail silently.
+
+## v14.14.11 — Book Labor by Scheduled Hours (2026-04-20)
+
+### Critical
+- **Autofill labor: "Scheduled" booking mode** — New labor mode option in preset settings. When set to "Scheduled", autofill fetches the WSJOBS.SCH tab data for the current WO without navigating away, reads total scheduled hours (`actesthours`) and already-booked hours (`actactualhours`), and books the difference. Falls back gracefully if no scheduled labor exists or all hours are already booked. The existing "Fixed" mode (manual hour entry) remains unchanged as the default.
+
 ## v14.14.10 — Checklist Text-Result, Bulk Buttons, Relative Dates (2026-04-19)
 
 ### Critical
