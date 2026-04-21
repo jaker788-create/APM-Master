@@ -4,14 +4,14 @@ Detailed developer changelog with root-cause analysis: [changelog.md](https://gi
 
 ---
 
-## v14.14.16 (2026-04-21)
+## v14.14.17 (2026-04-21)
 
 ### Features
 - Book labor by scheduled hours — new "Scheduled" mode fetches the WO's scheduled labor tab and books the remaining difference automatically. Supports a fraction multiplier (e.g. 0.5 = book half) and an "Ignore booked" toggle to book against the raw total instead of remaining hours.
 - What's New modal now pulls live release notes from GitHub — stable users see release notes, beta users see the developer changelog
 
 ### Fixes
-- Update link no longer leaves a blank tab behind — clicking "Update Available" now opens the Tampermonkey install prompt directly instead of orphaning an empty tab
+- Update install no longer leaves an orphan tab — the source-view tab that Tampermonkey used to trigger install detection now closes itself automatically once the install prompt is open
 - Scheduled hours fetch no longer returns 0 rows when a user's sticky dataspy filters the view — pinned to the global "All Records" dataspy
 - Scheduled hours fetch is deterministic (was intermittently returning HTML instead of JSON)
 - Forecast profile's saved dataspy is honored in standard/simple forecast view (was silently falling back to the screen default)

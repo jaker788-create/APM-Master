@@ -1,5 +1,10 @@
 # APM Master v14 Changelog
 
+## v14.14.17 — Update Install: Auto-Close Source-View Tab (2026-04-21)
+
+### Correctness
+- **Update install still left a raw.githubusercontent.com tab behind** — v14.14.16's fix (swap `window.open` for `GM_openInTab`) assumed Tampermonkey would render its install prompt in-place in the tab we opened. That assumption is wrong on Chrome MV3: Tampermonkey always spawns a separate extension tab for the install UI regardless of how the URL is opened, because MV3 content scripts can't replace the page response. The source navigation to `raw.githubusercontent.com/.../forecast.user.js` renders as `text/plain` and leaves a source-code tab behind. Fix: `openUpdateUrl()` now opens the source URL with `active: false` (background, doesn't steal focus) and schedules `tab.close()` after 3s via the handle returned by `GM_openInTab`. Tampermonkey caches the script content as soon as the response arrives — usually within a few hundred ms — so the install prompt is self-contained and survives the source tab closing. End result: user clicks Install → Tampermonkey install prompt pops up as the active tab → source-view tab closes itself in the background → user installs and goes back to EAM.
+
 ## v14.14.16 — Update Link No Longer Leaves Blank Tab (2026-04-21)
 
 ### Correctness
