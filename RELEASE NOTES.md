@@ -4,6 +4,13 @@ Detailed developer changelog with root-cause analysis: [changelog.md](changelog.
 
 ---
 
+## v14.14.11 (2026-04-20)
+
+### Features
+- Book labor by scheduled hours — new "Scheduled" mode fetches the WO's scheduled labor tab and books the remaining difference automatically
+
+---
+
 ## v14.14.10 (2026-04-19)
 
 ### Features
