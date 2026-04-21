@@ -1,6 +1,6 @@
 # APM Master — Release History
 
-Detailed developer changelog with root-cause analysis: [changelog.md](changelog.md)
+Detailed developer changelog with root-cause analysis: [changelog.md](https://github.com/jaker788-create/APM-Master/blob/main/changelog.md)
 
 ---
 
