@@ -8,6 +8,11 @@
  *   GET /stats?key=SECRET                               → analytics JSON
  *   GET /stats?key=SECRET&days=N                        → custom range (default 30)
  *   GET /dashboard?key=SECRET                           → visual analytics dashboard
+ *
+ * Auth: /stats, /dashboard, and /init accept the secret either as
+ * ?key=SECRET or as the APM_STATS_KEY cookie (set by /dashboard on first
+ * authenticated load, so the secret doesn't linger in browser history or
+ * access logs).
  */
 
 const GITHUB_URLS = {
@@ -15,35 +20,36 @@ const GITHUB_URLS = {
 	beta: 'https://raw.githubusercontent.com/jaker788-create/APM-Master/Beta/forecast.user.js',
 };
 
+const COOKIE_NAME = 'APM_STATS_KEY';
+const COOKIE_MAX_AGE = 86400; // 24h
+
 export default {
 	async fetch(request, env) {
 		const url = new URL(request.url);
 		const path = url.pathname;
 
-		// --- Version check proxy ---
 		if (path === '/check/stable' || path === '/check/beta') {
 			const track = path === '/check/beta' ? 'beta' : 'stable';
 			return handleCheck(url, track, request, env);
 		}
 
-		// --- Stats endpoint ---
 		if (path === '/stats') {
-			return handleStats(url, env);
+			return handleStats(url, request, env);
 		}
 
-		// --- Dashboard ---
 		if (path === '/dashboard') {
-			return handleDashboard(url, env);
+			return handleDashboard(url, request, env);
 		}
 
-		// --- Init endpoint (one-time DB setup) ---
 		if (path === '/init') {
-			return handleInit(url, env);
+			return handleInit(url, request, env);
 		}
 
 		return new Response('Not found', { status: 404 });
 	},
 };
+
+// ---- Version check + telemetry ----
 
 async function handleCheck(url, track, request, env) {
 	const params = {
@@ -54,13 +60,9 @@ async function handleCheck(url, track, request, env) {
 		b: url.searchParams.get('b') || 'unknown',
 	};
 
-	// Cloudflare provides country from the request
 	const country = request.cf?.country || 'unknown';
-
-	// Log telemetry to D1 (non-blocking, analytics failure is non-fatal)
 	const logPromise = logTelemetry(params, country, env).catch(() => {});
 
-	// Proxy the real file from GitHub
 	let response;
 	try {
 		const ghResponse = await fetch(GITHUB_URLS[track], {
@@ -92,9 +94,10 @@ async function logTelemetry(params, country, env) {
 	`).bind(params.id, params.v, params.r, params.t, params.b, country).run();
 }
 
-async function handleInit(url, env) {
-	const secret = env.STATS_SECRET || '';
-	if (secret && url.searchParams.get('key') !== secret) {
+// ---- Init (one-time DB setup) ----
+
+async function handleInit(url, request, env) {
+	if (!checkAuth(url, request, env)) {
 		return new Response('Unauthorized', { status: 401 });
 	}
 
@@ -112,9 +115,10 @@ async function handleInit(url, env) {
 	return jsonResponse({ ok: true, message: 'Database initialized' });
 }
 
-async function handleStats(url, env) {
-	const secret = env.STATS_SECRET || '';
-	if (secret && url.searchParams.get('key') !== secret) {
+// ---- Stats JSON ----
+
+async function handleStats(url, request, env) {
+	if (!checkAuth(url, request, env)) {
 		return new Response('Unauthorized', { status: 401 });
 	}
 
@@ -123,44 +127,35 @@ async function handleStats(url, env) {
 	}
 
 	const days = Math.min(parseInt(url.searchParams.get('days')) || 30, 90);
+	const since = `-${days} days`;
 
-	// Run all queries in parallel
-	const [daily, versions, regions, browsers, totals, newUsers] = await Promise.all([
-		// Daily active users
+	const [daily, versions, regions, browsers, totals, newUsers, countries, tracks] = await Promise.all([
 		env.APM_DB.prepare(`
 			SELECT date(checked_at) as day, COUNT(DISTINCT user_id) as users
-			FROM checks
-			WHERE checked_at >= datetime('now', ?)
+			FROM checks WHERE checked_at >= datetime('now', ?)
 			GROUP BY day ORDER BY day DESC
-		`).bind(`-${days} days`).all(),
+		`).bind(since).all(),
 
-		// Version distribution (latest check per user in the period)
 		env.APM_DB.prepare(`
 			SELECT version, COUNT(*) as users FROM (
 				SELECT user_id, version FROM checks
 				WHERE checked_at >= datetime('now', ?)
-				GROUP BY user_id
-				HAVING checked_at = MAX(checked_at)
+				GROUP BY user_id HAVING checked_at = MAX(checked_at)
 			) GROUP BY version ORDER BY users DESC
-		`).bind(`-${days} days`).all(),
+		`).bind(since).all(),
 
-		// Region breakdown
 		env.APM_DB.prepare(`
 			SELECT region, COUNT(DISTINCT user_id) as users
-			FROM checks
-			WHERE checked_at >= datetime('now', ?)
+			FROM checks WHERE checked_at >= datetime('now', ?)
 			GROUP BY region ORDER BY users DESC
-		`).bind(`-${days} days`).all(),
+		`).bind(since).all(),
 
-		// Browser breakdown
 		env.APM_DB.prepare(`
 			SELECT browser, COUNT(DISTINCT user_id) as users
-			FROM checks
-			WHERE checked_at >= datetime('now', ?)
+			FROM checks WHERE checked_at >= datetime('now', ?)
 			GROUP BY browser ORDER BY users DESC
-		`).bind(`-${days} days`).all(),
+		`).bind(since).all(),
 
-		// Totals: unique users for DAU (today), WAU (7d), MAU (30d)
 		env.APM_DB.prepare(`
 			SELECT
 				COUNT(DISTINCT CASE WHEN checked_at >= datetime('now', '-1 day') THEN user_id END) as dau,
@@ -170,15 +165,27 @@ async function handleStats(url, env) {
 			FROM checks
 		`).all(),
 
-		// New users (first seen in the period)
 		env.APM_DB.prepare(`
 			SELECT date(first_seen) as day, COUNT(*) as new_users FROM (
 				SELECT user_id, MIN(checked_at) as first_seen
 				FROM checks GROUP BY user_id
-			)
-			WHERE first_seen >= datetime('now', ?)
+			) WHERE first_seen >= datetime('now', ?)
 			GROUP BY day ORDER BY day DESC
-		`).bind(`-${days} days`).all(),
+		`).bind(since).all(),
+
+		env.APM_DB.prepare(`
+			SELECT country, COUNT(DISTINCT user_id) as users
+			FROM checks WHERE checked_at >= datetime('now', ?)
+			GROUP BY country ORDER BY users DESC
+		`).bind(since).all(),
+
+		env.APM_DB.prepare(`
+			SELECT track, COUNT(*) as users FROM (
+				SELECT user_id, track FROM checks
+				WHERE checked_at >= datetime('now', ?)
+				GROUP BY user_id HAVING checked_at = MAX(checked_at)
+			) GROUP BY track ORDER BY users DESC
+		`).bind(since).all(),
 	]);
 
 	const t = totals.results?.[0] || {};
@@ -196,19 +203,51 @@ async function handleStats(url, env) {
 		versions: Object.fromEntries((versions.results || []).map(r => [r.version, r.users])),
 		regions: Object.fromEntries((regions.results || []).map(r => [r.region, r.users])),
 		browsers: Object.fromEntries((browsers.results || []).map(r => [r.browser, r.users])),
+		countries: Object.fromEntries((countries.results || []).map(r => [r.country, r.users])),
+		tracks: Object.fromEntries((tracks.results || []).map(r => [r.track, r.users])),
+	}, 200, { 'Cache-Control': 'private, max-age=30' });
+}
+
+// ---- Dashboard (HTML) ----
+
+async function handleDashboard(url, request, env) {
+	const secret = env.STATS_SECRET || '';
+
+	if (secret) {
+		const queryKey = url.searchParams.get('key');
+		const cookieKey = getCookieValue(request.headers.get('Cookie'), COOKIE_NAME);
+
+		// First-time auth via URL: set cookie and redirect to clean URL so the
+		// secret doesn't stay in browser history / access logs.
+		if (queryKey === secret) {
+			const clean = new URL(url);
+			clean.searchParams.delete('key');
+			return new Response(null, {
+				status: 302,
+				headers: {
+					'Location': clean.pathname + (clean.search || ''),
+					'Set-Cookie': `${COOKIE_NAME}=${encodeURIComponent(secret)}; HttpOnly; Secure; SameSite=Strict; Max-Age=${COOKIE_MAX_AGE}; Path=/`,
+				},
+			});
+		}
+
+		if (cookieKey !== secret) {
+			return new Response('Unauthorized', { status: 401 });
+		}
+	}
+
+	return new Response(dashboardHtml(), {
+		headers: {
+			'Content-Type': 'text/html; charset=utf-8',
+			'Cache-Control': 'no-store',
+			'X-Content-Type-Options': 'nosniff',
+			'Referrer-Policy': 'no-referrer',
+		},
 	});
 }
 
-async function handleDashboard(url, env) {
-	const secret = env.STATS_SECRET || '';
-	if (secret && url.searchParams.get('key') !== secret) {
-		return new Response('Unauthorized', { status: 401 });
-	}
-
-	const key = url.searchParams.get('key') || '';
-	const statsUrl = `/stats?key=${encodeURIComponent(key)}&days=30`;
-
-	const html = `<!DOCTYPE html>
+function dashboardHtml() {
+	return `<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="utf-8">
@@ -217,88 +256,189 @@ async function handleDashboard(url, env) {
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
-  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif; background: #0f1117; color: #e0e0e0; padding: 24px; }
-  h1 { font-size: 1.5rem; font-weight: 600; margin-bottom: 8px; color: #fff; }
-  .subtitle { color: #888; font-size: 0.85rem; margin-bottom: 24px; }
-  .summary { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 16px; margin-bottom: 32px; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+    background: #0f1117; color: #e0e0e0; padding: 24px; min-height: 100vh;
+  }
+  .container { max-width: 1400px; margin: 0 auto; }
+  header { margin-bottom: 24px; }
+  .header-top { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px; }
+  h1 { font-size: 1.5rem; font-weight: 600; color: #fff; }
+  .controls { display: flex; gap: 8px; align-items: center; }
+  .controls select, .controls button {
+    background: #1a1d27; color: #e0e0e0; border: 1px solid #2a2d3a;
+    padding: 8px 14px; border-radius: 8px; font-size: 0.85rem; cursor: pointer;
+    font-family: inherit; transition: border-color 120ms;
+  }
+  .controls select:hover, .controls button:hover { border-color: #60a5fa; }
+  .controls button:active { background: #2a2d3a; }
+  .controls button:disabled { opacity: 0.5; cursor: not-allowed; }
+  .subtitle { color: #888; font-size: 0.8rem; margin-top: 8px; }
+  .subtitle .sep { opacity: 0.4; margin: 0 8px; }
+  .summary { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 16px; margin-bottom: 28px; }
   .card { background: #1a1d27; border-radius: 12px; padding: 20px; border: 1px solid #2a2d3a; }
-  .card .label { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; color: #888; margin-bottom: 4px; }
-  .card .value { font-size: 2rem; font-weight: 700; color: #fff; }
+  .card .label { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.05em; color: #888; margin-bottom: 6px; }
+  .card .value { font-size: 1.8rem; font-weight: 700; color: #fff; font-variant-numeric: tabular-nums; }
   .card .value.accent { color: #60a5fa; }
-  .charts { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-bottom: 32px; }
+  .card .hint { font-size: 0.7rem; color: #666; margin-top: 4px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .charts { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px; margin-bottom: 28px; }
   .chart-box { background: #1a1d27; border-radius: 12px; padding: 20px; border: 1px solid #2a2d3a; }
-  .chart-box h2 { font-size: 0.9rem; font-weight: 600; margin-bottom: 16px; color: #ccc; }
+  .chart-box h2 { font-size: 0.85rem; font-weight: 600; margin-bottom: 14px; color: #ccc; }
   .chart-box.wide { grid-column: 1 / -1; }
-  .tables { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 24px; }
+  .chart-wrap { position: relative; height: 260px; }
+  .chart-box.wide .chart-wrap { height: 280px; }
+  .tables { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 20px; }
   .table-box { background: #1a1d27; border-radius: 12px; padding: 20px; border: 1px solid #2a2d3a; }
-  .table-box h2 { font-size: 0.9rem; font-weight: 600; margin-bottom: 12px; color: #ccc; }
-  table { width: 100%; border-collapse: collapse; }
-  th { text-align: left; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.05em; color: #666; padding: 6px 0; border-bottom: 1px solid #2a2d3a; }
-  td { padding: 8px 0; font-size: 0.85rem; border-bottom: 1px solid #1e2130; }
-  td:last-child { text-align: right; font-weight: 600; color: #60a5fa; }
+  .table-box h2 { font-size: 0.85rem; font-weight: 600; margin-bottom: 12px; color: #ccc; }
+  .table-box table { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }
+  .table-box th { text-align: left; font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.05em; color: #666; padding: 6px 0; border-bottom: 1px solid #2a2d3a; }
+  .table-box th.num { text-align: right; }
+  .table-box td { padding: 7px 0; font-size: 0.85rem; border-bottom: 1px solid #1e2130; }
+  .table-box td.num { text-align: right; font-weight: 600; color: #60a5fa; }
+  .table-box tr:last-child td { border-bottom: none; }
+  .empty { color: #666; font-size: 0.8rem; padding: 8px 0; }
   .loading { text-align: center; padding: 60px; color: #666; }
   .error { color: #f87171; background: #1a1d27; padding: 20px; border-radius: 12px; border: 1px solid #7f1d1d; }
-  @media (max-width: 800px) { .charts, .tables { grid-template-columns: 1fr; } }
+  .error button { margin-left: 8px; background: #2a2d3a; color: #e0e0e0; border: 1px solid #3a3d4a; padding: 6px 12px; border-radius: 6px; cursor: pointer; }
+  .spin { display: inline-block; animation: spin 0.6s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  @media (max-width: 1000px) { .charts { grid-template-columns: 1fr; } }
+  @media (max-width: 600px) { body { padding: 16px; } .summary { grid-template-columns: 1fr 1fr; } }
 </style>
 </head>
 <body>
-<h1>APM Master Analytics</h1>
-<div class="subtitle" id="period">Loading...</div>
-<div id="content"><div class="loading">Fetching analytics data...</div></div>
+<div class="container">
+  <header>
+    <div class="header-top">
+      <h1>APM Master Analytics</h1>
+      <div class="controls">
+        <label for="rangeSelect" style="color:#888;font-size:0.8rem;">Range:</label>
+        <select id="rangeSelect" aria-label="Time range">
+          <option value="7">7 days</option>
+          <option value="30" selected>30 days</option>
+          <option value="90">90 days</option>
+        </select>
+        <button id="refreshBtn" aria-label="Refresh data">&#8634; Refresh</button>
+      </div>
+    </div>
+    <div class="subtitle" id="period">Loading&hellip;</div>
+  </header>
+  <div id="content"><div class="loading">Fetching analytics data&hellip;</div></div>
+</div>
 <script>
-(async () => {
-  try {
-    const res = await fetch('${statsUrl}');
-    if (!res.ok) throw new Error('Failed: ' + res.status);
-    const d = await res.json();
+(() => {
+  const fmt = n => (n || 0).toLocaleString();
+  const trackLabel = { stable: 'Stable', beta: 'Beta', unknown: 'Unknown' };
+  const browserLabel = { fx: 'Firefox', cr: 'Chrome', edge: 'Edge', other: 'Other', unknown: 'Unknown' };
 
-    document.getElementById('period').textContent =
-      'Period: ' + d.period.days + ' days | Generated: ' + new Date(d.period.generated).toLocaleString();
+  function compareVersions(a, b) {
+    const parseV = (v) => {
+      const m = String(v).match(/^(\\d+)\\.(\\d+)\\.(\\d+)(?:[-.](.+))?$/);
+      if (!m) return null;
+      return { nums: [+m[1], +m[2], +m[3]], pre: m[4] || null };
+    };
+    const pa = parseV(a), pb = parseV(b);
+    if (!pa && !pb) return String(a).localeCompare(String(b));
+    if (!pa) return 1;
+    if (!pb) return -1;
+    for (let i = 0; i < 3; i++) {
+      if (pa.nums[i] !== pb.nums[i]) return pb.nums[i] - pa.nums[i];
+    }
+    // Release > pre-release for the same numeric version
+    if (pa.pre && !pb.pre) return 1;
+    if (!pa.pre && pb.pre) return -1;
+    if (pa.pre && pb.pre) return String(pb.pre).localeCompare(String(pa.pre));
+    return 0;
+  }
 
-    const dailyDays = Object.keys(d.dailyActive).sort();
+  function escapeHtml(s) {
+    return String(s == null ? '' : s).replace(/[&<>"']/g, ch => ({
+      '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+    }[ch]));
+  }
+
+  function tableHtml(pairs, headers) {
+    if (!pairs.length) return '<div class="empty">No data</div>';
+    return '<table><thead><tr><th>' + escapeHtml(headers[0]) +
+      '</th><th class="num">' + escapeHtml(headers[1]) + '</th></tr></thead><tbody>' +
+      pairs.map(([k, v]) => '<tr><td>' + escapeHtml(k) + '</td><td class="num">' + fmt(v) + '</td></tr>').join('') +
+      '</tbody></table>';
+  }
+
+  const charts = {};
+  let refreshTimer;
+
+  function renderChart(id, config) {
+    if (charts[id]) charts[id].destroy();
+    const el = document.getElementById(id);
+    if (!el) return;
+    charts[id] = new Chart(el, config);
+  }
+
+  function render(d) {
+    const verPairs = Object.entries(d.versions || {}).sort(([a], [b]) => compareVersions(a, b));
+    const verLabels = verPairs.map(p => p[0]);
+    const verCounts = verPairs.map(p => p[1]);
+    const totalVer = verCounts.reduce((s, n) => s + n, 0);
+    const threshold = totalVer * 0.03;
+
+    const doughnutPairs = [];
+    let otherCount = 0;
+    verPairs.forEach(([v, c]) => {
+      if (c >= threshold) doughnutPairs.push([v, c]);
+      else otherCount += c;
+    });
+    if (otherCount > 0) doughnutPairs.push(['Other', otherCount]);
+
+    const latestVer = verLabels[0] || '—';
+    const latestCount = verCounts[0] || 0;
+    const pctLatest = totalVer > 0 ? Math.round(100 * latestCount / totalVer) : 0;
+
+    const dailyDays = Object.keys(d.dailyActive || {}).sort();
     const dailyCounts = dailyDays.map(k => d.dailyActive[k]);
-    const newDays = Object.keys(d.newUsers).sort();
-    const newCounts = newDays.map(k => d.newUsers[k]);
-    const verLabels = Object.keys(d.versions);
-    const verCounts = Object.values(d.versions);
-    const regLabels = Object.keys(d.regions);
-    const regCounts = Object.values(d.regions);
-    const brLabels = Object.keys(d.browsers).map(b => ({fx:'Firefox',cr:'Chrome',edge:'Edge',other:'Other'}[b]||b));
-    const brCounts = Object.values(d.browsers);
+    const newDays = Object.keys(d.newUsers || {}).sort();
 
-    document.getElementById('content').innerHTML = \`
-      <div class="summary">
-        <div class="card"><div class="label">Today (DAU)</div><div class="value accent">\${d.summary.dau}</div></div>
-        <div class="card"><div class="label">This Week (WAU)</div><div class="value">\${d.summary.wau}</div></div>
-        <div class="card"><div class="label">This Month (MAU)</div><div class="value">\${d.summary.mau}</div></div>
-        <div class="card"><div class="label">All Time</div><div class="value">\${d.summary.totalAllTime}</div></div>
-      </div>
-      <div class="charts">
-        <div class="chart-box wide"><h2>Daily Active Users</h2><canvas id="dauChart"></canvas></div>
-        <div class="chart-box"><h2>Version Distribution</h2><canvas id="verChart"></canvas></div>
-        <div class="chart-box"><h2>Browser Split</h2><canvas id="brChart"></canvas></div>
-      </div>
-      <div class="tables">
-        <div class="table-box"><h2>Versions</h2><table><thead><tr><th>Version</th><th>Users</th></tr></thead><tbody>\${
-          verLabels.map((v,i) => '<tr><td>'+v+'</td><td>'+verCounts[i]+'</td></tr>').join('')
-        }</tbody></table></div>
-        <div class="table-box"><h2>Regions</h2><table><thead><tr><th>Region</th><th>Users</th></tr></thead><tbody>\${
-          regLabels.map((r,i) => '<tr><td>'+r+'</td><td>'+regCounts[i]+'</td></tr>').join('')
-        }</tbody></table></div>
-        <div class="table-box"><h2>New Users</h2><table><thead><tr><th>Date</th><th>New</th></tr></thead><tbody>\${
-          newDays.slice(-10).reverse().map((d2,i) => '<tr><td>'+d2+'</td><td>'+newCounts[newDays.indexOf(d2)]+'</td></tr>').join('')
-        }</tbody></table></div>
-      </div>
-    \`;
+    const regPairs = Object.entries(d.regions || {});
+    const countryPairs = Object.entries(d.countries || {});
+    const browserPairs = Object.entries(d.browsers || {}).map(([k, v]) => [browserLabel[k] || k, v]);
+    const trackPairs = Object.entries(d.tracks || {}).map(([k, v]) => [trackLabel[k] || k, v]);
+    const newUserPairs = newDays.slice(-10).reverse().map(day => [day, d.newUsers[day]]);
+
+    document.getElementById('period').innerHTML =
+      'Period: ' + d.period.days + ' days' +
+      '<span class="sep">·</span>' +
+      'Updated: ' + new Date(d.period.generated).toLocaleString();
+
+    document.getElementById('content').innerHTML =
+      '<div class="summary">' +
+        '<div class="card"><div class="label">Today (DAU)</div><div class="value accent">' + fmt(d.summary.dau) + '</div></div>' +
+        '<div class="card"><div class="label">This Week (WAU)</div><div class="value">' + fmt(d.summary.wau) + '</div></div>' +
+        '<div class="card"><div class="label">This Month (MAU)</div><div class="value">' + fmt(d.summary.mau) + '</div></div>' +
+        '<div class="card"><div class="label">All Time</div><div class="value">' + fmt(d.summary.totalAllTime) + '</div></div>' +
+        '<div class="card"><div class="label">On Latest</div><div class="value">' + pctLatest + '%</div><div class="hint" title="' + escapeHtml(latestVer) + '">' + escapeHtml(latestVer) + '</div></div>' +
+      '</div>' +
+      '<div class="charts">' +
+        '<div class="chart-box wide"><h2>Daily Active Users</h2><div class="chart-wrap"><canvas id="dauChart" aria-label="Daily active users line chart" role="img"></canvas></div></div>' +
+        '<div class="chart-box"><h2>Version Distribution</h2><div class="chart-wrap"><canvas id="verChart" aria-label="Version distribution doughnut chart" role="img"></canvas></div></div>' +
+        '<div class="chart-box"><h2>Browser Split</h2><div class="chart-wrap"><canvas id="brChart" aria-label="Browser split doughnut chart" role="img"></canvas></div></div>' +
+        '<div class="chart-box"><h2>Track Split</h2><div class="chart-wrap"><canvas id="trackChart" aria-label="Release track doughnut chart" role="img"></canvas></div></div>' +
+      '</div>' +
+      '<div class="tables">' +
+        '<div class="table-box"><h2>Versions</h2>' + tableHtml(verPairs, ['Version', 'Users']) + '</div>' +
+        '<div class="table-box"><h2>Regions</h2>' + tableHtml(regPairs, ['Region', 'Users']) + '</div>' +
+        '<div class="table-box"><h2>Countries</h2>' + tableHtml(countryPairs, ['Country', 'Users']) + '</div>' +
+        '<div class="table-box"><h2>Browsers</h2>' + tableHtml(browserPairs, ['Browser', 'Users']) + '</div>' +
+        '<div class="table-box"><h2>New Users (10d)</h2>' + tableHtml(newUserPairs, ['Date', 'New']) + '</div>' +
+      '</div>';
 
     const gridColor = '#2a2d3a';
     const textColor = '#888';
-    const defaults = { responsive: true, plugins: { legend: { display: false } } };
+    const palette = ['#60a5fa','#f472b6','#34d399','#fbbf24','#a78bfa','#fb923c','#22d3ee','#e879f9','#94a3b8'];
 
-    new Chart(document.getElementById('dauChart'), {
+    renderChart('dauChart', {
       type: 'line',
       data: {
-        labels: dailyDays.map(d2 => d2.slice(5)),
+        labels: dailyDays.map(dt => dt.slice(5)),
         datasets: [{
           data: dailyCounts,
           borderColor: '#60a5fa',
@@ -307,46 +447,140 @@ async function handleDashboard(url, env) {
           tension: 0.3,
           pointRadius: 3,
           pointBackgroundColor: '#60a5fa',
-        }]
+        }],
       },
-      options: { ...defaults, scales: {
-        x: { ticks: { color: textColor, maxRotation: 45 }, grid: { color: gridColor } },
-        y: { beginAtZero: true, ticks: { color: textColor, precision: 0 }, grid: { color: gridColor } }
-      }}
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: { legend: { display: false } },
+        scales: {
+          x: { ticks: { color: textColor, maxRotation: 45 }, grid: { color: gridColor } },
+          y: { beginAtZero: true, ticks: { color: textColor, precision: 0 }, grid: { color: gridColor } },
+        },
+      },
     });
 
-    const palette = ['#60a5fa','#f472b6','#34d399','#fbbf24','#a78bfa','#fb923c','#22d3ee','#e879f9'];
-    new Chart(document.getElementById('verChart'), {
+    const doughnutOpts = {
+      responsive: true, maintainAspectRatio: false,
+      plugins: {
+        legend: { position: 'bottom', labels: { color: textColor, padding: 10, boxWidth: 12, font: { size: 11 } } },
+      },
+    };
+
+    renderChart('verChart', {
       type: 'doughnut',
-      data: { labels: verLabels, datasets: [{ data: verCounts, backgroundColor: palette.slice(0, verLabels.length) }] },
-      options: { responsive: true, plugins: { legend: { position: 'bottom', labels: { color: textColor, padding: 12 } } } }
+      data: {
+        labels: doughnutPairs.map(p => p[0]),
+        datasets: [{
+          data: doughnutPairs.map(p => p[1]),
+          backgroundColor: palette.slice(0, doughnutPairs.length),
+          borderColor: '#0f1117',
+          borderWidth: 2,
+        }],
+      },
+      options: doughnutOpts,
     });
 
-    new Chart(document.getElementById('brChart'), {
+    renderChart('brChart', {
       type: 'doughnut',
-      data: { labels: brLabels, datasets: [{ data: brCounts, backgroundColor: palette.slice(0, brLabels.length) }] },
-      options: { responsive: true, plugins: { legend: { position: 'bottom', labels: { color: textColor, padding: 12 } } } }
+      data: {
+        labels: browserPairs.map(p => p[0]),
+        datasets: [{
+          data: browserPairs.map(p => p[1]),
+          backgroundColor: palette.slice(0, browserPairs.length),
+          borderColor: '#0f1117',
+          borderWidth: 2,
+        }],
+      },
+      options: doughnutOpts,
     });
 
-  } catch (e) {
-    document.getElementById('content').innerHTML = '<div class="error">Error loading analytics: ' + e.message + '</div>';
+    renderChart('trackChart', {
+      type: 'doughnut',
+      data: {
+        labels: trackPairs.map(p => p[0]),
+        datasets: [{
+          data: trackPairs.map(p => p[1]),
+          backgroundColor: ['#60a5fa', '#f472b6', '#94a3b8'].slice(0, trackPairs.length),
+          borderColor: '#0f1117',
+          borderWidth: 2,
+        }],
+      },
+      options: doughnutOpts,
+    });
   }
+
+  async function load(days) {
+    const refreshBtn = document.getElementById('refreshBtn');
+    refreshBtn.disabled = true;
+    refreshBtn.innerHTML = '<span class="spin">&#8634;</span> Refresh';
+
+    try {
+      const res = await fetch('/stats?days=' + encodeURIComponent(days), { credentials: 'same-origin' });
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      const d = await res.json();
+      render(d);
+    } catch (e) {
+      document.getElementById('content').innerHTML =
+        '<div class="error">Error loading analytics: ' + escapeHtml(e.message || 'Unknown') +
+        '<button id="retryBtn">Retry</button></div>';
+      const retry = document.getElementById('retryBtn');
+      if (retry) retry.onclick = () => load(+document.getElementById('rangeSelect').value);
+    } finally {
+      refreshBtn.disabled = false;
+      refreshBtn.innerHTML = '&#8634; Refresh';
+    }
+  }
+
+  function scheduleAutoRefresh() {
+    clearInterval(refreshTimer);
+    refreshTimer = setInterval(() => {
+      load(+document.getElementById('rangeSelect').value);
+    }, 5 * 60 * 1000);
+  }
+
+  document.getElementById('rangeSelect').addEventListener('change', (e) => {
+    load(+e.target.value);
+    scheduleAutoRefresh();
+  });
+  document.getElementById('refreshBtn').addEventListener('click', () => {
+    load(+document.getElementById('rangeSelect').value);
+    scheduleAutoRefresh();
+  });
+  document.addEventListener('visibilitychange', () => {
+    if (!document.hidden) load(+document.getElementById('rangeSelect').value);
+  });
+
+  scheduleAutoRefresh();
+  load(30);
 })();
 </script>
 </body>
 </html>`;
-
-	return new Response(html, {
-		headers: { 'Content-Type': 'text/html; charset=utf-8' },
-	});
 }
 
-function jsonResponse(data, status = 200) {
+// ---- Auth + helpers ----
+
+function checkAuth(url, request, env) {
+	const secret = env.STATS_SECRET || '';
+	if (!secret) return true;
+	if (url.searchParams.get('key') === secret) return true;
+	const cookieKey = getCookieValue(request.headers.get('Cookie'), COOKIE_NAME);
+	return cookieKey === secret;
+}
+
+function getCookieValue(cookieHeader, name) {
+	if (!cookieHeader) return null;
+	const match = cookieHeader.match(new RegExp('(?:^|;\\s*)' + name + '=([^;]*)'));
+	return match ? decodeURIComponent(match[1]) : null;
+}
+
+function jsonResponse(data, status = 200, extraHeaders = {}) {
 	return new Response(JSON.stringify(data, null, 2), {
 		status,
 		headers: {
 			'Content-Type': 'application/json',
 			'Access-Control-Allow-Origin': '*',
+			...extraHeaders,
 		},
 	});
 }
