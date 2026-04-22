@@ -1,14 +1,47 @@
 # APM Master v14 Changelog
 
+## v14.14.26 — Column Save Screen-Routing Fixes (2026-04-22)
+
+### Correctness
+- **Install-time screen detection had inverted priority** — `installGridColumnOverride.initComponent` called `detectActiveScreen()` first (GLOBAL user-visible screen) and only fell back to the grid's own store. During fast navigation, preload, or screen-cache warmup a grid's `initComponent` can fire while a different screen is active; the closure then captured the wrong name and every future save routed to the wrong `columnOrders` key. Fix: switch to `detectScreenFunction(win, this)` — already the canonical grid-first resolver (used by `tab-grid-order.js::resolveScreenContext`) — backed by LST_FLAG, with `detectActiveScreen` demoted to last resort.
+
+### Correctness
+- **Shared-iframe screen mutation wasn't caught** — per the CTJOBS/WSJOBS shared-systemFunc memory, a screen-cache iframe can host WSJOBS then later host CTJOBS with the same grid instance kept around. The grid's store `extraParams.USER_FUNCTION_NAME` updates but the save closure's `screen` didn't, so saves kept routing to the original key. Fix: `saveState` re-derives `detectScreenFunction(win, grid)` on every save. When live detection returns a non-empty result that differs from the closure, the save routes to the live value and emits a `Screen drift` debug log. Closure stays as fallback for the case where live detection briefly returns empty.
+
+### Convention
+- **`attachSaveListeners` now takes `win`** alongside `grid`/`screen` so `detectScreenFunction(win, grid)` can run at save time. Both call sites (`initComponent` afterrender, `reapplyColumnOrder` Phase 3) updated to pass it.
+
+## v14.14.25 — Column Save Path Hardening (2026-04-22)
+
+### Correctness
+- **Dropped hidden-column tracking from the saved shape** — `saveState` previously captured `{ index, width, hidden }` for every column including hidden ones, and `applyColumnOrder` in `lst-intercept` re-hid them on reload. In practice that let a stray `columnhide` burst during screen-cache transitions or LST-driven rebuilds persist transient hidden flags, causing columns to come back hidden on every subsequent load. Fix: filter `c.hidden` columns out at capture time AND omit the `hidden` field from the saved object. Hide is now transient — menu-hides don't persist. `applyColumnOrder` still honors legacy `hidden: true` entries for back-compat; the branch drains as users resave.
+
+### Correctness
+- **Transient-state guard on saveState** — added `grid.rendered && grid.headerCt.rendered` check before capture. EAM fires `columnmove`/`columnresize` during layout rebuilds when the column set hasn't settled; capturing then wrote mid-transition values.
+
+### Correctness
+- **Idempotency check before writing** — `saveState` now compares proposed JSON to the currently saved JSON for the screen and skips `savePresets()` when identical. Kills cross-frame echo churn: frame A saves → storage event → frame B reapplies → B's `columnresize` burst → B tries to re-save the same value → now short-circuits. Proposed/existing objects have identical key order so `JSON.stringify` compare is deterministic.
+
+### Convention
+- **Debounced the four column listeners** — `columnresize`/`columnmove`/`columnhide`/`columnshow` now route through a 150 ms debounce instead of firing `saveState` per event. Rapid bursts (drag-resize, EAM internal rebuilds) collapse to one save; user-driven events are typically 300 ms+ apart so the debounce isn't felt.
+
+## v14.14.24 — System-Default Capture + Wipe-All Reload (2026-04-22)
+
+### Correctness
+- **Reset column order restored APM's reordered state, not the EAM server default** — `applyGridConsistency` captured `systemDefaults.columns[funcName]` from `getVisibleGridColumns()`, but that reads the grid AFTER `lst-intercept` has already rewritten the FIELD array and the pre-render override has applied saved order. For any screen with saved columns the "default" was the user's saved order, so reset was a no-op. Fix: `lst-intercept.tryRewriteLst` captures the pristine visible-field order (filtered on `visible='+'` with positive integer `order`, sorted by order) from the original FIELD array BEFORE `applyColumnOrder` mutates it, via new `captureSystemDefaultColumns` exported from `tab-grid-order.js` and wired through `APMApi` to avoid a cyclic import. The fallback capture in `applyGridConsistency` now only fires when the user has no saved order for the screen (grid is provably pristine), so it can never record post-mutation state.
+
+### Convention
+- **"Wipe All Saved Data" reload redirected to auth in child frames** — the success handler ran `location.reload()`, which reloads only the current iframe. In an EAM content frame the iframe loses its auth context on its own and the reload lands on the session-timeout redirect, breaking the parent. Fix: `setTimeout(() => { try { window.top.location.reload(); } catch (e) { location.reload(); } }, 1500)` so the full top-level document reloads — matches the `window.top.location.href = SESSION_TIMEOUT_URL` pattern used by the feature-flag reload dialog and import-settings refresh.
+
+## v14.14.23 — Reset Column Order Actually Resets (2026-04-22)
+
+### Correctness
+- **Reset column order silently re-saved the state it just deleted** — `reorderColumns` used `headerCt.suspendEvents(true)`, which *queues* events instead of discarding them; `resumeEvents()` then replayed the whole burst, so every `columnmove` hit the save listener and `saveState` rewrote the column orders entry the reset had just removed. The comment claimed suppression but the implementation queued. Also applied on every `reapplyColumnOrder` cross-frame sync, causing N redundant `localStorage.setItem` calls per reapply (idempotency made them harmless but not free). Fix: added a module-level `_suppressSave` flag in `grid-column-override.js` checked by `saveState`, exported `setColumnSaveSuppression`, and wrap both `reorderColumns` and `reapplyColumnOrder` in it. The flag stays set across `resumeEvents()` and `resumeLayouts(true)` so the layout-induced `columnresize` burst is also ignored. Reset now actually clears the saved order on the active screen.
+
 ## v14.14.22 — Column Reapply Feedback Loop on Wide Grids (2026-04-22)
 
 ### Critical
 - **Parts (SSPART) and other wide grids with saved column widths jumped visibly and blocked typing in column filter inputs** — `reapplyColumnOrder`'s Phase 2 `setWidth` loop fired `columnresize` outside the `suspendEvents` window, echoing across frames via `localStorage` → `APM_PRESETS_SYNC_REQUIRED` → re-entry. Fix: hold `suspendEvents` across Phase 2, gate Phase 4 `view.refresh()` on actual changes, and skip `setWidth` when current width already matches saved. Dormant before v14.14.8 — the `structuredClone` bug silently dropped writes so there was nothing to echo. Full chain, UDF-column corruption explanation, and remediation in [docs/postmortems/v14.14.22-reapply-feedback-loop.md](docs/postmortems/v14.14.22-reapply-feedback-loop.md).
-
-## v14.14.21 — Diagnostics: Checklist Activity-Combo Capture (2026-04-22)
-
-### Quality
-- **Diagnostics export now captures Checklist sub-tab state for bug triage** — `Diagnostics.checklistState()` records the visible `combobox[name=activity]` state (value, store counts, `lastSelectedRecords`, `forceSelection`/`allowBlank`), any visible `*checklistgrid*` store counts, `Ext.Component.layoutSuspendCount` (non-zero = leaked `suspendLayouts`), top-frame autofill lock, and any body-level `position:fixed` overlay ≥ 500×300 with `zIndex ≥ 1000` (catches `apm-checklist-mask` leaks and click-swallowing overlays). Wired into `toJSON()`; no behavior change.
 
 ## v14.14.20 — Quick Book Activity Reselect Blocks Navigation (2026-04-22)
 
