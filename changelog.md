@@ -1,5 +1,103 @@
 # APM Master v14 Changelog
 
+## v14.14.42 — MasterScreenController loadTabData Null Guard (2026-04-23)
+
+### Correctness
+- **Returning to list view from non-HDR/non-Activities tabs no longer throws `TypeError: Cannot read properties of null (reading 'isRecordView')`.** Our `applyTabConsistency` (`tp.move` reorder, hide/destroy, plugin restoration) leaves EAM's tab internals in a state where `tabItem.getTabView()` returns null on the `collapsePanel → expandLeft → listViewExpand → loadTabData` path, and `MasterScreenController.loadTabData` reads `.isRecordView` on it without a null check — Chrome only because V8 dispatches teardown listeners synchronously inline (Firefox defers them, so the about-to-be-destroyed view is still readable). Fix: new `guardMasterScreenController(win)` in `utils.js` overrides `loadTabData` to bail when `getTabView()` is null, called from `bindAll` every cycle since the controller class is lazy-loaded. Which specific op breaks the invariant is still unknown — investigation plan in `.planning/handoffs/session-2026-04-23-loadTabData-trigger.md`.
+
+## v14.14.41 — Checklist Bulk Buttons Event-Driven Trigger (2026-04-23)
+
+### Correctness
+- **Checklist Yes/No/Clear buttons now appear on first ACK tab entry.** `injectChecklistBulkButtons` relied on a `.ACK` AJAX hook with a fixed 1500ms delay plus a view-change retry loop (8×1s); on slow renders the column header DOM wasn't painted when any of them ran, so initial injection silently bailed at the "Result" header search. Switching the activity combo triggered a second `.ACK` load with the grid fully rendered, which worked — masking the gap. Fix: when the checklist grid is first found, wire one-shot `view.refresh` + `grid.reconfigure` listeners that re-invoke the idempotent injection. `view.refresh` fires after every row render (initial load and activity change), so the DOM is guaranteed to be ready.
+
+## v14.14.40 — Tab Native Removal (2026-04-23)
+
+### Convention
+- **Record-tab hide switched to native `tp.remove(item)`.** Settings-panel ✖ and EAM's own tab ✕ now converge on the same destroy-and-track-in-More-Menu flow; CSS-hide is gone. Reason: two divergent hidden states (CSS-hidden in items vs destroyed) created inconsistency; unifying on native matches the pattern established in v14.14.37 (trust EAM, intercept at the right layer).
+
+### Cleanup
+- **`resetTabDefaults` loses its no-op CSS-show step.** Plugin-menu restoration is now the sole recovery path, since nothing is ever CSS-hidden by our code.
+
+### Quality
+- **Record Tabs hint mentions native add/remove.** New sub-line under the drag-to-reorder hint surfaces the EAM-native path.
+
+## v14.14.39 — Post-Update Notice for Column Reset (2026-04-23)
+
+### Quality
+- **One-time toast explains why saved column layouts disappeared.** The v14.14.36 migration silently dropped pre-dataspy-aware `columnOrders` entries, and users hit reloads with their layouts cleared and no context. Fix: added `src/ui/update-notice.js` with `maybeShowColumnResetNotice()` gated on `COL_RESET_NOTICE_SEEN_KEY`; fires from `buildSettingsPanel` in the existing-user branch (welcome flow covers fresh installs). Matches the session-restore prompt style but with a single "Got it" button and no auto-dismiss. Message also teaches the new direct-in-EAM save behavior.
+
+## v14.14.38 — Drop `get_revisions` PTP Interception (2026-04-23)
+
+### Correctness
+- **Entering a WO with a pre-existing completed PTP no longer fires a phantom `Assessment cancelled` broadcast.** On page load PTP calls `get_revisions?view=PtpHomeView_getRevisions&type=PTP`, which returns PTP TEMPLATE revisions (not assessment lifecycle) — an `inactive` entry means an obsoleted template version, but the latest-revision parser treated it as a cancelled assessment and fired it against the WO the `get_all_assessment` safety net had just set. Fix: dropped `get_revisions` from `PTP_ENDPOINTS` and removed the latest-revision branch in `parseAssessmentStatus`. Existing `inactive`-status recognition for non-array responses was relocated into the depth-2 sweep (arrays are still skipped, so the template `revisions: [...]` array cannot re-trigger the bug).
+
+## v14.14.37 — Grid Column Rewrite: Trust EAM, Trust .LST (2026-04-23)
+
+### Correctness
+- **Column reorders/resizes on screens with no saved preset now persist.** `grid-column-override.js` returned from `initComponent` before attaching `headerCt` save listeners when no saved order existed, so the `afterrender` hook never fired on fresh screens — every user drag was silently dropped. Fix: restructured the override so save listeners attach unconditionally; the order-restore branch runs only when a preset is present, but listener attachment is always performed.
+
+### Cleanup
+- **Deleted grid-column live consistency enforcement.** `applyGridConsistency`, `reapplyColumnOrder`, the AJAX-idle reapply in `ext-consistency.js`, the frame-activation reapply in `frame-manager.js`, and the grid branch of `APM_PRESETS_SYNC_REQUIRED` formed a loop that re-applied saved state over user mutations and caused the v14.14.22 filter-input drops. `.LST` intercept has been the primary restoration path since v14.14.22 — live enforcement is redundant once changes stick until reload. Also removed: `_suppressSave`, `setColumnSaveSuppression`, `_state.systemDefaults.columns`, `captureSystemDefaultColumns`, `capturePristineDefaults`, and the `reorderColumns` helper that only served the old real-time reset.
+- **Reset Column Defaults is now delete-preset only.** The settings panel already shows a reload modal after reset; real-time restore required `_systemDefaults.columns` and `reorderColumns` and was redundant. Post-reload, `.LST` intercept no-ops for the cleared composite key and EAM serves pristine order.
+
+## v14.14.36 — Dataspy-Aware Column Orders (2026-04-23)
+
+### Feature
+- **Dataspy-aware column orders.** Switching dataspies on one screen used to overwrite the single saved order — foreign columns would accumulate in each save and reappear under unrelated dataspies. Column order, width, and visibility are now keyed per `(screen, dataspy)` pair via `"<FUNC>|<DATASPYID>"` (or `"<FUNC>|NONE"` for dataspy-less grids); existing saves are dropped once on upgrade and must be re-saved per dataspy. Tabs are unaffected.
+
+## v14.14.35 — PTP Completion Capture Hardening (2026-04-23)
+
+### Correctness
+- **Parse chain widened for schema drift and `get_revisions` responses.** The fixed 9-key lookup missed unknown wrappers, lowercase `complete`, and the `get_revisions` endpoint entirely. Fix: depth-2 recursive own-property sweep matching `/^(status|final_status|result)$/i`, a latest-revision branch for `get_revisions`, case-insensitive text fallback with `INCOMPLETE` lookarounds, and an `Logger.info` on 200-OK parse misses that dumps top-level response keys.
+- **Aborted XHR and rejected fetch responses now reach the parser.** `xhr.addEventListener('load')` never fires on aborts, network errors, or timeouts, so React-aborted submit retries silently dropped responses even when the server had already committed. Fix: switched to `loadend` with a `status === 0 && !responseText` unsent-guard; fetch intercept wrapped in try/finally so rejected promises still parse the body.
+- **Completion postMessages survive handshake lag and parent-not-ready windows.** Fire-and-forget `postMessage` to the top frame was dropped when the listener hadn't attached or the theme handshake was still in flight, and `triggerCompletion` silently returned when `_parentOrigin` was null. Fix: completions carry a `msgId`, retry 3× at 500 ms against `APM_PTP_ACK`, and queue in `_pendingCompletions` (deduped by `type:wo`) until the first trusted theme response flushes them.
+- **Parent broadcasts WO to the PTP iframe via the theme handshake reply.** `get_revisions` responses carry no WO in URL or body, so sandbox parses produced `finalWo=null` and dropped completions with no diagnostic. Fix: parent reads iframe `src` `workordernum` first (with `span.recordcode` fallback) and piggybacks `APM_PTP_CONTEXT {wo}` on the theme response; sandbox caches it in `_currentWo` as `extractWo`'s last-resort branch.
+- **DOM success-text safety net + submit watchdog.** Users who saw PTP's "submitted … now complete" banner still hit stuck-`INCOMPLETE` rows when every parse layer missed. Fix: on submit click, arm a 60 s `MutationObserver` matching `/submitted\b[^.]*\bnow complete/i` against `document.body.textContent` — on hit, fire `triggerCompletion(_currentWo)` deduped by `lastCompletedWo`. A 10 s observability-only watchdog logs submits that produced no completion.
+
+### Quality
+- **`parseAssessmentStatus` and `extractWo` extracted as pure, tested helpers.** No behavior change — enables the parse-surface widening above without dragging `handleAssessmentResponse`'s side-effect block into the test matrix. 20+ unit cases cover the 9-key chain, quoted text fallback, CANCELLED branch, and WO precedence.
+
+## v14.14.34 — Phantom-Record Recovery for Auto-Opened Records (2026-04-23)
+
+### Correctness
+- **v14.14.33's sentinel killed the double-fire but records still opened blank** — new diagnostics showed one clean `Opening first grid record` fire followed by silence: no "Record view ready after Xms" INFO, no "Record view did not appear within 5000ms" WARN, yet 11s later the title-observer and session-snapshot both confirmed the UI was in record view. The form renders and gets bound to a phantom (or list-level) record without EAM's native detail fetch landing, and the existing 2s phantom-check gate in `openFirstGridRecord` was silent and non-actionable. Fix: rewrote the gate as `verifyAndRecoverRecordBind(gridRecord)` with an observable 4-phase flow — (1) poll 2s for `rec.phantom === false`; (2) on timeout, locate the visible recordview form and call `form.getForm().loadRecord(gridRecord)` to force-bind list-level fields immediately; (3) call `gridRecord.load()` with a 5s-cap callback to trigger server detail fetch and re-apply `loadRecord` on the response; (4) re-poll for bound state. Every branch emits an INFO or WARN captured to the diagnostic buffer, so the next bug report shows which phase landed. Partial binds still return `success=true` so the user sees list-level data instead of `<Auto-Generated>` placeholder.
+
+## v14.14.33 — Auto-Opened Records Still Loaded Blank: Double-Fire Race (2026-04-23)
+
+### Correctness
+- **Drillback links still intermittently opened records with `<Auto-Generated>` fields despite v14.14.28's cross-frame AJAX fix** — diagnostics captured two `Opening first grid record: <WO>` logs 875 ms apart for the same WO, confirming a double `itemdblclick` fire. The second fire lands while the first's cross-frame data fetch is still in flight and leaves the form stuck on the phantom new-record shell. Root cause: `_autoOpenHandled` (`boot.js`) and `_autoOpenInProgress` (`utils.js`) are module-level per-frame guards — multiple boot cycles (child iframe boot, session-reload re-entry) each have their own closure and each independently call `waitAndOpenSingleResult`. The underlying `wsjobs_lst_lst` grid still satisfies single-result detection after the first fire because card-layout hides it without destroying it. Fix: added an `apm_auto_opened_wo` sessionStorage sentinel (shared across same-origin frames in the tab) and an early-return when `getEamViewState().view === 'record'` inside `waitAndOpenSingleResult`. Phantom-state recovery (direct `form.loadRecord()`) is deferred — this change only stops the race that causes the phantom in the first place.
+
+## v14.14.32 — Scheduled Labor Fraction=0 Books Zero Hours (2026-04-23)
+
+### Correctness
+- **Setting labor fraction to 0 on a scheduled-mode preset booked the full scheduled amount** — `resolveLaborHours` used `parseFloat(data.laborFraction) || 1`, and since `parseFloat("0")` is `0` (falsy), the `|| 1` branch substituted `1` and booked 100% of scheduled hours instead of zero. Fix: parse once and gate on `Number.isFinite` so 0 survives while empty/NaN still falls back to 1; both call sites already guard with `hours > 0`, so fraction=0 now cleanly skips booking.
+
+## v14.14.31 — Checklist Mask Covers Full Processing Phase (2026-04-23)
+
+### Correctness
+- **Autofill checklist "Saving Checklist…" mask appeared only at the tail, unmasking the majority of the work** — the mask sat after the `do1Tech/do5Tech/do10Tech` dispatch block so it originally only covered the single residual `waitForSettled`. Commit `773f6a0` added per-activity `saveGridData()` to `do10Tech` (previously only 1-Tech and 5-Tech saved per activity), so each activity's Ajax-heavy save now fires inside the loop — before the mask ever showed. Fix: move `showChecklistMask()` to immediately before the activity dispatch in `executeChecklistsNative`, and apply the same move to `executeShiftReportChecklists` (task loop also runs unmasked). The final `waitForSettled(…, 500)` and `hideChecklistMask()` stay at the tail; the 500ms min-buffer rationale (auto-save race during `waitForPaint`) still applies.
+
+## v14.14.30 — Tab Order View Refreshes On Settings Reopen (2026-04-23)
+
+### Correctness
+- **Settings → Tab Order showed the previously-viewed screen until you clicked a toggle** — `buildSettingsPanel()` runs once and `UIManager.toggle()` just flips display on reopen, so `loadSettingsView()` (which reads `detectActiveScreen()` and probes tabs/columns) never re-fired after a screen switch. Fix: register `refreshSettingsPanel` on `APMApi` inside `bindSettingsEvents` and call it from the `APM_TOGGLE_SETTINGS` handler when the panel already exists; scoped to `state.activeTab === 'settings'` so reopening onto Auto Fill doesn't clobber an in-progress preset edit.
+
+## v14.14.29 — LST Intercept USER_FUNCTION_NAME from POST Body (2026-04-23)
+
+### Correctness
+- **CTJOBS/ADJOBS inherited WSJOBS's saved column order on load** — screens that share the WSJOBS.LST endpoint (CTJOBS, ADJOBS) hit the same URL, and `lst-intercept.js::extractFuncName` only scanned the URL for `USER_FUNCTION_NAME=`; EAM actually sends it in the POST body. The URL fallback then matched the `.LST` path and returned `WSJOBS` for every shared-endpoint screen, so CTJOBS's LST intercept read and applied `columnOrders['WSJOBS']`. Fix: patch `XMLHttpRequest.prototype.send` to capture the body string, and switch `extractFuncName` to body-first → URL query → path fallback. Save/reset paths were already correct (grid store proxy and title-based detection) so no migration is needed.
+
+## v14.14.28 — Native Reload Modal for Tab/Column Reset (2026-04-22)
+
+### Quality
+- **Tab/column layout reset now uses the same styled reload dialog as feature flags** — the reset button previously used a browser `confirm()` that didn't match APM's modal style and didn't offer a way to refresh afterwards (the in-place restoration isn't always sufficient, e.g. when `resetColumnDefaults()` returns false on screens without captured defaults). Fix: replaced the `confirm()` in `settings-panel.js::bindTabOrderActions` with `showTabResetReloadDialog()` — same `apm-modal-overlay` shell as `showFlagReloadDialog` in `settings-panel-tabs.js`, with Later / Refresh Now buttons (Refresh Now → `SESSION_TIMEOUT_URL`).
+
+## v14.14.27 — Assign To Me Email Contamination (2026-04-22)
+
+### Correctness
+- **"Assign To Me" wrote full email into `assignedto` field for some users** — `executeAssignToMe` read `AppState.session.user` directly and only ran the `@`-strip + uppercase cleanup on the `LABOR_LAST_EMP_KEY` fallback path. When session state was restored from pre-cleanup storage or captured via a path that bypassed `SessionMonitor.updateState`, the email flowed straight through. Fix: always route through the shared `cleanEmployeeId()` utility regardless of source (same pattern `labor-booker.js::extractEmployee` already uses).
+- **Shift Report "Set User Login" had the same bug** — identical shape in the `executeShiftReportFlow` user-resolution block. Cleaned on fallback only. Fixed identically; also normalizes the in-memory `AppState.session.user` if it was dirty so downstream callers see the clean value.
+
 ## v14.14.26 — Column Save Screen-Routing Fixes (2026-04-22)
 
 ### Correctness
