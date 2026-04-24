@@ -4,6 +4,27 @@ Detailed developer changelog with root-cause analysis: [changelog.md](https://gi
 
 ---
 
+## v14.14.49 (2026-04-24)
+
+### Features
+- **Per-pair AND/OR logic in the forecast profile filter builder.** Every consecutive pair of include keywords in a field (description, equipment, assigned, organization, shift, labor) now shows a clickable AND/OR pill between the chips. Mix operators within a single field, e.g. `desc "pump" AND "motor" OR "bearing"`, or build range filters like `labor >= 5 AND labor <= 10`. Excludes (`!` prefix) stay AND-joined.
+- **Eight new filter fields in the forecast profile builder.** Criticality, Priority Level, Location, Department, Cancel Reason, Hold Reason, Parts Issued (yes/no), and PM Is Intrusive (yes/no). Fields that are typically empty outside specific dataspies (Parts Issued, Cancel Reason, Hold Reason) show a soft hint if the profile's dataspy sits outside their usual scope — advisory only, filters still save and emit.
+- **"Created By" forecast profile filter.** New field at the top of the Text Search group scopes a forecast to work orders created by a specific user. CONTAINS-only, single value per profile, applies to both WSJOBS and CTJOBS.
+- **Night Shift configuration reachable from the Labor Tally panel.** Previously only available from the Quick Book popup's cog icon. A new Shift chip in the tally header opens the same toggle and shift-end form inline; changes propagate to the tally immediately and to Quick Book on next open. A warning-colored dot on the chip signals that Night Shift is currently enabled.
+
+### Fixes
+- Grid Column drag list in the settings panel was silently writing to an orphan slot (reorders from the panel never reached the grid, on any screen). Replaced with a hint pointing at EAM's grid header — dragging and resizing columns in the grid itself already saves per screen and dataspy. The Reset Column Defaults button still works.
+- Single-site forecast profiles no longer send the `organization` filter twice on the same request (one from EAM's form, one from MADDON injection). Operators incompatible with EAM's top-filter (`!=`, `^`, `$`) continue to route through MADDON only.
+- Forecast profile builder left open for extended sessions no longer slows the browser — the full-viewport Gaussian blur on modal overlays has been halved (per-frame GPU cost drops roughly 4×), and the forecast header's continuous weather animation (raindrops + lightning) pauses while the builder covers it.
+- Forecast panel no longer leaks global document listeners across init cycles, and the panel's style MutationObserver no longer re-runs component lookups on every position/zoom tweak. Outside-click handlers for the description autocomplete and the dataspy-mode popover are torn down when they close, and all forecast panel listeners tear down on `pagehide`.
+
+### Improvements
+- Column Order settings title and the reset-reload dialog now include the active dataspy (e.g. "Column Order (WSJOBS · Open WOs assigned to me):") so it's clear which per-dataspy slot is being saved or cleared.
+- Forecast filter preview and active-profile summary both lead with a `Target: <SCREEN> · <dataspy>` line above the filter text, matching the convention introduced for column settings.
+- Manager Mode toggle in Labor Tally restyled from hyperlink to chip to match the new Shift chip.
+
+---
+
 ## v14.14.43 (2026-04-24)
 
 ### Changes
