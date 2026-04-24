@@ -1,5 +1,11 @@
 # APM Master v14 Changelog
 
+## v14.14.44 — Caught-Exception Hygiene: Storage + AutoFill (2026-04-24)
+
+### Cleanup
+- **`APMStorage.get()` no longer throws a caught `SyntaxError` on every raw-string read.** `set()` writes strings raw (not JSON-stringified), but `get()` speculatively called `JSON.parse` on every string with a `try/catch` fallback — any value whose prefix matched a JSON token (version strings like `14.14.43`, ISO dates, theme-hint `'dark'`/`'default'` written directly by `theme-hooks.js`) threw a caught exception that paused the debugger when "Pause on caught exceptions" was enabled. Fix: new `safeJSONParse` helper in `src/core/storage.js` only invokes `JSON.parse` when the input actually looks like JSON (starts with `{`, `[`, `"`, or exact-matches `true`/`false`/`null`/a strict number regex); raw strings are returned as-is. Applied to both the GM and localStorage read branches. No data migration — `set()` is unchanged and existing stored values round-trip identically.
+- **`Ext` probes now check the actual API, not just the namespace.** EAM attaches the `Ext` namespace object very early, but `Ext.getCmp` / `Ext.ComponentQuery` / `Ext.ComponentManager` come online later when the core class graph loads — `if (!win?.Ext)` style guards falsely pass during early boot and screen-cache iframe remounts, then the next line throws `win.Ext.getCmp is not a function` / `Cannot read properties of undefined (reading 'query')`. AutoFill's view-change retry loop (1s × 8) reproduced this reliably on fresh loads. Sites tightened: `autofill-triggers.js` cleanup sweep (line 334), `injectAutoFillTriggers` main body (line 370), `injectChecklistBulkButtons` (line 253), `injectAssignToMeButton` (line 709); `autofill-engine.js` active-equipment resolver (line 1743); `labor-booker.js` `extractCompletionDate` (line 1542). Each probe now targets the exact API it calls (`getCmp`, `ComponentQuery`, or both). Remaining `!win.Ext` sites in the codebase were already paired with an API-specific check and left alone.
+
 ## v14.14.43 — Drillback Auto-Open Gated Behind Opt-In Setting (2026-04-24)
 
 ### Correctness
