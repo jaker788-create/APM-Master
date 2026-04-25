@@ -4,6 +4,36 @@ For a detailed developer changelog with root-cause analysis, see: [changelog.md]
 
 ---
 
+## v14.14.59 (2026-04-25)
+
+### Features
+- **AutoFill WO presets now carry a `Shift` LOV field alongside `Assigned To`.** The two fields share a fixed-width row inside Schedule & Labor, sitting directly above Book Labor. The shift value is injected after the equipment cascade with the same settle/popup/verify flank as every other LOV field.
+- **AutoFill WO editor layout cleanup.** Trouble Codes section dropped its Assignment column — `Assign:` was an operator-routing field, not a diagnostic code, and now lives in Schedule & Labor as `Assigned To`. Closing Comments wrapped in the standard panel-section box. Closing textarea grew by ~one line of visible height. Focus state in the editor no longer inverts inputs in dark mode.
+
+### Fixes
+- **Keyword chip paste no longer splits on commas.** Pasting `motor, fault` into an autofill keyword, equipment-keyword, shift-report keyword, or color-code rule search input used to produce two chips while typing the same string and pressing Enter produced one. The paste handler now matches Enter and `+` everywhere — the entire pasted string becomes one chip, so commas (and any other character) are valid inside a keyword.
+- **AutoFill no longer falsely warns that LOV fields were "rejected" when EAM resolved a label to its database code.** Setting WO Type to `Corrective` or Status to `Open` succeeds, but EAM stores the underlying code (`CM`, `R`) under the hood — the verifier was comparing `"Corrective"` to `"CM"` and emitting an orange "not accepted" toast on every fill. Verification now also accepts the displayed label and a store lookup. Genuine rejections still warn.
+- **Scheduled-mode labor booking now lands on UK/EU tenants and any WO without per-employee `WSJOBS_SCH` rows.** The fetch was hitting an endpoint that strips the planned-hours rollup, so users on tenants where work orders carry rolled-up hours instead of per-employee schedule rows saw "no scheduled hours" and labor was skipped. The fetch now reads the WO-level rollup as a fallback — same request, no extra round trip.
+- **"No scheduled hours" labor skip now surfaces in the final completion toast** instead of being instantly replaced by the next progress toast. Look for the orange "AutoFill complete — no scheduled hours to book" message when the planned hours are zero.
+- **Disabling the PTP Sandbox feature flag now persists the dependent PTP Tracking and PTP Timer toggles to off and visibly greys out their settings rows.** Storage previously stayed true after the sandbox flag flipped off, and the disabled toggle slider looked identical to an active one. Re-enabling sandbox leaves the dependent prefs at off — opt-in is deliberate.
+- **Creating a new (blank) record while an existing matching WO was selected no longer fills the blank record with the previous record's preset.** The trigger button's 3-second cooldown was holding the previous match's title in a closure; that fallback is now bypassed when the engine detects a new record.
+- **Default profiles (`isDefault: true`) no longer surface the disambiguation picker on existing records.** Two profiles sharing a keyword — typically a "for new records" template and a regular preset for the same kind of work — both landed in the picker on every routine fill. `isDefault` profiles now mean what the name suggests: only the fallback for blank new records, skipped during keyword matching on existing records. To keyword-match existing records, leave `isDefault` unchecked. (Profiles with `isDefault: true` and no companion non-default profile won't trigger AutoFill on existing records — clone the profile and uncheck `isDefault` on one copy.)
+- **Checklist text-result and notes now write to the correct row even when row shapes vary.** On checklists that mixed Yes/No rows with text-result rows, the configured text could land in the notes field of the row beneath it. Iteration is now driven by record index rather than DOM heuristics, so config and row are always paired correctly. Action/row-shape mismatches (`'text'` on a Yes/No row, `'yes'`/`'no'` on a text-result row, `'skip'`) are silent no-ops on the result column instead of writing to the wrong field.
+- **Settings import no longer overrides bundled preferences and feature flags from the source machine.** Theme, locale, log level, every feature flag, and PTP toggles used to ride along inside the export and clobber the importing user's deliberately-set values (and auto-detected ones like date format and language). Saved data — autofill profiles, nametag rules, dataspy/forecast profiles, labor settings, tab/grid order — continues to import normally.
+
+### Improvements
+- **Diagnostic report now includes a saved-data snapshot for triage.** Bug reports a user pastes from the diagnostics dialog now show tab/column/hidden-tab orders, autofill profile names + match keywords + isDefault flags, full nametag rules, full dataspy/forecast profiles + per-screen selections, and a labor employee count. Profile bodies and labor employee names are deliberately excluded (size and PII).
+- **Tab/grid order moved to its own storage key (`apm_v1_tab_order`).** Tab orders, column orders, and hidden tabs lived inside the autofill presets blob for historical reasons that no longer hold. Migrated automatically on first boot — no action required. Old export files keep working.
+
+---
+
+## v14.14.50 (2026-04-25)
+
+### Fixes
+- **PTP Sandbox is now hard-off on EU and other non-US1 tenants, regardless of any stored value.** Some users on regions where PTP doesn't exist had the PTP Sandbox feature flag stuck on (carried over from the old PTP timer flag), with the toggle disabled in settings so there was no way to turn it off. AutoFill's PTP completion check then blocked labor booking on every WO with "PTP not completed — skipping labor booking" because the assessment can never complete in those regions. The sandbox now reads as off everywhere PTP isn't available, and a one-time cleanup zeroes the stale settings so the toggles in the panel reflect reality.
+
+---
+
 ## v14.14.49 (2026-04-24)
 
 ### Features
