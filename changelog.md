@@ -1,4 +1,4 @@
-# APM Master v14 Changelog
+o# APM Master v14 Changelog
 
 ## v14.14.59 — Keyword Chip Paste No Longer Splits on Commas (2026-04-25)
 
@@ -14,7 +14,7 @@
 - **`needsRecordFill` gate now includes `shift`.** Without it, a preset whose only record-side change was the new shift field skipped the entire field-injection block — autofill matched the preset and then did nothing. Adding `matchedData.shift` to the OR chain alongside the other LOV/UDF fields is the minimum fix; future per-field additions need the same one-line gate update.
 
 ### Convention
-- **Trouble Codes section dropped its Assignment column.** `Assign:` had been wedged into a 2×2 grid with Problem / Failure / Cause for layout convenience, not because it belonged there — it's an operator-routing field, not a diagnostic code. Moved to Schedule & Labor (renamed `Assigned To`), and the trouble codes section now renders as a single 3-column row at the bottom of the editor.
+- **Trouble Codes section dropped its Assignment column.** `Assign:` had been wedged into a 2×2 grid with Problem / Failure / Cause for layout convenience, not because it belonged there. Moved to Schedule & Labor (renamed `Assigned To`), and the trouble codes section now renders as a single 3-column row at the bottom of the editor.
 - **Closing Comments wrapped in `apm-section-group`.** It was the only section in the WO editor without the standard panel-section box and label header. The inline `Closing:` label is now the section header instead.
 
 ### Cleanup
