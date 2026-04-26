@@ -4,6 +4,13 @@ For a detailed developer changelog with root-cause analysis, see: [changelog.md]
 
 ---
 
+## v14.14.63 (2026-04-26)
+
+### Fixes
+- **Yes/No/Clear bulk toolbar in the WO Checklist tab no longer disappears.** The toolbar resolved its slot in the Result column by matching the literal header text `Result` — any tenant-level rename, locale variant, or slow column paint dropped it silently. It now binds to the column by its data field (`dataIndex='result'`), the same field the autofill engine already uses, so the toolbar appears reliably on every WO Checklist regardless of how the column is labelled.
+
+---
+
 ## v14.14.62 (2026-04-25)
 
 ### Fixes
@@ -11,7 +18,7 @@ For a detailed developer changelog with root-cause analysis, see: [changelog.md]
 
 ---
 
-## v14.14.61 (2026-04-25)
+## v14.14.61 (2026-04-26)
 
 ### Fixes
 - **"Update Available" prompt now installs on Violentmonkey, Greasemonkey, and ScriptCat.** The updater opened the install page in a backgrounded tab and auto-closed it after 3 seconds — a flow tuned for Tampermonkey, where the install confirm appears in a separate extension tab. Other managers render the install prompt inside the navigated tab, so backgrounding hid the prompt and the auto-close dismissed it before Confirm could land. The updater now opens foregrounded with no auto-close on every manager except Tampermonkey, which keeps its original flow.
