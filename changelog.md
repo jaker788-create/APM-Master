@@ -1,5 +1,38 @@
 # APM Master v14 Changelog
 
+## v14.14.67 — Dismiss EAM Popups After HDR Save (2026-04-26)
+
+### Correctness
+- **`injectExtJSFieldsNative` now dismisses lingering EAM popups before returning.** The save click at the end of HDR record-fill could leave a confirm-save or validation dialog visible, which then blocked the engine from navigating to ACK for checklist completion. Every LOV setter already cleared its own popup, but the final save did not. Adds `await handleEamPopups(activeWin)` after `waitForAjax`, covering all three workflow paths (HDR-first, ACK-first, LABOR-first) since they all end HDR work through this function.
+
+## v14.14.66 — Checklist Result-Column Selector Broadened + Diagnostic Logging (2026-04-26)
+
+### Correctness
+- **Bulk checklist toolbar and autofill engine handle Completed-only result rows defensively.** The shared result-column query in `performChecklistBulkAction` and `processCheckboxes` matched only `data-componentid^="uxrowcheckbox"`. A user reproducing on an all-Completed checklist saw every Completed row left untouched while Yes/No rows filled correctly. The selector now excludes only Follow-up (`checkboxfield`) widgets and treats every other in-row checkbox as a result-column candidate, covering EAM builds where the Completed widget uses a different prefix. Advanced-mode `'no'` action also unchecks single-checkbox Completed rows now, mirroring the bulk toolbar's existing 1-checkbox branch (was a silent no-op when `hasYesNo` was false). The advanced-modal column header for the result action relabels to `Yes/Completed` so the option semantics match what users see in the grid.
+
+### Quality
+- **Each checklist run logs a single INFO line with per-prefix counts.** `Bulk yes:` / `Checklist run:` entries record `rows`, the map of widget prefixes encountered (e.g. `{"uxrowcheckbox": 13}`), `modified`, `alreadyDone`, and `skipped`. Future selector mismatches surface in `apm-diagnostics-*.json` instead of failing silently, so reports of "autofill skipped my rows" can be diagnosed from one log entry without DOM probes.
+- **Per-row checkbox click logic gains test coverage.** `wo-checklists.test.js` adds 7 happy-dom cases driving real `<tr>` elements through `view.getRow(i)`: single Completed click on `'yes'`, uncheck on `'no'`, Follow-up exclusion, a non-`uxrowcheckbox` prefix regression guard, Yes/No paired-row behaviour, and simple-count mode.
+
+## v14.14.65 — AutoFill Engine Split: God Object to Facade (2026-04-26)
+
+### Cleanup
+- **`autofill-engine.js` split from 2088 lines into a 17-line facade plus eight focused files.** The engine mixed four workflow entry points (`executeAssignToMe`, `executeRepairFlow`, `executeShiftReportFlow`, `executeAutoFillFlow`) with their private helpers, the WO record-fill driver, the WO checklist driver, and three WO-shared utilities — all in one file with zero tests. Each workflow now lives in `workflows/` (`assign-to-me.js`, `repair-workflow.js`, `shift-report-workflow.js`, `wo-workflow.js`), the WO sub-drivers split into `workflows/wo-fields.js` and `workflows/wo-checklists.js`, and three WO-context helpers (`getWoNumberFromView`, `isPtpCompleted`, `resolveLaborHours`) move to `services/wo-shared.js`. Engine becomes a pure 4-export facade so consumers (`autofill-triggers.js`) keep importing from `./autofill-engine.js` with no path changes. Adds 112 new behavioral tests (568 → 680 across 38 files).
+
+## v14.14.64 — Test Foundations: Vitest Coverage for Six Load-Bearing Core Files (2026-04-26)
+
+### Quality
+- **Six foundational `src/core/` files now have unit-test coverage.** `logger.js` (48 importers), `state.js` (22), `storage.js` (20), `api.js` (9), `scheduler.js` (10), and `ajax-hooks.js` (9) carried zero unit tests despite being load-bearing for every other module. Adds Vitest suites covering public API, dispatch semantics, error isolation, idempotence, GM/localStorage dual-write precedence, navigation guard auto-clear, and Ajax hook de-duplication so future refactors of dependent modules can detect regressions in these layers. Test count goes from 431 to 568 across 31 files (was 26).
+
+## v14.14.63 — Architectural Inversion: Core Stops Importing Modules (2026-04-26)
+
+### Convention
+- **`src/core/` no longer imports from `src/modules/`.** Core orchestrators (`frame-manager`, `ext-consistency`, `message-router`) and `ui/settings-panel*` previously hard-coded module function calls, so adding a module meant editing core, removing one orphaned wiring, and boot order was implicit. Replaced with subscription via the existing `APMApi` registry and a new `frame-events` bus: modules register state queries on `APMApi`, subscribe to `frame:attached` / `frame:beforeAjax` / `frame:gridMutation` / `frame:ajaxBurst` / `frame:styleRefresh`, and a new `SettingsRegistry` lets modules describe their own settings sections so the panel renders whatever is registered. Adding or removing a module is now a same-file change inside the module.
+- **`dom-helpers.js` moved from `src/ui/` to `src/core/`.** The `el()` factory has no UI policy — it's a generic DOM constructor — and living in `src/ui/` was producing false core→ui layering violations across `toast`, `status`, `session`, plus 13+ cross-layer module imports. The relocation eliminates the violations without changing semantics; 24 importers were updated.
+
+### Quality
+- **Vitest is wired and tested.** `npm test` runs 431 tests across 26 files (was 408 before this scope). New suites cover `dom-helpers`, `frame-events`, `APMApi.listHooks`, `settings-registry`, plus a starter `api.test.js` for the broader test-foundations work in plan 02. `happy-dom` was added as a devDependency so DOM-touching tests can run; `vitest.config.js` sets `environment: 'happy-dom'` globally.
+
 ## v14.14.62 — AutoFill Default-Profile Picker Anchors to Visible Frame (2026-04-25)
 
 ### Correctness
