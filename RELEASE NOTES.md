@@ -4,6 +4,18 @@ For a detailed developer changelog with root-cause analysis, see: [changelog.md]
 
 ---
 
+## v14.14.61 (2026-04-26)
+
+### Fixes
+- **"Update Available" prompt now installs on Violentmonkey, Greasemonkey, and ScriptCat.** The updater opened the install page in a backgrounded tab and auto-closed it after 3 seconds — a flow tuned for Tampermonkey, where the install confirm appears in a separate extension tab. Other managers render the install prompt inside the navigated tab, so backgrounding hid the prompt and the auto-close dismissed it before Confirm could land. The updater now opens foregrounded with no auto-close on every manager except Tampermonkey, which keeps its original flow.
+- **Forecast profile summary now reflects the saved past/future toggle.** Profiles whose dataspy was past-facing by default (e.g. "All Work Orders") always read "Last X Weeks" in the panel summary even after the builder's past/future chip was toggled to future and saved. With Date Override on, this summary line is the only past/future indicator while the profile is active, so the toggle felt broken even though it was saving correctly. The summary now matches what the actual filter run does.
+- **Forecast past/future chip in standard mode no longer reflects the wrong dataspy.** The chip's visibility came from the hidden advanced dropdown's last value, so it could appear in standard mode even when the actual run targeted "Open Work Orders" (which never needs a past toggle). The chip now resolves the same effective dataspy as the search itself — accounting for the active profile, the dataspy mode (default vs. active), and advanced-panel visibility.
+
+### Improvements
+- **Diagnostic export no longer duplicates log entries across frames.** Each frame collected the same shared previous-session logs and the aggregator wasn't deduping, so a single entry could appear repeated several times in the exported diagnostic JSON. A composite-key filter drops duplicates before sorting.
+
+---
+
 ## v14.14.59 (2026-04-25)
 
 ### Features

@@ -1,4 +1,19 @@
-o# APM Master v14 Changelog
+# APM Master v14 Changelog
+
+## v14.14.61 — Forecast Past/Future Indicators Reflect Actual State (2026-04-26)
+
+### Correctness
+- **Forecast profile summary ignored the saved `isPast` field.** `buildDateSummary` in `forecast-profile-manager.js` picked past vs. future labels purely from `isPastFacing(prof.target, prof.dataspy)`, so a profile whose dataspy was past-facing by default (e.g. "All Work Orders") always rendered "Last X Weeks" in the panel summary even after the builder's past/future chip was toggled to future and saved. With `dateOverride: true` the panel hides the schedule section entirely, so the summary line was the only signal — and it never updated. The summary now mirrors `computeDateInclusions`: saved `isPast` wins over dataspy default.
+- **Standard-mode past/future chip read from a stale advanced-dropdown value.** `syncDirectionToggle` resolved its dataspy from `forecastState.dataspy` (the hidden advanced dropdown's last value), so simple/standard mode with `dataspyMode: 'default'` could keep the chip visible even though the run targeted "Open Work Orders". The chip and its click handler now use the same canonical `resolveDataspyValue` path as the execution pipeline, accounting for advanced visibility, the active profile, and the dataspy mode.
+
+## v14.14.60 — Updater Works on Violentmonkey + Diagnostic Buffer Cleanup (2026-04-25)
+
+### Correctness
+- **Clicking "Update Available" now actually installs on Violentmonkey, Greasemonkey, and ScriptCat.** v14.14.17's `openUpdateUrl()` opened the `.user.js` URL backgrounded (`active: false`) and force-closed the tab after 3 seconds — a flow tuned for Tampermonkey's Chrome MV3 behaviour, which spawns its install prompt in a separate extension tab and caches the script content the moment the response arrives. Violentmonkey, Greasemonkey, and ScriptCat instead render the install confirmation INSIDE the navigated tab, so opening backgrounded hid the prompt and the 3-second auto-close dismissed it before any Confirm click could land. The updater now branches on `GM_info.scriptHandler`: Tampermonkey keeps the backgrounded + auto-close path (orphan source-tab cleanup still applies), while every other manager opens foregrounded with no auto-close so the user can confirm in the install tab.
+
+### Cleanup
+- **Theme persistence polling no longer floods the diagnostic buffer.** `setupPersistencePolling` in `theme-hooks.js` ran a 5-minute slow-poll for `Ext`/`EAM` availability and emitted a `Logger.warn('… timed out after 5 minutes')` at expiry. Repeated `applyThemeHooks` re-entries cycled fresh polling sessions, each completing its countdown and warning, so a long EAM session accumulated 100+ identical entries that crowded operational INFO/BOUNDARY logs out of the 150-entry circular buffer. The slow phase shrinks to 60 seconds (the property-trap setters in `setupJsTraps` catch later Ext/EAM assignments anyway), the warning demotes to `Logger.debug` (passive give-up signals are plumbing, per the INFO/DEBUG convention), gains `Ext=…, EAM=…` field context for future debugging, and a per-state `_warnedTimeout` flag prevents same-cycle re-emission. The underlying re-entry loop (root cause of the cycling) is logged in the plan file for a future investigation pass.
+- **Diagnostic export now de-duplicates cross-frame log aggregation.** Each frame runs `restoreFromSession()` at boot and pulls previous-session logs from same-origin shared `sessionStorage`, so identical entries land in top frame's `Diagnostics.logs` and every iframe's `Diagnostics.logs`. `_aggregateFrameData()` concatenated all of them without dedup, so the exported diagnostic JSON could show the same log entry repeated N times across frames. A composite-key filter (`timestamp|level|tag|message` for logs, `timestamp|tag|message` for errors) drops duplicates before sorting. Per-frame log access in `detectScreenCacheChurn` is unchanged — the per-frame BOUNDARY pattern there is intentional ("the GOOD pattern" per `utils.js:1046`) and reads `Diagnostics.logs` directly, not via the aggregator.
 
 ## v14.14.59 — Keyword Chip Paste No Longer Splits on Commas (2026-04-25)
 
@@ -14,7 +29,7 @@ o# APM Master v14 Changelog
 - **`needsRecordFill` gate now includes `shift`.** Without it, a preset whose only record-side change was the new shift field skipped the entire field-injection block — autofill matched the preset and then did nothing. Adding `matchedData.shift` to the OR chain alongside the other LOV/UDF fields is the minimum fix; future per-field additions need the same one-line gate update.
 
 ### Convention
-- **Trouble Codes section dropped its Assignment column.** `Assign:` had been wedged into a 2×2 grid with Problem / Failure / Cause for layout convenience, not because it belonged there. Moved to Schedule & Labor (renamed `Assigned To`), and the trouble codes section now renders as a single 3-column row at the bottom of the editor.
+- **Trouble Codes section dropped its Assignment column.** `Assign:` had been wedged into a 2×2 grid with Problem / Failure / Cause for layout convenience, not because it belonged there — it's an operator-routing field, not a diagnostic code. Moved to Schedule & Labor (renamed `Assigned To`), and the trouble codes section now renders as a single 3-column row at the bottom of the editor.
 - **Closing Comments wrapped in `apm-section-group`.** It was the only section in the WO editor without the standard panel-section box and label header. The inline `Closing:` label is now the section header instead.
 
 ### Cleanup
