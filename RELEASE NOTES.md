@@ -11,7 +11,7 @@ For a detailed developer changelog with root-cause analysis, see: [changelog.md]
 
 ---
 
-## v14.14.61 (2026-04-26)
+## v14.14.61 (2026-04-25)
 
 ### Fixes
 - **"Update Available" prompt now installs on Violentmonkey, Greasemonkey, and ScriptCat.** The updater opened the install page in a backgrounded tab and auto-closed it after 3 seconds — a flow tuned for Tampermonkey, where the install confirm appears in a separate extension tab. Other managers render the install prompt inside the navigated tab, so backgrounding hid the prompt and the auto-close dismissed it before Confirm could land. The updater now opens foregrounded with no auto-close on every manager except Tampermonkey, which keeps its original flow.
