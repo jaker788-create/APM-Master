@@ -1,5 +1,54 @@
 # APM Master v14 Changelog
 
+## v14.14.74 — Forecast Screen Switch No Longer Throws (2026-04-26)
+
+### Correctness
+- **Switching the screen target in the advanced forecast menu no longer throws `ReferenceError: defaultVal is not defined`.** The change handler computed `defaultVal` inside an `if (dataspySelect)` block and then referenced it outside that block when calling `syncDirectionToggle`. Block-scoped `const` made the outer reference an unresolved binding, breaking screen switches whenever the listener ran. Hoisted the declaration to the top of the handler so both the dropdown repopulation and the direction-toggle sync see the same value.
+
+## v14.14.73 — Trim Full System Backup UI (2026-04-26)
+
+### Cleanup
+- **Drop Base64 export, Base64 import, and the paste textarea from Full System Backup.** "Import All" now opens the file picker directly. JSON file in / JSON file out — every other path was unused.
+
+## v14.14.72 — session-snapshot Split into Pipeline-Phase Modules (2026-04-26)
+
+### Cleanup
+- **`session-snapshot.js` decomposes from 1325 lines into a 189-line orchestrator plus six pipeline-phase modules.** The monolith mixed APMStorage I/O, ExtJS grid filter introspection, frame-walking record detection, capture orchestration with dedup state, restore-prompt UI with auto-dismiss, and a multi-strategy restore engine — none of which had test coverage. Each phase now lives in its own file: `snapshot-store.js` (storage + TTL purge + most-recent fallback scan), `grid-state.js` (capture/restore + filter operator detection), `record-detector.js` (form/recordcode/grid-selection chain), `capture-engine.js` (orchestrator + dedup), `restore-prompt.js` (DOM prompt with progress bar), `restore-engine.js` (executeRestore + Nav.goTo path + popup dismiss). `session-snapshot.js` is reduced to the boot-only concerns (tab-id handling, sessionStorage flag dispatch, restore-flow wiring, capture-task scheduling). Public API (`SessionSnapshot.init`) and on-disk schema (`_v: 2`) preserved; only consumer (`boot.js`) needs no changes. Adds 67 unit tests across the six modules (873 → 940), including the dedup edge case where list-view captures bypass dedup because `record?.entityType` is `undefined` while the cache normalizes to `null` — pre-existing behaviour, documented inline.
+
+## v14.14.71 — AutoFill Bulk Button: Frame-Aware Cache + dataIndex Cleanup (2026-04-26)
+
+### Correctness
+- **Yes/No/Clear bulk toolbar reappears after switching between Shift Report and Work Order checklists.** A module-level header cache short-circuited re-injection when its element was still `.isConnected` — which is always true in screen-cache mode because hidden frames stay in the DOM. The cached SHFRPT header satisfied the bail condition on every WSJOBS re-entry, starving the active grid silently with no log because the bail happened before any logging. The fast-path now also requires `ownerDocument === scope.doc`, so it only short-circuits within the same frame and falls through to a fresh column lookup on cross-frame transitions.
+- **Result column resolved via `dataIndex='result'`.** Replaces the `.x-column-header-text-inner` text match with `headerCt.down('gridcolumn[dataIndex=result]')` (and a `columns.find` fallback) — locale-proof, survives header rename, and matches the data binding the original code comment already documented as the contract. Consolidates the v14.14.63 main hotfix (which kept text-match as a fallback) into the released line; the fallback is no longer needed once the column-model selector is trusted.
+
+### Cleanup
+- **Miss-after-success debug log fires once when the Result column disappears after a prior successful inject.** Targeted signal for future column-removal regressions; cleared on detection so it doesn't repeat on each re-entry.
+- **Drop redundant `preventDefault` in the bulk-button click handler.** `stopPropagation` alone blocks the column-sort handler; `preventDefault` on a non-form button is a no-op.
+
+> Note: a parallel hotfix landed on `main` as v14.14.63 covering the dataIndex column lookup ahead of this entry. v14.14.71 supersedes that work in the dev/Beta line and adds the frame-aware cache, miss log, and click-handler cleanup. Future hotfixes to `main` should use a 4-segment patch suffix (e.g. `14.14.62.1`) to avoid colliding with dev's version progression.
+
+## v14.14.70 — colorcode-ui Split into Renderer + Lifecycle (2026-04-26)
+
+### Correctness
+- **Ctrl+Enter in the ColorCode import textarea now actually triggers the import.** The handler was attached as a bubble-phase `keydown` listener on the textarea element, so ExtJS swallowed the event on form elements before it reached the listener — same root cause as the v14.10.8 chip-input regression. Switching to a capture-phase `document` listener (filtered by `e.target.id`) lets the import fire as the placeholder text already advertises, and `stopImmediatePropagation` prevents ExtJS from acting on the same Enter.
+
+### Cleanup
+- **`colorcode-ui.js` decomposes from 1323 lines into a 24-line facade plus a renderer (392 lines) and a lifecycle (888 lines).** The monolith mixed pure-DOM construction (chip widget, rule list items, color picker, theme/import/consolidate modals, external-tags normalizer) with engine-side lifecycle (rule application, observers, panel-close cleanup, stale-preview pruning) — adding tests required spinning the whole settings panel, and the renderer surface had zero coverage. Pure-DOM code now lives in `colorcode-renderer.js`; the giant `setupColorCodeLogic` closure plus `cleanupColorCodeOnPanelClose` / `watchSettingsPanelClose` / `cleanupStalePreviewRules` move to `colorcode-lifecycle.js`. `colorcode-ui.js` is reduced to a re-export facade preserving the public surface and the three `APMApi.register` calls. Renderer extracted before lifecycle to avoid a circular intra-file dependency the original plan would have hit. Adds 39 unit tests (829 → 868) covering chip helpers, range expansion, external-tags normalization, rule-item rendering, toggle-button styling, pending-chip wrapping, and stale-preview filtering.
+
+## v14.14.69 — Quick-Search Auto-Open Unblocked: Stale Sentinel + Stale-Buffer Churn Detect (2026-04-26)
+
+### Correctness
+- **Quick searching the same WO twice in a tab no longer silently fails with "WO not found."** The auto-open sentinel in `sessionStorage` was set on the first open and persisted for the tab's lifetime, blocking every subsequent `waitAndOpenSingleResult` call on that WO. `executeQuickSearch` now clears the sentinel via the new `clearAutoOpenSentinel()` helper before navigating, so user-initiated searches always win while the original double-fire protection for drillback boots stays intact.
+- **`detectScreenCacheChurn` no longer blocks mid-session opens on stale BOUNDARY entries.** The check reads `── session reload ──` boundaries from `Diagnostics.logs`, a 150-entry circular buffer that survives the tab's lifetime — so any prior pair of reloads within 3 s permanently flagged every subsequent `openFirstGridRecord` call as bad-timing, leaving the user on the list grid and surfacing as "WO not found." downstream. The check now lives only in `boot.js handleDrillbackAutoOpen()` (its original fresh-boot drillback target); drillback users keep the v14.14.43 protection and the skip log moves from `[Utils]` to `[Boot]`.
+
+### Quality
+- **Coverage added.** `clearAutoOpenSentinel` and `detectScreenCacheChurn` now have unit tests in `async-utils.test.js`: sentinel removal / no-op / storage-failure swallowing, and churn detection across empty / single-boundary / near-pair / far-pair / slow-boot / fast-boot inputs (823 → 829 tests).
+
+## v14.14.68 — core/utils.js Split into 8 Focused Modules (2026-04-26)
+
+### Cleanup
+- **`core/utils.js` decomposes from 1704 lines and 39 exports into a 30-line barrel plus eight per-concern modules.** The kitchen-sink module mixed date helpers, ExtJS component discovery, frame/window management, screen detection, async helpers, DOM queries, EAM null-safety guards, and XHR-tracked screen state — touching it for any one concern risked unrelated regressions, and the file had only 11 tests covering `escapeHtml`. Each concern now lives in its own file with co-located tests: `dates.js`, `async-utils.js`, `ext-guards.js`, `dom-queries.js`, `ext-windows.js`, `ext-finders.js`, `ext-screen.js`, `xhr-context.js`. The barrel re-exports every original symbol so the 35 existing importers continue to work unchanged. Adds 252 new tests across the eight modules (568 → 820), covering UK-locale date parsing regressions, FocusManager iframe preference, the BSUDSC user-defined-screen override lifecycle, screen-cache active-frame detection, and the `_SAFE_ACTIVE_VIEW` ExtJS interface guard.
+
 ## v14.14.67 — Dismiss EAM Popups After HDR Save (2026-04-26)
 
 ### Correctness
@@ -33,12 +82,12 @@
 ### Quality
 - **Vitest is wired and tested.** `npm test` runs 431 tests across 26 files (was 408 before this scope). New suites cover `dom-helpers`, `frame-events`, `APMApi.listHooks`, `settings-registry`, plus a starter `api.test.js` for the broader test-foundations work in plan 02. `happy-dom` was added as a devDependency so DOM-touching tests can run; `vitest.config.js` sets `environment: 'happy-dom'` globally.
 
-## v14.14.62 — AutoFill Default-Profile Picker Anchors to Visible Frame (2026-04-25)
+## v14.14.62 — AutoFill Default-Profile Picker Anchors to Visible Frame (2026-04-26)
 
 ### Correctness
 - **Default-profile picker no longer pops up far from the AutoFill button.** `showDefaultProfilePicker` walked `getAccessibleDocs()` to find the trigger and used the first match's `getBoundingClientRect()` to anchor its dropdown. With shared-iframe screen-cache, hidden screens keep their toolbars in the DOM and their AutoFill buttons stay queryable — so the iteration could land on a stale button whose coords belong to a hidden iframe's viewport, while the picker overlay is appended to the running frame's `document.body`. The resulting rect/viewport mismatch placed the picker hundreds of pixels away from the visible button (or off-screen entirely). Anchor lookup is now scoped to the running frame's own `document` so the rect always shares the overlay's viewport.
 
-## v14.14.61 — Forecast Past/Future Indicators Reflect Actual State (2026-04-26)
+## v14.14.61 — Forecast Past/Future Indicators Reflect Actual State (2026-04-25)
 
 ### Correctness
 - **Forecast profile summary ignored the saved `isPast` field.** `buildDateSummary` in `forecast-profile-manager.js` picked past vs. future labels purely from `isPastFacing(prof.target, prof.dataspy)`, so a profile whose dataspy was past-facing by default (e.g. "All Work Orders") always rendered "Last X Weeks" in the panel summary even after the builder's past/future chip was toggled to future and saved. With `dateOverride: true` the panel hides the schedule section entirely, so the summary line was the only signal — and it never updated. The summary now mirrors `computeDateInclusions`: saved `isPast` wins over dataspy default.
