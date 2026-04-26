@@ -4,6 +4,13 @@ For a detailed developer changelog with root-cause analysis, see: [changelog.md]
 
 ---
 
+## v14.14.62 (2026-04-25)
+
+### Fixes
+- **AutoFill default-profile picker now opens next to the AutoFill button instead of drifting off-screen.** When the picker had to choose between multiple matching default profiles, it could anchor to a button living in a hidden screen-cache iframe — placing the dropdown hundreds of pixels away from the visible button (or off-screen entirely). The picker now anchors to the button in the active frame, so it always lands where you expect.
+
+---
+
 ## v14.14.61 (2026-04-26)
 
 ### Fixes
