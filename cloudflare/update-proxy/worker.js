@@ -130,9 +130,13 @@ async function handleStats(url, request, env) {
 	const since = `-${days} days`;
 
 	const [daily, versions, regions, browsers, totals, newUsersWeekly, droppedWeekly, countries, tracks] = await Promise.all([
+		// Daily Active Users by PT calendar day. PT day boundary, hardcoded UTC-8
+		// (1h drift during PDT, acceptable noise). Today's partial PT day excluded.
 		env.APM_DB.prepare(`
-			SELECT date(checked_at) as day, COUNT(DISTINCT user_id) as users
-			FROM checks WHERE checked_at >= datetime('now', ?)
+			SELECT date(checked_at, '-8 hours') as day, COUNT(DISTINCT user_id) as users
+			FROM checks
+			WHERE checked_at >= datetime('now', '-8 hours', 'start of day', '+8 hours', ?)
+			  AND checked_at <  datetime('now', '-8 hours', 'start of day', '+8 hours')
 			GROUP BY day ORDER BY day DESC
 		`).bind(since).all(),
 
@@ -156,40 +160,54 @@ async function handleStats(url, request, env) {
 			GROUP BY browser ORDER BY users DESC
 		`).bind(since).all(),
 
+		// DAU/WAU/MAU as complete PT-day-aligned windows ending at midnight PT today.
+		// PT day boundary, hardcoded UTC-8 (1h drift during PDT, acceptable noise).
 		env.APM_DB.prepare(`
 			SELECT
-				COUNT(DISTINCT CASE WHEN checked_at >= datetime('now', '-1 day') THEN user_id END) as dau,
-				COUNT(DISTINCT CASE WHEN checked_at >= datetime('now', '-7 days') THEN user_id END) as wau,
-				COUNT(DISTINCT CASE WHEN checked_at >= datetime('now', '-30 days') THEN user_id END) as mau,
+				COUNT(DISTINCT CASE
+					WHEN checked_at >= datetime('now', '-8 hours', 'start of day', '+8 hours', '-1 day')
+					 AND checked_at <  datetime('now', '-8 hours', 'start of day', '+8 hours')
+					THEN user_id END) as dau,
+				COUNT(DISTINCT CASE
+					WHEN checked_at >= datetime('now', '-8 hours', 'start of day', '+8 hours', '-7 days')
+					 AND checked_at <  datetime('now', '-8 hours', 'start of day', '+8 hours')
+					THEN user_id END) as wau,
+				COUNT(DISTINCT CASE
+					WHEN checked_at >= datetime('now', '-8 hours', 'start of day', '+8 hours', '-30 days')
+					 AND checked_at <  datetime('now', '-8 hours', 'start of day', '+8 hours')
+					THEN user_id END) as mau,
 				COUNT(DISTINCT user_id) as total_all_time
 			FROM checks
 		`).all(),
 
-		// New users bucketed by rolling 7-day windows from now (week_index 0 = last 7 days).
+		// New users bucketed by 7-day PT windows ending at midnight PT today.
+		// Bucket 0 = last 7 complete PT days. PT day boundary, hardcoded UTC-8.
 		env.APM_DB.prepare(`
 			SELECT
-				CAST((julianday('now') - julianday(first_seen)) / 7 AS INTEGER) as week_index,
+				CAST((julianday(datetime('now', '-8 hours', 'start of day', '+8 hours')) - julianday(first_seen)) / 7 AS INTEGER) as week_index,
 				COUNT(*) as new_users
 			FROM (
 				SELECT user_id, MIN(checked_at) as first_seen
 				FROM checks GROUP BY user_id
-			) WHERE first_seen >= datetime('now', ?)
+			)
+			WHERE first_seen >= datetime('now', '-8 hours', 'start of day', '+8 hours', ?)
+			  AND first_seen <  datetime('now', '-8 hours', 'start of day', '+8 hours')
 			GROUP BY week_index ORDER BY week_index ASC
 		`).bind(since).all(),
 
 		// Churn cohort: a user "dropped in week W" if last_check + 30 days falls in W.
-		// Each user counts in exactly one week. Bound by the dashboard range so a 30-day
-		// window shows ~4 weeks of drops (last_check between 60 and 30 days ago).
+		// Anchored to midnight PT today, so each bucket is 7 complete PT calendar days
+		// of "drop dates". PT day boundary, hardcoded UTC-8.
 		env.APM_DB.prepare(`
 			SELECT
-				CAST((julianday('now') - julianday(last_check) - 30) / 7 AS INTEGER) as week_index,
+				CAST((julianday(datetime('now', '-8 hours', 'start of day', '+8 hours')) - julianday(last_check) - 30) / 7 AS INTEGER) as week_index,
 				COUNT(*) as dropped
 			FROM (
 				SELECT user_id, MAX(checked_at) as last_check
 				FROM checks GROUP BY user_id
 			)
-			WHERE last_check < datetime('now', '-30 days')
-			  AND last_check >= datetime('now', ?, '-30 days')
+			WHERE last_check <  datetime('now', '-8 hours', 'start of day', '+8 hours', '-30 days')
+			  AND last_check >= datetime('now', '-8 hours', 'start of day', '+8 hours', ?, '-30 days')
 			GROUP BY week_index ORDER BY week_index ASC
 		`).bind(since).all(),
 
@@ -210,13 +228,16 @@ async function handleStats(url, request, env) {
 
 	const t = totals.results?.[0] || {};
 
-	// Map a week_index (0 = last 7 days) to the end-date of that rolling bucket.
+	// Map a week_index (0 = bucket ending yesterday PT) to its end calendar date in PT.
+	// Bucket 0 ends on yesterday PT; bucket N ends on (1 + 7N) days ago PT.
+	// PT day boundary, hardcoded UTC-8 (1h drift during PDT, acceptable noise).
 	const today = new Date();
-	const bucketEndDate = (weekIndex) => {
-		const d = new Date(today);
-		d.setUTCDate(d.getUTCDate() - weekIndex * 7);
+	const PT_OFFSET_MS = -8 * 3600 * 1000;
+	const ptCalendarDate = (daysAgo) => {
+		const d = new Date(Date.now() + PT_OFFSET_MS - daysAgo * 86400000);
 		return d.toISOString().split('T')[0];
 	};
+	const bucketEndDate = (weekIndex) => ptCalendarDate(1 + 7 * weekIndex);
 
 	return jsonResponse({
 		period: { days, generated: today.toISOString() },
