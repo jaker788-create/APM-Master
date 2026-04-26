@@ -129,7 +129,7 @@ async function handleStats(url, request, env) {
 	const days = Math.min(parseInt(url.searchParams.get('days')) || 30, 90);
 	const since = `-${days} days`;
 
-	const [daily, versions, regions, browsers, totals, newUsers, countries, tracks] = await Promise.all([
+	const [daily, versions, regions, browsers, totals, newUsersWeekly, droppedWeekly, countries, tracks] = await Promise.all([
 		env.APM_DB.prepare(`
 			SELECT date(checked_at) as day, COUNT(DISTINCT user_id) as users
 			FROM checks WHERE checked_at >= datetime('now', ?)
@@ -165,12 +165,32 @@ async function handleStats(url, request, env) {
 			FROM checks
 		`).all(),
 
+		// New users bucketed by rolling 7-day windows from now (week_index 0 = last 7 days).
 		env.APM_DB.prepare(`
-			SELECT date(first_seen) as day, COUNT(*) as new_users FROM (
+			SELECT
+				CAST((julianday('now') - julianday(first_seen)) / 7 AS INTEGER) as week_index,
+				COUNT(*) as new_users
+			FROM (
 				SELECT user_id, MIN(checked_at) as first_seen
 				FROM checks GROUP BY user_id
 			) WHERE first_seen >= datetime('now', ?)
-			GROUP BY day ORDER BY day DESC
+			GROUP BY week_index ORDER BY week_index ASC
+		`).bind(since).all(),
+
+		// Churn cohort: a user "dropped in week W" if last_check + 30 days falls in W.
+		// Each user counts in exactly one week. Bound by the dashboard range so a 30-day
+		// window shows ~4 weeks of drops (last_check between 60 and 30 days ago).
+		env.APM_DB.prepare(`
+			SELECT
+				CAST((julianday('now') - julianday(last_check) - 30) / 7 AS INTEGER) as week_index,
+				COUNT(*) as dropped
+			FROM (
+				SELECT user_id, MAX(checked_at) as last_check
+				FROM checks GROUP BY user_id
+			)
+			WHERE last_check < datetime('now', '-30 days')
+			  AND last_check >= datetime('now', ?, '-30 days')
+			GROUP BY week_index ORDER BY week_index ASC
 		`).bind(since).all(),
 
 		env.APM_DB.prepare(`
@@ -190,8 +210,16 @@ async function handleStats(url, request, env) {
 
 	const t = totals.results?.[0] || {};
 
+	// Map a week_index (0 = last 7 days) to the end-date of that rolling bucket.
+	const today = new Date();
+	const bucketEndDate = (weekIndex) => {
+		const d = new Date(today);
+		d.setUTCDate(d.getUTCDate() - weekIndex * 7);
+		return d.toISOString().split('T')[0];
+	};
+
 	return jsonResponse({
-		period: { days, generated: new Date().toISOString() },
+		period: { days, generated: today.toISOString() },
 		summary: {
 			dau: t.dau || 0,
 			wau: t.wau || 0,
@@ -199,7 +227,8 @@ async function handleStats(url, request, env) {
 			totalAllTime: t.total_all_time || 0,
 		},
 		dailyActive: Object.fromEntries((daily.results || []).map(r => [r.day, r.users])),
-		newUsers: Object.fromEntries((newUsers.results || []).map(r => [r.day, r.new_users])),
+		newUsersWeekly: Object.fromEntries((newUsersWeekly.results || []).map(r => [bucketEndDate(r.week_index), r.new_users])),
+		droppedWeekly: Object.fromEntries((droppedWeekly.results || []).map(r => [bucketEndDate(r.week_index), r.dropped])),
 		versions: Object.fromEntries((versions.results || []).map(r => [r.version, r.users])),
 		regions: Object.fromEntries((regions.results || []).map(r => [r.region, r.users])),
 		browsers: Object.fromEntries((browsers.results || []).map(r => [r.browser, r.users])),
@@ -396,13 +425,13 @@ function dashboardHtml() {
 
     const dailyDays = Object.keys(d.dailyActive || {}).sort();
     const dailyCounts = dailyDays.map(k => d.dailyActive[k]);
-    const newDays = Object.keys(d.newUsers || {}).sort();
 
     const regPairs = Object.entries(d.regions || {});
     const countryPairs = Object.entries(d.countries || {});
     const browserPairs = Object.entries(d.browsers || {}).map(([k, v]) => [browserLabel[k] || k, v]);
     const trackPairs = Object.entries(d.tracks || {}).map(([k, v]) => [trackLabel[k] || k, v]);
-    const newUserPairs = newDays.slice(-10).reverse().map(day => [day, d.newUsers[day]]);
+    const newUserPairs = Object.entries(d.newUsersWeekly || {}).sort((a, b) => b[0].localeCompare(a[0])).slice(0, 10);
+    const droppedPairs = Object.entries(d.droppedWeekly || {}).sort((a, b) => b[0].localeCompare(a[0])).slice(0, 10);
 
     document.getElementById('period').innerHTML =
       'Period: ' + d.period.days + ' days' +
@@ -428,7 +457,8 @@ function dashboardHtml() {
         '<div class="table-box"><h2>Regions</h2>' + tableHtml(regPairs, ['Region', 'Users']) + '</div>' +
         '<div class="table-box"><h2>Countries</h2>' + tableHtml(countryPairs, ['Country', 'Users']) + '</div>' +
         '<div class="table-box"><h2>Browsers</h2>' + tableHtml(browserPairs, ['Browser', 'Users']) + '</div>' +
-        '<div class="table-box"><h2>New Users (10d)</h2>' + tableHtml(newUserPairs, ['Date', 'New']) + '</div>' +
+        '<div class="table-box"><h2>New Users (weekly)</h2>' + tableHtml(newUserPairs, ['Week ending', 'New']) + '</div>' +
+        '<div class="table-box"><h2>Dropped (weekly)</h2>' + tableHtml(droppedPairs, ['Week ending', 'Dropped']) + '</div>' +
       '</div>';
 
     const gridColor = '#2a2d3a';
