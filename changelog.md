@@ -1,14 +1,51 @@
 # APM Master v14 Changelog
 
-## v14.14.74 — Forecast Screen Switch No Longer Throws (2026-04-26)
-
-### Correctness
-- **Switching the screen target in the advanced forecast menu no longer throws `ReferenceError: defaultVal is not defined`.** The change handler computed `defaultVal` inside an `if (dataspySelect)` block and then referenced it outside that block when calling `syncDirectionToggle`. Block-scoped `const` made the outer reference an unresolved binding, breaking screen switches whenever the listener ran. Hoisted the declaration to the top of the handler so both the dropdown repopulation and the direction-toggle sync see the same value.
-
-## v14.14.73 — Trim Full System Backup UI (2026-04-26)
+## v14.14.81 — Diagnostic Contributor Inversion (2026-04-26)
 
 ### Cleanup
-- **Drop Base64 export, Base64 import, and the paste textarea from Full System Backup.** "Import All" now opens the file picker directly. JSON file in / JSON file out — every other path was unused.
+- **Modules now contribute to the diagnostic export via `diagnosticHook:<name>`.** `core/diagnostics.js` adds `_collectModuleHooks()` that iterates `APMApi.listHooks('diagnosticHook:')`, calls each hook, and aggregates results under `summary.modules.<name>`. Hooks that throw are caught and surfaced as `{ error: '...' }` so one bad hook can't black-hole the export. Autofill ships as the demonstration migration: `autofill-prefs.js` registers `diagnosticHook:autofill` returning the per-screen-family preset summary that `diagnostics.js` previously hand-built. The inline autofill block in `_collectSavedDataSummary()` now skips when the hook is registered (single source of truth) and remains as fallback for the unmigrated colorcode/forecast/labor blocks. New modules contribute diagnostics with zero `core/` edits — same pattern as `consistencyHook:*`. Implements P2.4 from the 2026-04-26 audit; closes the last module-aware coupling in `core/`.
+
+## v14.14.80 — Split `async-utils.js` Workflow from Primitives (2026-04-26)
+
+### Cleanup
+- **`async-utils.js` collapses from 562 lines to 51, with the EAM record-open orchestrators moving to a dedicated `core/record-open.js`.** The pure async primitives (`delay`, `debounce`, `throttle`, `waitForAjax`) had been crowded next to ~480 lines of stateful workflow code (`openFirstGridRecord`, `verifyAndRecoverRecordBind`, `waitAndOpenSingleResult`, `detectScreenCacheChurn`, `clearAutoOpenSentinel`, the `_autoOpenInProgress` flag, the `AUTO_OPEN_SENTINEL_KEY` sentinel) — and adding a primitive required reasoning about screen-cache subtleties that had nothing to do with timing helpers. The two consumers (`boot.js` for drillback auto-open, `forecast/engine/execution.js` for navigation) split their imports cleanly across the boundary. `record-open.js` now consumes `delay` and `waitForAjax` like any other caller. Adds `record-open.test.js` (sentinel + churn detection + view-state guards) and a fresh `waitForAjax` test in `async-utils.test.js`. Implements P2.2 from the 2026-04-26 audit; no behavior change.
+
+## v14.14.79 — Split Wake Prompt UI from `session.js` (2026-04-26)
+
+### Cleanup
+- **Wake prompt extracted from `core/session.js` into `ui/wake-prompt.js`.** The wake-after-sleep banner — `Restore` / `Redirect to login` / `Dismiss` buttons, snapshot lookup, anti-replay click guard, animation — was 170 lines of inline DOM construction inside a service module. The presentation now lives under `src/ui/`; `session.js` keeps only the capture/heartbeat/redirect logic and dispatches `APM_SESSION_WAKE_NEEDED` when sleep detection or the network probe declares the session expired. UI subscribes to that event, owns its visibility state, exposes it via `APMApi.get('isWakePromptVisible')`, and emits `APM_SESSION_WAKE_DISMISSED` when the user clears the banner. `session.js` queries visibility through APMApi to gate normal-timeout detection. Implements P2.3 from the 2026-04-26 audit; no behavior change.
+
+## v14.14.78 — Theme System Tests (2026-04-26)
+
+### Quality
+- **`theme-resolver` and `theme-enforcer` gain unit + smoke coverage.** 36 new tests across two files: priority resolution (KEY_THEME → CC_STORAGE_SET → APM_GENERAL_STORAGE), JSON-encoded vs raw values, GM-vs-localStorage fallback, error swallowing, multi-location write that preserves sibling keys, and a round-trip; plus enforcer smoke tests for early-exit gates (IDP, EAM auth, non-EAM/PTP), dark-canvas anti-flash injection (GM hint and cookie paths, no duplicate on re-run), apply-pipeline wiring (`applyThemeHooks` + `clearGuards` + `initThemeListeners`), `__apmThemeState` initialization, and try/catch around resolver and accessibility errors. Implements P2.5 from the 2026-04-26 audit — theme is load-bearing cross-frame logic with highly user-visible regressions (white flash, theme flicker) and was the largest uncovered subsystem in `core/`.
+
+## v14.14.77 — `src/core/` Subdirectory Restructure (2026-04-26)
+
+### Cleanup
+- **`src/core/` flat layout splits into three subdirectories.** `theme-broadcast`, `theme-enforcer`, `theme-hooks`, `theme-resolver`, `theme-shield` move to `src/core/theme/`. `ext-windows`, `ext-finders`, `ext-screen`, `ext-guards`, `xhr-context` move to `src/core/ext/` (with their tests). `eam-nav`, `eam-query`, `eam-title-observer` move to `src/core/eam/` (with their tests). `ext-consistency` (orchestrator) stays at the core root. 78 importing files updated; tests (940) and build pass with no behavior change. Implements P2.1 from the 2026-04-26 audit — a flat 39-file `core/` was reaching the threshold where future additions would crowd unrelated concerns; the cluster boundaries (theme system, ExtJS helpers, EAM integration) now match directory boundaries.
+
+## v14.14.76 — Trim Full System Backup UI (2026-04-26)
+
+### Cleanup
+- **Full System Backup is JSON-only.** Removes the Base64 export, the Copy B64 button, and the paste textarea. "Import All" now opens the file picker directly. JSON file in / JSON file out — every other path was unused.
+
+## v14.14.75 — `src/core/` Audit P1 Batch (2026-04-26)
+
+### Correctness
+- **Forecast screen switch no longer throws `ReferenceError: defaultVal is not defined`.** `defaultVal` was declared inside an `if (dataspySelect)` block but referenced outside it when calling `syncDirectionToggle`. Hoisted to the handler top.
+
+### Convention
+- **WO selection-change binding derives from `ENTITY_REGISTRY`.** Replaces the hand-coded `wsjobs/ctjobs` store-id check in `ext-consistency.js` with a lookup of every entry with `entityKey: 'workordernum'`. New WO-family screens (e.g. `ADJOBS`) are picked up automatically.
+
+### Quality
+- **`APMApi.get()` warns once per unknown key; new `APMApi.has(key)` for explicit-undefined cases.** Typos surface in diagnostics instead of silently returning `undefined`.
+
+### Cleanup
+- **`utils.js` barrel removed; 64 importers now import directly from the per-concern modules** (`async-utils`, `dom-queries`, `ext-windows`, `ext-finders`, `ext-screen`, `ext-guards`, `xhr-context`, `dates`). Finishes the v14.14.66–v14.14.71 split.
+- **"Plan 04 Task N" breadcrumbs retired** from `async-utils`, `ext-finders`, `ext-windows`, `xhr-context`, `utils` — the migration is done; the comments read as live TODOs.
+- **`queryActiveView*` ↔ `ScreenScope.queryDOM*` cross-reference each other in JSDoc**, documenting the multi-frame-walk vs scope-bound boundary.
+- **`src/core/README.md` adds a "Adding a new module" appendix** — 10 steps (flag → folder → `SettingsRegistry` → `frame-events` → `APMApi` → `ModuleGuard` → storage / logging / tests) plus an anti-patterns list.
 
 ## v14.14.72 — session-snapshot Split into Pipeline-Phase Modules (2026-04-26)
 
