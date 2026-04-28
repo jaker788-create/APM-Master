@@ -1,5 +1,21 @@
 # APM Master v14 Changelog
 
+## v14.14.86 — P3.5: Visibility Primitives Migration (2026-04-28)
+
+### Cleanup
+- **Modules now reach for `ScreenScope` instead of the three near-synonyms (`isActiveFrame`, `isElementInActiveView`, `isComponentOnActiveScreen`).** `ScreenScope.from(ref)` learns to accept a raw `Window` so single-frame callers (session-snapshot grid-state) skip the active-frame scan. Seven module/UI sites migrate: autofill-helpers (`discoverRecordTabPanel`, `detectActiveTab`, `findActiveTabContainer` — internal swap to scope.contains), wo-workflow (equipment read, HDR confirmation poll/fast path, Strategy 2 fallback), wo-checklists (Strategy 2 ACK fallback), session-snapshot grid-state (filter-field gate), and settings-panel (record-tabs check). After this, only two surviving frame-level call sites in modules — both in colorcode for legitimate per-iframe iteration — plus the `wo-shared.js` documented bounding-rect opt-out. `isElementInActiveView` and `isComponentOnActiveScreen` exit the module surface entirely (still exported for `ScreenScope` and `dom-queries` internals); `isActiveFrame` survives as the documented frame-level primitive that the foundational ajax gate (`AjaxHooks.activeOnly`, `ModuleGuard.onAjax`) consumes. Implements P3.5 from the 2026-04-26 audit; no behaviour change.
+
+## v14.14.85 — Trim dead `AppState` slices; module-local autofill running flag (2026-04-27)
+
+### Cleanup
+- **`AppState` drops the `forecast`, `ptp`, and `systemDefaults` slices and the unused `colorCode.footerObserver` / `colorCode.activeFilter` fields.** Forecast and ptp moved to module-local state long ago, but the husk slices stayed in `core/state.js` and accumulated dead structure (six forecast fields, three ptp fields, two systemDefaults fields, two unused colorCode fields — 13 fields with zero readers across `src/`). Removed alongside the matching shape assertions in `state.test.js`. Implements P3.3 from the 2026-04-26 audit, partial — the persistent/runtime distinction is now sharper because only the cross-cutting state remains in `AppState`.
+- **`autofill.isAutoFillRunning` moves from `AppState` to module-local in `autofill-prefs.js`.** All readers/writers go through the existing `getIsAutoFillRunning` / `setIsAutoFillRunning` exports (and `APMApi.get('getIsAutoFillRunning')` for `ext-consistency`), so the move is internal-only — no consumer changes. Sets the precedent for a follow-up plan that finishes the inversion: `autofill.presets`, `colorCode.rules`, and `colorCode.settings` become module-local once `core/sync.js` dispatches via `APMApi` hooks instead of writing to slices directly. The remaining `session.{isInitialized, isFresh}` runtime flags stay in `AppState` because their consumers span `core/sync`, `core/diagnostics`, and `modules/labor-tracker` — they are intentionally co-located with the captured `eamid/tenant/user` fields they describe.
+
+## v14.14.84 — Remove dead `APM_VIEW_TRANSITION` dispatch path (2026-04-27)
+
+### Cleanup
+- **`frame-manager.js` — Drop `hookViewTransitions` and the `APM_VIEW_TRANSITION` event.** The function patched every `listdetailview.setActiveItem` per frame to fire `APM_VIEW_TRANSITION` events that no module reads anymore. All four prior consumers (tab-title, session-snapshot, labor Quick Book, closing-comments-counter) had already migrated to `APM_EAM_VIEW_CHANGE` from the shared title observer plus an AJAX `.HDR` hook because the layout intercept never fired in screen-cache mode and missed start-center → record navigation. Removes the function, the `_hookedLayouts` and `_hookedTransitionWins` WeakSets, and three call sites (`scanAndAttachFrames` top-frame call, the iframe `triggerConsistency` closure, and the discovery-burst re-hook). `core/README.md`, `ARCHITECTURE.md`, and the labor + infrastructure skill docs now point at `APM_EAM_VIEW_CHANGE` as the canonical view-change event. Implements P3.2 from the 2026-04-26 audit; no behaviour change.
+
 ## v14.14.83 — Orchestrator Smoke Tests (2026-04-27)
 
 ### Quality
