@@ -1,5 +1,14 @@
 # APM Master v14 Changelog
 
+## v14.14.98 — Multi-install fan-out fix + diagnostic overlay + toolbar Amazon-pattern alignment (2026-04-29)
+
+### Critical
+- **Multiple userscript installs of APM Master fanned every click into N synchronous toggle calls, hiding the menu before users could see it.** Each sandboxed install registered its own `mousedown` + `APM_TOGGLE_*` listeners on the shared page document, so a single click fired the toolbar handler N times and `UIManager.toggle` flipped the panel open/closed/open within microseconds — visible as nothing happening on a single click and a brief flash on rapid clicks. Rapid trackpad tap-to-click bursts (60-130ms intervals from real diagnostic data) hit the same code path. `UIManager.toggle` now applies a 250ms per-panel debounce keyed on the shared `window.top._apmUi.toggleTimes` registry so all sandboxes coordinate; the first toggle wins and follow-ups within the window are dropped. `initUIManager` also pushes to a shared `installs` array on each boot so future diagnostics can surface the multi-install case directly.
+
+### Quality
+- **Top-frame nav and per-screen WO toolbar discovery use direct ExtJS handles with position-aware insertion ahead of their existing fallback chains.** `toolbar-injection.js` queries `mainmenubar` xtype directly — the previous `toolbar[dock="top"]` selector missed it because the mainmenubar isn't dock-registered, which is why dom-anchor was winning every injection — and inserts after the last `.x-btn-mainmenuButton-toolbar-small` item so APM Master / Forecast land next to the menu buttons rather than past the trailing user-info chunk. `autofill-triggers.js` calls `EAM.Utils.getMainToolbar()` (the EAM API also used by Amazon's site-injected utilities) and inserts immediately before the toolbar's `tbfill` spacer, the same anchor Amazon's Wiki / Feature Announcement buttons use; appending at `items.getCount()` previously landed Auto Fill past the right-aligned Tabs button. Both keep their existing fallbacks intact and tag winning strategy in the log.
+- **Diagnostic overlay (`Ctrl+Shift+Alt+D` to toggle) for capturing field issues when the normal Settings menu is unreachable.** Floating panel with live status (UIManager registry, panel show/hide history, click history, browser, scripts on page, globals of interest, storage keys, GM_info) plus Copy summary and Download .json buttons. Auto-mounts when `node build.js --diag` builds the userscript with `__APM_DIAG_BUILD=true` for shipping a one-off diagnostic build to a specific user; hotkey-gated in prod/debug builds at ~5 KB cost. Self-contained: uses raw DOM and its own click handlers so it can't be broken by the same UIManager paths it's helping diagnose.
+
 ## v14.14.95 — UI primitives subdirectory (2026-04-29)
 
 ### Quality
