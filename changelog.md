@@ -1,5 +1,36 @@
 # APM Master v14 Changelog
 
+## v14.14.95 — UI primitives subdirectory (2026-04-29)
+
+### Quality
+- **`dom-helpers`, `toast`, `status`, `tokens`, and `locale` move from flat `src/core/` into `src/core/primitives/`.** These five files are tiny UI atoms shared by core, ui, and modules — keeping them flat alongside infrastructure orchestrators blurred the boundary and offered no obvious home for future additions (notification banners, modals, `tokens-settings.js` for user color customization). The new subdirectory mirrors the `theme/`, `ext/`, `eam/` pattern adopted earlier in the audit follow-up wave; 55 consumer imports rewrote mechanically and `frame-manager` / `state` updated their relative paths to `./primitives/`. No runtime behavior change; resolves P3.6 of the 2026-04-26 src/core audit.
+
+## v14.14.94 — Dead cross-frame sync fallbacks removed (2026-04-29)
+
+### Cleanup
+- **`core/sync.js` no longer carries direct-mutation fallbacks for `apm_v1_autofill_presets`, `apm_v1_tab_order`, `apm_v1_colorcode_rules`, or `apm_v1_colorcode_settings`.** Both modules register `storageSyncHook:*` at boot, so the dispatcher's hook lookup always handles those keys; the four fallback functions and their `case` branches in the switch were dead code as of v14.14.93. The dispatcher now handles only the two surviving core-owned keys (general settings, session) — both stay because their state has no natural "owning module". New modules join cross-frame sync by registering a hook at the bottom of their prefs file; no `core/` change needed. Closes the AppState module-local inversion campaign.
+
+## v14.14.93 — Autofill presets moved to module-local (2026-04-28)
+
+### Cleanup
+- **`AppState.autofill.presets` moves out of `core/state.js` and into `modules/autofill/autofill-prefs.js` as module-local `_presets`.** Cross-frame sync now flows through `storageSyncHook:apm_v1_autofill_presets` and `storageSyncHook:apm_v1_tab_order` registered at module load, dispatched by the seam added in v14.14.91. The preset hook also invalidates the compiled keyword indexes — the prior `handleAutoFillPresetsSync` fallback never did, so cross-frame keyword updates stayed invisible to the receiving frame's lookup until the next local mutation. `AppState` now holds only the `session` slice; the dead sync.js fallbacks (autofill, tab-order, colorcode) land in v14.14.94. Implements Phase 3 of the AppState module-local inversion campaign.
+
+## v14.14.92 — ColorCode state moved to module-local (2026-04-28)
+
+### Cleanup
+- **`colorCode.rules` and `colorCode.settings` move out of `AppState` and into `colorcode-prefs.js` as module-local `_rules`/`_settings`.** Cross-frame sync now flows through `storageSyncHook:apm_v1_colorcode_rules` and `storageSyncHook:apm_v1_colorcode_settings` registered at module load, dispatched by the seam added in v14.14.91. The legacy `handleColorCodeRulesSync`/`handleColorCodeSettingsSync` paths in `core/sync.js` survive only as guarded dead code (`if (!AppState.colorCode) return`) until v14.14.94 deletes them; in practice the hook always fires first because `colorcode-prefs.js` registers at boot. After this, `AppState` carries only `autofill.presets` (also coming home in v14.14.93) and `session.*`.
+- **New `removePreviewRules()` helper replaces three direct `AppState.colorCode.rules` mutations in `colorcode-lifecycle.js`.** Preview cleanup paths (panel close, panel-close mutation observer, boot-time stale cleanup) used to filter `AppState.colorCode.rules` in place to avoid `setRules`'s save+broadcast side effects; that contract is preserved as an exported transient mutator that bumps the rules cache generation but skips persistence and `APM_CC_SYNC_REQUIRED`. Implements Phase 2 of the AppState module-local inversion campaign.
+
+## v14.14.91 — Storage sync inversion seam (2026-04-28)
+
+### Quality
+- **`core/sync.js` now dispatches storage events through `APMApi.listHooks('storageSyncHook:')` before falling back to the legacy switch.** First step toward moving `colorCode.{rules,settings}` and `autofill.presets` out of `core/state.js` into their owning modules, finishing the inversion v14.14.85 began. Hooks key off the full storage key (e.g. `storageSyncHook:apm_v1_colorcode_rules`) so dispatch is a single `APMApi.has`/`get` lookup; modules that haven't migrated still hit the existing direct-mutation handlers, so nothing changes at runtime yet. New `core/sync.test.js` covers hook dispatch, fallback path, error isolation, and falsy `newValue`. v14.14.92 wires colorcode through the seam; autofill follows. Implements Phase 1 of the AppState module-local inversion campaign.
+
+## v14.14.90 — Quick search always targets WSJOBS (2026-04-28)
+
+### Correctness
+- **Forecast Quick Search is hardcoded to WSJOBS and ignores the advanced panel's target dropdown.** The quick-search Strategy fed `snapshot.targetFromUI` through `resolveTarget`, so leaving the advanced panel set to Compliance landed every quick jump on CTJOBS — symptom: `mode=quick, target=CTJOBS` in the log even though the advanced panel governs forecast filtering only. Quick search is a drillback-style record jump (`Nav.goTo` for the entered WO#) and is conceptually disconnected from forecast filter/dataspy state, so the strategy now returns `target: 'WSJOBS'` directly; `resolveTarget` is no longer imported.
+
 ## v14.14.89 — Direct-load placeholder recovery + auto-record-open consolidation (2026-04-28)
 
 ### Correctness
