@@ -1,5 +1,10 @@
 # APM Master v14 Changelog
 
+## v14.14.100 — launchScreen error suppression retired (2026-04-29)
+
+### Cleanup
+- **`launchScreenDirect` no longer installs the 8-second blanket error suppression by default.** The destroy-race null-deref the suppression was originally added to mask is already prevented by the navigation guard + `APMScheduler.pause(8000)` introduced afterwards — those stop the scheduler tasks racing `prevScreen.destroy()` so the NPE never fires in the first place. Confirmed by toggling suppression off through a temporary diagnostic flag, running cold-start forecast navs, and seeing zero browser error popups, zero suppressed-error log lines, and a clean `Forecast Complete`. The new `disableTransitionSuppression` flag is default-on (suppression skipped); the `suppressEamTransitionError` / `patchWindow` / `isTransitionError` helpers stay behind it as an opt-out escape hatch in case the race ever resurfaces under conditions not currently exercised.
+
 ## v14.14.99 — Multi-install warning banner (2026-04-29)
 
 ### Quality
