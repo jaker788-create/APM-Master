@@ -4,6 +4,13 @@ For a detailed developer changelog with root-cause analysis, see: [changelog.md]
 
 ---
 
+## v14.14.66 (2026-04-30)
+
+### Fixes
+- **AutoFill no longer occasionally skips labor booking with "PTP not completed" right after a PTP submit.** The completion detector watched the submit response and the follow-up assessment fetch for a COMPLETE status; both succeed most of the time, but timing variation could cause both paths to miss, leaving the PTP history incomplete. A new path now reads the submit request itself at the moment it goes out — a successful submit for a real WO ID is treated as completed at submit time — with the existing parser and DOM safety net kept as fallbacks. Rework of PTP status capture after PTP app src review.
+
+---
+
 ## v14.14.65 (2026-04-28)
 
 ### Fixes

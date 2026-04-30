@@ -3,7 +3,7 @@
 ## v14.14.104 — PTP completion captured at submit-time from request body (2026-04-30)
 
 ### Critical
-- **PTP completion now captured directly from the `/submit_assessment` request body, not only from response parsing.** The existing path detects completion by scraping the submit response and the follow-up `get_assessment` — both succeed most of the time, but the response shape isn't contractually fixed (Sparsy's frontend never reads it) and timing variation occasionally caused both paths to miss, leaving `PTP_HISTORY` empty and AutoFill skipping labor with "PTP not completed". A new request-body path runs first inside the submit XHR's `loadend`: a 200 POST to `/submit_assessment` with a numeric `workorder_id` and no `status: 'CANCELLED'` is treated as COMPLETE. Existing parser and DOM safety net remain as fallbacks; `lastCompletedWo` dedupes when multiple paths fire.
+- **PTP completion now captured directly from the `/submit_assessment` request body, not only from response parsing.** The prior path detected completion by scraping the submit response and the follow-up `get_assessment` — both succeed most of the time, but the timing variation occasionally caused both paths to miss, leaving `PTP_HISTORY` empty or incomplete and AutoFill skipping labor with "PTP not completed". A new request-body path runs first inside the submit XHR's `loadend`: a 200 POST to `/submit_assessment` with a numeric `workorder_id`. Rework of how capture is done to come later after PTP src review.
 
 ## v14.14.103 — TabGridOrder null-target passthrough (2026-04-30)
 
