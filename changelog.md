@@ -1,5 +1,19 @@
 # APM Master v14 Changelog
 
+## v14.14.103 — TabGridOrder null-target passthrough (2026-04-30)
+
+### Correctness
+- **`mainTabPanel.setActiveTab(null)` and `beforetabchange` with `newCard == null` now pass through to ExtJS instead of being blocked.** The first list→record transition after a screen-cache nav fires several `setActiveTab(null)` calls during EAM's lazy build of the record-view tab content. The override was substituting `getActiveTab()` (the current LIST tab) for null, which misled EAM's caller into reading `.tabXtype` off the wrong panel and flowing into `Ext.create(undefined)` → "TypeError: c is not a constructor" inside `ClassManager.getInstantiator`'s compiled `new Function('c','a','return new c(...)')`. Null targets aren't user-visible focus yanks — they're internal EAM lazy-build no-ops — so the block protected nothing and actively misdirected the framework.
+
+## v14.14.102 — Screen-detection mcp migration completes (2026-04-30)
+
+### Quality
+- **Screen-detection across the codebase routes through mcp's `getMainContentPanel` snapshot instead of multi-frame walks + positioning math.** `findMainGrid`, `findMainTabPanel`, `queryActiveView`, `AjaxHooks.activeOnly` + `ModuleGuard.onAjax`, the `detectActiveScreen` FocusManager-iframe-pick, and the dataspy combo lookup all migrate; structural mcp answers replace a `getBoundingClientRect().top < -1000` heuristic that flaked in `hideMode: offsets`. New `isWinOnActiveTab(win)` Ajax helper carries a one-version dev-only `[ActiveScreenParity]` warn that surfaces any case where the new and legacy answers disagree before the legacy `isActiveFrame` is deleted.
+- **`target.containsEl(el)` / `containsComp(comp)` / `containsDoc(doc)` bake the within-screen card-layout filter into the mcp primitive.** EAM's shared-iframe COMMON mode (one iframe hosts multiple screens via card layout) requires layering the within-screen visibility check on top of the frame-level mcp answer; making consumers compose it manually invited omission. The new methods make the safe path the default; `findMainGrid` / `findMainTabPanel` / `_findActiveDataspyCombo` now also reject stale shared-iframe siblings as part of the same sweep.
+
+### Cleanup
+- **`forEachExtWindow`'s `activeOnly` opt deleted** (zero production callers; only test code passed it). Function collapses to a thin `getExtWindows().forEach` wrapper.
+
 ## v14.14.101 — Forecast nav simplified to two strategies (2026-04-30)
 
 ### Quality
