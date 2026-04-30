@@ -4,6 +4,20 @@ For a detailed developer changelog with root-cause analysis, see: [changelog.md]
 
 ---
 
+## v14.14.65 (2026-04-28)
+
+### Fixes
+- **Saved column orders that went invisible after older upgrades now reappear automatically over the next several boots.** Some users carried column-order data from before the per-dataspy storage redesign that the runtime ignored entirely — every grid load served EAM's default layout instead of their saved one. A storage cleanup runs across the next 7 boots to clear the stale entries, paired with an in-session check that prevents them from reappearing. After the cleanup finalises, no permanent overhead remains. Note: stale entries cannot be auto-rebuilt into the new shape — affected users will need to re-customize each grid for each dataspy they use.
+
+---
+
+## v14.14.64 (2026-04-28)
+
+### Fixes
+- **Switching the Forecast Target dropdown no longer throws a ReferenceError.** Changing the screen (e.g. Work Orders ↔ Compliance) immediately after opening the Forecast panel could fail silently in the console and leave the direction toggle out of sync. Fixed.
+
+---
+
 ## v14.14.63 (2026-04-26)
 
 ### Fixes
@@ -11,14 +25,14 @@ For a detailed developer changelog with root-cause analysis, see: [changelog.md]
 
 ---
 
-## v14.14.62 (2026-04-26)
+## v14.14.62 (2026-04-25)
 
 ### Fixes
 - **AutoFill default-profile picker now opens next to the AutoFill button instead of drifting off-screen.** When the picker had to choose between multiple matching default profiles, it could anchor to a button living in a hidden screen-cache iframe — placing the dropdown hundreds of pixels away from the visible button (or off-screen entirely). The picker now anchors to the button in the active frame, so it always lands where you expect.
 
 ---
 
-## v14.14.61 (2026-04-25)
+## v14.14.61 (2026-04-26)
 
 ### Fixes
 - **"Update Available" prompt now installs on Violentmonkey, Greasemonkey, and ScriptCat.** The updater opened the install page in a backgrounded tab and auto-closed it after 3 seconds — a flow tuned for Tampermonkey, where the install confirm appears in a separate extension tab. Other managers render the install prompt inside the navigated tab, so backgrounding hid the prompt and the auto-close dismissed it before Confirm could land. The updater now opens foregrounded with no auto-close on every manager except Tampermonkey, which keeps its original flow.
