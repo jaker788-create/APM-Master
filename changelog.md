@@ -1,5 +1,13 @@
 # APM Master v14 Changelog
 
+## v14.14.101 — Forecast nav simplified to two strategies (2026-04-30)
+
+### Quality
+- **Forecast nav uses structural ExtJS selectors instead of tab text for screen cache nav.** The cached-screen path now activates the matching `uxtabiframe[screenId=X]` — or the shared NONCACHE slot when its current occupant's `userFunction` matches the target — via `mcp.setActiveTab(...)`, identical to EAM's own short-path at `app.js:643964`. No `'Work Orders'` / `'Compliance Work Orders'` text comparison. Navigation back to a previously-loaded non-cached screen now hits the cache path too — which avoids a full `launchScreen` destroy + remount. Each successful nav emits one `Logger.info` line of the form `Navigated to <target> via <method>` (`screen-cache` | `launchScreen`) for triage. ]
+
+### Cleanup
+- **Removed 2 fallback strategies.** The previous menu-walk and URL-redirect fallbacks are gone along with their `apm-pending-forecast` sessionStorage handshake — they only fired when `launchScreen` was unavailable, which never happens.
+
 ## v14.14.100 — launchScreen error suppression retired (2026-04-29)
 
 ### Cleanup
