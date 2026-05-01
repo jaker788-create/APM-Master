@@ -1,5 +1,31 @@
 # APM Master v14 Changelog
 
+## v14.14.112 — Drop expired PTP flag migrations (2026-05-01)
+
+### Cleanup
+- **The four one-shot PTP flag migrations (`renamePtpFlag`, `splitPtpTimerSetting`, `ensurePtpFlag`, `clearPtpForNonUS1`) come out of `migration-manager`.** They covered the v14.14.50 ptpTimer→ptpSandbox rename plus the region-lock cleanup; every active install has long since marked them complete in `migrations_done`, so the code paths only sat there as a misfire risk. The runtime guard in `FeatureFlags.isEnabled('ptpSandbox')` still forces the flag off for non-US1/non-PTP frames, so removing `clearPtpForNonUS1` does not loosen the region lock. Stale `ptp_flag_*` IDs already in users' `migrations_done` are inert — the runner just never sees those IDs again.
+
+## v14.14.111 — Assign To Me button drops its layout-recovery observer (2026-05-01)
+
+### Cleanup
+- **Assign To Me on WO record-view now anchors on the description field's outer ExtJS element instead of inside the trigger-wrap parent.** The deeper anchor was destroyed by ExtJS layout passes — including the reflow colorcode's PTP-tag injection sets off — which forced a MutationObserver to re-inject the button on every wipe. Switching to `descField.el.dom` + `appendChild` (the same shape Amazon's `WorkOrders.js` uses for its SIM-T icon) places the button on a container that survives reflow; the observer and its parent-flex setup come out, and the existing polling re-inject in `injectAutoFillTriggers` covers full field destruction.
+
+## v14.14.110 — PTP iframe auto-recovers from auth failures (2026-05-01)
+
+### Correctness
+- **A 401/403 from a PTP execute-api call now reloads the iframe to its own src instead of just logging the failure.** Amplify's `Auth.currentSession()` already auto-refreshes before each request; if that path still ends in 401 or 403 the refresh token is genuinely stale and the user needs the SSO bounce. `message-router` now reloads the iframe to the original `?workordernum=X&organization=Y` URL on those responses, so PTP boots fresh into the WO context and runs its own SSO flow with params present from the start — sidestepping the 30-minute `IframeRedirectAttempted` cooldown that would otherwise fire when the recovery path lands on `/login.html` paramless. Rate-limited per iframe to one reload every five minutes so a Cognito outage can't loop.
+
+## v14.14.109 — PTP capture rewrite, iPTP support, auth recovery (2026-05-01)
+
+### Correctness
+- **PTP iframes now recover from a Midway SSO bounce instead of stalling 5 s and suppressing further recovery for 30 minutes.** When PTP's React app lands on `/login.html` without `workordernum`/`organization`, it posts `{type:'requestUrlParams'}` to its parent and expects `{type:'urlParams', data:{src}}` back so it can `location.replace` to a parameterised URL — without a reply it falls through to localStorage `Predestination` and sets `IframeRedirectAttempted`, short-circuiting every recovery attempt for the next half hour. `message-router` now matches the iframe by `contentWindow` identity and replies with the iframe element's `src` attribute (which retains the original params even after the inner page navigates), skipping the reply when params are absent so PTP can fall back to its own predestination instead.
+- **Cognito auth failures now surface as diagnostic log lines instead of silently returning `false`.** Amplify's `Auth.currentSession()` already serialises refresh before each PTP API call, so a 401/403 after that point means a stale refreshToken or out-of-band sign-out — previously the sandbox just returned false and the failure left no trace. The sandbox now posts `APM_PTP_AUTH_FAILED` with status code and endpoint name; `message-router` logs at INFO so the failure lands in diagnostic dumps.
+- **iPTP, troubleshooting, and iPTP→PTP conversion now capture into PTP history.** `convert_iptp_assess` emits a START for `target_workorder_id` so the timer fires for the new PTP; `create_troubleshooting` emits a START using the broadcast WO context (its body has none). Standalone iPTP submits — recognised by a non-numeric `workorder_id` (the user alias) — emit `APM_PTP_IPTP_COMPLETED`/`APM_PTP_IPTP_CANCELLED` instead of being dropped; `PTP_HISTORY` stays keyed by numeric WO so AutoFill's skip-labor logic is unchanged.
+
+### Cleanup
+- **PTP capture collapses from nine layered mechanisms to two pure helpers.** The previous stack — response-status parser, depth-2 sweep, text regex, DOM "now complete" watcher, click delegation, 10 s submit watchdog, route polling + history patches, `get_all_assessment` safety net, and the body-driven submit decision — is replaced by `parseStateTransition(url, status, body, currentWo)` and `parseListResponse(url, parsedBody, user, currentWo)`, both fed by a single XHR/fetch `loadend` listener. Coverage spans every observed transition (start, complete, cancel, list-view stop, completed-elsewhere) plus the new iPTP and conversion paths at roughly 300 fewer lines in `ptp-sandbox.js`; the four dormant safety nets (route polling, click delegation, DOM watcher, submit watchdog) leave alongside since `get_all_assessment` interception and the body-driven submit decision cover their cases directly.
+- **Cognito auth gate removed.** The 500 ms-poll hold-and-release queue at module-eval time double-gated `execute-api` calls that Amplify was already serialising through `currentSession`/`refreshSessionIfPossible` — adding 0–500 ms latency on the happy path and merely delaying the inevitable 401 by up to 15 s on the dead-refreshToken path. The paired `APM_PTP_AUTH_GATE`/`APM_PTP_AUTH_DIAG` handlers in `message-router` come out alongside.
+
 ## v14.14.108 — Refresh from server now clears pending labor records (2026-05-01)
 
 ### Correctness
