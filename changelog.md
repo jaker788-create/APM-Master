@@ -1,5 +1,35 @@
 # APM Master v14 Changelog
 
+## v14.14.108 — Refresh from server now clears pending labor records (2026-05-01)
+
+### Correctness
+- **The labor tally panel's "Refresh from server" button now drops pending records too.** `force=true` on `LaborService.getData` only bypasses the 60-second fetch gate — it does not clear `_pendingRecords`, the buffer that holds bookings extracted from SAVE responses for up to two minutes. A pending record with a malformed `datework` survived every refresh and silently dropped from `calculateTally` for the full two-minute window, making refresh appear to do nothing until the entry expired on its own. The refresh handler now calls `invalidateCache()` first, matching the pattern the labor-booker already uses on its own force-refreshes.
+
+### Quality
+- **`calculateTally` logs a one-line summary at INFO so future bad-state cases show up in diagnostic dumps.** Previously, when 104 records came back from the server but the tally rendered as 0.00 hrs with an empty breakdown, there was no way to tell from a diagnostic export whether the records lacked `datework`, failed `parseEamDate`, or fell outside the day window. The new log records the input count, total hours, bucket count, and `daysParam` on every tally pass.
+
+## v14.14.107 — CTJOBS column orders save and restore correctly (2026-05-01)
+
+### Correctness
+- **Column orders on CTJOBS (and any other screen sharing WSJOBS's store class) now save and restore under the user-facing screen key instead of the system key.** CTJOBS reuses the `wsjobs_lst_lst` store class, so storeId-based class-path detection resolved every CTJOBS grid to `WSJOBS` — saves landed at `WSJOBS|<dataspy>` while the LST intercept correctly looked up `CTJOBS|<dataspy>` from the POST body, so reload never matched the save and CTJOBS appeared to forget its column state. The `lst-intercept` now stamps `{userFunc, sysFunc}` on the window from the POST body on every parsed `.LST`; `grid-column-override` consults the stamp at `initComponent` (overriding class-path when its result equals `sysFunc` and `userFunc` differs) and reads `proxy.extraParams.USER_FUNCTION_NAME` at save time (authoritative once GRIDDATA has fired). Existing `WSJOBS|<dataspy>` rows that were really CTJOBS configurations remain in storage and apply on WSJOBS — re-save once per CTJOBS dataspy to populate the correct keys.
+
+## v14.14.106 — Welcome screen Better APM import (2026-04-30)
+
+### Quality
+- **Welcome screen offers one-click migration from Better APM.** Fresh installs that find Better APM's `apmMappings` / `apmUiTheme` keys in localStorage now see a browser-style "Import" prompt on the landing page. The existing `normalizeExternalTags` + consolidation pipeline handles the rule conversion, and `ThemeResolver.setGlobalTheme` carries the theme over since Better APM's theme values match the internal theme strings 1:1.
+- **Welcome modal scales with the same zoom compensation as the help overlay, settings panel, and forecast UI.** On displays running below 100% effective scaling the modal previously rendered at native 420px and was hard to read. `applyZoomCompensation` is now wired into `createWelcomeOverlay`, so the modal grows to match the rest of the APM UI on low-DPR screens.
+- **Welcome tour pages now show feature screenshots instead of emoji icons.** Forecast, Labor, and the three settings-panel features each render the same screenshots used in the help overlay so first-time users get a concrete preview of what they're being offered.
+
+### Cleanup
+- **Textarea-paste rule import drops a dead reference to a never-implemented `showConsolidationBanner`.** The post-import call sat at `colorcode-lifecycle.js:654` but the function was never defined or imported anywhere — any Better APM paste that surfaced consolidation groups would have ReferenceError'd silently after the rules were saved. Call removed along with the unused `preConsolidated` snapshot; the existing success toast continues to convey the consolidated-count outcome.
+
+## v14.14.105 — Boot-time exception cleanup (2026-04-30)
+
+### Correctness
+- **Forecast hotkey listener no longer crashes on Chrome autofill clicks.** Chrome's saved-entries popup fires a keydown without a `key` property, so `e.key.toLowerCase()` threw. The handler now early-returns unless `altKey` is set and `e.key` is a string — Alt+T / Alt+C are the only bindings.
+- **ColorCode panel no longer ReferenceErrors on the empty-rules path.** `colorcode-lifecycle.js` rendered the "No rules found" placeholder via `el(...)` but never imported `el` from `dom-helpers`. Dormant until Settings opened with zero rules. Import added.
+- **Storage absorbs Tampermonkey GM port-disconnect errors.** Frames being torn down can leave `GM_setValue/getValue/deleteValue` throwing "Attempting to use a disconnected port object" mid-save. `APMStorage.{get,set,remove}` now detect that message, latch a per-frame flag so subsequent calls skip GM, and log at debug; localStorage already covered the data path.
+
 ## v14.14.104 — PTP completion captured at submit-time from request body (2026-04-30)
 
 ### Critical
