@@ -1,8 +1,14 @@
 # APM Master v14 Changelog
 
-## v14.14.114 — PTP timer/status no longer reset on every reload (2026-05-02)
+## v14.14.115 — Assign To Me anchors inline and rides the form lifecycle (2026-05-02)
 
 ### Correctness
+- ** Adjusted Assign To Me button injection method** The last attempt was not ideal, the button blinked on every load and sometimes never came back. The button now anchors on the description field's body wrap like before, but registers an `afterrecordchange` listener on the form panel — mirroring Amazon's SIM-T icon pattern in `work_orders.js` — so re-injection runs once per record load at the right ExtJS lifecycle point with no removal path.
+
+## v14.14.114 — PTP iframe auth recovery + timer/status persistence (2026-05-02)
+
+### Correctness
+- **PTP backup handlers now catch handshakes that slip past EAM's `{once:true}` `relayIframeUrl` listener.** `_findIframeBySource` walked `(window.top || window).document`, but in screen-cache mode the PTP iframe sits inside the EAM child frame — every lookup returned null, so v14.14.109's `requestUrlParams` reply and v14.14.110's auth-failure reload never fired and a single missed handshake from Amazon's work_orders.js left PTP stuck on `Failed to retrieve URL params`. The query now reads the current frame's `document`; same fix applied to the `span.recordcode` fallback in `_readPtpContextWo`.
 - **The PTP Take-2 Timer and Status Tracking toggles stay where the user puts them across reloads.** Settings panel built a "diagnostic-consistency" cleanup at panel-build time that wrote `ptpTimerEnabled=false` / `ptpTrackingEnabled=false` whenever its `ptpPrefsEnabled()` gate was false — and that gate required `AppContext.isUS1`, so it tripped in any non-US1 top frame the userscript matched: the `idp.federate.amazon.com` SSO bounce on every session reload, an EU EAM tab, the rare standalone PTP top tab. APMStorage writes go through GM_setValue, which is shared across every userscript-matched domain, so each pass clobbered the user's US1 prefs back to false and the next us1 reload showed them disabled. Cleanup is removed; `syncPtpPrefs` already keeps the children in sync when the sandbox flag is toggled, and the migrations that could have left stale state are gone in v14.14.112.
 
 ### Convention
@@ -21,12 +27,12 @@
 ## v14.14.111 — Assign To Me button drops its layout-recovery observer (2026-05-01)
 
 ### Cleanup
-- **Assign To Me on WO record-view now anchors on the description field's outer ExtJS element instead of inside the trigger-wrap parent.** The deeper anchor was destroyed by ExtJS layout passes — including the reflow colorcode's PTP-tag injection sets off — which forced a MutationObserver to re-inject the button on every wipe. Switching to `descField.el.dom` + `appendChild` (the same shape Amazon's `WorkOrders.js` uses for its SIM-T icon) places the button on a container that survives reflow; the observer and its parent-flex setup come out, and the existing polling re-inject in `injectAutoFillTriggers` covers full field destruction.
+- **Assign To Me on WO record-view now anchors on the description field's outer ExtJS element instead of inside the trigger-wrap parent.** The deeper anchor was destroyed by ExtJS layout passes — including the reflow colorcode's PTP-tag injection sets off — which forced a MutationObserver to re-inject the button on every wipe. Switching to `descField.el.dom` + `appendChild` (the same shape Amazon's `work_orders.js` uses for its SIM-T icon) places the button on a container that survives reflow; the observer and its parent-flex setup come out, and the existing polling re-inject in `injectAutoFillTriggers` covers full field destruction.
 
 ## v14.14.110 — PTP iframe auto-recovers from auth failures (2026-05-01)
 
 ### Correctness
-- **A 401/403 from a PTP execute-api call now reloads the iframe to its own src instead of just logging the failure.** Amplify's `Auth.currentSession()` already auto-refreshes before each request; if that path still ends in 401 or 403 the refresh token is genuinely stale and the user needs the SSO bounce. `message-router` now reloads the iframe to the original `?workordernum=X&organization=Y` URL on those responses, so PTP boots fresh into the WO context and runs its own SSO flow with params present from the start — sidestepping the 30-minute `IframeRedirectAttempted` cooldown that would otherwise fire when the recovery path lands on `/login.html` paramless. Rate-limited per iframe to one reload every five minutes so a Cognito outage can't loop.
+- **A 401/403 from a PTP execute-api call now reloads the iframe to its own src instead of just logging the failure.** Amplify's `Auth.currentSession()` already auto-refreshes before each request; if that path still ends in 401 or 403 the refresh token is genuinely stale and the user needs the SSO bounce. `message-router` now reloads the iframe to the original `?workordernum=X&organization=Y` URL on those responses if Amazon's work_orders.js fails it's handshake to load URL params, so PTP boots fresh into the WO context and runs its own SSO flow with params present from the start — sidestepping the 30-minute `IframeRedirectAttempted` cooldown that would otherwise fire when the recovery path lands on `/login.html` paramless. Rate-limited per iframe to one reload every five minutes so a Cognito outage can't loop.
 
 ## v14.14.109 — PTP capture rewrite, iPTP support, auth recovery (2026-05-01)
 
