@@ -1,5 +1,18 @@
 # APM Master v14 Changelog
 
+## v14.14.114 — PTP timer/status no longer reset on every reload (2026-05-02)
+
+### Correctness
+- **The PTP Take-2 Timer and Status Tracking toggles stay where the user puts them across reloads.** Settings panel built a "diagnostic-consistency" cleanup at panel-build time that wrote `ptpTimerEnabled=false` / `ptpTrackingEnabled=false` whenever its `ptpPrefsEnabled()` gate was false — and that gate required `AppContext.isUS1`, so it tripped in any non-US1 top frame the userscript matched: the `idp.federate.amazon.com` SSO bounce on every session reload, an EU EAM tab, the rare standalone PTP top tab. APMStorage writes go through GM_setValue, which is shared across every userscript-matched domain, so each pass clobbered the user's US1 prefs back to false and the next us1 reload showed them disabled. Cleanup is removed; `syncPtpPrefs` already keeps the children in sync when the sandbox flag is toggled, and the migrations that could have left stale state are gone in v14.14.112.
+
+### Convention
+- **Toggling PTP Sandbox back on now re-enables the Timer and Status Tracking children too.** `syncPtpPrefs` was a one-way switch — turning sandbox off persisted the children to false, but turning it back on left them at false and required the user to re-opt-in manually. It now treats sandbox as a master switch in both directions; an explicit `AppContext.isUS1` early-return guards a stray programmatic call from clobbering shared cross-domain storage.
+
+## v14.14.113 — EAM context readers consolidated (2026-05-02)
+
+### Convention
+- **One durable read function per EAM context dimension.** `getCurrentUser`, `getCurrentOrganization`, and `getActiveScreen` move into a new `src/core/eam/eam-context.js`, replacing 11 bespoke fallback chains spread across labor, autofill, session-snapshot, and PTP. User resolution is cache-first (AppState.session.user → APMStorage → EAM.AppData → EAM.Context), with write-through to both caches only on a native hit — after first install, native is essentially dormant. Organization resolution is forecast-picker DOM first then EAM.Context; the prior record-field tier was dropped because it conflated "what org is THIS RECORD in" with "what org is the user working in". DOM-scrape fallbacks are gone — fail visible. `cleanEmployeeId` migrates here from `labor-service.js` for the same reason it was being imported by autofill, ptp, and labor-tracker. No user-visible delta.
+
 ## v14.14.112 — Drop expired PTP flag migrations (2026-05-01)
 
 ### Cleanup
