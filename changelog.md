@@ -12,7 +12,7 @@
 ### Cleanup
 - **Top-frame menu toolbar injection drops the dock-query and any-toolbar-scan fallbacks.** (`mainmenubar` xtype) is the primary and the DOM-anchor walk on `.x-btn-mainmenuButton-toolbar-small` stays as the fallback.
 - **AutoFill button injection collapses to one strategy.** `EAM.Utils.getMainToolbar()` is the single path; the prior `recordPanel.getDockedItems('toolbar[dock="top"]')`, `.toolbarExpandRight` DOM-anchor, and tab-bar absolute-position fallbacks are removed along with the pre-flight `rvForm` lookup that only existed to feed Strategy 1. Per-screen retries already cover the early-mount window where `getMainToolbar()` returns null.
-- **Active WO-number resolution centralized in `core/eam/eam-record.js#getActiveWoNumber`.** The same `span.recordcode` + `offsetParent` visibility scrape was duplicated four times (autofill `wo-shared`, labor-booker, ptp-context-broadcaster, message-router). One owner now handles the active-screen scope filter via `findActiveScreenTarget` and prefers the active recordview form's bound record (store) over the header DOM.
+- **Active WO-number resolution centralized in `core/eam/eam-record.js#getActiveWoNumber`.** The same `span.recordcode` + `offsetParent` visibility scrape was duplicated four times (autofill `wo-shared`, labor-booker, ptp-context-broadcaster, message-router). One owner now handles the active-screen scope filter via `findActiveScreenTarget` and uses the active recordview form's bound record (store).
 
 ## v14.14.116 — EAM gAppData becomes the source of truth for tenant, dateformat, and screen-cache mode (2026-05-02)
 
