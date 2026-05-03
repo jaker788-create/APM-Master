@@ -1,5 +1,18 @@
 # APM Master v14 Changelog
 
+## v14.14.120 — Wipe Data actually wipes (2026-05-03)
+
+### Correctness
+- **Wipe Data no longer leaves settings in place after the SSO redirect.** Wipe cleared GM and us1.eam's localStorage, but the SSO chain bounced through `prd-use1-sso.eam.hxgnsmartcloud.com` whose per-origin localStorage retained pre-wipe data — `APMStorage.get`'s localStorage→GM promotion fired there and resurrected everything into shared GM before the page returned to EAM. Wipe now writes empty placeholders (`'{}'` / `'default'` / `'[]'`) to the critical GM keys so the promotion's localStorage fallback never runs, and `saveGeneralSettings` early-returns on `shouldSkipBoot` frames so any stray save during the bounce is dropped.
+- **Wipe Data redirects to `logindisp` with the captured tenant instead of `location.reload()`** Tenant is grabbed from `AppState.session` before storage is cleared.
+
+## v14.14.119 — Labor tally Shift View extends to 7-day span (2026-05-03)
+
+### Features
+- **Labor tally Shift View now spans Current / 3 Shifts / 7 Shifts via the existing tab row.** Shift mode was previously a fixed 2-day window with the day-count tabs disabled. Each shift renders as a header row labelled by its start day name ("Wed Shift", etc.) with the constituent date breakdowns nested below.
+- **Initial unstamped records fall back to work date.**  Timestamps come from quick-book SAVE and a one-time dataspy 1723 seed gated on `LABOR_NIGHT_SHIFT_BOOTSTRAPPED_KEY` instead of a per-session flag; registry retention extends from 48h to 8 days so multi-shift lookbacks can hold their stamps.
+- **Each shift entry with unstamped contributors carries an inline "no entry time — new bookings will track" badge.** The badge sits between the shift-day label and the hours total, with a tooltip explaining that the booking predates entry-time capture and that hours booked from now on will be grouped by the shift they were entered in. Badges fade out organically as the registry fills with quick-book stamps over the next ~8 days of normal use.
+
 ## v14.14.118 — Labor module decomposed, safe mode booking removed (2026-05-02)
 
 ### Cleanup
@@ -34,7 +47,7 @@
 ## v14.14.114 — PTP iframe auth recovery + timer/status persistence (2026-05-02)
 
 ### Correctness
-- **PTP backup handlers now work in screen cache `{once:true}` `relayIframeUrl` listener.** In screen-cache mode the PTP iframe sits inside the EAM child frame — every lookup returned null because it was looking in the top frame, so v14.14.109's `requestUrlParams` reply never fired and a single missed handshake from Amazon's work_orders.js left PTP stuck on `WO connection error`. The query now reads the current frame's `document`.
+- **PTP backup handlers now work in screen cache `{once:true}` `relayIframeUrl` listener.** In screen-cache mode the PTP iframe sits inside the EAM child frame — every lookup returned null because it was looking in the top frame, so v14.14.109's `requestUrlParams` reply never fired and a single missed handshake from Amazon's work_orders.js left PTP stuck on "WO connection error". The query now reads the current frame's `document`.
 - **The PTP Take-2 Timer and Status Tracking toggles stability increased across reloads.** Settings panel built a "diagnostic-consistency" cleanup at panel-build time that wrote `ptpTimerEnabled=false` / `ptpTrackingEnabled=false` whenever its `ptpPrefsEnabled()` gate was false — which is set true if not `AppContext.isUS1`, suspected to trip recently on the `idp.federate.amazon.com` SSO bounce during session reload. APMStorage writes go through GM_setValue, which is shared across every userscript-matched domain, so each pass clobbered the user's US1 prefs back to false and the next us1 reload showed them disabled. Cleanup no longer needed; `syncPtpPrefs` already keeps the children in sync when the sandbox flag is toggled, and the migrations that could have left stale state are gone migrated by now.
 
 ### Convention
