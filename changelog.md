@@ -1,5 +1,50 @@
 # APM Master v14 Changelog
 
+## v14.14.122 — Audit P1 sweep across autofill / EAM core / lifecycle / hygiene / forecast XHR (2026-05-03)
+
+### Critical
+- **Forecast pagination revives on screen-cached WSJOBS / CTJOBS.** `recursiveGridFetch` hooked `store.on('load')`, which EAM never fires when populating via `loadData` / `loadRawData`. Switched to `datachanged` with an `isLoading()` re-entry guard. Audit P1 #14.
+- **PTP iframe regains its WO context after every reload.** A module-scope `_lastBroadcastWo` dedup blocked re-broadcasts after iframe reload, so PTP couldn't classify creates. Dedup removed; same-WO scenarios cost one extra `APM_PTP_CONTEXT` per nav. Audit P1 #19.
+- **ColorCode / labor-tracker / tab-grid-order keep receiving repaint signals after shared-iframe document swaps.** `attachObserverToDoc` early-returned on the cached window key, leaving the observer wired to the detached document. A `frame:styleRefresh` subscriber now disconnects and re-observes the new doc on the same key. Audit P1 #25.
+- **EAM iframe modules now see view changes.** `eam-title-observer` dispatched `APM_EAM_VIEW_CHANGE` only on the top window, so iframe-bundled subscribers never heard it. The observer now broadcasts to every `getExtWindows()` target via a per-iframe bridge that re-fires the local CustomEvent. Audit P1 #16.
+
+### Security
+- **PTP `requestUrlParams` no longer echoes the iframe src to non-PTP trusted origins.** Any TRUSTED_PATTERNS origin could request and receive the iframe URL, including non-PTP EAM origins. New `isPtpOrigin()` predicate (`*.ptp.amazon.dev` / `*.insights.amazon.dev`) gates the reply. Audit P1 #26.
+
+### Correctness
+- **Autofill survives LOV cascades that re-render the form.** `injectExtJSFieldsNative` reused a once-captured `mainForm` across org/dept/type/eq/shift cascades that destroy and re-render the panel. A new `ensureForm()` closure re-polls after each cascade-triggering LOV. Audit P1 #7.
+- **Shared LOV helpers fire `select` for combo-cascade fields.** `setExtModelDirect` and `setEamLovFieldDirect` fired only `change` and `blur`; cascade-driven sites had to fire `select` manually beforehand. `select` now fires before `change`/`blur` for `combobox` xtypes only. Audit P1 #8.
+- **Comma-decimal locales no longer disable autofill labor / completion-date branches.** `parseFloat("0,5")` returns `0` for EU users, silently dropping labor hours and date components in autofill paths (v14.14.18 had only fixed `fetchScheduledHours`). New `parseLocaleDecimal()` treats the rightmost separator as the decimal marker; `parseCompletionDateValue` delegates to `parseEamDate`. Audit P1 #9.
+- **Autofill trigger button reads the title at click time.** `dispatchAutoFillClick` captured the title at scan time, so a click within the 3-second cooldown after navigating to a new WO launched with the prior title. Handler now reads `getVisibleRecordTitle()` inside the click closure. Audit P1 #10.
+- **Autofill equipment field discovery scopes to the active screen.** `Ext.ComponentQuery.query('[name="equipment"]')` ran unscoped in shared-iframe COMMON mode and could pick from a stale cached screen. Routed through `scope.queryExtAll(...)` with an `isVisible(true)` filter. Audit P1 #11.
+- **`resolveLaborHours` form fallback skips hidden card-layout siblings.** `find(f => f.rendered && !f.isDestroyed)` could return a card-layout panel from the wrong WO and produce wrong org/type lookups. Added `f.isVisible?.(true)` to the predicate. Audit P1 #13.
+- **`setupComponentWatcher` re-patches after Ext reload.** A per-window `_watcher` flag short-circuited ahead of the prototype `_apmPatched` marker, so an Ext reload (which clears the prototype patch) left the re-patch branch unreachable. Per-window flag removed; `_apmPatched` is now the sole idempotence gate. Audit P1 #15.
+- **Forms in screen-cache mode get correct screen identity.** `eam-record._readFromStore` resolved screen via `detectScreenFunction`, which defaulted to FocusManager-global — wrong frame in screen-cache mode. Now resolves from `activeTarget?.screenId` first, falling back only when null. Audit P1 #17.
+- **Quick-Book safety timer no longer races the `isRunning` guard.** A 30-second timer flipped `BookerState.isRunning = false` mid-flow, letting a second click start a parallel pipeline. The timer now logs a heartbeat warning; the finally block remains the single owner of the flag. Audit P1 #18.
+- **`dismissSystemPopups` reaches deeper iframes in screen-cache mode.** Walked only top-level `document.querySelectorAll('iframe')` and missed wrapper → EAM → COMMON → popup chains, stalling restore flow. Now iterates `getExtWindows().map(w => w.document)` with the top-level document as fallback. Audit P1 #20.
+- **Snapshot capture fires when forecast profile or nametag filter changes.** The change detector compared only screen / record / tab / grid identity, so profile flips followed by tab close lost the last selection. `_lastForecastProfile` and `_lastNametagFilter` are now tracked alongside. Audit P1 #21.
+
+### Convention
+- **Last `core/` / `ui/` → `modules/` layer break removed.** `settings-panel-overlays.js:8` imported `detectBetterApm` and `importFromBetterApm` directly from the welcome module. The welcome module now self-registers both via `APMApi.register('welcome.…')`; the overlay looks them up lazily. ESLint warning count drops 87 → 86. Audit P1 #22.
+
+### Quality
+- **`handleGeneralSettingsSync` no longer clobbers then patches the flags reference.** The loop wrote `apmGeneralSettings[key] = next[key]` (including `flags`), then re-merged at lines 67–72 — correct by ordering, brittle to insertion. Now destructures `flags` and merges separately. Audit P1 #23.
+- **`APMStorage.get` no longer fires reentrant `set` during diagnostic dumps.** Reads on localStorage-only keys auto-promoted to GM_setValue inline, fanning storage events to sibling frames on every diagnostics walk. Promotion is now opt-in via `{ promote: true }`; `MigrationManager.promoteToGlobal()` is the only caller. Audit P1 #24.
+- **Forecast XHR one-shot intercept folded into the persistent `forecast-maddon-xhr` hook.** `installXhrMaddonIntercept` patched `XMLHttpRequest.prototype.send` per Run; concurrent Runs could silently skip-install and prototype mutations accumulated. A `pendingOneShotInjection` Map (publish/consume + 10s TTL) is consulted by the persistent hook; the 108-line per-Run mutator is gone. Audit P1 #27.
+
+## v14.14.121 — Audit P0 sweep + storage-backed EAM context (2026-05-03)
+
+### Correctness
+- **EAM tenant, date format, and screen-cache list survive Firefox Xray and iframe teardown.** `gAppData` lives on the loadmain iframe and Firefox `unsafeWindow` Xray hides page-defined globals, so direct `window.EAM?.AppData?.tenant` reads returned undefined — bouncing session-timeout and Wipe Data redirects to `/message.html?error=SPECIFY_TENANT`. A storage-backed cache (`getCachedTenant` / `getEamDateFormat` / `getCachedScreenCacheList`) captures values on `frame:attached` with a SessionMonitor XHR fallback, and consumers now read from GM storage.
+- **PTP dark-mode supplemental CSS revived.** Smart curly quotes (U+201C / U+201D) had silently broken the `AWSUI_DARK_CSS` attribute selectors, so browsers dropped the entire block. Quotes fixed; the `[id^="question-"]` rule rewritten to `background-color: transparent` so cards keep the MutationObserver-stripped transparent look instead of flipping opaque. Audit P0 #1.
+- **Session restore from a fresh tab finds the tenant.** `navigateViaUrl` (the URL fallback when `launchScreenDirect` returns false) still read `window.EAM?.AppData?.tenant` directly while every other consumer moved to `getCachedTenant()`. Cold-cache restores were producing `?tenant=` and bouncing to `SPECIFY_TENANT`. Audit P0 #3.
+- **Session-snapshot capture no longer fires on every Ajax round-trip.** The Ajax filter read `url.includes('.')` (every URL contains a dot) instead of `.HDR`. The 3-second debounced capture walks all frames running the script's most expensive `ComponentQuery` — its largest invisible cost during AJAX bursts. Audit P0 #4.
+- **PTP completion events no longer fan out N×M times in screen-cache mode.** The wrapper top frame relayed every `APM_PTP_*` to all children and then handled the message itself, multiplying single completions through every cached frame. Wrapper now relays-and-returns; only the visible child handles. Audit P0 #5.
+- **Autofill bulk Yes / No / Clear toolbar buttons iterate by store, not `<tr>`.** The v14.14.51 fix landed only in `processCheckboxes`; three sibling loops (autofill-triggers toolbar, wo-checklists LOTO blanket, shift-report per-task) still iterated `<tr>` and mis-mapped cfg-to-row when a filter row was visible. All four loops now share a single `iterateGridRecords` helper. Audit P0 #6.
+
+### Performance
+- **LaborBooker no longer accumulates duplicate top-frame listeners on every `frame:attached`.** `init(win)` re-registered three top-window listeners on every per-frame event, accumulating 3–5 duplicates per boot and firing N parallel `fetchLaborSummary` round-trips per `APM_SESSION_UPDATED`. Top-frame work is now hoisted into an idempotent `_initOnce` mirroring the labor-tracker pattern. Audit P0 #2.
+
 ## v14.14.120 — Wipe Data actually wipes (2026-05-03)
 
 ### Correctness
