@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         APM Master: Unified Tools
 // @namespace    https://w.amazon.com/bin/view/Users/rosendah/APM-Master/
-// @version      14.14.123
+// @version      14.14.124
 // @description  If there is a bug or a feature/change you would like, please reach out via bug report/feature request before editing this file. That way I can possibly add this properly for everyone. This is a very in development tool, help me make it better with suggestions.
 // @author       Jacob Rosendahl
 // @icon         https://drive-render.corp.amazon.com/view/rosendah@/greasemonkey_scripts/APM-Master/E015GUGD2V6-U049R1HCEQ0-f37ae3846bae-512.jpg
@@ -114,7 +114,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
 
   // src/core/constants.js
   var Et, Qe, tt, De, dt, rr, Xs, Ke, pt, Wd, Hd, si, Wt, Mr, xr, Zs, kt, rn, zn, vr, Pr, el, Eo, li, ci, tl, Lr, It, ko, di, jn, rl, pi, ol, Jr, nl, Tt, Kn, To, Ud, Gd, Vd, zd, jd, Kd, Yd, or, Qs, qd, al, Dr, Yn, ui, ge, il, Jd, Mt, Qd, se = le(() => {
-    Et = "apm_v1_ui_theme", Qe = "apm_v1_colorcode_rules", tt = "apm_v1_colorcode_settings", De = "apm_v1_autofill_presets", dt = "apm_v1_tab_order", rr = "apm_v1_forecast_prefs", Xs = "apm_v1_forecast_desc_terms", Ke = "apm_v1_general_settings", pt = "14.14.123", Wd = "https://apm-master.jaker788.workers.dev/check/stable", Hd = "https://raw.githubusercontent.com/jaker788-create/APM-Master/main/forecast.user.js", si = "https://raw.githubusercontent.com/jaker788-create/APM-Master/main/forecast.user.js", Wt = "apm_v1_labor_employees", Mr = "apm_v1_labor_active", xr = "apm_v1_labor_dock", Zs = "apm_v1_labor_prefs", kt = "apm_v1_labor_night_shift", rn = "apm_v1_labor_decimal_sep", zn = "apm_v1_labor_decimal_detected", vr = "apm_v1_labor_last_emp", Pr = "apm_v1_labor_shift_end", el = "apm_v1_labor_booking_log", Eo = "apm_v1_labor_record_registry", li = "apm_v1_labor_night_shift_bootstrapped", ci = "apm_v1_labor_shift_view", tl = "apm_v1_labor_shift_span", Lr = "apm_v1_session", It = "apm_v1_ptp_history", ko = "apm_v1_update_check", di = "apm_v1_update_info", jn = "apm_v1_migrations_done", rl = "apm_v1_migrations_run_count", pi = "apm_v1_welcome_seen", ol = "apm_v1_betterApm_imported", Jr = "apm_v1_snapshot_", nl = "apm_v1_install_id", Tt = "apm_theme_hint", Kn = "apm_gen_settings", To = "apm_transition_active", Ud = "https://apm-master.jaker788.workers.dev/check/beta", Gd = "https://raw.githubusercontent.com/jaker788-create/APM-Master/Beta/forecast.user.js", Vd = "https://raw.githubusercontent.com/jaker788-create/APM-Master/Beta/forecast.user.js", zd = "https://raw.githubusercontent.com/jaker788-create/APM-Master/main/changelog.md", jd = "https://raw.githubusercontent.com/jaker788-create/APM-Master/main/RELEASE%20NOTES.md", Kd = "https://github.com/jaker788-create/APM-Master/blob/main/changelog.md", Yd = "https://github.com/jaker788-create/APM-Master/blob/main/RELEASE%20NOTES.md", or = {
+    Et = "apm_v1_ui_theme", Qe = "apm_v1_colorcode_rules", tt = "apm_v1_colorcode_settings", De = "apm_v1_autofill_presets", dt = "apm_v1_tab_order", rr = "apm_v1_forecast_prefs", Xs = "apm_v1_forecast_desc_terms", Ke = "apm_v1_general_settings", pt = "14.14.124", Wd = "https://apm-master.jaker788.workers.dev/check/stable", Hd = "https://raw.githubusercontent.com/jaker788-create/APM-Master/main/forecast.user.js", si = "https://raw.githubusercontent.com/jaker788-create/APM-Master/main/forecast.user.js", Wt = "apm_v1_labor_employees", Mr = "apm_v1_labor_active", xr = "apm_v1_labor_dock", Zs = "apm_v1_labor_prefs", kt = "apm_v1_labor_night_shift", rn = "apm_v1_labor_decimal_sep", zn = "apm_v1_labor_decimal_detected", vr = "apm_v1_labor_last_emp", Pr = "apm_v1_labor_shift_end", el = "apm_v1_labor_booking_log", Eo = "apm_v1_labor_record_registry", li = "apm_v1_labor_night_shift_bootstrapped", ci = "apm_v1_labor_shift_view", tl = "apm_v1_labor_shift_span", Lr = "apm_v1_session", It = "apm_v1_ptp_history", ko = "apm_v1_update_check", di = "apm_v1_update_info", jn = "apm_v1_migrations_done", rl = "apm_v1_migrations_run_count", pi = "apm_v1_welcome_seen", ol = "apm_v1_betterApm_imported", Jr = "apm_v1_snapshot_", nl = "apm_v1_install_id", Tt = "apm_theme_hint", Kn = "apm_gen_settings", To = "apm_transition_active", Ud = "https://apm-master.jaker788.workers.dev/check/beta", Gd = "https://raw.githubusercontent.com/jaker788-create/APM-Master/Beta/forecast.user.js", Vd = "https://raw.githubusercontent.com/jaker788-create/APM-Master/Beta/forecast.user.js", zd = "https://raw.githubusercontent.com/jaker788-create/APM-Master/main/changelog.md", jd = "https://raw.githubusercontent.com/jaker788-create/APM-Master/main/RELEASE%20NOTES.md", Kd = "https://github.com/jaker788-create/APM-Master/blob/main/changelog.md", Yd = "https://github.com/jaker788-create/APM-Master/blob/main/RELEASE%20NOTES.md", or = {
       ERROR: 0,
       WARN: 1,
       INFO: 2,
@@ -21936,13 +21936,13 @@ Continue?`) && confirm("Are you absolutely sure? This cannot be undone."))
   }
   function Eg(e = window) {
     let t = e === e.top;
-    fe.registerDefaults(), mu();
-    try {
-      da();
-    } catch (r) {
-      d.error("Boot", "Failed to load initial settings:", r);
-    }
-    if (fe.isEnabled("tabGridOrder")) {
+    if (fe.registerDefaults(), mu(), ie.isEAM)
+      try {
+        da();
+      } catch (r) {
+        d.error("Boot", "Failed to load initial settings:", r);
+      }
+    if (ie.isEAM && fe.isEnabled("tabGridOrder")) {
       Cc(e);
       let r = !1, o = () => {
         if (!r) {
@@ -21984,6 +21984,10 @@ Continue?`) && confirm("Are you absolutely sure? This cannot be undone."))
         gn.refreshSession();
       }, { skipWhenHidden: !1 }), r) {
         d.info("Boot", "Landing page detected. Skipping core UI initialization.");
+        return;
+      }
+      if (!ie.isEAM) {
+        d.debug("Boot", "Non-EAM context \u2014 skipping EAM module init.");
         return;
       }
       [
