@@ -1,5 +1,10 @@
 # APM Master v14 Changelog
 
+## v14.14.123 — Copy closing comments to the Comments tab without leaving HDR (2026-05-05)
+
+### Features
+- **Closing comments post to the Comments tab in one click.** A "Copy to Comments" button in the Closing panel header captures the textarea text, saves the WO first if it's dirty (aborting on save failure with a red toast), then posts it as a new entry on the Comments tab. Gated behind `copyClosingToComments` (default on); see postmortem for the EAM write-endpoint contract.
+
 ## v14.14.122 — Audit P1 sweep across autofill / EAM core / lifecycle / hygiene / forecast XHR (2026-05-03)
 
 ### Critical
