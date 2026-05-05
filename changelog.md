@@ -1,5 +1,10 @@
 # APM Master v14 Changelog
 
+## v14.14.124 — Gate EAM module boot in PTP iframe (2026-05-05)
+
+### Cleanup
+- **EAM-only modules stop initializing in the PTP window.** `initBootSequence` ran the full EAM task array in PTP because `BootManager.waitForExt` short-circuits non-EAM origins and unblocks `onBoot`. Added a `!AppContext.isEAM` bail after the landing check and gated `loadPresets` plus the tab-grid-order LST intercept / column-override poll on `isEAM`; the override poll otherwise recurses on a 10ms `setTimeout` forever. Session monitoring and PTP sandbox unaffected.
+
 ## v14.14.123 — Copy closing comments to the Comments tab without leaving HDR (2026-05-05)
 
 ### Features
