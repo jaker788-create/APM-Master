@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         APM Master: Unified Tools
 // @namespace    https://w.amazon.com/bin/view/Users/rosendah/APM-Master/
-// @version      14.14.122
+// @version      14.14.123
 // @description  If there is a bug or a feature/change you would like, please reach out via bug report/feature request before editing this file. That way I can possibly add this properly for everyone. This is a very in development tool, help me make it better with suggestions.
 // @author       Jacob Rosendahl
 // @icon         https://drive-render.corp.amazon.com/view/rosendah@/greasemonkey_scripts/APM-Master/E015GUGD2V6-U049R1HCEQ0-f37ae3846bae-512.jpg
@@ -40,15 +40,15 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
 }
 
 (() => {
-  var Dg = Object.defineProperty;
+  var Wg = Object.defineProperty;
   var le = (e, t) => () => (e && (t = e(e = 0)), t);
   var ii = (e, t) => {
     for (var r in t)
-      Dg(e, r, { get: t[r], enumerable: !0 });
+      Wg(e, r, { get: t[r], enumerable: !0 });
   };
 
   // src/core/context.js
-  var ze, Yt, So, ie, de, Ve = le(() => {
+  var ze, Yt, So, ie, de, je = le(() => {
     ze = typeof unsafeWindow < "u" ? unsafeWindow : window, Yt = ze.location.hostname.toLowerCase(), So = ze.location.href.toLowerCase(), ie = Object.freeze({
       hostname: Yt,
       // Core Domains
@@ -113,14 +113,14 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
   });
 
   // src/core/constants.js
-  var St, Qe, tt, De, dt, rr, Zs, je, pt, Bd, $d, si, qt, Ir, yr, el, Et, tn, zn, xr, Mr, tl, Eo, li, ci, rl, Pr, Ot, ko, di, Vn, ol, pi, nl, Jr, al, kt, jn, To, qd, Wd, Hd, Ud, Gd, zd, Vd, or, Xs, Fd, il, Lr, Kn, ui, fe, sl, jd, Nt, Kd, se = le(() => {
-    St = "apm_v1_ui_theme", Qe = "apm_v1_colorcode_rules", tt = "apm_v1_colorcode_settings", De = "apm_v1_autofill_presets", dt = "apm_v1_tab_order", rr = "apm_v1_forecast_prefs", Zs = "apm_v1_forecast_desc_terms", je = "apm_v1_general_settings", pt = "14.14.122", Bd = "https://apm-master.jaker788.workers.dev/check/stable", $d = "https://raw.githubusercontent.com/jaker788-create/APM-Master/main/forecast.user.js", si = "https://raw.githubusercontent.com/jaker788-create/APM-Master/main/forecast.user.js", qt = "apm_v1_labor_employees", Ir = "apm_v1_labor_active", yr = "apm_v1_labor_dock", el = "apm_v1_labor_prefs", Et = "apm_v1_labor_night_shift", tn = "apm_v1_labor_decimal_sep", zn = "apm_v1_labor_decimal_detected", xr = "apm_v1_labor_last_emp", Mr = "apm_v1_labor_shift_end", tl = "apm_v1_labor_booking_log", Eo = "apm_v1_labor_record_registry", li = "apm_v1_labor_night_shift_bootstrapped", ci = "apm_v1_labor_shift_view", rl = "apm_v1_labor_shift_span", Pr = "apm_v1_session", Ot = "apm_v1_ptp_history", ko = "apm_v1_update_check", di = "apm_v1_update_info", Vn = "apm_v1_migrations_done", ol = "apm_v1_migrations_run_count", pi = "apm_v1_welcome_seen", nl = "apm_v1_betterApm_imported", Jr = "apm_v1_snapshot_", al = "apm_v1_install_id", kt = "apm_theme_hint", jn = "apm_gen_settings", To = "apm_transition_active", qd = "https://apm-master.jaker788.workers.dev/check/beta", Wd = "https://raw.githubusercontent.com/jaker788-create/APM-Master/Beta/forecast.user.js", Hd = "https://raw.githubusercontent.com/jaker788-create/APM-Master/Beta/forecast.user.js", Ud = "https://raw.githubusercontent.com/jaker788-create/APM-Master/main/changelog.md", Gd = "https://raw.githubusercontent.com/jaker788-create/APM-Master/main/RELEASE%20NOTES.md", zd = "https://github.com/jaker788-create/APM-Master/blob/main/changelog.md", Vd = "https://github.com/jaker788-create/APM-Master/blob/main/RELEASE%20NOTES.md", or = {
+  var Et, Qe, tt, De, dt, rr, Xs, Ke, pt, Wd, Hd, si, Wt, Mr, xr, Zs, kt, rn, zn, vr, Pr, el, Eo, li, ci, tl, Lr, It, ko, di, jn, rl, pi, ol, Jr, nl, Tt, Kn, To, Ud, Gd, Vd, zd, jd, Kd, Yd, or, Qs, qd, al, Dr, Yn, ui, ge, il, Jd, Mt, Qd, se = le(() => {
+    Et = "apm_v1_ui_theme", Qe = "apm_v1_colorcode_rules", tt = "apm_v1_colorcode_settings", De = "apm_v1_autofill_presets", dt = "apm_v1_tab_order", rr = "apm_v1_forecast_prefs", Xs = "apm_v1_forecast_desc_terms", Ke = "apm_v1_general_settings", pt = "14.14.123", Wd = "https://apm-master.jaker788.workers.dev/check/stable", Hd = "https://raw.githubusercontent.com/jaker788-create/APM-Master/main/forecast.user.js", si = "https://raw.githubusercontent.com/jaker788-create/APM-Master/main/forecast.user.js", Wt = "apm_v1_labor_employees", Mr = "apm_v1_labor_active", xr = "apm_v1_labor_dock", Zs = "apm_v1_labor_prefs", kt = "apm_v1_labor_night_shift", rn = "apm_v1_labor_decimal_sep", zn = "apm_v1_labor_decimal_detected", vr = "apm_v1_labor_last_emp", Pr = "apm_v1_labor_shift_end", el = "apm_v1_labor_booking_log", Eo = "apm_v1_labor_record_registry", li = "apm_v1_labor_night_shift_bootstrapped", ci = "apm_v1_labor_shift_view", tl = "apm_v1_labor_shift_span", Lr = "apm_v1_session", It = "apm_v1_ptp_history", ko = "apm_v1_update_check", di = "apm_v1_update_info", jn = "apm_v1_migrations_done", rl = "apm_v1_migrations_run_count", pi = "apm_v1_welcome_seen", ol = "apm_v1_betterApm_imported", Jr = "apm_v1_snapshot_", nl = "apm_v1_install_id", Tt = "apm_theme_hint", Kn = "apm_gen_settings", To = "apm_transition_active", Ud = "https://apm-master.jaker788.workers.dev/check/beta", Gd = "https://raw.githubusercontent.com/jaker788-create/APM-Master/Beta/forecast.user.js", Vd = "https://raw.githubusercontent.com/jaker788-create/APM-Master/Beta/forecast.user.js", zd = "https://raw.githubusercontent.com/jaker788-create/APM-Master/main/changelog.md", jd = "https://raw.githubusercontent.com/jaker788-create/APM-Master/main/RELEASE%20NOTES.md", Kd = "https://github.com/jaker788-create/APM-Master/blob/main/changelog.md", Yd = "https://github.com/jaker788-create/APM-Master/blob/main/RELEASE%20NOTES.md", or = {
       ERROR: 0,
       WARN: 1,
       INFO: 2,
       DEBUG: 3,
       VERBOSE: 4
-    }, Xs = typeof location < "u" ? location.hostname : "", Fd = Xs.match(/^(eu\d|us\d)/i), il = Fd ? Fd[1].toLowerCase() : "us1", Lr = Xs.includes("eam.aws.a2z.com") ? `https://${Xs}/web/base/` : `https://${il}.eam.hxgnsmartcloud.com/web/base/`, Kn = 3, ui = 2, fe = {
+    }, Qs = typeof location < "u" ? location.hostname : "", qd = Qs.match(/^(eu\d|us\d)/i), al = qd ? qd[1].toLowerCase() : "us1", Dr = Qs.includes("eam.aws.a2z.com") ? `https://${Qs}/web/base/` : `https://${al}.eam.hxgnsmartcloud.com/web/base/`, Yn = 3, ui = 2, ge = {
       WSJOBS: {
         label: "Work Order",
         systemFunc: "WSJOBS",
@@ -371,7 +371,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
         screenTitle: "WO Statistics",
         descriptionField: null
       }
-    }, sl = {
+    }, il = {
       "Work Orders": "WSJOBS",
       "Work Orders - Compliance": "CTJOBS",
       "RME Audits": "ADJOBS",
@@ -389,13 +389,13 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
       Employees: "WSEMPS",
       Shifts: "WSSHIF",
       "Book Labor By Employee": "WSBOOK"
-    }, jd = {
+    }, Jd = {
       BSSTRT: "Start Screen",
       AUIRPR: "Repair Requests",
       SHFRPT: "Shift Reports",
       BSUDSC: "Repair Requests",
       CSCASE: "Shift Reports"
-    }, Nt = {
+    }, Mt = {
       WSJOBS: "wo",
       CTJOBS: "wo",
       AUIRPR: "repair",
@@ -404,7 +404,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
       SHFRPT: "shiftReport",
       CSCASE: "shiftReport"
       // system function for SHFRPT
-    }, Kd = {
+    }, Qd = {
       wo: "Work Orders",
       repair: "Repair",
       shiftReport: "Shift Report"
@@ -412,11 +412,11 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
   });
 
   // src/core/storage.js
-  function ll(e) {
+  function sl(e) {
     let t = e && (e.message || String(e)) || "";
     return /disconnected port/i.test(t);
   }
-  function Yd(e) {
+  function Xd(e) {
     if (typeof e != "string") return e;
     let t = e.trim();
     if (!t) return e;
@@ -436,9 +436,9 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
     }
     return e;
   }
-  var rn, N, _e = le(() => {
+  var on, N, _e = le(() => {
     te();
-    rn = !1;
+    on = !1;
     N = {
       /**
        * Retrieves a value from the best available storage.
@@ -459,22 +459,22 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
       get(e, t = null, r = {}) {
         let o = r && r.promote === !0;
         try {
-          if (!rn && typeof GM_getValue < "u") {
+          if (!on && typeof GM_getValue < "u") {
             let a;
             try {
               a = GM_getValue(e);
             } catch (s) {
-              if (ll(s))
-                rn = !0, d.debug("Storage", "GM port disconnected; falling back to localStorage for this frame");
+              if (sl(s))
+                on = !0, d.debug("Storage", "GM port disconnected; falling back to localStorage for this frame");
               else
                 throw s;
             }
             if (a != null)
-              return typeof a == "string" ? Yd(a) : a;
+              return typeof a == "string" ? Xd(a) : a;
           }
           let n = localStorage.getItem(e);
           if (n !== null) {
-            let a = Yd(n);
+            let a = Xd(n);
             return o && typeof GM_setValue < "u" && (this.set(e, a), d.debug("Storage", `Promoted key '${e}' from local to GM storage.`)), a;
           }
         } catch (n) {
@@ -490,12 +490,12 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
       set(e, t) {
         try {
           let r = typeof t == "string" ? t : JSON.stringify(t);
-          if (!rn && typeof GM_setValue < "u")
+          if (!on && typeof GM_setValue < "u")
             try {
               GM_setValue(e, r);
             } catch (o) {
-              if (ll(o))
-                rn = !0, d.debug("Storage", "GM port disconnected; falling back to localStorage for this frame");
+              if (sl(o))
+                on = !0, d.debug("Storage", "GM port disconnected; falling back to localStorage for this frame");
               else
                 throw o;
             }
@@ -510,9 +510,9 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
        */
       remove(e) {
         try {
-          !rn && typeof GM_deleteValue < "u" && GM_deleteValue(e);
+          !on && typeof GM_deleteValue < "u" && GM_deleteValue(e);
         } catch (t) {
-          ll(t) && (rn = !0);
+          sl(t) && (on = !0);
         }
         try {
           localStorage.removeItem(e);
@@ -530,10 +530,10 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
   });
 
   // src/core/recovery.js
-  var Yn, Jd = le(() => {
+  var Jn, Zd = le(() => {
     _e();
     se();
-    Yn = {
+    Jn = {
       /**
        * Remove stuck preview rules from ColorCode storage.
        * Safe operation that only removes rules marked as __preview__ / _isPreview.
@@ -586,8 +586,8 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
 
   // src/core/api.js
   var _, Oe = le(() => {
-    Ve();
-    Jd();
+    je();
+    Zd();
     _ = {
       /**
        * The raw global _APM object.
@@ -691,11 +691,11 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
        * Recovery utilities for fixing data corruption and stuck state.
        */
       get recovery() {
-        return Yn;
+        return Jn;
       }
     };
-    typeof ze < "u" && (ze.APMApi = _, ze._APM || (ze._APM = {}), ze._APM.recovery = Yn);
-    typeof window < "u" && (window.APMApi = _, window._APM || (window._APM = {}), window._APM.recovery = Yn);
+    typeof ze < "u" && (ze.APMApi = _, ze._APM || (ze._APM = {}), ze._APM.recovery = Jn);
+    typeof window < "u" && (window.APMApi = _, window._APM || (window._APM = {}), window._APM.recovery = Jn);
     typeof unsafeWindow < "u" && (unsafeWindow.APMApi = new Proxy(_, {
       get(e, t) {
         if (t === "register" || t === "_api") return;
@@ -708,14 +708,14 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
       deleteProperty() {
         return !0;
       }
-    }), unsafeWindow._APM || (unsafeWindow._APM = {}), unsafeWindow._APM.recovery = Yn);
+    }), unsafeWindow._APM || (unsafeWindow._APM = {}), unsafeWindow._APM.recovery = Jn);
   });
 
   // src/core/frame-events.js
   function Xe(e, t) {
     mi.has(e) || mi.set(e, []), mi.get(e).push(t);
   }
-  function on(e, t) {
+  function nn(e, t) {
     let r = mi.get(e);
     if (!(!r || r.length === 0))
       for (let o of r)
@@ -725,27 +725,27 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
           d.error("FrameEvents", `Subscriber for ${e} threw:`, n);
         }
   }
-  var mi, vr = le(() => {
+  var mi, wr = le(() => {
     te();
     mi = /* @__PURE__ */ new Map();
   });
 
   // src/core/eam/eam-capture.js
-  function nn() {
-    if (!cl) {
-      cl = !0;
+  function an() {
+    if (!ll) {
+      ll = !0;
       try {
-        let e = N.get(Qd);
+        let e = N.get(ep);
         e && typeof e == "object" && (typeof e.tenant == "string" && (Re.tenant = e.tenant), typeof e.dateformat == "string" && (Re.dateformat = e.dateformat), typeof e.dateseparator == "string" && (Re.dateseparator = e.dateseparator), e.screencachelist !== void 0 && (Re.screencachelist = e.screencachelist), typeof e.isscreencache == "boolean" && (Re.isscreencache = e.isscreencache));
       } catch (e) {
         d.debug("EamCapture", "hydrate failed:", e?.message || e);
       }
     }
   }
-  function Bg() {
+  function Ug() {
     try {
-      N.set(Qd, {
-        _v: Fg,
+      N.set(ep, {
+        _v: Hg,
         capturedAt: (/* @__PURE__ */ new Date()).toISOString(),
         tenant: Re.tenant,
         dateformat: Re.dateformat,
@@ -757,7 +757,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
       d.debug("EamCapture", "persist failed:", e?.message || e);
     }
   }
-  function Xd(e, t) {
+  function tp(e, t) {
     if (!e || t > 3) return null;
     try {
       if (e.gAppData) return e.gAppData;
@@ -768,14 +768,14 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
       let r = e.frames;
       if (r && r.length)
         for (let o = 0; o < r.length; o++) {
-          let n = Xd(r[o], t + 1);
+          let n = tp(r[o], t + 1);
           if (n) return n;
         }
     } catch {
     }
     return null;
   }
-  function $g() {
+  function Gg() {
     if (typeof window > "u") return null;
     let e;
     try {
@@ -797,11 +797,11 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
     } catch {
       r = e;
     }
-    return Xd(r, 0);
+    return tp(r, 0);
   }
-  function dl(e) {
+  function cl(e) {
     if (!e || typeof e != "object") return !1;
-    nn();
+    an();
     let t = !1;
     if (typeof e.tenant == "string" && e.tenant && e.tenant !== Re.tenant && (Re.tenant = e.tenant, t = !0), typeof e.dateformat == "string" && e.dateformat && e.dateformat !== Re.dateformat && (Re.dateformat = e.dateformat, t = !0), typeof e.dateseparator == "string" && e.dateseparator && e.dateseparator !== Re.dateseparator && (Re.dateseparator = e.dateseparator, t = !0), e.screencachelist !== void 0 && e.screencachelist !== null) {
       let r = !1;
@@ -812,52 +812,52 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
       r || (Re.screencachelist = e.screencachelist, t = !0);
     }
     if (typeof e.isscreencache == "boolean" && e.isscreencache !== Re.isscreencache && (Re.isscreencache = e.isscreencache, t = !0), t) {
-      Bg();
+      Ug();
       let r = Object.entries(e).filter(([, o]) => o != null && o !== "").map(([o, n]) => o === "screencachelist" ? Array.isArray(n) ? `${o}=[${n.length}]` : typeof n == "string" ? `${o}=string(${n.length}ch)` : `${o}=?` : `${o}=${n}`).join(" ");
       d.info("EamCapture", `captured: ${r}`);
     }
     return t;
   }
-  function pl() {
-    let e = $g();
+  function dl() {
+    let e = Gg();
     if (!e) return !1;
     let t = {};
-    return e.tenantid && (t.tenant = e.tenantid), e.dateformat && (t.dateformat = e.dateformat), e.dateseparator && (t.dateseparator = e.dateseparator), e.screencachelist != null && (t.screencachelist = e.screencachelist), typeof e.isscreencache == "boolean" && (t.isscreencache = e.isscreencache), Object.keys(t).length === 0 ? !1 : dl(t);
+    return e.tenantid && (t.tenant = e.tenantid), e.dateformat && (t.dateformat = e.dateformat), e.dateseparator && (t.dateseparator = e.dateseparator), e.screencachelist != null && (t.screencachelist = e.screencachelist), typeof e.isscreencache == "boolean" && (t.isscreencache = e.isscreencache), Object.keys(t).length === 0 ? !1 : cl(t);
   }
-  function Jn() {
-    return nn(), Re.tenant || "";
-  }
-  function Zd() {
-    return nn(), Re.dateformat || "";
-  }
-  function ep() {
-    return nn(), Re.dateseparator || "";
-  }
-  function tp() {
-    return nn(), Re.screencachelist;
+  function Qn() {
+    return an(), Re.tenant || "";
   }
   function rp() {
-    return nn(), {
+    return an(), Re.dateformat || "";
+  }
+  function op() {
+    return an(), Re.dateseparator || "";
+  }
+  function np() {
+    return an(), Re.screencachelist;
+  }
+  function ap() {
+    return an(), {
       tenant: Re.tenant,
       dateformat: Re.dateformat,
       dateseparator: Re.dateseparator,
       screencachelist: Re.screencachelist,
       isscreencache: Re.isscreencache,
-      hydrated: cl
+      hydrated: ll
     };
   }
-  function Dr() {
-    return Jn();
-  }
   function nr() {
-    return `${Lr}logindisp?tenant=${Jn()}`;
+    return Qn();
   }
-  var Qd, Fg, Re, cl, op, It = le(() => {
+  function ar() {
+    return `${Dr}logindisp?tenant=${Qn()}`;
+  }
+  var ep, Hg, Re, ll, ip, Ct = le(() => {
     te();
     _e();
     se();
-    vr();
-    Qd = "apm_v1_eam_capture", Fg = 1, Re = {
+    wr();
+    ep = "apm_v1_eam_capture", Hg = 1, Re = {
       tenant: "",
       dateformat: "",
       dateseparator: "",
@@ -865,10 +865,10 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
       // raw value: array, JSON string, or null
       isscreencache: void 0
       // boolean from EAM, or undefined when unknown
-    }, cl = !1;
-    op = {
+    }, ll = !1;
+    ip = {
       get tenant() {
-        return Jn();
+        return Qn();
       },
       userFuncName: "WSJOBS",
       woPattern: /\b([123]\d{9,})\b/
@@ -876,7 +876,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
     try {
       Xe("frame:attached", () => {
         try {
-          pl();
+          dl();
         } catch (e) {
           d.debug("EamCapture", "frame:attached capture failed:", e?.message || e);
         }
@@ -887,32 +887,32 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
   });
 
   // src/core/eam/eam-title-observer.js
-  function Wg(e) {
+  function zg(e) {
     if (e.includes("| List View")) return { view: "list", subTab: "List View" };
     let t = e.indexOf("|");
     return t !== -1 ? { view: "record", subTab: e.slice(t + 1).trim() } : { view: "unknown", subTab: null };
   }
-  function ge() {
-    let e = Co && sl[Co] || null, t;
-    return Qn ? t = qg[Qn] || "UNKNOWN" : fi === "list" ? t = "LIST" : t = "UNKNOWN", { view: fi, screenTitle: Co, subTab: Qn, screen: e, tab: t };
+  function he() {
+    let e = Co && il[Co] || null, t;
+    return Xn ? t = Vg[Xn] || "UNKNOWN" : fi === "list" ? t = "LIST" : t = "UNKNOWN", { view: fi, screenTitle: Co, subTab: Xn, screen: e, tab: t };
   }
-  function Xn() {
-    return Co && sl[Co] || null;
+  function Zn() {
+    return Co && il[Co] || null;
   }
-  function ap() {
-    ul = !0, setTimeout(() => {
-      ul = !1;
+  function lp() {
+    pl = !0, setTimeout(() => {
+      pl = !1;
     }, 0);
   }
-  function ip() {
-    if (np) return;
+  function cp() {
+    if (sp) return;
     let e = document.querySelector("title");
     if (!e) return;
     new MutationObserver(() => {
-      if (ul) return;
-      let r = document.title, n = r.match(/^APM\s*-\s*(.+?)(?:\s*\||$)/)?.[1]?.trim() || null, { view: a, subTab: s } = Wg(r);
-      if (!(a === fi && n === Co && s === Qn)) {
-        fi = a, Co = n, Qn = s, window.dispatchEvent(new CustomEvent("APM_EAM_VIEW_CHANGE", {
+      if (pl) return;
+      let r = document.title, n = r.match(/^APM\s*-\s*(.+?)(?:\s*\||$)/)?.[1]?.trim() || null, { view: a, subTab: s } = zg(r);
+      if (!(a === fi && n === Co && s === Xn)) {
+        fi = a, Co = n, Xn = s, window.dispatchEvent(new CustomEvent("APM_EAM_VIEW_CHANGE", {
           detail: { view: a, screenTitle: n, subTab: s }
         }));
         try {
@@ -927,13 +927,13 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
         }
         d.debug("EamTitle", `View change: ${n || "?"} | ${s || "(none)"} \u2192 ${a}`);
       }
-    }).observe(e, { childList: !0, characterData: !0, subtree: !0 }), np = !0, d.debug("EamTitle", "Shared title observer installed");
+    }).observe(e, { childList: !0, characterData: !0, subtree: !0 }), sp = !0, d.debug("EamTitle", "Shared title observer installed");
   }
-  var np, ul, fi, Co, Qn, qg, nt = le(() => {
+  var sp, pl, fi, Co, Xn, Vg, nt = le(() => {
     te();
     se();
     ue();
-    np = !1, ul = !1, fi = "unknown", Co = null, Qn = null, qg = {
+    sp = !1, pl = !1, fi = "unknown", Co = null, Xn = null, Vg = {
       "Record View": "HDR",
       Checklist: "ACK",
       "Book Labor": "LABOR",
@@ -942,44 +942,44 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
   });
 
   // src/core/ext/active-screen.js
-  function sp(e) {
+  function dp(e) {
     if (!e || !e.getBoundingClientRect) return !1;
     let t = e.getBoundingClientRect();
     return t.width > 0 && t.height > 0 && t.bottom > 0;
   }
-  function lp(e) {
+  function pp(e) {
     if (!e || e.isDestroyed) return !1;
     let t = e.up?.("tabpanel");
     return !t || t.isDestroyed ? !0 : t.isVisible?.(!0) !== !1;
   }
-  function Hg(e, t) {
+  function jg(e, t) {
     let r = e.document, o = (n) => !!n && n.ownerDocument === r;
     return {
       win: e,
       doc: r,
       screenId: t,
       contains: o,
-      containsEl: (n) => o(n) && sp(n),
+      containsEl: (n) => o(n) && dp(n),
       containsComp: (n) => {
         if (!n) return !1;
         let a = n.getEl?.()?.dom;
-        return o(a) && lp(n);
+        return o(a) && pp(n);
       },
       containsDoc: (n) => !!n && n === r
     };
   }
-  function Ug(e, t, r) {
+  function Kg(e, t, r) {
     let o = e.document, n = (a) => !!a && a.ownerDocument === o && (!r || r.contains(a));
     return {
       win: e,
       doc: o,
       screenId: t,
       contains: n,
-      containsEl: (a) => n(a) && sp(a),
+      containsEl: (a) => n(a) && dp(a),
       containsComp: (a) => {
         if (!a) return !1;
         let s = a.getEl?.()?.dom;
-        return n(s) && lp(a);
+        return n(s) && pp(a);
       },
       // Path B's host doc is mcp's frame; the active screen's contentDoc
       // lives inside an iframe element that the tabDom wrapper contains.
@@ -996,7 +996,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
       }
     };
   }
-  function ml(e, t, r, o) {
+  function ul(e, t, r, o) {
     let n = null;
     try {
       n = t.getEl?.().dom || null;
@@ -1008,12 +1008,12 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
         try {
           let s = a.frameElement;
           if (s && n.contains(s))
-            return Hg(a, r);
+            return jg(a, r);
         } catch {
         }
-    return Ug(e, r, n);
+    return Kg(e, r, n);
   }
-  function Ke(e) {
+  function Ye(e) {
     let t = ne();
     for (let r of t) {
       let o;
@@ -1028,15 +1028,15 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
       let a = n.screenId || n.down?.("[userFunction]")?.userFunction || null;
       if (a) {
         if (e) {
-          let s = Nt[a] || null;
+          let s = Mt[a] || null;
           if (!s || !e[s]) continue;
         }
-        return ml(r, n, a, t);
+        return ul(r, n, a, t);
       }
     }
     return null;
   }
-  function cp(e) {
+  function up(e) {
     if (!e) return null;
     let t = ne();
     for (let r of t) {
@@ -1050,11 +1050,11 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
       let n = o.items?.items || [];
       for (let a of n)
         if (!(!a || a.isDestroyed) && (a.screenId === e || a.itemId === "NONCACHE" && a.down?.(`[userFunction=${e}]`)))
-          return ml(r, a, e, t);
+          return ul(r, a, e, t);
     }
     return null;
   }
-  function an(e) {
+  function sn(e) {
     if (!e) return !1;
     let t;
     try {
@@ -1088,13 +1088,13 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
     }
     return !1;
   }
-  var ar = le(() => {
+  var ir = le(() => {
     ue();
     se();
   });
 
   // src/core/async-utils.js
-  function Ye(e) {
+  function He(e) {
     return new Promise((t) => {
       let r = e?.Ext;
       if (!r || !r.Ajax || !r.Ajax.isLoading()) return t();
@@ -1106,40 +1106,40 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
       }, 1e4);
     });
   }
-  var re, Tt = le(() => {
+  var re, yt = le(() => {
     re = (e) => new Promise((t) => setTimeout(t, e));
   });
 
   // src/core/ext/ext-finders.js
-  function dp() {
-    Wt = null, sn = 0;
+  function mp() {
+    Ht = null, ln = 0;
   }
   function Se(e = !1) {
-    e && (Wt = null, sn = 0, Ao = null);
+    e && (Ht = null, ln = 0, Ao = null);
     let t = performance.now();
-    if (Wt && t - sn < Gg)
-      if (!Wt.grid.isDestroyed && Wt.grid.rendered) {
-        if (Ke(null)?.containsComp(Wt.grid)) return Wt;
-        Wt = null;
+    if (Ht && t - ln < Yg)
+      if (!Ht.grid.isDestroyed && Ht.grid.rendered) {
+        if (Ye(null)?.containsComp(Ht.grid)) return Ht;
+        Ht = null;
       } else
-        Wt = null;
-    let r = performance.now(), o = Ke(null);
+        Ht = null;
+    let r = performance.now(), o = Ye(null);
     if (!o || !o.win.Ext?.ComponentQuery)
-      return Wt = null, sn = performance.now(), Ao !== "__none__" && (d.debug("Utils", "findMainGrid found NOTHING (no active screen target)"), Ao = "__none__"), null;
-    let n = o.win.Ext.ComponentQuery.query("gridpanel:not([destroyed=true])").filter((l) => l.rendered && !l.isDestroyed && !l.destroying && l.headerCt?.rendered && l.columns?.length > Kn && !l.up("window")).filter((l) => o.containsComp(l));
+      return Ht = null, ln = performance.now(), Ao !== "__none__" && (d.debug("Utils", "findMainGrid found NOTHING (no active screen target)"), Ao = "__none__"), null;
+    let n = o.win.Ext.ComponentQuery.query("gridpanel:not([destroyed=true])").filter((l) => l.rendered && !l.isDestroyed && !l.destroying && l.headerCt?.rendered && l.columns?.length > Yn && !l.up("window")).filter((l) => o.containsComp(l));
     if (n.length === 0)
-      return Wt = null, sn = performance.now(), Ao !== "__none__" && (d.debug("Utils", `findMainGrid found NOTHING on active screen ${o.screenId}`), Ao = "__none__"), null;
+      return Ht = null, ln = performance.now(), Ao !== "__none__" && (d.debug("Utils", `findMainGrid found NOTHING on active screen ${o.screenId}`), Ao = "__none__"), null;
     n.sort((l, c) => c.columns.length - l.columns.length);
     let a = n[0], s = performance.now();
-    return Wt = { win: o.win, doc: o.doc, grid: a }, sn = s, a.id !== Ao && (d.debug("Utils", `findMainGrid found: ${a.id} in ${(s - r).toFixed(2)}ms (Cols: ${a.columns.length}, Screen: ${o.screenId})`), Ao = a.id), Wt;
+    return Ht = { win: o.win, doc: o.doc, grid: a }, ln = s, a.id !== Ao && (d.debug("Utils", `findMainGrid found: ${a.id} in ${(s - r).toFixed(2)}ms (Cols: ${a.columns.length}, Screen: ${o.screenId})`), Ao = a.id), Ht;
   }
-  function ln() {
-    let e = Ke(null);
+  function cn() {
+    let e = Ye(null);
     if (!e || !e.win.Ext?.ComponentQuery) return null;
     let t = e.win.Ext.ComponentQuery.query("tabpanel:not([destroyed=true]), uxtabpanel:not([destroyed=true])").filter((r) => r.rendered && !r.isDestroyed && r.items?.items?.length > ui && r.items.items.some((o) => o.itemId === "HDR")).filter((r) => e.containsComp(r));
     return t.length === 0 ? null : (t.sort((r, o) => o.items.items.length - r.items.items.length), { win: e.win, tabPanel: t[0] });
   }
-  function zg(e, t) {
+  function Jg(e, t) {
     if (e.__apmLastHasMore !== void 0) {
       let r = !!e.__apmLastHasMore;
       return d.debug("Utils", `[Fetch Logic] Using Reader-hooked morePresent: ${r}`), delete e.__apmLastHasMore, r;
@@ -1157,7 +1157,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
       return !1;
     }
   }
-  async function pp(e, t = {}) {
+  async function fp(e, t = {}) {
     if (!e || e.isDestroyed) return;
     let r = e.getStore();
     if (!r || r.isLoading()) return;
@@ -1173,22 +1173,22 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
           f = JSON.parse(f);
         } catch {
         }
-      let g = zg(r, f), h = (r.snapshot || r.data).getCount?.() || (r.snapshot || r.data).length || 0;
-      if (d.debug("Utils", `Recursive check for grid ${e.id}: morePresent=${g}, totalReceived=${h}, callCount=${l}`), g && l < n) {
+      let g = Jg(r, f), y = (r.snapshot || r.data).getCount?.() || (r.snapshot || r.data).length || 0;
+      if (d.debug("Utils", `Recursive check for grid ${e.id}: morePresent=${g}, totalReceived=${y}, callCount=${l}`), g && l < n) {
         l++, d.debug("Utils", `Recursive fetch for grid ${e.id}: Call ${l}`);
-        let y = h + 1, b = p.extraParams || {}, x = t.eamid || be.session.eamid || b.eamid || r.proxy?.reader?.rawData?.eamid, v = t.tenant || be.session.tenant || b.tenant || r.proxy?.reader?.rawData?.tenant;
-        if (x && (o || e.id?.includes("readonlygrid"))) {
+        let x = y + 1, h = p.extraParams || {}, b = t.eamid || ye.session.eamid || h.eamid || r.proxy?.reader?.rawData?.eamid, v = t.tenant || ye.session.tenant || h.tenant || r.proxy?.reader?.rawData?.tenant;
+        if (b && (o || e.id?.includes("readonlygrid"))) {
           let E = {
             COMPONENT_INFO_TYPE: "DATA_ONLY",
             COMPONENT_INFO_TYPE_MODE: "CACHE",
             ONLY_DATA_REQUIRED: "true",
-            CURSOR_POSITION: y.toString(),
-            eamid: x,
+            CURSOR_POSITION: x.toString(),
+            eamid: b,
             tenant: v || ""
           };
           return ["GRID_ID", "GRID_NAME", "DATASPY_ID", "SYSTEM_FUNCTION_NAME", "USER_FUNCTION_NAME", "CURRENT_TAB_NAME"].forEach((k) => {
-            b[k] && (E[k] = b[k]);
-          }), d.debug("Utils", `Triggering store.load({addRecords:true}) for ${e.id} at cursor ${y}`), new Promise((k, S) => {
+            h[k] && (E[k] = h[k]);
+          }), d.debug("Utils", `Triggering store.load({addRecords:true}) for ${e.id} at cursor ${x}`), new Promise((k, S) => {
             r.load({
               addRecords: !0,
               params: E,
@@ -1200,13 +1200,13 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
           });
         } else {
           let E = {
-            ...b,
+            ...h,
             GET_ALL_DATABSE_ROWS: "true",
             // Intentional misspelling — matches EAM server API parameter name
             REQUEST_TYPE: "LIST.DATA_ONLY.STORED",
-            CURSOR_POSITION: y.toString()
+            CURSOR_POSITION: x.toString()
           };
-          return d.debug("Utils", `Triggering fallback load for ${e.id} at cursor ${y}`), new Promise((k, S) => {
+          return d.debug("Utils", `Triggering fallback load for ${e.id} at cursor ${x}`), new Promise((k, S) => {
             r.load({
               addRecords: !0,
               params: E,
@@ -1220,14 +1220,14 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
     };
     return c();
   }
-  var Wt, sn, Ao, Gg, wr, Mt = le(() => {
+  var Ht, ln, Ao, Yg, Sr, Pt = le(() => {
     te();
     se();
     Te();
-    Tt();
-    ar();
-    Wt = null, sn = 0, Ao = null, Gg = 5e3;
-    wr = {
+    yt();
+    ir();
+    Ht = null, ln = 0, Ao = null, Yg = 5e3;
+    Sr = {
       /**
        * Set a value on an ExtJS field and fire necessary events.
        */
@@ -1249,34 +1249,34 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
        * Ensure a combo store is loaded before interacting.
        */
       ensureStoreLoaded: async function(e, t) {
-        !e || !e.store || e.store.getCount() === 0 && !e.store.isLoading() && (e.doQuery ? e.doQuery(e.allQuery || "", !0) : e.onTriggerClick && e.onTriggerClick(), await Ye(t));
+        !e || !e.store || e.store.getCount() === 0 && !e.store.isLoading() && (e.doQuery ? e.doQuery(e.allQuery || "", !0) : e.onTriggerClick && e.onTriggerClick(), await He(t));
       }
     };
   });
 
   // src/core/ext/xhr-context.js
-  function fl(e, t) {
-    e && e !== ir.userFunc && dp(), e && (ir.userFunc = e), t && (ir.systemFunc = t), t === "BSUDSC" && e && (ir.udsOverride = e, ir.udsPinnedFm = hp());
+  function ml(e, t) {
+    e && e !== sr.userFunc && mp(), e && (sr.userFunc = e), t && (sr.systemFunc = t), t === "BSUDSC" && e && (sr.udsOverride = e, sr.udsPinnedFm = xp());
   }
   function gi() {
-    return ir.userFunc;
-  }
-  function up() {
-    return ir.systemFunc;
-  }
-  function mp() {
-    return ir.udsOverride;
-  }
-  function fp() {
-    return ir.udsPinnedFm;
+    return sr.userFunc;
   }
   function gp() {
-    ir.udsOverride = null, ir.udsPinnedFm = null;
+    return sr.systemFunc;
   }
-  var ir, gl = le(() => {
-    Mt();
+  function hp() {
+    return sr.udsOverride;
+  }
+  function yp() {
+    return sr.udsPinnedFm;
+  }
+  function bp() {
+    sr.udsOverride = null, sr.udsPinnedFm = null;
+  }
+  var sr, fl = le(() => {
+    Pt();
     ct();
-    ir = {
+    sr = {
       userFunc: null,
       systemFunc: null,
       // User-defined screen (BSUDSC) override — these screens don't update
@@ -1290,11 +1290,11 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
   });
 
   // src/core/ext/ext-screen.js
-  function hp() {
+  function xp() {
     return Fr;
   }
   function Ze() {
-    let e = Xn();
+    let e = Zn();
     if (e)
       return Fr = e, e;
     let t = rt(), r = "", o = "", n = "";
@@ -1302,25 +1302,25 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
       try {
         let p = c.EAM?.FocusManager?.activeView?.screen?.userFunction;
         if (!p) continue;
-        c === c.top ? r = p : (n = p, an(c) && (o = p));
+        c === c.top ? r = p : (n = p, sn(c) && (o = p));
       } catch {
       }
     let a = o || n || r;
     if (a) {
-      if (bp = !0, ut.has(a) && Fr) return Fr;
-      let c = mp();
+      if (vp = !0, ut.has(a) && Fr) return Fr;
+      let c = hp();
       if (c) {
-        let p = fp();
+        let p = yp();
         if (a === p || ut.has(a))
           return Fr = c, c;
-        gp();
+        bp();
       }
       return ut.has(a) || (Fr = a), a;
     }
     let s = gi();
     if (s && !ut.has(s))
       return Fr = s, s;
-    if (!bp)
+    if (!vp)
       try {
         let p = new URLSearchParams(t.location.search).get("USER_FUNCTION_NAME");
         if (p) return p;
@@ -1335,7 +1335,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
       n && (e = n.win, t = t || n.grid);
     }
     if (t) {
-      let n = hl(t);
+      let n = gl(t);
       if (n) return n;
     }
     if (e?.Ext?.ComponentQuery)
@@ -1343,7 +1343,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
         let n = e.Ext.ComponentQuery.query("gridpanel:not([destroyed=true])");
         for (let a of n) {
           if (!a.rendered || a.isDestroyed) continue;
-          let s = hl(a);
+          let s = gl(a);
           if (s) return s;
         }
       } catch {
@@ -1384,10 +1384,10 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
       } catch {
       }
     let o = gi();
-    return o && !ut.has(o) ? o : Vg().userFunc;
+    return o && !ut.has(o) ? o : Qg().userFunc;
   }
   function hi(e, t) {
-    let r = yp(e);
+    let r = wp(e);
     if (!r) return null;
     try {
       let o = r.getValue?.();
@@ -1396,8 +1396,8 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
       return null;
     }
   }
-  function bl(e, t) {
-    let r = yp(e);
+  function hl(e, t) {
+    let r = wp(e);
     if (!r) return "";
     try {
       let o = r.getRawValue?.() || "";
@@ -1406,16 +1406,16 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
       return "";
     }
   }
-  function yp(e) {
+  function wp(e) {
     try {
       if (!e || !e.Ext?.ComponentQuery) return null;
-      let t = Ke(null), r = t ? (a) => t.containsComp(a) : () => !0, o = e.Ext.ComponentQuery.query("combobox:not([destroyed=true])"), n = o.find((a) => r(a) && (a.itemId || "").toLowerCase().includes("dataspy"));
+      let t = Ye(null), r = t ? (a) => t.containsComp(a) : () => !0, o = e.Ext.ComponentQuery.query("combobox:not([destroyed=true])"), n = o.find((a) => r(a) && (a.itemId || "").toLowerCase().includes("dataspy"));
       return n || (n = o.find((a) => r(a) && (a.name || "").toLowerCase().includes("spy"))), n || null;
     } catch {
       return null;
     }
   }
-  function hl(e) {
+  function gl(e) {
     try {
       let t = e.getStore?.();
       if (!t) return null;
@@ -1447,10 +1447,10 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
     }
     return null;
   }
-  function Vg() {
+  function Qg() {
     let e = Se();
     if (e) {
-      let n = hl(e.grid);
+      let n = gl(e.grid);
       if (n) {
         try {
           return { systemFunc: e.grid.getStore?.()?.getProxy?.()?.extraParams?.SYSTEM_FUNCTION_NAME || n, userFunc: n };
@@ -1459,7 +1459,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
         return { systemFunc: n, userFunc: n };
       }
     }
-    let t = gi(), r = up();
+    let t = gi(), r = gp();
     if (t && !ut.has(t))
       return { systemFunc: r || t, userFunc: t };
     let o = ne();
@@ -1472,13 +1472,13 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
       }
     return { systemFunc: "GLOBAL", userFunc: "GLOBAL" };
   }
-  var ut, bp, Fr, ct = le(() => {
+  var ut, vp, Fr, ct = le(() => {
     nt();
-    ar();
-    Mt();
+    ir();
+    Pt();
     ue();
-    gl();
-    ut = /* @__PURE__ */ new Set(["BSSTRT", "WSTABS", "WSFLTR", "GLOBAL", ""]), bp = !1, Fr = "";
+    fl();
+    ut = /* @__PURE__ */ new Set(["BSSTRT", "WSTABS", "WSFLTR", "GLOBAL", ""]), vp = !1, Fr = "";
   });
 
   // src/core/ext/ext-windows.js
@@ -1498,7 +1498,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
       d.debug("Core", "postMessage failed (targetOrigin=" + r + "): " + (o?.message || o));
     }
   }
-  function ye(e) {
+  function be(e) {
     if (!e) return !1;
     try {
       return !!(e.location && typeof e.location.href == "string");
@@ -1520,9 +1520,9 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
   }
   function ne() {
     let e = performance.now();
-    if (bi && e - xp < jg) return bi;
+    if (yi && e - Sp < Xg) return yi;
     let t = rt(), r = /* @__PURE__ */ new Set(), o = (a) => {
-      if (ye(a))
+      if (be(a))
         try {
           a.Ext && r.add(a);
           for (let s = 0; s < a.frames.length; s++)
@@ -1530,11 +1530,11 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
         } catch {
         }
     }, n = t.top;
-    return ye(n) && o(n), o(t), bi = [...r], xp = e, bi;
+    return be(n) && o(n), o(t), yi = [...r], Sp = e, yi;
   }
-  function cn() {
+  function dn() {
     let e = rt(), t = /* @__PURE__ */ new Set(), r = /* @__PURE__ */ new Set(), o = (a) => {
-      if (!(!a || r.has(a) || !ye(a)))
+      if (!(!a || r.has(a) || !be(a)))
         try {
           r.add(a);
           let s = a.document;
@@ -1548,10 +1548,10 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
         } catch {
         }
     }, n = e.top;
-    return ye(n) && o(n), o(e), [...t];
+    return be(n) && o(n), o(e), [...t];
   }
-  function vp() {
-    let e = Ze(), { view: t, subTab: r } = ge();
+  function Ep() {
+    let e = Ze(), { view: t, subTab: r } = he();
     return {
       screen: e,
       view: t,
@@ -1560,26 +1560,26 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
       isListView: t === "list"
     };
   }
-  var bi, xp, jg, ue = le(() => {
+  var yi, Sp, Xg, ue = le(() => {
     te();
     nt();
     ct();
-    bi = null, xp = 0, jg = 500;
+    yi = null, Sp = 0, Xg = 500;
   });
 
   // src/core/primitives/locale.js
   function xi(e, t) {
-    yl = e && e !== "auto" ? e : null, t && (Zn = t);
+    yl = e && e !== "auto" ? e : null, t && (ea = t);
   }
-  function Yg() {
-    return yl || (Zn && Zn.language && Zn.language !== "auto" ? Zn.language : Kg);
+  function eh() {
+    return yl || (ea && ea.language && ea.language !== "auto" ? ea.language : Zg);
   }
   function L(e, ...t) {
-    let r = Yg(), o = yi[r] && yi[r][e] || yi.en[e] || e;
+    let r = eh(), o = bi[r] && bi[r][e] || bi.en[e] || e;
     return t.length === 0 ? o : o.replace(/\{(\d+)\}/g, (n, a) => t[a] ?? "");
   }
-  var yi, Kg, yl, Zn, Vv, qe = le(() => {
-    yi = {
+  var bi, Zg, yl, ea, Zv, qe = le(() => {
+    bi = {
       en: {
         // ── Labor ──
         bookingHours: "Booking {0}h...",
@@ -2402,12 +2402,12 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
         sessionExpiredTitle: "\u30BB\u30C3\u30B7\u30E7\u30F3\u671F\u9650\u5207\u308C",
         pleaseRefresh: "EAM\u3092\u66F4\u65B0\u3057\u3066\u304F\u3060\u3055\u3044"
       }
-    }, Kg = (typeof navigator < "u" ? navigator.language : "en").split("-")[0].toLowerCase(), yl = null, Zn = null, Vv = Object.keys(yi);
+    }, Zg = (typeof navigator < "u" ? navigator.language : "en").split("-")[0].toLowerCase(), yl = null, ea = null, Zv = Object.keys(bi);
   });
 
   // src/core/dates.js
-  function wp() {
-    let e = Zd();
+  function kp() {
+    let e = rp();
     if (!e || typeof e != "string") return null;
     let t = e.trim();
     if (!t) return null;
@@ -2415,8 +2415,8 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
     let r = t.replace(/[\/.\- ]/g, "").toLowerCase();
     return r === "mdy" ? "us" : r === "dmy" ? "eu" : r === "ymd" ? "iso" : null;
   }
-  function Sp() {
-    let e = ep();
+  function Tp() {
+    let e = op();
     if (!e || typeof e != "string") return null;
     let t = e.trim();
     return ["/", "-", "."].includes(t) ? t : null;
@@ -2426,7 +2426,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
     let t = String(e.getDate()).padStart(2, "0"), r = ["JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"], o = String(e.getMonth() + 1).padStart(2, "0"), n = r[e.getMonth()], a = e.getFullYear(), s = Y?.dateSeparator || "/";
     return Y?.dateFormat === "iso" ? `${a}-${o}-${t}` : Y?.dateFormat === "eu" ? `${t}${s}${o}${s}${a}` : Y?.dateFormat === "mon" ? `${t}-${n}-${a}` : `${o}${s}${t}${s}${a}`;
   }
-  function Ct(e) {
+  function At(e) {
     let t = e || /* @__PURE__ */ new Date(), r = t.getFullYear(), o = String(t.getMonth() + 1).padStart(2, "0"), n = String(t.getDate()).padStart(2, "0");
     return `${r}-${o}-${n}`;
   }
@@ -2455,23 +2455,23 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
     let n = new Date(e);
     return isNaN(n.getTime()) ? null : n;
   }
-  var sr = le(() => {
+  var lr = le(() => {
     Te();
-    It();
+    Ct();
   });
 
   // src/core/state.js
-  function Jg() {
-    return wp() || "us";
+  function th() {
+    return kp() || "us";
   }
-  function Qg() {
-    return Sp() || "/";
+  function rh() {
+    return Tp() || "/";
   }
-  function Tp() {
-    if (Ep) return Y;
-    let e = N.get(je), t = null;
+  function _p() {
+    if (Cp) return Y;
+    let e = N.get(Ke), t = null;
     if (e && (t = e, t.logLevel && (d.setLevel(t.logLevel), Fe() && d.debug("APM State", "Loaded from storage:", t))), !t) {
-      let r = document.cookie.match(new RegExp(`${jn}=([^;]+)`));
+      let r = document.cookie.match(new RegExp(`${Kn}=([^;]+)`));
       if (r)
         try {
           let o = JSON.parse(decodeURIComponent(r[1])), n = ["autoRedirect", "dateFormat", "dateSeparator", "updateTrack"];
@@ -2483,17 +2483,17 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
     }
     if (t) {
       let r = { ...Y.flags };
-      Object.assign(Y, xl, t), Y.flags = { ...r, ...t.flags || {} };
+      Object.assign(Y, bl, t), Y.flags = { ...r, ...t.flags || {} };
     } else {
       Fe() && d.debug("APM State", "No stored settings found, using defaults.");
       let r = { ...Y.flags };
-      Object.assign(Y, xl), Y.flags = { ...r }, Y.dateFormat = Jg(), Y.dateSeparator = Qg();
+      Object.assign(Y, bl), Y.flags = { ...r }, Y.dateFormat = th(), Y.dateSeparator = rh();
     }
-    return xi(Y.language, Y), Ep = !0, d.debug("APM State", "Initialization complete."), Y;
+    return xi(Y.language, Y), Cp = !0, d.debug("APM State", "Initialization complete."), Y;
   }
-  function Cp() {
+  function Rp() {
     try {
-      let e = rp(), t = e.tenant || "(missing)", r = e.dateformat || "(missing)", o = e.dateseparator || "(missing)", n = e.screencachelist, a;
+      let e = ap(), t = e.tenant || "(missing)", r = e.dateformat || "(missing)", o = e.dateseparator || "(missing)", n = e.screencachelist, a;
       if (Array.isArray(n) && n.length)
         a = n.map((l) => l?.userFunction).filter(Boolean).join(",");
       else if (typeof n == "string" && n.trim())
@@ -2510,7 +2510,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
       d.debug("APM EAM", "capture summary failed:", e?.message || e);
     }
   }
-  function Xg() {
+  function oh() {
     if (ie.shouldSkipBoot) {
       d.debug("State", `Skipping save on transient frame (${ie.hostname})`);
       return;
@@ -2522,7 +2522,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
         for (let t of e) Y.flags[t] = !0;
       }
     }
-    Y._v = 1, N.set(je, Y);
+    Y._v = 1, N.set(Ke, Y);
     try {
       let t = window.location.hostname.includes("a2z.com") ? ".aws.a2z.com" : ".hxgnsmartcloud.com", r = new Date(Date.now() + 365 * 24 * 60 * 60 * 1e3).toUTCString(), o = {
         autoRedirect: Y.autoRedirect,
@@ -2530,31 +2530,31 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
         dateSeparator: Y.dateSeparator,
         updateTrack: Y.updateTrack
       };
-      document.cookie = `${jn}=${encodeURIComponent(JSON.stringify(o))}; domain=${t}; path=/; expires=${r}; SameSite=Lax`;
+      document.cookie = `${Kn}=${encodeURIComponent(JSON.stringify(o))}; domain=${t}; path=/; expires=${r}; SameSite=Lax`;
     } catch {
     }
   }
-  function yt(e, t) {
-    Y[e] = t, Xg();
+  function xt(e, t) {
+    Y[e] = t, oh();
   }
-  function Sr() {
-    return vl;
+  function Er() {
+    return xl;
   }
-  function lr(e, t = 8e3) {
-    vl = e, clearTimeout(kp), e && (kp = setTimeout(() => {
-      vl = !1;
+  function cr(e, t = 8e3) {
+    xl = e, clearTimeout(Ap), e && (Ap = setTimeout(() => {
+      xl = !1;
     }, t));
   }
-  var be, xl, Y, Ep, vl, kp, Te = le(() => {
+  var ye, bl, Y, Cp, xl, Ap, Te = le(() => {
     se();
-    It();
+    Ct();
     ue();
     te();
     _e();
-    Ve();
+    je();
     qe();
-    sr();
-    be = {
+    lr();
+    ye = {
       // Session — eamid/tenant/user are captured from EAM traffic and persisted;
       // isInitialized/isFresh are runtime flags read by cross-cutting consumers
       // (core/sync, core/diagnostics, modules/labor/labor-tracker) and intentionally
@@ -2569,7 +2569,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
         isFresh: !1
       }
     };
-    xl = {
+    bl = {
       ptpTimerEnabled: ie.isUS1,
       ptpTrackingEnabled: ie.isUS1,
       openLinksInNewTab: !0,
@@ -2586,16 +2586,16 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
       // stable, beta
       flags: {}
       // Phase 9: Feature Flags
-    }, Y = { ...xl }, Ep = !1;
-    vl = !1, kp = null;
+    }, Y = { ...bl }, Cp = !1;
+    xl = !1, Ap = null;
   });
 
   // src/core/feature-flags.js
-  var he, Ht = le(() => {
+  var fe, Lt = le(() => {
     Te();
-    Ve();
+    je();
     te();
-    he = {
+    fe = {
       _registry: /* @__PURE__ */ new Map(),
       /**
        * Checks if a feature flag is enabled.
@@ -2630,7 +2630,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
        * flag-corruption-based module lockout.
        */
       registerDefaults() {
-        this.register("colorCode", { label: "ColorCode Engine", description: "Real-time grid highlighting and nametags" }), this.register("forecast", { label: "Forecast Tools", description: "Site/Org filters and search" }), this.register("autoFill", { label: "AutoFill Profiles", description: "Automated form completion templates" }), this.register("laborBooker", { label: "Labor Booker", description: "Quick labor entry for WOs" }), this.register("ptpSandbox", { label: "PTP Sandbox", description: "Theme sync, status tracking, and timer for PTP assessments", default: ie.isUS1 || ie.isPTP }), this.register("tabGridOrder", { label: "UI Customization", description: "Drag & drop reordering of grids/tabs" }), this.register("tabTitle", { label: "Tab Title", description: "Show current screen name in browser tab" }), this.register("sessionSnapshot", { label: "Session Snapshot", description: "Restore your screen and record after session timeout", default: !0 }), this.register("commentCounter", { label: "Comment Counter", description: "Character count on closing comments with PM threshold indicator" }), this.register("disableTransitionSuppression", { default: !0, label: "Disable transition error suppression", description: "Skip the 8s blanket error suppression around launchScreenDirect. Default on \u2014 the suppression is dead safety-net (the navigation guard + scheduler pause prevent the destroy race the suppression was originally for). Turn off only if a transition error resurfaces and needs masking." }), this.repairIfCorrupted();
+        this.register("colorCode", { label: "ColorCode Engine", description: "Real-time grid highlighting and nametags" }), this.register("forecast", { label: "Forecast Tools", description: "Site/Org filters and search" }), this.register("autoFill", { label: "AutoFill Profiles", description: "Automated form completion templates" }), this.register("laborBooker", { label: "Labor Booker", description: "Quick labor entry for WOs" }), this.register("ptpSandbox", { label: "PTP Sandbox", description: "Theme sync, status tracking, and timer for PTP assessments", default: ie.isUS1 || ie.isPTP }), this.register("tabGridOrder", { label: "UI Customization", description: "Drag & drop reordering of grids/tabs" }), this.register("tabTitle", { label: "Tab Title", description: "Show current screen name in browser tab" }), this.register("sessionSnapshot", { label: "Session Snapshot", description: "Restore your screen and record after session timeout", default: !0 }), this.register("commentCounter", { label: "Comment Counter", description: "Character count on closing comments with PM threshold indicator" }), this.register("copyClosingToComments", { label: "Copy Closing to Comments", description: "Inject a button above the closing comments field that posts the text to the Comments tab" }), this.register("disableTransitionSuppression", { default: !0, label: "Disable transition error suppression", description: "Skip the 8s blanket error suppression around launchScreenDirect. Default on \u2014 the suppression is dead safety-net (the navigation guard + scheduler pause prevent the destroy race the suppression was originally for). Turn off only if a transition error resurfaces and needs masking." }), this.repairIfCorrupted();
       },
       /**
        * Corruption guard: if ALL registered flags are disabled or missing, reset to defaults.
@@ -2645,7 +2645,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
           d.warn("FeatureFlags", "All flags are disabled/missing \u2014 resetting to defaults (corruption recovery)");
           for (let [t, r] of this._registry)
             Y.flags[t] = r.default;
-          yt("flags", Y.flags);
+          xt("flags", Y.flags);
         }
       },
       /**
@@ -2666,18 +2666,18 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
        * @param {boolean} value 
        */
       set(e, t) {
-        Y.flags || (Y.flags = {}), Y.flags[e] = t, yt("flags", Y.flags), d.debug("FeatureFlags", `Flag '${e}' set to ${t}`);
+        Y.flags || (Y.flags = {}), Y.flags[e] = t, xt("flags", Y.flags), d.debug("FeatureFlags", `Flag '${e}' set to ${t}`);
       }
     };
   });
 
   // src/core/diagnostics.js
-  var vi, wi, ve, At = le(() => {
+  var vi, wi, ve, _t = le(() => {
     Oe();
-    Ve();
+    je();
     se();
     Te();
-    Ht();
+    Lt();
     ue();
     _e();
     vi = 50, wi = 150, ve = {
@@ -3028,7 +3028,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
         } catch {
         }
         try {
-          let r = N.get(qt);
+          let r = N.get(Wt);
           e.laborEmployeeCount = Array.isArray(r) ? r.length : 0;
         } catch {
         }
@@ -3062,7 +3062,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
             ptpTimerEnabled: Y.ptpTimerEnabled,
             ptpTrackingEnabled: Y.ptpTrackingEnabled
           },
-          featureFlags: he.getAll(),
+          featureFlags: fe.getAll(),
           savedData: this._collectSavedDataSummary(),
           environment: {
             hostname: ie.hostname,
@@ -3072,12 +3072,12 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
             isPTP: ie.isPTP,
             isTop: ie.isTop,
             isShell: ie.isShell,
-            ...vp()
+            ...Ep()
           },
           session: {
-            tenant: be.session.tenant || "",
-            userCaptured: !!be.session.user,
-            isInitialized: be.session.isInitialized
+            tenant: ye.session.tenant || "",
+            userCaptured: !!ye.session.user,
+            isInitialized: ye.session.isInitialized
           },
           guardFlags: {
             MIGRATION_RAN: !!window[de.MIGRATION_RAN],
@@ -3098,7 +3098,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
   // src/core/logger.js
   var Xr, d, te = le(() => {
     se();
-    At();
+    _t();
     Xr = or.ERROR, d = {
       setLevel: (e) => {
         if (typeof e == "number")
@@ -3177,7 +3177,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
   });
 
   // src/core/primitives/toast.js
-  function _p(e) {
+  function Np(e) {
     let t = document.getElementById(e);
     return t || (t = i("div", {
       id: e,
@@ -3200,71 +3200,71 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
       }
     }), document.body.appendChild(t)), t;
   }
-  function Rp(e) {
+  function Ip(e) {
     setTimeout(() => {
       e.style.opacity = "1", e.style.transform = e._translateBase + " translateY(0)";
     }, 10);
   }
-  function un(e, t) {
+  function mn(e, t) {
     e.style.opacity = "0", e.style.transform = e._translateBase + " translateY(-20px)", setTimeout(() => {
       e.style.display = "none", t && t();
     }, 300);
   }
   function C(e, t, r = !1, o = null) {
     if (o) {
-      dn = e, ea = t, pn = o, Zg();
+      pn = e, ta = t, un = o, nh();
       return;
     }
-    if (!pn) {
-      dn = null, ea = null;
+    if (!un) {
+      pn = null, ta = null;
       let a = document.getElementById("apm-persistent-toast");
-      a && a.style.display !== "none" && un(a);
+      a && a.style.display !== "none" && mn(a);
     }
-    let n = _p("apm-global-toast");
+    let n = Np("apm-global-toast");
     if (n.style.top = "15px", n._translateBase = "translateX(-50%)", n.onclick = null, n.style.cursor = "default", n.style.pointerEvents = "none", !e) {
-      un(n);
+      mn(n);
       return;
     }
-    n.textContent = e, n.style.background = t || "var(--apm-accent)", n.style.display = "block", document.body.appendChild(n), Rp(n), Ap(!0), Si && clearTimeout(Si), r ? Si = null : Si = setTimeout(() => {
-      un(n, () => Ap(!1));
+    n.textContent = e, n.style.background = t || "var(--apm-accent)", n.style.display = "block", document.body.appendChild(n), Ip(n), Op(!0), Si && clearTimeout(Si), r ? Si = null : Si = setTimeout(() => {
+      mn(n, () => Op(!1));
     }, 5e3);
   }
-  function Zg() {
-    let e = _p("apm-persistent-toast");
-    if (e.style.top = "15px", e._translateBase = "translateX(-50%)", e.onclick = null, e.style.cursor = "default", e.style.pointerEvents = "none", !dn) {
-      un(e);
+  function nh() {
+    let e = Np("apm-persistent-toast");
+    if (e.style.top = "15px", e._translateBase = "translateX(-50%)", e.onclick = null, e.style.cursor = "default", e.style.pointerEvents = "none", !pn) {
+      mn(e);
       return;
     }
-    e.textContent = dn, e.style.background = ea || "var(--apm-success)", e.style.display = "block", document.body.appendChild(e), pn && (e.style.pointerEvents = "auto", e.style.cursor = "pointer", e.onclick = (o) => {
-      o.stopPropagation(), pn(o), dn = null, ea = null, pn = null, un(e);
+    e.textContent = pn, e.style.background = ta || "var(--apm-success)", e.style.display = "block", document.body.appendChild(e), un && (e.style.pointerEvents = "auto", e.style.cursor = "pointer", e.onclick = (o) => {
+      o.stopPropagation(), un(o), pn = null, ta = null, un = null, mn(e);
     });
     let t = document.getElementById("apm-global-toast");
-    t && t.style.opacity === "1" && t.style.display !== "none" && (e.style.top = "55px"), Rp(e);
+    t && t.style.opacity === "1" && t.style.display !== "none" && (e.style.top = "55px"), Ip(e);
   }
-  function Ap(e) {
+  function Op(e) {
     let t = document.getElementById("apm-persistent-toast");
     !t || t.style.display === "none" || t.style.opacity === "0" || (t.style.top = e ? "55px" : "15px");
   }
-  function cr() {
-    dn = null, ea = null, pn = null;
+  function dr() {
+    pn = null, ta = null, un = null;
     let e = document.getElementById("apm-persistent-toast");
-    e && un(e);
+    e && mn(e);
   }
-  var Si, dn, ea, pn, We = le(() => {
+  var Si, pn, ta, un, We = le(() => {
     Me();
-    Si = null, dn = null, ea = null, pn = null;
+    Si = null, pn = null, ta = null, un = null;
   });
 
   // src/core/theme/theme-resolver.js
-  var wl = {};
-  ii(wl, {
-    ThemeResolver: () => dr
+  var vl = {};
+  ii(vl, {
+    ThemeResolver: () => pr
   });
-  var dr, Zr = le(() => {
+  var pr, Zr = le(() => {
     se();
     _e();
     te();
-    dr = {
+    pr = {
       /**
        * Resolves the active theme based on consistent priority logic.
        * Priority: KEY_THEME > CC_STORAGE_SET > APM_GENERAL_STORAGE
@@ -3284,11 +3284,11 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
             } catch {
               return a;
             }
-          }, r = e(St);
+          }, r = e(Et);
           if (r && r !== "default") return r;
           let o = t(e(tt));
           if (o && o.theme && o.theme !== "default") return o.theme;
-          let n = t(e(je));
+          let n = t(e(Ke));
           if (n && n.theme && n.theme !== "default") return n.theme;
         } catch (e) {
           d.warn("ThemeResolver", "Error resolving theme preference", e);
@@ -3300,37 +3300,37 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
        */
       setGlobalTheme(e) {
         if (!e) return;
-        d.debug("ThemeResolver", `Setting global theme to: ${e}`), N.set(St, e);
+        d.debug("ThemeResolver", `Setting global theme to: ${e}`), N.set(Et, e);
         let t = N.get(tt) || {};
         t.theme !== e && (t.theme = e, N.set(tt, t));
-        let r = N.get(je) || {};
-        r.theme !== e && (r.theme = e, N.set(je, r));
+        let r = N.get(Ke) || {};
+        r.theme !== e && (r.theme = e, N.set(Ke, r));
       }
     };
   });
 
   // src/core/origin-guard.js
-  function Er(e) {
+  function kr(e) {
     if (!e || e === "null") return !1;
     if (e === window.location.origin) return !0;
     try {
       let t = new URL(e).hostname;
-      return sh.some((r) => r.test(t));
+      return uh.some((r) => r.test(t));
     } catch {
       return !1;
     }
   }
-  function Pp(e) {
+  function Fp(e) {
     if (!e || e === "null") return !1;
     try {
       let t = new URL(e).hostname;
-      return lh.some((r) => r.test(t));
+      return mh.some((r) => r.test(t));
     } catch {
       return !1;
     }
   }
-  var sh, lh, ta = le(() => {
-    sh = [
+  var uh, mh, ra = le(() => {
+    uh = [
       /\.hxgnsmartcloud\.com$/,
       /\.eam\.aws\.a2z\.com$/,
       /\.hexagon\.com$/,
@@ -3338,16 +3338,16 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
       // e.g. user.sparsy.insights.amazon.dev, *.ptp.amazon.dev, etc.
       // Message handlers must also validate message structure/type.
       /\.(ptp|insights)\.amazon\.dev$/
-    ], lh = [
+    ], mh = [
       /\.(ptp|insights)\.amazon\.dev$/
     ];
   });
 
   // src/core/ui-manager.js
-  var Ce, kr = le(() => {
+  var Ce, Tr = le(() => {
     te();
     ue();
-    ta();
+    ra();
     Ce = /* @__PURE__ */ (function() {
       let e = /* @__PURE__ */ new Set(), t = 250, r = !1, o = () => {
         try {
@@ -3372,17 +3372,17 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
         } catch {
         }
         let f = (g) => {
-          let h = g.detail || g.data;
-          if (!h || h.type && h.type !== "APM_CLOSE_UI") return;
-          let y = h.source || "unknown", b = h.timestamp || 0, x = h.exemptId, v = h.explicit === !0, E = o();
-          if (E.activePanelId = x || null, !v && Date.now() - E.lastTriggerTime < 80) {
-            d.verbose("UIManager", `Suppressing auto-dismiss from ${y} (race condition guard)`);
+          let y = g.detail || g.data;
+          if (!y || y.type && y.type !== "APM_CLOSE_UI") return;
+          let x = y.source || "unknown", h = y.timestamp || 0, b = y.exemptId, v = y.explicit === !0, E = o();
+          if (E.activePanelId = b || null, !v && Date.now() - E.lastTriggerTime < 80) {
+            d.verbose("UIManager", `Suppressing auto-dismiss from ${x} (race condition guard)`);
             return;
           }
-          m(x);
+          m(b);
         };
         window.addEventListener("message", (g) => {
-          g.data?.type === "APM_CLOSE_UI" && Er(g.origin) && f(g);
+          g.data?.type === "APM_CLOSE_UI" && kr(g.origin) && f(g);
         });
         try {
           window.top.addEventListener("APM_CLOSE_UI", f);
@@ -3392,46 +3392,46 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
         s(window);
       }
       function a(f, g) {
-        let h = Date.now(), y = o();
-        y.toggleTimes || (y.toggleTimes = {});
-        let b = y.toggleTimes[f] || 0;
-        if (h - b < t) {
-          d.debug("UIManager", `Toggle ${f} debounced (${h - b}ms since last)`);
+        let y = Date.now(), x = o();
+        x.toggleTimes || (x.toggleTimes = {});
+        let h = x.toggleTimes[f] || 0;
+        if (y - h < t) {
+          d.debug("UIManager", `Toggle ${f} debounced (${y - h}ms since last)`);
           return;
         }
-        if (y.toggleTimes[f] = h, y.lastTriggerTime = h, y.activePanelId === f)
+        if (x.toggleTimes[f] = y, x.lastTriggerTime = y, x.activePanelId === f)
           d.debug("UIManager", `Toggling ${f} -> CLOSED`), u(!0);
         else if (d.debug("UIManager", `Toggling ${f} -> OPENING`), u(!0, f), typeof g == "function")
           try {
-            g(), y.activePanelId = f;
+            g(), x.activePanelId = f;
             try {
               window.top._apmUi.activePanelId = f;
             } catch {
             }
           } catch (v) {
-            y.activePanelId = null, d.error("UIManager", "Panel open failed:", v);
+            x.activePanelId = null, d.error("UIManager", "Panel open failed:", v);
           }
       }
       function s(f) {
         try {
           if (!f || !f.document || f.document._apmUiListenerAttached) return;
           f.document._apmUiListenerAttached = !0, f.document.addEventListener("mousedown", (g) => {
-            let h = g.target;
-            if (!h || !h.closest) return;
-            let y = o();
-            l || (l = Array.from(y.triggers).join(","));
-            let b = l ? h.closest(l) : null;
-            if (b) {
-              y.lastTriggerTime = Date.now();
+            let y = g.target;
+            if (!y || !y.closest) return;
+            let x = o();
+            l || (l = Array.from(x.triggers).join(","));
+            let h = l ? y.closest(l) : null;
+            if (h) {
+              x.lastTriggerTime = Date.now();
               try {
                 window.top._apmUi.lastTriggerTime = Date.now();
               } catch {
               }
-              d.verbose("UIManager", `Trigger click detected: ${b.tagName || "element"}`);
+              d.verbose("UIManager", `Trigger click detected: ${h.tagName || "element"}`);
               return;
             }
-            let x = h.closest(".apm-ui-panel") || Array.from(y.panels).some((k) => f.document.getElementById(k)?.contains(h)), v = h.closest(".swal2-container") || h.closest(".x-mask") || h.closest(".x-datepicker") || h.closest(".x-menu") || h.closest(".x-layer") || h.closest(".x-combo-list") || h.closest(".x-tip") || h.closest(".apm-modal-overlay") || h.closest(".apm-adv-modal-backdrop"), E = ["INPUT", "TEXTAREA", "SELECT", "OPTION"].includes(h.tagName) || h.closest("form");
-            d.isLevel("verbose") && d.verbose("UIManager", `Click: inside=${!!x}, system=${!!v} | target=${h.tagName}${h.id ? "#" + h.id : ""}`), !x && !v && !E && u();
+            let b = y.closest(".apm-ui-panel") || Array.from(x.panels).some((k) => f.document.getElementById(k)?.contains(y)), v = y.closest(".swal2-container") || y.closest(".x-mask") || y.closest(".x-datepicker") || y.closest(".x-menu") || y.closest(".x-layer") || y.closest(".x-combo-list") || y.closest(".x-tip") || y.closest(".apm-modal-overlay") || y.closest(".apm-adv-modal-backdrop"), E = ["INPUT", "TEXTAREA", "SELECT", "OPTION"].includes(y.tagName) || y.closest("form");
+            d.isLevel("verbose") && d.verbose("UIManager", `Click: inside=${!!b}, system=${!!v} | target=${y.tagName}${y.id ? "#" + y.id : ""}`), !b && !v && !E && u();
           }, !0);
         } catch {
         }
@@ -3439,10 +3439,10 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
       let l = null;
       function c(f, g = []) {
         e.add(f);
-        let h = o();
-        h.panels.add(f), g.forEach((b) => h.triggers.add(b)), l = null;
-        let y = document.getElementById(f);
-        y && y.classList.add("apm-ui-panel"), d.verbose("UIManager", `Registered panel: ${f}`);
+        let y = o();
+        y.panels.add(f), g.forEach((h) => y.triggers.add(h)), l = null;
+        let x = document.getElementById(f);
+        x && x.classList.add("apm-ui-panel"), d.verbose("UIManager", `Registered panel: ${f}`);
       }
       function p(f) {
         if (typeof f == "function") {
@@ -3451,9 +3451,9 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
         }
       }
       function u(f = !1, g = null) {
-        let h = o();
-        f && (h.lastTriggerTime = Date.now()), g ? h.activePanelId = g : h.activePanelId = null;
-        let y = {
+        let y = o();
+        f && (y.lastTriggerTime = Date.now()), g ? y.activePanelId = g : y.activePanelId = null;
+        let x = {
           type: "APM_CLOSE_UI",
           source: window.location.pathname,
           timestamp: Date.now(),
@@ -3461,20 +3461,20 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
           exemptId: g
         };
         try {
-          window.top.dispatchEvent(new CustomEvent("APM_CLOSE_UI", { detail: y }));
+          window.top.dispatchEvent(new CustomEvent("APM_CLOSE_UI", { detail: x }));
         } catch {
-          window.dispatchEvent(new CustomEvent("APM_CLOSE_UI", { detail: y }));
+          window.dispatchEvent(new CustomEvent("APM_CLOSE_UI", { detail: x }));
         }
         try {
-          let b = [window.top];
+          let h = [window.top];
           try {
-            for (let x = 0; x < window.top.frames.length; x++)
-              b.push(window.top.frames[x]);
+            for (let b = 0; b < window.top.frames.length; b++)
+              h.push(window.top.frames[b]);
           } catch {
           }
-          b.forEach((x) => {
+          h.forEach((b) => {
             try {
-              ht(x, y);
+              ht(b, x);
             } catch {
             }
           });
@@ -3482,15 +3482,15 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
         }
       }
       function m(f) {
-        e.forEach((h) => {
-          if (f && h === f) return;
-          let y = document.getElementById(h);
-          y && y.style.display !== "none" && y.style.visibility !== "hidden" && (d.debug("UIManager", `Hiding local panel: ${h}`), y.style.display = "none", y.style.visibility = "hidden");
+        e.forEach((y) => {
+          if (f && y === f) return;
+          let x = document.getElementById(y);
+          x && x.style.display !== "none" && x.style.visibility !== "hidden" && (d.debug("UIManager", `Hiding local panel: ${y}`), x.style.display = "none", x.style.visibility = "hidden");
         });
         let g = o();
-        g.handlers && g.handlers.forEach((h) => {
+        g.handlers && g.handlers.forEach((y) => {
           try {
-            h();
+            y();
           } catch {
           }
         });
@@ -3507,14 +3507,14 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
   });
 
   // src/core/scheduler.js
-  var Fp = {};
-  ii(Fp, {
+  var qp = {};
+  ii(qp, {
     APMScheduler: () => pe
   });
-  var kl, pe, mt = le(() => {
+  var El, pe, mt = le(() => {
     te();
-    At();
-    kl = class {
+    _t();
+    El = class {
       constructor() {
         this.instanceId = Math.random().toString(36).substring(7), this.tasks = [], this.running = !1, this.timeoutId = null, this._paused = !1, this._pauseTimer = null, this._hidden = !1, d.debug("Scheduler", `New TaskScheduler instance created: ${this.instanceId}`), typeof document < "u" && document.addEventListener("visibilitychange", () => {
           if (document.hidden)
@@ -3647,7 +3647,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
           lastRunMs: t.lastRun
         }));
       }
-    }, pe = new kl();
+    }, pe = new El();
   });
 
   // src/core/network.js
@@ -3679,12 +3679,12 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
             let c = new Response(l.responseText, {
               status: l.status,
               statusText: l.statusText,
-              headers: $p(l.responseHeaders)
+              headers: Hp(l.responseHeaders)
             });
             c.clone = () => new Response(l.responseText, {
               status: l.status,
               statusText: l.statusText,
-              headers: $p(l.responseHeaders)
+              headers: Hp(l.responseHeaders)
             }), a(c);
           },
           onerror: (l) => {
@@ -3698,7 +3698,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
     }
     return d.debug("Network", `Using native fetch for request: ${o}`), fetch(e, t);
   }
-  function $p(e) {
+  function Hp(e) {
     let t = new Headers();
     if (!e) return t;
     let r = e.split(/\r?\n/);
@@ -3716,18 +3716,18 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
   });
 
   // src/core/eam/eam-context.js
-  function gh() {
+  function vh() {
     try {
-      return tp() ?? null;
+      return np() ?? null;
     } catch {
       return null;
     }
   }
-  function _l() {
-    let e = gh();
-    if (e === Up && Al !== null)
-      return Al;
-    Up = e;
+  function Al() {
+    let e = vh();
+    if (e === zp && Cl !== null)
+      return Cl;
+    zp = e;
     let t = [];
     try {
       if (Array.isArray(e))
@@ -3739,14 +3739,14 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
     } catch (r) {
       d.debug("EamContext", "screencachelist parse failed:", r?.message || r), t = [];
     }
-    return Al = t, t;
+    return Cl = t, t;
   }
-  function zp(e) {
-    return e ? _l().some((r) => r?.userFunction === e) : !1;
+  function Kp(e) {
+    return e ? Al().some((r) => r?.userFunction === e) : !1;
   }
   function Jt() {
     try {
-      let o = be?.session?.user;
+      let o = ye?.session?.user;
       if (o) {
         let n = No(o);
         if (n)
@@ -3755,7 +3755,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
     } catch {
     }
     try {
-      let o = N.get(xr);
+      let o = N.get(vr);
       if (o) {
         let n = No(o);
         if (n)
@@ -3783,7 +3783,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
         if (n) {
           let a = No(n);
           if (a)
-            return d.debug("EamContext", "user resolved via tier 3"), Gp(a), a;
+            return d.debug("EamContext", "user resolved via tier 3"), jp(a), a;
         }
       } catch {
       }
@@ -3793,19 +3793,19 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
         if (n) {
           let a = No(n);
           if (a)
-            return d.debug("EamContext", "user resolved via tier 4"), Gp(a), a;
+            return d.debug("EamContext", "user resolved via tier 4"), jp(a), a;
         }
       } catch {
       }
     return "";
   }
-  function Gp(e) {
+  function jp(e) {
     try {
-      be?.session && (be.session.user = e);
+      ye?.session && (ye.session.user = e);
     } catch {
     }
     try {
-      N.set(xr, e);
+      N.set(vr, e);
     } catch {
     }
   }
@@ -3846,9 +3846,9 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
       }
     return "";
   }
-  function pr(e = {}) {
+  function ur(e = {}) {
     try {
-      let t = ge()?.screen;
+      let t = he()?.screen;
       if (t) return t;
     } catch {
     }
@@ -3865,7 +3865,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
       }
     return "";
   }
-  var Al, Up, No, Pt = le(() => {
+  var Cl, zp, No, Dt = le(() => {
     te();
     ue();
     nt();
@@ -3873,8 +3873,8 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
     Te();
     _e();
     se();
-    It();
-    Al = null, Up = null;
+    Ct();
+    Cl = null, zp = null;
     No = (e) => (e && e.includes("@") ? e.split("@")[0] : e || "").toUpperCase();
   });
 
@@ -3882,10 +3882,10 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
   function Br(e = {}) {
     let t = "win" in e ? e.win ? [e.win] : [] : ne();
     if (t.length === 0) return "";
-    let r = Ke(null);
-    return hh(t, r) || bh(t, r) || "";
+    let r = Ye(null);
+    return wh(t, r) || Sh(t, r) || "";
   }
-  function hh(e, t) {
+  function wh(e, t) {
     for (let r of e)
       try {
         let o = r?.Ext?.ComponentQuery;
@@ -3898,7 +3898,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
             if (!p || !p.isVisible?.(!0)) continue;
           }
           if (t && !t.containsComp(a)) continue;
-          let s = t?.screenId || bt(r, null), l = fe[s]?.entityKey;
+          let s = t?.screenId || bt(r, null), l = ge[s]?.entityKey;
           if (!l) continue;
           let c = a.getRecord?.()?.get?.(l);
           if (c) return String(c);
@@ -3907,7 +3907,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
       }
     return "";
   }
-  function bh(e, t) {
+  function Sh(e, t) {
     for (let r of e)
       try {
         let o = r?.document;
@@ -3924,20 +3924,20 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
       }
     return "";
   }
-  var oa = le(() => {
+  var na = le(() => {
     se();
-    ar();
+    ir();
     ue();
     ct();
   });
 
   // src/core/ajax-hooks.js
-  var _t, Ne, ur = le(() => {
+  var Rt, Ne, mr = le(() => {
     te();
-    Ve();
+    je();
     ue();
-    ar();
-    _t = {
+    ir();
+    Rt = {
       beforerequest: /* @__PURE__ */ new Map(),
       requestcomplete: /* @__PURE__ */ new Map(),
       requestexception: /* @__PURE__ */ new Map(),
@@ -3949,7 +3949,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
        * @param {function} fn (conn, options)
        */
       onBeforeRequest(e, t) {
-        _t.beforerequest.set(e, t);
+        Rt.beforerequest.set(e, t);
       },
       /**
        * Register a callback for 'requestcomplete'
@@ -3965,7 +3965,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
        * @param {string}  [opts.urlMatch]   - Only call handler when request URL contains this substring (case-insensitive)
        */
       onRequestComplete(e, t, r = {}) {
-        _t.requestcomplete.set(e, { fn: t, opts: r });
+        Rt.requestcomplete.set(e, { fn: t, opts: r });
       },
       /**
        * Register a callback for 'requestexception'
@@ -3973,7 +3973,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
        * @param {function} fn (conn, response, options)
        */
       onRequestException(e, t) {
-        _t.requestexception.set(e, t);
+        Rt.requestexception.set(e, t);
       },
       /**
        * Register a callback for XHR-level 'send' interception.
@@ -3984,14 +3984,14 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
        * @param {function} fn (win, url, body) → modified body string, or undefined to leave unchanged
        */
       onXhrBeforeSend(e, t) {
-        _t.xhrBeforeSend.set(e, t);
+        Rt.xhrBeforeSend.set(e, t);
       },
       /**
        * Remove a previously registered hook by id
        * @param {string} id Hook identifier
        */
       remove(e) {
-        _t.beforerequest.delete(e), _t.requestcomplete.delete(e), _t.requestexception.delete(e), _t.xhrBeforeSend.delete(e);
+        Rt.beforerequest.delete(e), Rt.requestcomplete.delete(e), Rt.requestexception.delete(e), Rt.xhrBeforeSend.delete(e);
       },
       /**
        * Install all three interception layers on a window:
@@ -4001,10 +4001,10 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
        * @param {Window} win
        */
       install(e) {
-        if (!ye(e) || !e.Ext || !e.Ext.Ajax || e[de.AJAX_HOOK] && e.Ext.Ajax.request._apmPatched) return;
+        if (!be(e) || !e.Ext || !e.Ext.Ajax || e[de.AJAX_HOOK] && e.Ext.Ajax.request._apmPatched) return;
         d.debug("AjaxHooks", "Installing global interceptors on window:", e.location?.pathname), e.Ext.Ajax.on({
           beforerequest: (o, n) => {
-            n._apmHooked || (n._apmHooked = !0, n._apmCompleted = !1, n._apmExcepted = !1, _t.beforerequest.forEach((a, s) => {
+            n._apmHooked || (n._apmHooked = !0, n._apmCompleted = !1, n._apmExcepted = !1, Rt.beforerequest.forEach((a, s) => {
               try {
                 a(e, o, n);
               } catch (l) {
@@ -4016,10 +4016,10 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
             if (a._apmCompleted) return;
             a._apmCompleted = !0;
             let s = (a?.url || "").toUpperCase();
-            _t.requestcomplete.forEach((l, c) => {
+            Rt.requestcomplete.forEach((l, c) => {
               let p = typeof l == "function" ? l : l.fn, u = typeof l == "function" ? {} : l.opts || {};
               try {
-                if (u.urlMatch && !s.includes(u.urlMatch.toUpperCase()) || u.activeOnly && !an(e)) return;
+                if (u.urlMatch && !s.includes(u.urlMatch.toUpperCase()) || u.activeOnly && !sn(e)) return;
                 p(e, o, n, a);
               } catch (m) {
                 d.error("AjaxHooks", `Error in requestcomplete hook [${c}]:`, m);
@@ -4027,7 +4027,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
             });
           },
           requestexception: (o, n, a) => {
-            a._apmExcepted || (a._apmExcepted = !0, _t.requestexception.forEach((s, l) => {
+            a._apmExcepted || (a._apmExcepted = !0, Rt.requestexception.forEach((s, l) => {
               try {
                 s(e, o, n, a);
               } catch (c) {
@@ -4037,7 +4037,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
           }
         });
         let t = e.Ext.Ajax.request.bind(e.Ext.Ajax), r = function(o) {
-          return o._apmHooked || (o._apmHooked = !0, _t.beforerequest.forEach((n, a) => {
+          return o._apmHooked || (o._apmHooked = !0, Rt.beforerequest.forEach((n, a) => {
             try {
               n(e, e.Ext.Ajax, o);
             } catch (s) {
@@ -4053,7 +4053,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
        * @param {Window} win
        */
       _installXhrHooks(e) {
-        if (!ye(e) || !e.XMLHttpRequest) return;
+        if (!be(e) || !e.XMLHttpRequest) return;
         let t = e.XMLHttpRequest.prototype;
         if (t.__apm_xhr_hooks_installed) return;
         let r = t.open;
@@ -4063,9 +4063,9 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
         let o = t.send;
         t.send = function(n) {
           let a = (this._apmUrl || "").toString();
-          if (a && _t.xhrBeforeSend.size > 0)
+          if (a && Rt.xhrBeforeSend.size > 0)
             if (n && typeof n == "string")
-              _t.xhrBeforeSend.forEach((s, l) => {
+              Rt.xhrBeforeSend.forEach((s, l) => {
                 try {
                   let c = s(e, a, n);
                   c !== void 0 && (n = c);
@@ -4075,7 +4075,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
               });
             else {
               let s = null;
-              if (_t.xhrBeforeSend.forEach((l, c) => {
+              if (Rt.xhrBeforeSend.forEach((l, c) => {
                 try {
                   let p = l(e, a, null);
                   p !== void 0 && typeof p == "string" && (s = s ? s + "&" + p : p);
@@ -4094,16 +4094,16 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
   });
 
   // src/core/record-open.js
-  function Dl(e) {
+  function Ll(e) {
     try {
       return e?.Ext?.app?.Application?.instance?.getController?.("common.grids.Grid") || null;
     } catch {
       return null;
     }
   }
-  function Rh(e) {
+  function Ph(e) {
     try {
-      let r = Dl(e)?.getListView?.()?.screen?.down?.("uxtabpanel");
+      let r = Ll(e)?.getListView?.()?.screen?.down?.("uxtabpanel");
       if (!r) return !1;
       let o = r.down?.("#HDR");
       return !o || o.isDestroyed ? !1 : (r.getActiveTab?.() === o || r.setActiveTab(o), !0);
@@ -4111,75 +4111,75 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
       return !1;
     }
   }
-  async function ia(e, t, r, o = 5e3) {
+  async function sa(e, t, r, o = 5e3) {
     let n = e.getStore(), a = e.getSelectionModel();
     a && a.select && a.select(t);
     let s = e.getView(), l = n?.indexOf?.(t) ?? 0, c = s.getRow?.(l) ?? s.getNode?.(l);
     try {
-      let b = e.getSelectionModel?.(), x = e.headerCt, v = s?.getSelectionModel?.();
-      d.debug("RecordOpen", `[trace] pre-fire grid: rendered=${e?.rendered} destroyed=${e?.isDestroyed} viewId=${e?.view?.id} headerCols=${x?.getGridColumns?.()?.length} storeCount=${n?.getCount?.()} storeLoading=${n?.isLoading?.()}`), d.debug("RecordOpen", `[trace] pre-fire view: id=${s?.id} rendered=${s?.rendered} viewReady=${s?.viewReady} hasEl=${!!s?.el} hasNode=${!!c} ownSelModel=${!!v} selModelSame=${v === b} boundStore=${s?.store === n}`), d.debug("RecordOpen", `[trace] pre-fire selModel: exists=${!!b} view=${!!b?.view} viewSame=${b?.view === s} store=${!!b?.store} storeSame=${b?.store === n} selected=${!!b?.selected} selectedCount=${b?.selected?.getCount?.()} lastSelected=${!!b?.lastSelected} lastFocused=${!!b?.lastFocused} mode=${b?.mode} hasViews=${(b?.views || []).length}`);
-    } catch (b) {
-      d.debug("RecordOpen", `[trace] pre-fire snapshot threw: ${b?.message}`);
+      let h = e.getSelectionModel?.(), b = e.headerCt, v = s?.getSelectionModel?.();
+      d.debug("RecordOpen", `[trace] pre-fire grid: rendered=${e?.rendered} destroyed=${e?.isDestroyed} viewId=${e?.view?.id} headerCols=${b?.getGridColumns?.()?.length} storeCount=${n?.getCount?.()} storeLoading=${n?.isLoading?.()}`), d.debug("RecordOpen", `[trace] pre-fire view: id=${s?.id} rendered=${s?.rendered} viewReady=${s?.viewReady} hasEl=${!!s?.el} hasNode=${!!c} ownSelModel=${!!v} selModelSame=${v === h} boundStore=${s?.store === n}`), d.debug("RecordOpen", `[trace] pre-fire selModel: exists=${!!h} view=${!!h?.view} viewSame=${h?.view === s} store=${!!h?.store} storeSame=${h?.store === n} selected=${!!h?.selected} selectedCount=${h?.selected?.getCount?.()} lastSelected=${!!h?.lastSelected} lastFocused=${!!h?.lastFocused} mode=${h?.mode} hasViews=${(h?.views || []).length}`);
+    } catch (h) {
+      d.debug("RecordOpen", `[trace] pre-fire snapshot threw: ${h?.message}`);
     }
     let p = !0, u = !1;
     try {
       s.fireEvent("itemdblclick", s, t, c, l, {});
-    } catch (b) {
+    } catch (h) {
       u = !0, p = !1;
-      let x = b && b.stack ? String(b.stack).split(`
+      let b = h && h.stack ? String(h.stack).split(`
 `).slice(0, 8).map((v) => v.trim()) : [];
-      d.debug("RecordOpen", `[trace] itemdblclick fireEvent threw: ${b && b.message}`), d.debug("RecordOpen", `[trace] fireEvent stack: ${x.join(" || ")}`);
+      d.debug("RecordOpen", `[trace] itemdblclick fireEvent threw: ${h && h.message}`), d.debug("RecordOpen", `[trace] fireEvent stack: ${b.join(" || ")}`);
       try {
         d.debug("RecordOpen", `[trace] fireEvent ctx: view.id=${s?.id} view.destroyed=${s?.isDestroyed} grid.id=${e?.id} grid.destroyed=${e?.isDestroyed} storeCount=${e?.getStore?.()?.getCount?.()} record.phantom=${t?.phantom} recordId=${t?.getId?.()} viewListeners=${Object.keys(s?.events || {}).join(",")}`);
       } catch {
       }
       d.info("RecordOpen", "itemdblclick threw \u2014 recovery deferred to verifyAndRecoverRecordBind");
     }
-    Rh(r), d.debug("RecordOpen", `[trace] open dispatched (ok=${p}, threw=${u}); awaiting ajax in src window...`);
+    Ph(r), d.debug("RecordOpen", `[trace] open dispatched (ok=${p}, threw=${u}); awaiting ajax in src window...`);
     let m = Date.now();
-    await Ye(r);
+    await He(r);
     let f = Date.now() - m;
     d.debug("RecordOpen", `[trace] waitForAjax(src) returned after ${f}ms; beginning form poll (timeout=${o}ms)`);
-    let g = 250, h = Math.ceil(o / g), y = 0;
-    for (let b = 0; b < h; b++) {
-      if (await re(g), (b + 1) % 4 === 0)
+    let g = 250, y = Math.ceil(o / g), x = 0;
+    for (let h = 0; h < y; h++) {
+      if (await re(g), (h + 1) % 4 === 0)
         try {
-          let x = 0, v = 0, E = 0;
+          let b = 0, v = 0, E = 0;
           for (let k of ne()) {
             E++;
             try {
               let S = k.Ext?.ComponentQuery?.query("form[id*=recordview]") || [];
-              x += S.length, v += S.filter((w) => w.rendered && w.el && !w.isDestroyed).length;
+              b += S.length, v += S.filter((w) => w.rendered && w.el && !w.isDestroyed).length;
             } catch {
             }
           }
-          d.debug("RecordOpen", `[trace] poll iter=${b + 1} (${(b + 1) * g}ms): forms=${x} rendered=${v} frames=${E}`);
+          d.debug("RecordOpen", `[trace] poll iter=${h + 1} (${(h + 1) * g}ms): forms=${b} rendered=${v} frames=${E}`);
         } catch {
         }
-      for (let x of ne())
+      for (let b of ne())
         try {
-          if (!x.Ext?.ComponentQuery) continue;
-          if (x.Ext.ComponentQuery.query("form[id*=recordview]").some((E) => E.rendered && E.el && !E.isDestroyed)) {
-            y = (b + 1) * g, d.info("RecordOpen", `Record view ready after ${y}ms`);
+          if (!b.Ext?.ComponentQuery) continue;
+          if (b.Ext.ComponentQuery.query("form[id*=recordview]").some((E) => E.rendered && E.el && !E.isDestroyed)) {
+            x = (h + 1) * g, d.info("RecordOpen", `Record view ready after ${x}ms`);
             for (let E of ne())
               try {
-                await Ye(E);
+                await He(E);
               } catch {
               }
-            return d.debug("RecordOpen", `[trace] entering verifyAndRecoverRecordBind (itemdblclickThrew=${u})`), await au(t, r, { itemdblclickThrew: u });
+            return d.debug("RecordOpen", `[trace] entering verifyAndRecoverRecordBind (itemdblclickThrew=${u})`), await lu(t, r, { itemdblclickThrew: u });
           }
         } catch {
         }
     }
-    return d.warn("RecordOpen", `Record view did not appear within ${o}ms \u2014 attempting late recovery`), await au(t, r, { itemdblclickThrew: u });
+    return d.warn("RecordOpen", `Record view did not appear within ${o}ms \u2014 attempting late recovery`), await lu(t, r, { itemdblclickThrew: u });
   }
-  async function Oh(e, t, r = 5e3) {
+  async function Lh(e, t, r = 5e3) {
     let o = e.getStore();
     if (!o || o.getCount() === 0) return { success: !1 };
     let n = o.getAt(0);
-    return d.info("RecordOpen", `Opening first grid record: ${n.get("workordernum") || n.getId()}`), ia(e, n, t, r);
+    return d.info("RecordOpen", `Opening first grid record: ${n.get("workordernum") || n.getId()}`), sa(e, n, t, r);
   }
-  function iu() {
+  function cu() {
     for (let e of ne())
       try {
         if (e?.Ext?.app?.Application?.instance?.getController?.("common.grids.Grid")) return e;
@@ -4187,7 +4187,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
       }
     return null;
   }
-  function Pl(e, t) {
+  function Ml(e, t) {
     if (!e || !t) return !1;
     try {
       let r = e.get?.("workordernum") ?? e.get?.("receiptcode") ?? e.get?.("partcode");
@@ -4198,12 +4198,12 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
       return !1;
     }
   }
-  async function Nh(e, t) {
+  async function Dh(e, t) {
     try {
-      let r = Dl(e);
+      let r = Ll(e);
       if (!r) {
-        let u = iu();
-        u && (r = Dl(u));
+        let u = cu();
+        u && (r = Ll(u));
       }
       if (!r)
         return d.debug("RecordOpen", "[trace] direct-load abort: no controller in any frame"), !1;
@@ -4243,7 +4243,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
       return d.debug("RecordOpen", `[trace] recoverViaDirectLoadRecord wrapper threw: ${r?.message}`), !1;
     }
   }
-  function nu() {
+  function su() {
     let e = null;
     for (let t of ne())
       try {
@@ -4258,26 +4258,26 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
       }
     return e;
   }
-  async function au(e, t, r = {}) {
+  async function lu(e, t, r = {}) {
     let o = String(e.get("workordernum") || e.get("receiptcode") || e.get("partcode") || e.getId() || ""), n = !!r.itemdblclickThrew;
     d.debug("RecordOpen", `[trace] verifyAndRecoverRecordBind start (entity=${o} threw=${n})`);
     let a = Date.now(), s = !1, l = null, c = null, p = n ? 5 : 20, u = null;
     for (let g = 0; g < p; g++) {
-      let h = nu();
-      if (h) {
-        l = h.form;
+      let y = su();
+      if (y) {
+        l = y.form;
         try {
-          let y = h.form.getForm?.()?.getRecord?.() || h.form.getRecord?.();
-          if (c = y || c, Pl(y, o)) {
+          let x = y.form.getForm?.()?.getRecord?.() || y.form.getRecord?.();
+          if (c = x || c, Ml(x, o)) {
             s = !0;
             break;
           }
-          if (n && y) {
+          if (n && x) {
             u = "throw+form-mounted";
             break;
           }
           try {
-            if (String(y?.get?.("workordernum") ?? y?.get?.("receiptcode") ?? y?.get?.("partcode") ?? "").includes("Auto-Generated")) {
+            if (String(x?.get?.("workordernum") ?? x?.get?.("receiptcode") ?? x?.get?.("partcode") ?? "").includes("Auto-Generated")) {
               u = "placeholder-detected";
               break;
             }
@@ -4297,16 +4297,16 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
         }
       })();
       d.info("RecordOpen", `Phase 1 bind incorrect (have wo="${g}", want "${o}") \u2014 invoking direct-load recovery`);
-      let h = Date.now();
-      if (await Nh(t || iu(), e))
-        for (let b = 0; b < 40; b++) {
-          let x = nu();
-          if (x) {
-            l = x.form;
+      let y = Date.now();
+      if (await Dh(t || cu(), e))
+        for (let h = 0; h < 40; h++) {
+          let b = su();
+          if (b) {
+            l = b.form;
             try {
-              let v = x.form.getForm?.()?.getRecord?.() || x.form.getRecord?.();
-              if (Pl(v, o)) {
-                s = !0, d.info("RecordOpen", `Recovered via direct-load after ${Date.now() - a}ms (phase1a=${Date.now() - h}ms)`);
+              let v = b.form.getForm?.()?.getRecord?.() || b.form.getRecord?.();
+              if (Ml(v, o)) {
+                s = !0, d.info("RecordOpen", `Recovered via direct-load after ${Date.now() - a}ms (phase1a=${Date.now() - y}ms)`);
                 break;
               }
             } catch {
@@ -4318,19 +4318,19 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
     if (s) {
       d.info("RecordOpen", `Record bound in ${Date.now() - a}ms (id=${o})`);
       try {
-        let g = l?.getForm?.(), h = g?.getRecord?.() || l?.getRecord?.(), y = h?.getId?.() ?? null, b = (() => {
+        let g = l?.getForm?.(), y = g?.getRecord?.() || l?.getRecord?.(), x = y?.getId?.() ?? null, h = (() => {
           try {
-            return h?.get?.("workordernum") ?? null;
+            return y?.get?.("workordernum") ?? null;
           } catch {
             return null;
           }
-        })(), x = (() => {
+        })(), b = (() => {
           try {
-            return String(h?.get?.("description") ?? "");
+            return String(y?.get?.("description") ?? "");
           } catch {
             return "";
           }
-        })(), v = h?.data ? Object.keys(h.data).length : null, E = e.getId?.(), k = (() => {
+        })(), v = y?.data ? Object.keys(y.data).length : null, E = e.getId?.(), k = (() => {
           try {
             return e.get?.("workordernum");
           } catch {
@@ -4347,7 +4347,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
           w = g?.findField?.("workordernum")?.getValue?.() ?? null;
         } catch {
         }
-        d.debug("RecordOpen", `[trace] bound: id=${y} wo=${b} desc=${x.slice(0, 40)} dataKeys=${v} sameAsGrid=${h === e} formFieldWO=${w}`), d.debug("RecordOpen", `[trace] grid:  id=${E} wo=${k} desc=${S.slice(0, 40)}`);
+        d.debug("RecordOpen", `[trace] bound: id=${x} wo=${h} desc=${b.slice(0, 40)} dataKeys=${v} sameAsGrid=${y === e} formFieldWO=${w}`), d.debug("RecordOpen", `[trace] grid:  id=${E} wo=${k} desc=${S.slice(0, 40)}`);
       } catch {
       }
       return await re(200), { success: !0, entityId: o };
@@ -4357,30 +4357,30 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
     d.info("RecordOpen", `Direct-load did not bind after ${Date.now() - a}ms \u2014 attempting detail re-fetch (form=${l.id})`);
     try {
       typeof e.load == "function" ? await new Promise((g) => {
-        let h = !1, y = (b, x) => {
-          if (!h) {
-            if (h = !0, b && x && l && !l.isDestroyed)
+        let y = !1, x = (h, b) => {
+          if (!y) {
+            if (y = !0, h && b && l && !l.isDestroyed)
               try {
-                l.getForm?.().loadRecord(x), d.info("RecordOpen", `Detail re-fetch succeeded \u2014 rebound ${o}`);
+                l.getForm?.().loadRecord(b), d.info("RecordOpen", `Detail re-fetch succeeded \u2014 rebound ${o}`);
               } catch (v) {
                 d.warn("RecordOpen", `Detail re-fetch loadRecord threw: ${v && v.message}`);
               }
-            else b || d.info("RecordOpen", "Detail re-fetch not supported by record proxy");
+            else h || d.info("RecordOpen", "Detail re-fetch not supported by record proxy");
             g();
           }
         };
         try {
           e.load({
-            success: (b) => y(!0, b),
-            failure: () => y(!1, null),
-            callback: (b, x, v) => {
-              h || y(!!v, b);
+            success: (h) => x(!0, h),
+            failure: () => x(!1, null),
+            callback: (h, b, v) => {
+              y || x(!!v, h);
             }
           });
-        } catch (b) {
-          d.info("RecordOpen", `Detail re-fetch not supported by record proxy (${b && b.message})`), y(!1, null);
+        } catch (h) {
+          d.info("RecordOpen", `Detail re-fetch not supported by record proxy (${h && h.message})`), x(!1, null);
         }
-        setTimeout(() => y(!1, null), 5e3);
+        setTimeout(() => x(!1, null), 5e3);
       }) : d.info("RecordOpen", "Detail re-fetch not supported \u2014 record has no load() method");
     } catch (g) {
       d.warn("RecordOpen", `Detail re-fetch wrapper threw: ${g && g.message}`);
@@ -4388,8 +4388,8 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
     let m = !1;
     for (let g = 0; g < 5; g++) {
       try {
-        let h = l.getForm?.()?.getRecord?.() || l.getRecord?.();
-        if (Pl(h, o)) {
+        let y = l.getForm?.()?.getRecord?.() || l.getRecord?.();
+        if (Ml(y, o)) {
           m = !0;
           break;
         }
@@ -4400,27 +4400,27 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
     let f = Date.now() - a;
     return m ? (d.info("RecordOpen", `Recovery succeeded after ${f}ms (id=${o})`), await re(200), { success: !0, entityId: o }) : (d.warn("RecordOpen", `Recovery failed after ${f}ms \u2014 form ${l.id} remains unbound to ${o}`), { success: !1, entityId: o });
   }
-  function su() {
+  function du() {
     try {
-      sessionStorage.removeItem(Fl);
+      sessionStorage.removeItem(Dl);
     } catch {
     }
   }
   async function Oi(e, { timeoutMs: t = 8e3, pollMs: r = 300 } = {}) {
-    if (Ll)
+    if (Pl)
       return d.debug("RecordOpen", "waitAndOpenSingleResult: already in progress, skipping"), { success: !1 };
     try {
-      if (ge().view === "record")
+      if (he().view === "record")
         return d.debug("RecordOpen", "waitAndOpenSingleResult: already in record view, skipping"), { success: !1, reason: "already-in-record" };
     } catch {
     }
-    Ll = !0;
+    Pl = !0;
     try {
       let o = Math.ceil(t / r);
       for (let n = 0; n < o; n++) {
         await re(r);
         try {
-          if (ge().view === "record")
+          if (he().view === "record")
             return d.debug("RecordOpen", "waitAndOpenSingleResult: record view detected mid-poll, aborting"), { success: !1, reason: "already-in-record" };
         } catch {
         }
@@ -4433,36 +4433,36 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
               let c = l.getStore?.();
               if (!c || c.isLoading?.() || c.getCount() !== 1) continue;
               let p = (c.storeId || "").toLowerCase(), u = !1;
-              for (let h of e)
-                if (p.includes(h)) {
+              for (let y of e)
+                if (p.includes(y)) {
                   u = !0;
                   break;
                 }
               if (!u) continue;
               let m = c.getAt(0), f = String(m.get("workordernum") || m.get("receiptcode") || m.get("partcode") || m.getId() || "");
               try {
-                let h = sessionStorage.getItem(Fl);
-                if (h && h === f)
+                let y = sessionStorage.getItem(Dl);
+                if (y && y === f)
                   return d.info("RecordOpen", `Auto-open already fired for ${f} in this tab \u2014 skipping re-entry.`), { success: !1, reason: "sentinel-matched", entityId: f };
-                sessionStorage.setItem(Fl, f);
+                sessionStorage.setItem(Dl, f);
               } catch {
               }
-              return d.info("RecordOpen", `Single-result grid detected (${p}), opening record.`), await Oh(l, a);
+              return d.info("RecordOpen", `Single-result grid detected (${p}), opening record.`), await Lh(l, a);
             }
           } catch {
           }
       }
       return d.debug("RecordOpen", `waitAndOpenSingleResult: no single-result grid within ${t}ms`), { success: !1 };
     } finally {
-      Ll = !1;
+      Pl = !1;
     }
   }
-  var Ll, Fl, sa = le(() => {
+  var Pl, Dl, la = le(() => {
     te();
     nt();
     ue();
-    Tt();
-    Ll = !1, Fl = "apm_auto_opened_wo";
+    yt();
+    Pl = !1, Dl = "apm_auto_opened_wo";
   });
 
   // src/modules/autofill/autofill-prefs.js
@@ -4470,7 +4470,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
     let e = N.get(dt);
     return e && typeof e == "object" ? e : null;
   }
-  function Ph(e) {
+  function $h(e) {
     N.set(dt, {
       _v: 1,
       tabOrders: e?.tabOrders || {},
@@ -4478,15 +4478,15 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
       hiddenTabs: e?.hiddenTabs || {}
     });
   }
-  function Lh(e) {
+  function qh(e) {
     if (!e || typeof e != "object") return e;
     let { config: t, ...r } = e;
     return r;
   }
-  function uu(e) {
+  function gu(e) {
     return Array.isArray(e) ? e.map((t) => t.trim().toLowerCase()).filter((t) => t) : typeof e == "string" ? e.split(",").map((t) => t.trim().toLowerCase()).filter((t) => t) : [];
   }
-  function Dh(e) {
+  function Wh(e) {
     let t = 0;
     for (let r of ["wo", "shiftReport"]) {
       let o = e[r];
@@ -4498,13 +4498,13 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
     }
     t > 0 && d.info("AutoFill", `Migrated ${t} preset(s) to array keyword format`);
   }
-  function Fh() {
+  function Hh() {
     let e = we.autofill, t = /* @__PURE__ */ new Map();
     for (let r of ["wo", "shiftReport"]) {
       let o = e[r];
       if (o)
         for (let n in o) {
-          let a = uu(o[n].keyword);
+          let a = gu(o[n].keyword);
           for (let s of a) {
             let l = t.get(s);
             l ? l.some((c) => c.screen === r && c.presetKey === n) || l.push({ screen: r, presetKey: n }) : t.set(s, [{ screen: r, presetKey: n }]);
@@ -4514,15 +4514,15 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
     Po = t;
   }
   function bn() {
-    return Po || Fh(), Po;
+    return Po || Hh(), Po;
   }
-  function Bh() {
+  function Uh() {
     let e = we.autofill, t = /* @__PURE__ */ new Map();
     for (let r of ["wo", "shiftReport"]) {
       let o = e[r];
       if (o)
         for (let n in o) {
-          let a = uu(o[n].equipmentKeyword);
+          let a = gu(o[n].equipmentKeyword);
           for (let s of a) {
             let l = t.get(s);
             l ? l.some((c) => c.screen === r && c.presetKey === n) || l.push({ screen: r, presetKey: n }) : t.set(s, [{ screen: r, presetKey: n }]);
@@ -4532,12 +4532,12 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
     Lo = t;
   }
   function Ii() {
-    return Lo || Bh(), Lo;
+    return Lo || Uh(), Lo;
   }
-  function $h(e) {
-    return Nt[e] || "wo";
+  function Gh(e) {
+    return Mt[e] || "wo";
   }
-  function mr() {
+  function fr() {
     if (!Mo) {
       let e = we.config;
       if (Object.keys(e.tabOrders || {}).length === 0 && Object.keys(e.columnOrders || {}).length === 0 && Object.keys(e.hiddenTabs || {}).length === 0)
@@ -4561,12 +4561,12 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
       else
         Mo = !0;
     }
-    return $l(we.config), we;
+    return Bl(we.config), we;
   }
-  function qh(e) {
+  function Vh(e) {
     return e ? typeof e == "string" ? e.split(",").map((t) => ({ index: t.trim() })).filter((t) => t.index) : e : null;
   }
-  function Wh(e) {
+  function zh(e) {
     return e ? typeof e == "string" ? e.split(",").map((t) => t.trim()).filter(Boolean) : e : null;
   }
   function ro(e) {
@@ -4575,32 +4575,32 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
       `Discarded ${e.hiddenTabs.length} legacy hiddenTabs entries \u2014 legacy global-hide format cannot safely migrate to per-screen storage`
     ), e.hiddenTabs = {});
   }
-  function Hh() {
-    if (la !== null) return !la;
+  function jh() {
+    if (ca !== null) return !ca;
     try {
-      let e = N.get(Vn, []);
-      la = Array.isArray(e) && e.includes("legacy_column_orders_cleanup_v2");
+      let e = N.get(jn, []);
+      ca = Array.isArray(e) && e.includes("legacy_column_orders_cleanup_v2");
     } catch {
-      la = !1;
+      ca = !1;
     }
-    return !la;
+    return !ca;
   }
-  function $l(e) {
-    if (!Hh() || !e?.columnOrders) return;
+  function Bl(e) {
+    if (!jh() || !e?.columnOrders) return;
     let t = Object.keys(e.columnOrders).filter((r) => !r.includes("|"));
     if (t.length !== 0) {
       for (let r of t) delete e.columnOrders[r];
-      pu || (pu = !0, d.info(
+      fu || (fu = !0, d.info(
         "AutoFill",
         `Stripped ${t.length} pre-dataspy columnOrders entries from runtime (${t.join(", ")}) \u2014 re-customize per dataspy to restore`
       ));
     }
   }
-  function ca() {
+  function da() {
     Mo = !1;
     try {
       let e = N.get(De), t = Ni();
-      e ? (e._v === void 0 && (e._v = 0, d.debug("AutoFill", "Presets loaded as legacy v0")), e.autofill || e.config ? (e.autofill && (Dh(e.autofill), we.autofill = e.autofill), t ? (ro(t), we.config = {
+      e ? (e._v === void 0 && (e._v = 0, d.debug("AutoFill", "Presets loaded as legacy v0")), e.autofill || e.config ? (e.autofill && (Wh(e.autofill), we.autofill = e.autofill), t ? (ro(t), we.config = {
         columnOrders: t.columnOrders || {},
         tabOrders: t.tabOrders || {},
         hiddenTabs: t.hiddenTabs || {}
@@ -4608,7 +4608,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
         columnOrders: t.columnOrders || {},
         tabOrders: t.tabOrders || {},
         hiddenTabs: t.hiddenTabs || {}
-      }), $l(we.config);
+      }), Bl(we.config);
     } catch (e) {
       d.warn("AutoFill", "Failed to load presets", e);
     }
@@ -4630,9 +4630,9 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
       } catch (l) {
         d.debug("AutoFill", "Storage operation failed:", l);
       }
-    we._v = 1, N.set(De, Lh(we)), Ph(we.config);
+    we._v = 1, N.set(De, qh(we)), $h(we.config);
   }
-  function Tr() {
+  function Cr() {
     if (!Mo) {
       let t = we.config;
       if (Object.keys(t.tabOrders || {}).length === 0 && Object.keys(t.columnOrders || {}).length === 0 && Object.keys(t.hiddenTabs || {}).length === 0)
@@ -4658,32 +4658,32 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
     }
     let e = we.config;
     if (e) {
-      ro(e), $l(e);
+      ro(e), Bl(e);
       for (let t of Object.keys(e.tabOrders || {}))
-        typeof e.tabOrders[t] == "string" && (e.tabOrders[t] = Wh(e.tabOrders[t]));
+        typeof e.tabOrders[t] == "string" && (e.tabOrders[t] = zh(e.tabOrders[t]));
       for (let t of Object.keys(e.columnOrders || {}))
-        typeof e.columnOrders[t] == "string" && (e.columnOrders[t] = qh(e.columnOrders[t]));
+        typeof e.columnOrders[t] == "string" && (e.columnOrders[t] = Vh(e.columnOrders[t]));
     }
     return structuredClone(we);
   }
-  function ql(e) {
+  function $l(e) {
     let t = we.config;
-    Object.keys(t.tabOrders || {}).length === 0 && Object.keys(t.columnOrders || {}).length === 0 && (ca(), d.debug("AutoFill", "Loaded presets before updatePresetConfig (config was empty)")), we.config = { ...we.config, ...e }, Do(), window.dispatchEvent(new CustomEvent("APM_PRESETS_SYNC_REQUIRED"));
+    Object.keys(t.tabOrders || {}).length === 0 && Object.keys(t.columnOrders || {}).length === 0 && (da(), d.debug("AutoFill", "Loaded presets before updatePresetConfig (config was empty)")), we.config = { ...we.config, ...e }, Do(), window.dispatchEvent(new CustomEvent("APM_PRESETS_SYNC_REQUIRED"));
   }
-  function Uh(e, t, r = "wo") {
+  function Kh(e, t, r = "wo") {
     Po = null, Lo = null, we.autofill[r] || (we.autofill[r] = {}), t === null ? delete we.autofill[r][e] : we.autofill[r][e] = t, Do(), window.dispatchEvent(new CustomEvent("APM_PRESETS_SYNC_REQUIRED"));
   }
-  function da(e = "wo") {
-    let r = Tr().autofill?.[e];
+  function pa(e = "wo") {
+    let r = Cr().autofill?.[e];
     return r ? Object.entries(r).filter(([, o]) => o.isDefault).map(([o, n]) => ({ name: o, ...n })) : [];
   }
-  function xt() {
-    return mu;
+  function vt() {
+    return hu;
   }
   function ft(e) {
-    mu = e;
+    hu = e;
   }
-  function Bl(e) {
+  function Fl(e) {
     if (!e || typeof e != "object") return [];
     let t = (r) => Array.isArray(r) ? r : r ? [r] : [];
     return Object.entries(e).map(([r, o]) => ({
@@ -4693,30 +4693,30 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
       isDefault: !!o?.isDefault
     }));
   }
-  var Po, Lo, Mo, we, pu, la, mu, Qt = le(() => {
+  var Po, Lo, Mo, we, fu, ca, hu, Qt = le(() => {
     se();
     te();
     _e();
-    At();
+    _t();
     Oe();
     Po = null, Lo = null, Mo = !1, we = {
       autofill: { wo: {}, repair: {}, shiftReport: {} },
       config: { columnOrders: {}, tabOrders: {}, hiddenTabs: {} }
     };
-    pu = !1, la = null;
-    mu = !1;
-    _.register("getPresets", Tr);
-    _.register("updatePresetConfig", ql);
-    _.register("getIsAutoFillRunning", xt);
-    _.register("updatePresetAutofill", Uh);
-    _.register("resolveAutofillScreen", $h);
+    fu = !1, ca = null;
+    hu = !1;
+    _.register("getPresets", Cr);
+    _.register("updatePresetConfig", $l);
+    _.register("getIsAutoFillRunning", vt);
+    _.register("updatePresetAutofill", Kh);
+    _.register("resolveAutofillScreen", Gh);
     _.register("diagnosticHook:autofill", () => {
       let t = N.get(De)?.autofill || {};
       return {
         profiles: {
-          wo: Bl(t.wo),
-          repair: Bl(t.repair),
-          shiftReport: Bl(t.shiftReport)
+          wo: Fl(t.wo),
+          repair: Fl(t.repair),
+          shiftReport: Fl(t.shiftReport)
         }
       };
     });
@@ -4744,16 +4744,16 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
   });
 
   // src/core/module-guard.js
-  var Lt, Fo = le(() => {
-    Ht();
+  var Ot, Fo = le(() => {
+    Lt();
     Te();
     ct();
     nt();
     se();
-    ur();
+    mr();
     mt();
-    ar();
-    Lt = class {
+    ir();
+    Ot = class {
       /**
        * @param {Object} config
        * @param {string}      [config.feature]  - Feature flag name (skips if disabled)
@@ -4775,20 +4775,20 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
        * screen, view, and navigation guard should NOT block setup.
        */
       isEnabled() {
-        return !this.feature || he.isEnabled(this.feature);
+        return !this.feature || fe.isEnabled(this.feature);
       }
       /**
        * Full precondition check (steps 1-4). Returns false if any step fails.
        * Use for early-exit in complex flows that need custom element scanning.
        */
       canRun() {
-        if (this.feature && !he.isEnabled(this.feature) || Sr()) return !1;
+        if (this.feature && !fe.isEnabled(this.feature) || Er()) return !1;
         if (this.screens) {
-          let t = Ze(), r = Nt[t] || null;
+          let t = Ze(), r = Mt[t] || null;
           if (!r || !this.screens[r]) return !1;
         }
         if (this.view) {
-          let { view: t } = ge();
+          let { view: t } = he();
           if (t !== this.view) return !1;
         }
         return !0;
@@ -4805,12 +4805,12 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
        * @param {Function} [opts.filter] - Extra filter: (el, win) => boolean
        */
       queryDOM(t, r, { firstOnly: o = !0, filter: n = null } = {}) {
-        if (!this.isEnabled() || Sr()) return;
+        if (!this.isEnabled() || Er()) return;
         if (this.view) {
-          let { view: p } = ge();
+          let { view: p } = he();
           if (p !== this.view) return;
         }
-        let a = Ke(this.screens);
+        let a = Ye(this.screens);
         if (!a) return;
         let { win: s, doc: l, screenId: c } = a;
         for (let p of l.querySelectorAll(t))
@@ -4833,9 +4833,9 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
        */
       onAjax(t, r, o, { delay: n = 0 } = {}) {
         Ne.onRequestComplete(t, (a, s, l, c) => {
-          if (this.feature && !he.isEnabled(this.feature)) return;
+          if (this.feature && !fe.isEnabled(this.feature)) return;
           let p = (c?.url || "").toUpperCase();
-          r && !p.includes(r.toUpperCase()) || an(a) && (n > 0 ? setTimeout(() => o(a, s, l, c), n) : o(a, s, l, c));
+          r && !p.includes(r.toUpperCase()) || sn(a) && (n > 0 ? setTimeout(() => o(a, s, l, c), n) : o(a, s, l, c));
         });
       }
       /**
@@ -4847,7 +4847,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
        */
       onViewChange(t, { delay: r = 500 } = {}) {
         window.addEventListener("APM_EAM_VIEW_CHANGE", (o) => {
-          this.feature && !he.isEnabled(this.feature) || (r > 0 ? setTimeout(() => t(o.detail), r) : t(o.detail));
+          this.feature && !fe.isEnabled(this.feature) || (r > 0 ? setTimeout(() => t(o.detail), r) : t(o.detail));
         });
       }
       /**
@@ -4867,14 +4867,14 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
   });
 
   // src/core/eam/eam-nav.js
-  function Zh(e) {
-    let t = fe[e];
+  function ny(e) {
+    let t = ge[e];
     return `${t ? t.systemFunc : e}?USER_FUNCTION_NAME=${e}&FUNCTION_CLASS=WEBL`;
   }
-  function Jl(e) {
+  function Yl(e) {
     return !!(e.includes("items") && e.includes("null") || e.includes("NS_ERROR_XPC_SECURITY_MANAGER_VETO") || e.includes("SecurityError") && e.includes("cross-origin") || e.includes("Permission denied to access property") || e.includes("[object ErrorEvent]") || e.includes("[object Event]"));
   }
-  function fa(e) {
+  function ga(e) {
     let t = [];
     try {
       let r = e.onerror;
@@ -4882,7 +4882,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
         if (o instanceof e.Event || o instanceof e.ErrorEvent || typeof Event < "u" && o instanceof Event)
           return d.debug("EamNav", "Suppressed ErrorEvent during transition"), !0;
         let c = String(o || "");
-        return Jl(c) ? (d.debug("EamNav", "Suppressed transition error (onerror):", c.substring(0, 120)), !0) : r ? r.call(this, o, n, a, s, l) : !1;
+        return Yl(c) ? (d.debug("EamNav", "Suppressed transition error (onerror):", c.substring(0, 120)), !0) : r ? r.call(this, o, n, a, s, l) : !1;
       }, t.push(() => {
         e.onerror = r;
       });
@@ -4891,7 +4891,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
     try {
       let r = (o) => {
         let n = String(o.reason?.message || o.reason || "");
-        Jl(n) && (d.debug("EamNav", "Suppressed transition error (unhandledrejection):", n.substring(0, 120)), o.preventDefault());
+        Yl(n) && (d.debug("EamNav", "Suppressed transition error (unhandledrejection):", n.substring(0, 120)), o.preventDefault());
       };
       e.addEventListener("unhandledrejection", r), t.push(() => {
         e.removeEventListener("unhandledrejection", r);
@@ -4902,7 +4902,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
       let r = e.Ext?.Error?.handle;
       e.Ext?.Error && (e.Ext.Error.handle = function(o) {
         let n = o && (o.msg || o.message || String(o)) || "";
-        return Jl(n) ? (d.debug("EamNav", "Suppressed transition error (Ext.Error.handle):", n.substring(0, 120)), !0) : r ? r.apply(this, arguments) : !1;
+        return Yl(n) ? (d.debug("EamNav", "Suppressed transition error (Ext.Error.handle):", n.substring(0, 120)), !0) : r ? r.apply(this, arguments) : !1;
       }, t.push(() => {
         e.Ext.Error.handle = r;
       }));
@@ -4922,13 +4922,13 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
           if (u.nodeName === "IFRAME") {
             try {
               let m = u.contentWindow;
-              m && !t.has(m) && (e.push(fa(m)), t.add(m));
+              m && !t.has(m) && (e.push(ga(m)), t.add(m));
             } catch {
             }
             u.addEventListener("load", () => {
               try {
                 let m = u.contentWindow;
-                m && !t.has(m) && (e.push(fa(m)), t.add(m));
+                m && !t.has(m) && (e.push(ga(m)), t.add(m));
               } catch {
               }
             });
@@ -4943,12 +4943,12 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
     }, s = () => {
       for (let c of [window, window.top])
         try {
-          c && !t.has(c) && ye(c) && (e.push(fa(c)), t.add(c), a(c.document));
+          c && !t.has(c) && be(c) && (e.push(ga(c)), t.add(c), a(c.document));
         } catch {
         }
       try {
         for (let c of ne()) {
-          t.has(c) || (e.push(fa(c)), t.add(c));
+          t.has(c) || (e.push(ga(c)), t.add(c));
           try {
             a(c.document);
           } catch {
@@ -4960,7 +4960,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
         document.querySelectorAll("iframe").forEach((c) => {
           try {
             let p = c.contentWindow;
-            p && !t.has(p) && ye(p) && (e.push(fa(p)), t.add(p), a(p.document));
+            p && !t.has(p) && be(p) && (e.push(ga(p)), t.add(p), a(p.document));
           } catch {
           }
         });
@@ -4983,24 +4983,24 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
       }), d.debug("EamNav", `Transition error suppression removed (${e.length} windows)`);
     };
   }
-  function ga(e, t) {
+  function ha(e, t) {
     try {
       let r = e.EAM?.Nav;
       if (!r || typeof r.launchScreen != "function")
         return d.warn("EamNav", "EAM.Nav.launchScreen not available"), !1;
-      let o = Zh(t);
-      d.info("EamNav", `Direct navigation via EAM.Nav.launchScreen("${o}")`), lr(!0, 8e3), pe.pause(8e3);
-      let n = he.isEnabled("disableTransitionSuppression") ? () => {
+      let o = ny(t);
+      d.info("EamNav", `Direct navigation via EAM.Nav.launchScreen("${o}")`), cr(!0, 8e3), pe.pause(8e3);
+      let n = fe.isEnabled("disableTransitionSuppression") ? () => {
       } : Bo();
       return r.launchScreen(o, null, { fromNav: !0 }), setTimeout(() => {
-        n(), lr(!1), pe.resume();
+        n(), cr(!1), pe.resume();
       }, 8e3), !0;
     } catch (r) {
-      return d.error("EamNav", "EAM.Nav.launchScreen failed:", r), lr(!1), pe.resume(), !1;
+      return d.error("EamNav", "EAM.Nav.launchScreen failed:", r), cr(!1), pe.resume(), !1;
     }
   }
-  function Tu(e) {
-    let t = fe[e] || { systemFunc: e }, r = Jn() || "", o = new URLSearchParams({
+  function _u(e) {
+    let t = ge[e] || { systemFunc: e }, r = Qn() || "", o = new URLSearchParams({
       tenant: r,
       SYSTEM_FUNCTION_NAME: t.systemFunc,
       USER_FUNCTION_NAME: e,
@@ -5013,19 +5013,19 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
       window.location.href = n;
     }
   }
-  var ha = le(() => {
+  var ya = le(() => {
     te();
     se();
     ue();
     mt();
     Te();
-    Ht();
-    It();
+    Lt();
+    Ct();
   });
 
   // src/core/screen-scope.js
   var Be, no = le(() => {
-    ar();
+    ir();
     nt();
     Oe();
     Be = class e {
@@ -5034,8 +5034,8 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
       }
       /** Snapshot the currently active screen. Null if mcp has no active tab yet. */
       static active() {
-        let t = Ke(null);
-        return t ? new e(t, ge()) : null;
+        let t = Ye(null);
+        return t ? new e(t, he()) : null;
       }
       /**
        * Snapshot the active screen IFF `ref` lives in it. Returns null when
@@ -5046,18 +5046,18 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
        */
       static from(t) {
         if (!t) return null;
-        let r = Ke(null);
+        let r = Ye(null);
         if (!r) return null;
         let o = null;
-        return t.document && t.location ? o = t : o = (t.getEl?.()?.dom || t)?.ownerDocument?.defaultView || null, !o || o !== r.win ? null : new e(r, ge());
+        return t.document && t.location ? o = t : o = (t.getEl?.()?.dom || t)?.ownerDocument?.defaultView || null, !o || o !== r.win ? null : new e(r, he());
       }
       /**
        * Find the frame hosting `target` screen, whether currently active or
        * cache-parked. Returns null when mcp has no tab for that screen.
        */
       static forScreen(t) {
-        let r = cp(t);
-        return r ? new e(r, ge()) : null;
+        let r = up(t);
+        return r ? new e(r, he()) : null;
       }
       /**
        * Is this ExtJS component on this scope's active screen *and* its
@@ -5112,12 +5112,12 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
   });
 
   // src/core/dom-queries.js
-  function oc(e) {
+  function rc(e) {
     return e ? String(e).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;") : "";
   }
   function Wr(e, { filter: t = null, readOnly: r = !1 } = {}) {
-    if (!r && Sr()) return null;
-    let o = Ke(null);
+    if (!r && Er()) return null;
+    let o = Ye(null);
     if (!o) return null;
     try {
       let { win: n, doc: a } = o;
@@ -5143,9 +5143,9 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
       l = !0, a && s && a.removeEventListener("change", s);
     };
   }
-  var Rr = le(() => {
+  var Or = le(() => {
     Te();
-    ar();
+    ir();
   });
 
   // src/core/eam/eam-query.js
@@ -5163,7 +5163,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
       throw d.error("EAMQuery", `JSON Parse failed: ${n.message}. Snippet: ${o.substring(0, 100)}`), n;
     }
   }
-  function My(e) {
+  function Bb(e) {
     if (!e) return {};
     let t = {}, r = 1;
     for (let [o, n] of Object.entries(e)) {
@@ -5182,8 +5182,8 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
     }
     return t;
   }
-  async function Pn({
-    baseUrl: e = Lr,
+  async function Ln({
+    baseUrl: e = Dr,
     endpoint: t = "",
     // e.g. 'WSBOOK.HDR.xmlhttp'
     gridId: r,
@@ -5206,9 +5206,9 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
     // grid-only callers (labor-service, equipment LOV) keep their wire size.
     includeFormData: g = !1
   }) {
-    let h = performance.now(), y = be.session;
-    if (!y.eamid) throw new Error("Missing EAM Session ID");
-    let b = y.tenant || Dr(), x = e + (t || o + ".xmlhttp"), v = {
+    let y = performance.now(), x = ye.session;
+    if (!x.eamid) throw new Error("Missing EAM Session ID");
+    let h = x.tenant || nr(), b = e + (t || o + ".xmlhttp"), v = {
       GRID_ID: r,
       GRID_NAME: o,
       DATASPY_ID: n,
@@ -5216,8 +5216,8 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
       SYSTEM_FUNCTION_NAME: s,
       CURRENT_TAB_NAME: l,
       ...g ? {} : { COMPONENT_INFO_TYPE: "DATA_ONLY" },
-      eamid: y.eamid,
-      tenant: b,
+      eamid: x.eamid,
+      tenant: h,
       ...f ? {
         MAX_ROWS: u.toString(),
         NUMBER_OF_ROWS_FIRST_RETURNED: m.toString(),
@@ -5225,13 +5225,13 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
         FORCE_REQUERY: "YES"
       } : {},
       ...p,
-      ...My(c)
+      ...Bb(c)
     }, E = {};
     for (let [S, w] of Object.entries(v))
       w != null && (E[S] = w);
     let k = new URLSearchParams(E);
     try {
-      let w = await (await to(x, {
+      let w = await (await to(b, {
         method: "POST",
         headers: { "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8", "X-Requested-With": "XMLHttpRequest" },
         body: k.toString(),
@@ -5247,7 +5247,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
           break;
         }
         Q.add(ee);
-        let A = e + "GETCACHE", z = new URLSearchParams({
+        let A = e + "GETCACHE", V = new URLSearchParams({
           COMPONENT_INFO_TYPE: "DATA_ONLY",
           COMPONENT_INFO_TYPE_MODE: "CACHE",
           GRID_ID: r,
@@ -5257,13 +5257,13 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
           CURSOR_POSITION: ee.toString(),
           SYSTEM_FUNCTION_NAME: s,
           USER_FUNCTION_NAME: a,
-          eamid: y.eamid,
-          tenant: b,
+          eamid: x.eamid,
+          tenant: h,
           ...p
         }), M = await (await to(A, {
           method: "POST",
           headers: { "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8", "X-Requested-With": "XMLHttpRequest" },
-          body: z.toString(),
+          body: V.toString(),
           credentials: "include"
         })).text(), F = fs(M), U = F?.pageData?.grid?.GRIDRESULT?.GRID?.DATA || [];
         if (U.length === 0) break;
@@ -5271,7 +5271,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
         let q = parseInt(D.CURRENTCURSORPOSITION, 10);
         ee = (isNaN(q) ? B.length : q) + 1, await new Promise((j) => setTimeout(j, 0));
       }
-      let R = performance.now() - h;
+      let R = performance.now() - y;
       return ve.recordPerformance("eamQuery", parseFloat(R.toFixed(2))), { records: B, metadata: D, values: $ };
     } catch (S) {
       throw d.error("EAMQuery", "Query Execution failure:", S), S;
@@ -5282,21 +5282,21 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
     ki();
     te();
     se();
-    It();
-    At();
+    Ct();
+    _t();
   });
 
   // src/modules/labor/labor-service.js
-  function Mc(e) {
+  function Ic(e) {
     let [t, r] = e.split(":").map(Number), o = t + 4, n = r, a = /* @__PURE__ */ new Date(), s = new Date(a);
     return s.setHours(o, n, 0, 0), a < s && s.setDate(s.getDate() - 1), s.getTime();
   }
-  function Ly(e, t) {
-    let r = Mc(e), o = 1440 * 60 * 1e3, n = [];
+  function qb(e, t) {
+    let r = Ic(e), o = 1440 * 60 * 1e3, n = [];
     for (let a = 0; a <= t; a++) n.push(r - a * o);
     return n;
   }
-  function Dy(e) {
+  function Wb(e) {
     let t = N.get(Eo, {}), r = Date.now(), o = 0;
     e.forEach((s) => {
       let l = s.bookingcode;
@@ -5313,12 +5313,12 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
       }
       t[l] && (s._enteredAt = t[l].firstSeen, o++);
     });
-    let n = r - Py, a = 0;
+    let n = r - $b, a = 0;
     for (let s of Object.keys(t))
       t[s].firstSeen < n && (delete t[s], a++);
     N.set(Eo, t), e.length > 0 && d.debug("LaborService", `stampRecords: ${o}/${e.length} stamped from registry, ${a} pruned (>8d)`);
   }
-  function Fy(e) {
+  function Hb(e) {
     if (!e || typeof e != "string") return null;
     let t = e.trim().split(/\s+/);
     if (t.length < 2) return null;
@@ -5327,13 +5327,13 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
     let o = t[1].match(/^(\d{1,2}):(\d{2})/);
     return o ? (r.setHours(parseInt(o[1]), parseInt(o[2]), 0, 0), isNaN(r.getTime()) ? null : r) : null;
   }
-  var Py, ot, hs = le(() => {
-    sr();
+  var $b, ot, hs = le(() => {
+    lr();
     te();
     gs();
     _e();
     se();
-    Py = 11520 * 60 * 1e3;
+    $b = 11520 * 60 * 1e3;
     ot = /* @__PURE__ */ (function() {
       let e = {
         data: [],
@@ -5349,7 +5349,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
         if (l) {
           d.info("LaborService", `Night shift bootstrap: fetching today dataspy for ${l}`);
           try {
-            let { records: c } = await Pn({
+            let { records: c } = await Ln({
               endpoint: "WSBOOK.HDR.xmlhttp",
               gridId: "1742",
               gridName: "WSBOOK_HDR",
@@ -5364,22 +5364,22 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
             }
             let p = Object.keys(c[0]).join(", ");
             d.info("LaborService", `Night shift bootstrap: ${c.length} record(s), fields: ${p}`);
-            let u = N.get(Eo, {}), m = 0, f = 0, g = 0, h = 0;
-            for (let y of c) {
-              let b = y.bookingcode;
-              if (!b) {
+            let u = N.get(Eo, {}), m = 0, f = 0, g = 0, y = 0;
+            for (let x of c) {
+              let h = x.bookingcode;
+              if (!h) {
                 f++;
                 continue;
               }
-              let x = Fy(y.dateentered);
-              if (!x) {
+              let b = Hb(x.dateentered);
+              if (!b) {
                 g++;
                 continue;
               }
-              let v = x.getTime();
-              u[b] && u[b].firstSeen === v ? h++ : (u[b] = { firstSeen: v }, m++);
+              let v = b.getTime();
+              u[h] && u[h].firstSeen === v ? y++ : (u[h] = { firstSeen: v }, m++);
             }
-            m > 0 && N.set(Eo, u), N.set(li, !0), d.info("LaborService", `Night shift bootstrap: seeded=${m}, alreadyTracked=${h}, noBookingCode=${f}, unparseable=${g}`);
+            m > 0 && N.set(Eo, u), N.set(li, !0), d.info("LaborService", `Night shift bootstrap: seeded=${m}, alreadyTracked=${y}, noBookingCode=${f}, unparseable=${g}`);
           } catch (c) {
             d.warn("LaborService", "Night shift bootstrap failed (non-fatal):", c.message);
           }
@@ -5394,20 +5394,20 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
         try {
           let f = { employee: l };
           if (p) {
-            let b = /* @__PURE__ */ new Date();
-            b.setDate(b.getDate() - (p - 1));
-            let x = String(b.getMonth() + 1).padStart(2, "0"), v = String(b.getDate()).padStart(2, "0"), E = b.getFullYear();
+            let h = /* @__PURE__ */ new Date();
+            h.setDate(h.getDate() - (p - 1));
+            let b = String(h.getMonth() + 1).padStart(2, "0"), v = String(h.getDate()).padStart(2, "0"), E = h.getFullYear();
             Object.assign(f, {
               MADDON_FILTER_ALIAS_NAME_1: "datework",
               MADDON_FILTER_OPERATOR_1: ">=",
-              MADDON_FILTER_VALUE_1: `${x}/${v}/${E}`,
+              MADDON_FILTER_VALUE_1: `${b}/${v}/${E}`,
               MADDON_FILTER_SEQNUM_1: "1",
               MADDON_FILTER_JOINER_1: "AND",
               MADDON_LPAREN_1: "false",
               MADDON_RPAREN_1: "false"
             });
           }
-          let { records: g } = await Pn({
+          let { records: g } = await Ln({
             endpoint: "WSBOOK.HDR.xmlhttp",
             gridId: "1742",
             gridName: "WSBOOK_HDR",
@@ -5416,15 +5416,15 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
             systemFunction: "WSBOOK",
             extraParams: f
           });
-          e.data = g, e.employee = l, e.daysBack = p, e.lastFetch = Date.now(), Dy(g);
-          let h = new Set(
-            g.filter((b) => b.bookingcode).map((b) => String(b.bookingcode))
-          ), y = Date.now();
-          if (t = t.filter((b) => y - b._enteredAt > 12e4 || h.has(String(b.bookingcode)) ? !1 : (e.data.push(b), !0)), !N.get(zn) && g.length > 0) {
-            let b = g.find((x) => x.hrswork && /[.,]/.test(String(x.hrswork)));
-            if (b) {
-              let x = String(b.hrswork), v = x.includes(",") ? "comma" : "dot";
-              N.set(zn, v), d.info("LaborService", `Auto-detected EAM decimal separator: ${v} (from "${x}")`);
+          e.data = g, e.employee = l, e.daysBack = p, e.lastFetch = Date.now(), Wb(g);
+          let y = new Set(
+            g.filter((h) => h.bookingcode).map((h) => String(h.bookingcode))
+          ), x = Date.now();
+          if (t = t.filter((h) => x - h._enteredAt > 12e4 || y.has(String(h.bookingcode)) ? !1 : (e.data.push(h), !0)), !N.get(zn) && g.length > 0) {
+            let h = g.find((b) => b.hrswork && /[.,]/.test(String(b.hrswork)));
+            if (h) {
+              let b = String(h.hrswork), v = b.includes(",") ? "comma" : "dot";
+              N.set(zn, v), d.info("LaborService", `Auto-detected EAM decimal separator: ${v} (from "${b}")`);
             }
           }
           return d.info("LaborService", `Fetched ${g.length} record(s) for ${l}`), e.data;
@@ -5441,39 +5441,39 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
           let g = Qr(f.datework);
           if (!g) return;
           g.setHours(0, 0, 0, 0);
-          let h = Date.UTC(p.getFullYear(), p.getMonth(), p.getDate()), y = Date.UTC(g.getFullYear(), g.getMonth(), g.getDate()), b = (h - y) / 864e5, x = c - 1;
-          if (b <= x && b >= 0) {
+          let y = Date.UTC(p.getFullYear(), p.getMonth(), p.getDate()), x = Date.UTC(g.getFullYear(), g.getMonth(), g.getDate()), h = (y - x) / 864e5, b = c - 1;
+          if (h <= b && h >= 0) {
             let v = parseFloat(String(f.hrswork ?? "").replace(",", "."));
             if (!isNaN(v)) {
               u += v;
-              let E = Ct(g);
+              let E = At(g);
               m[E] = (m[E] || 0) + v;
             }
           }
         }), d.info("LaborService", `calculateTally: ${l.length} in \u2192 ${u.toFixed(2)}h, ${Object.keys(m).length} bucket(s), daysParam=${c}`), { total: u, grandTotal: u, breakdown: m };
       }
       function a(l, c, p) {
-        let u = Ly(c, p), m = [];
-        for (let b = 0; b < p; b++)
+        let u = qb(c, p), m = [];
+        for (let h = 0; h < p; h++)
           m.push({
-            startDay: new Date(u[b]),
-            startTs: u[b],
-            endTs: b === 0 ? Date.now() + 1 : u[b - 1],
+            startDay: new Date(u[h]),
+            startTs: u[h],
+            endTs: h === 0 ? Date.now() + 1 : u[h - 1],
             total: 0,
             breakdown: {},
             hasUnstamped: !1
           });
-        let f = m.map((b) => Ct(b.startDay)), g = 0, h = 0, y = 0;
-        for (let b of l) {
-          if (!b.datework) continue;
-          let x = Qr(b.datework);
-          if (!x) continue;
-          let v = parseFloat(String(b.hrswork ?? "").replace(",", "."));
+        let f = m.map((h) => At(h.startDay)), g = 0, y = 0, x = 0;
+        for (let h of l) {
+          if (!h.datework) continue;
+          let b = Qr(h.datework);
+          if (!b) continue;
+          let v = parseFloat(String(h.hrswork ?? "").replace(",", "."));
           if (isNaN(v)) continue;
-          let E = Ct(x), k;
-          b._enteredAt ? (k = m.findIndex((S) => b._enteredAt > S.startTs && b._enteredAt <= S.endTs), k !== -1 && h++) : (k = f.indexOf(E), k !== -1 && y++), k !== -1 && (m[k].total += v, m[k].breakdown[E] = (m[k].breakdown[E] || 0) + v, b._enteredAt || (m[k].hasUnstamped = !0), g += v);
+          let E = At(b), k;
+          h._enteredAt ? (k = m.findIndex((S) => h._enteredAt > S.startTs && h._enteredAt <= S.endTs), k !== -1 && y++) : (k = f.indexOf(E), k !== -1 && x++), k !== -1 && (m[k].total += v, m[k].breakdown[E] = (m[k].breakdown[E] || 0) + v, h._enteredAt || (m[k].hasUnstamped = !0), g += v);
         }
-        return d.info("LaborService", `calculateShiftTally: ${l.length} in \u2192 ${h} stamped + ${y} via datework, ${g.toFixed(2)}h across ${p} shift(s)`), { grandTotal: g, shifts: m, hasUnstamped: y > 0 };
+        return d.info("LaborService", `calculateShiftTally: ${l.length} in \u2192 ${y} stamped + ${x} via datework, ${g.toFixed(2)}h across ${p} shift(s)`), { grandTotal: g, shifts: m, hasUnstamped: x > 0 };
       }
       function s(l) {
         let c = Date.now();
@@ -5498,48 +5498,48 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
   });
 
   // src/modules/labor/labor-booker-state.js
-  var ke, bs, Xm = le(() => {
+  var ke, ys, tf = le(() => {
     ke = {
       isRunning: !1,
       capturedDepartment: null,
       pendingBooking: null,
       lastSaveWo: null
-    }, bs = "0.|01/01/2020|01/01/2035";
+    }, ys = "0.|01/01/2020|01/01/2035";
   });
 
   // src/modules/labor/labor-decimal.js
   function go() {
-    let e = N.get(tn, "auto");
+    let e = N.get(rn, "auto");
     if (e === "comma") return !0;
     if (e === "dot") return !1;
     let t = N.get(zn);
     return t === "comma" ? !0 : t === "dot" ? !1 : ie.isEU;
   }
-  function Lc(e) {
+  function Pc(e) {
     try {
       if (!e) return null;
-      if (e instanceof Date) return Ct(e);
+      if (e instanceof Date) return At(e);
       if (typeof e == "string") {
         let t = Qr(e);
-        if (t && !isNaN(t.getTime())) return Ct(t);
+        if (t && !isNaN(t.getTime())) return At(t);
       }
     } catch {
     }
     return null;
   }
-  var Pc, ys = le(() => {
+  var Mc, bs = le(() => {
     _e();
-    Ve();
+    je();
     se();
-    sr();
-    Pc = (e, t = 2) => {
+    lr();
+    Mc = (e, t = 2) => {
       let r = Number(e).toFixed(t);
       return go() ? r.replace(".", ",") : r;
     };
   });
 
   // src/modules/labor/labor-booker-verify.js
-  function Zm(e, t, r) {
+  function rf(e, t, r) {
     let o = e.findField(t);
     if (!o || !r) return !1;
     let n = r.split("-");
@@ -5547,12 +5547,12 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
     let a = new Date(parseInt(n[0]), parseInt(n[1]) - 1, parseInt(n[2]));
     return isNaN(a.getTime()) ? !1 : (o.setValue(a), o.fireEvent("change", o, o.getValue()), o.fireEvent("blur", o), typeof o.validate == "function" && o.validate(), !0);
   }
-  async function Dc(e, t) {
+  async function Lc(e, t) {
     let r = [];
     t?.ComponentQuery && r.push(t);
     for (let n of ne())
       try {
-        ye(n) && n.Ext?.ComponentQuery && n.Ext !== t && r.push(n.Ext);
+        be(n) && n.Ext?.ComponentQuery && n.Ext !== t && r.push(n.Ext);
       } catch {
       }
     for (let n of r)
@@ -5575,7 +5575,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
     }
     for (let n of ne())
       try {
-        ye(n) && n.document && n !== e && o.push(n.document);
+        be(n) && n.document && n !== e && o.push(n.document);
       } catch {
       }
     for (let n of o)
@@ -5601,34 +5601,34 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
       }
     return !1;
   }
-  async function ef(e, t, r) {
+  async function of(e, t, r) {
     d.debug("LaborBooker", "Reached save step");
     let o = t.ComponentQuery.query("form:not([destroyed=true])", r)[0], n = (f, g) => {
-      let h = f || "", y = typeof g == "string" ? g : "", b = typeof g == "object" && g ? g : {}, x = h.includes("pageaction=SAVE") || b.pageaction === "SAVE" || y.includes("pageaction=SAVE"), v = h.includes("WSJOBS.BOO") || h.includes("CTJOBS.BOO") || b.GRID_NAME === "WSJOBS_BOO" || b.GRID_NAME === "CTJOBS_BOO" || y.includes("WSJOBS_BOO") || y.includes("CTJOBS_BOO");
-      return x && v;
+      let y = f || "", x = typeof g == "string" ? g : "", h = typeof g == "object" && g ? g : {}, b = y.includes("pageaction=SAVE") || h.pageaction === "SAVE" || x.includes("pageaction=SAVE"), v = y.includes("WSJOBS.BOO") || y.includes("CTJOBS.BOO") || h.GRID_NAME === "WSJOBS_BOO" || h.GRID_NAME === "CTJOBS_BOO" || x.includes("WSJOBS_BOO") || x.includes("CTJOBS_BOO");
+      return b && v;
     }, a = new Promise((f) => {
-      let g = !1, h = "labor-save-verify", y = null, b = (E) => {
-        g || (g = !0, clearTimeout(v), Ne.remove(h), y && y(), f(E));
-      }, x = (E, k) => {
+      let g = !1, y = "labor-save-verify", x = null, h = (E) => {
+        g || (g = !0, clearTimeout(v), Ne.remove(y), x && x(), f(E));
+      }, b = (E, k) => {
         try {
           let S = fs(E), w = S?.pageData?.messages, T = S?.pageData?.values?.pagemode;
-          b({ verified: !w && T === "display", method: k, responseData: S });
+          h({ verified: !w && T === "display", method: k, responseData: S });
         } catch (S) {
-          d.warn("LaborBooker", `Save response parse failed (${k}):`, S.message), b({ verified: !1, method: k + "-error" });
+          d.warn("LaborBooker", `Save response parse failed (${k}):`, S.message), h({ verified: !1, method: k + "-error" });
         }
       };
-      Ne.onRequestComplete(h, (E, k, S, w) => {
-        n(w.url, w.params) && x(S.responseText, "response");
+      Ne.onRequestComplete(y, (E, k, S, w) => {
+        n(w.url, w.params) && b(S.responseText, "response");
       });
       try {
-        if (ye(e) && e.XMLHttpRequest) {
+        if (be(e) && e.XMLHttpRequest) {
           let E = e.XMLHttpRequest.prototype, k = E.send, S = function(w) {
             let T = (this._apmUrl || "").toString();
             return n(T, typeof w == "string" ? w : "") && this.addEventListener("load", function() {
-              x(this.responseText, "xhr");
+              b(this.responseText, "xhr");
             }, { once: !0 }), k.call(this, w);
           };
-          E.send = S, y = () => {
+          E.send = S, x = () => {
             E.send === S && (E.send = k);
           };
         }
@@ -5636,12 +5636,12 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
         d.debug("LaborBooker", "XHR save capture setup failed:", E.message);
       }
       let v = setTimeout(() => {
-        b({ verified: !1, method: "timeout" });
+        h({ verified: !1, method: "timeout" });
       }, 8e3);
     }), s = !1;
     try {
-      let f = o?.getTabView?.(), g = f ? null : o?.up?.("[callSave]"), h = f || g;
-      h && typeof h.callSave == "function" && (d.debug("LaborBooker", "Save via callSave() (primary)"), h.callSave(), s = !0);
+      let f = o?.getTabView?.(), g = f ? null : o?.up?.("[callSave]"), y = f || g;
+      y && typeof y.callSave == "function" && (d.debug("LaborBooker", "Save via callSave() (primary)"), y.callSave(), s = !0);
     } catch (f) {
       d.debug("LaborBooker", "callSave() failed:", f.message);
     }
@@ -5654,7 +5654,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
     }
     let l = !0, c = (async () => {
       for (; l && (await re(400), !!l); ) {
-        let f = await Dc(e, t);
+        let f = await Lc(e, t);
         if (f === "dismissed")
           d.info("LaborBooker", "Warning popup auto-dismissed during save");
         else if (f === "error") {
@@ -5665,7 +5665,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
     })(), { verified: p, method: u, responseData: m } = await a;
     return l = !1, d.debug("LaborBooker", `Save ${p ? "confirmed" : "unconfirmed"} (${u})`), { saveVerified: p, method: u, responseData: m };
   }
-  function tf(e, { employee: t, fallbackWo: r }) {
+  function nf(e, { employee: t, fallbackWo: r }) {
     try {
       let o = e?.pageData?.grid?.GRIDRESULT?.GRID?.DATA;
       if (!o || !Array.isArray(o)) return null;
@@ -5687,38 +5687,38 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
       return d.debug("LaborBooker", "extractConfirmedRecord error:", o.message), null;
     }
   }
-  var rf = le(() => {
-    Tt();
+  var af = le(() => {
+    yt();
     ue();
     te();
-    ur();
+    mr();
     gs();
-    Pt();
+    Dt();
   });
 
   // src/modules/labor/labor-booker-flow.js
-  function Fc() {
-    return N.get(tl, []);
+  function Dc() {
+    return N.get(el, []);
   }
-  function $y(e, t) {
-    let r = Fc();
+  function Gb(e, t) {
+    let r = Dc();
     r.push({ datework: e, hours: String(parseFloat(String(t).replace(",", "."))), bookedAt: Date.now() });
     let o = Date.now() - 2880 * 60 * 1e3, n = r.filter((a) => a.bookedAt >= o);
-    N.set(tl, n);
+    N.set(el, n);
   }
-  function of() {
+  function sf() {
     return Jt();
   }
-  function qy(e) {
+  function Vb(e) {
     if (!e) return "10";
     let t = e.getValue();
     return t != null && t !== "" ? String(t) : "10";
   }
-  async function Wy(e) {
+  async function zb(e) {
     let t = e, r = e.Ext, o = null, n = ne();
     for (let p of n.includes(e) ? [e, ...n.filter((u) => u !== e)] : n)
       try {
-        if (ye(p) && p.Ext && p.Ext.ComponentQuery) {
+        if (be(p) && p.Ext && p.Ext.ComponentQuery) {
           let u = p.Ext.ComponentQuery.query("uxtabcontainer[itemId=BOO]:not([destroyed=true])")[0];
           if (u && !u.isDestroyed) {
             o = u, t = p, r = p.Ext;
@@ -5731,31 +5731,31 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
     let a = o.up("tabpanel:not([destroyed=true])");
     a && a.getActiveTab && a.getActiveTab() !== o && (a.setActiveTab(o), await re(500));
     let s = r.ComponentQuery.query('button[action=addRec]:not([destroyed=true]), button[tooltip="Add Record"]:not([destroyed=true])', o)[0], l = r.ComponentQuery.query("form:not([destroyed=true])", o)[0];
-    return !(l && l.getForm && l.getForm().findField("employee")?.getValue()) && s && !s.disabled && (s.handler ? s.handler.call(s.scope || s, s) : s.fireEvent("click", s), ye(t) && await Ye(t), await re(300)), { targetWin: t, targetExt: r, booTab: o };
+    return !(l && l.getForm && l.getForm().findField("employee")?.getValue()) && s && !s.disabled && (s.handler ? s.handler.call(s.scope || s, s) : s.fireEvent("click", s), be(t) && await He(t), await re(300)), { targetWin: t, targetExt: r, booTab: o };
   }
-  async function Hy(e, t, r, o, n) {
-    let a = of(), s = Ro(e.date), l = String(parseFloat(String(e.hours || "0.25").replace(",", "."))), c = go() ? l.replace(".", ",") : l, p = e.type || "N";
+  async function jb(e, t, r, o, n) {
+    let a = sf(), s = Ro(e.date), l = String(parseFloat(String(e.hours || "0.25").replace(",", "."))), c = go() ? l.replace(".", ",") : l, p = e.type || "N";
     d.info("LaborBooker", `Booking: ${l}h ${p} for ${a} on ${s}`);
     let u = null;
     for (let K = 0; K < 10 && (u = o.ComponentQuery.query("form:not([destroyed=true])", n)[0], !(u && u.getForm?.())); K++)
       await re(200);
     if (!u || !u.getForm?.()) throw new Error("Form not ready");
     let m = u.getForm(), f = m.findField("booactivity");
-    await wr.ensureStoreLoaded(f, r);
-    let g = qy(f);
-    wr.setFieldValue(m, "booactivity", g, !0);
-    let h = f.store?.findRecord(f.valueField || "code", g);
-    h && f.fireEvent("select", f, h), wr.setFieldValue(m, "employee", a), wr.setFieldValue(m, "hrswork", c), Zm(m, "datework", e.date), wr.setFieldValue(m, "octype", p), wr.setFieldValue(m, "ocrtype", p);
-    let y = m.findField("rate") || m.findField("laborrate") || m.findField("traderate") || m.findField("costrate") || m.findField("trarate");
-    y && wr.setFieldValue(m, y.name, "0.00"), m.findField("ratedate") && wr.setFieldValue(m, "ratedate", bs), wr.setFieldValue(m, "isdetailfieldchanged", "true"), await re(200), await Dc(r, o);
-    let x = o.ComponentQuery.query("form:not([destroyed=true])", n)[0];
-    x?.getForm?.() && !x.isDestroyed && (u = x, m = x.getForm());
+    await Sr.ensureStoreLoaded(f, r);
+    let g = Vb(f);
+    Sr.setFieldValue(m, "booactivity", g, !0);
+    let y = f.store?.findRecord(f.valueField || "code", g);
+    y && f.fireEvent("select", f, y), Sr.setFieldValue(m, "employee", a), Sr.setFieldValue(m, "hrswork", c), rf(m, "datework", e.date), Sr.setFieldValue(m, "octype", p), Sr.setFieldValue(m, "ocrtype", p);
+    let x = m.findField("rate") || m.findField("laborrate") || m.findField("traderate") || m.findField("costrate") || m.findField("trarate");
+    x && Sr.setFieldValue(m, x.name, "0.00"), m.findField("ratedate") && Sr.setFieldValue(m, "ratedate", ys), Sr.setFieldValue(m, "isdetailfieldchanged", "true"), await re(200), await Lc(r, o);
+    let b = o.ComponentQuery.query("form:not([destroyed=true])", n)[0];
+    b?.getForm?.() && !b.isDestroyed && (u = b, m = b.getForm());
     let v = m.findField("department"), E = v?.getValue();
     if (!E)
       for (let K = 0; K < 6 && !E; K++)
         await re(50), E = v?.getValue();
     E ? (ke.capturedDepartment = E, d.debug("LaborBooker", `Captured department: ${E}`)) : d.debug("LaborBooker", `Department not yet populated, using fallback: ${ke.capturedDepartment || "none"}`);
-    let k = y?.getValue() || "0.00", S = u.getRecord();
+    let k = x?.getValue() || "0.00", S = u.getRecord();
     S && (m.getFields().each((K) => {
       let ee = K.getName();
       ee && K.getValue() !== S.get(ee) && S.set(ee, K.getValue());
@@ -5770,49 +5770,49 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
       traderate: String(k),
       department: ke.capturedDepartment || ""
     };
-    let { saveVerified: B, method: D, responseData: $ } = await ef(r, o, n);
+    let { saveVerified: B, method: D, responseData: $ } = await of(r, o, n);
     return ke.pendingBooking = null, { saveVerified: B, method: D, responseData: $, employee: a, eamDate: s, targetHours: l, targetType: p };
   }
-  async function qa(e, t, r = {}) {
+  async function Wa(e, t, r = {}) {
     if (ke.isRunning) return;
     ke.isRunning = !0, ke.capturedDepartment = null, ke.pendingBooking = null;
     let o = setTimeout(() => {
       d.warn("LaborBooker", "executeBookingFlow exceeded 30s \u2014 still running, finally block will clear guard on completion");
     }, 3e4);
     try {
-      let { targetWin: n, targetExt: a, booTab: s } = await Wy(t), { saveVerified: l, method: c, responseData: p, employee: u, eamDate: m, targetHours: f, targetType: g } = await Hy(e, t, n, a, s), h = l, y = h || c === "timeout";
-      if (r.silent || (h ? C(L("laborBooked") + " \u26A1", "var(--apm-success)") : c === "timeout" ? C("Save verification failed.. Fetching booked labor to verify.", "var(--apm-warning, orange)") : C(L("laborFailed"), "var(--apm-danger)")), !h && c === "timeout")
+      let { targetWin: n, targetExt: a, booTab: s } = await zb(t), { saveVerified: l, method: c, responseData: p, employee: u, eamDate: m, targetHours: f, targetType: g } = await jb(e, t, n, a, s), y = l, x = y || c === "timeout";
+      if (r.silent || (y ? C(L("laborBooked") + " \u26A1", "var(--apm-success)") : c === "timeout" ? C("Save verification failed.. Fetching booked labor to verify.", "var(--apm-warning, orange)") : C(L("laborFailed"), "var(--apm-danger)")), !y && c === "timeout")
         try {
           await re(2e3), ot.invalidateCache();
-          let b = await ot.getData(u, !0, 2), x = parseFloat(String(f).replace(",", ".")), v = ke.lastSaveWo || "", E = b.find((k) => {
+          let h = await ot.getData(u, !0, 2), b = parseFloat(String(f).replace(",", ".")), v = ke.lastSaveWo || "", E = h.find((k) => {
             if (k.datework !== m) return !1;
             let S = parseFloat(String(k.hrswork || "0").replace(",", "."));
-            return !(Math.abs(S - x) > 1e-3 || v && k.workordernum && k.workordernum !== v);
+            return !(Math.abs(S - b) > 1e-3 || v && k.workordernum && k.workordernum !== v);
           });
-          E ? (h = !0, y = !0, d.info("LaborBooker", `Save confirmed via fetch verification [${E.bookingcode || "no-code"}]`), r.silent || C(L("laborBooked") + " (verified via fetch)", "var(--apm-success)")) : (d.warn("LaborBooker", `Fetch verification: no matching record found (${f}h on ${m})`), r.silent || C("Could not verify labor was booked", "var(--apm-danger)"), y = !1);
-        } catch (b) {
-          d.warn("LaborBooker", "Fetch verification failed:", b.message);
+          E ? (y = !0, x = !0, d.info("LaborBooker", `Save confirmed via fetch verification [${E.bookingcode || "no-code"}]`), r.silent || C(L("laborBooked") + " (verified via fetch)", "var(--apm-success)")) : (d.warn("LaborBooker", `Fetch verification: no matching record found (${f}h on ${m})`), r.silent || C("Could not verify labor was booked", "var(--apm-danger)"), x = !1);
+        } catch (h) {
+          d.warn("LaborBooker", "Fetch verification failed:", h.message);
         }
-      if (y) {
-        let b = tf(
+      if (x) {
+        let h = nf(
           p,
           { employee: u, fallbackWo: ke.lastSaveWo }
         );
         ke.lastSaveWo = null;
-        let x = b?.workordernum || "(WO unknown)";
-        d.info("LaborBooker", `Booked ${f}h on ${x} \u2014 ${h ? "confirmed" : "sent, unverified"} (${c})${b?.bookingcode ? ` [${b.bookingcode}]` : ""}`), b && ot.addRecord(b), $y(m, f);
+        let b = h?.workordernum || "(WO unknown)";
+        d.info("LaborBooker", `Booked ${f}h on ${b} \u2014 ${y ? "confirmed" : "sent, unverified"} (${c})${h?.bookingcode ? ` [${h.bookingcode}]` : ""}`), h && ot.addRecord(h), Gb(m, f);
         try {
           let E = a.ComponentQuery?.query(
             "form:not([destroyed=true])",
             s
           )?.[0]?.getRecord?.();
-          if (await re(200), ye(n))
+          if (await re(200), be(n))
             try {
-              await Ye(n);
+              await He(n);
             } catch {
             }
           let k = Date.now();
-          for (; Date.now() - k < 3e3 && ye(n); ) {
+          for (; Date.now() - k < 3e3 && be(n); ) {
             let w = a.ComponentQuery?.query(
               "form:not([destroyed=true])",
               s
@@ -5825,7 +5825,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
           }
           await re(150);
           let S = () => {
-            if (!ye(n)) return;
+            if (!be(n)) return;
             let w = a.ComponentQuery?.query(
               "form:not([destroyed=true])",
               s
@@ -5847,42 +5847,42 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
         ke.capturedDepartment = null;
       } else
         d.warn("LaborBooker", `Save rejected (${c}) \u2014 server response did not confirm success`);
-      return h ? setTimeout(() => {
+      return y ? setTimeout(() => {
         window.dispatchEvent(new CustomEvent("APM_LABOR_SYNC", { detail: { source: "quick-book" } }));
-      }, 800) : y && setTimeout(async () => {
+      }, 800) : x && setTimeout(async () => {
         try {
           ot.invalidateCache(), await ot.getData(u, !0, 2);
         } catch {
         }
         window.dispatchEvent(new CustomEvent("APM_LABOR_SYNC", { detail: { source: "verify-fallback" } }));
-      }, 2e3), { result: y ? "success" : "failed" };
+      }, 2e3), { result: x ? "success" : "failed" };
     } catch (n) {
       return d.error("LaborBooker", "executeBookingFlow Error:", n), r.silent || C("Error: " + n.message, "var(--apm-danger)"), { result: "error", error: n.message };
     } finally {
       clearTimeout(o), ke.isRunning = !1, ke.pendingBooking = null;
     }
   }
-  var By, Bc = le(() => {
-    Tt();
-    sr();
-    Mt();
+  var Ub, Fc = le(() => {
+    yt();
+    lr();
+    Pt();
     ue();
     te();
     We();
     qe();
     se();
     hs();
-    Pt();
+    Dt();
     _e();
-    ur();
+    mr();
     Fo();
-    Xm();
-    ys();
-    rf();
-    By = new Lt({ feature: "laborBooker", screens: { wo: !0 } });
+    tf();
+    bs();
+    af();
+    Ub = new Ot({ feature: "laborBooker", screens: { wo: !0 } });
     Ne.onBeforeRequest("labor-save", (e, t, r) => {
       try {
-        if (!By.isEnabled()) return;
+        if (!Ub.isEnabled()) return;
         let o = r.url || "", n = r.params || {};
         if (o.includes("pageaction=SAVE") && (o.includes("WSJOBS.BOO") || n.GRID_NAME === "WSJOBS_BOO")) {
           d.debug("LaborBooker", "Hijacking Save Request to ensure Rate parameters.");
@@ -5898,10 +5898,10 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
             }
           };
           if (ke.pendingBooking)
-            d.debug("LaborBooker", "Injecting full booking payload via Ajax hook"), s("employee", ke.pendingBooking.employee), s("hrswork", ke.pendingBooking.hours), s("datework", ke.pendingBooking.date), s("booactivity", ke.pendingBooking.activity), s("octype", ke.pendingBooking.type), s("ocrtype", ke.pendingBooking.type), s("traderate", ke.pendingBooking.traderate || "0.00"), s("ratedate", bs), s("isdetailfieldchanged", "true"), ke.pendingBooking.department && s("department", ke.pendingBooking.department), ke.pendingBooking = null;
+            d.debug("LaborBooker", "Injecting full booking payload via Ajax hook"), s("employee", ke.pendingBooking.employee), s("hrswork", ke.pendingBooking.hours), s("datework", ke.pendingBooking.date), s("booactivity", ke.pendingBooking.activity), s("octype", ke.pendingBooking.type), s("ocrtype", ke.pendingBooking.type), s("traderate", ke.pendingBooking.traderate || "0.00"), s("ratedate", ys), s("isdetailfieldchanged", "true"), ke.pendingBooking.department && s("department", ke.pendingBooking.department), ke.pendingBooking = null;
           else {
-            let l = n.employee || of();
-            s("employee", l), s("octype", "N"), s("ocrtype", "N"), s("traderate", "0.00"), s("ratedate", bs), s("isdetailfieldchanged", "true");
+            let l = n.employee || sf();
+            s("employee", l), s("octype", "N"), s("ocrtype", "N"), s("traderate", "0.00"), s("ratedate", ys), s("isdetailfieldchanged", "true");
           }
           if (ke.capturedDepartment && s("department", ke.capturedDepartment), ke.lastSaveWo = n.workordernum || n.event || null, !ke.lastSaveWo && typeof r.params == "string") {
             let l = r.params.match(/(?:workordernum|event)=([^&]+)/);
@@ -5918,7 +5918,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
   // src/modules/labor/shift-config.js
   function xs(e, t = {}) {
     let r = typeof t.onChange == "function" ? t.onChange : () => {
-    }, o = t.idPrefix || "apm-lb", n = N.get(Et) === !0, a = N.get(Mr, ""), s = e.createElement("div");
+    }, o = t.idPrefix || "apm-lb", n = N.get(kt) === !0, a = N.get(Pr, ""), s = e.createElement("div");
     s.className = "apm-shift-config";
     let l = e.createElement("div");
     l.className = "apm-lb-night-header";
@@ -5934,37 +5934,37 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
     f.id = `${o}-shift-end`, f.type = "time", f.className = "apm-lb-shift-end-input", f.value = a, f.placeholder = "06:00", f.disabled = !n, u.appendChild(f);
     let g = e.createElement("button");
     g.id = `${o}-shift-end-clear`, g.className = "apm-lb-shift-end-clear", g.textContent = "Clear", g.title = "Clear shift end time", g.disabled = !n, u.appendChild(g), s.appendChild(u);
-    let h = e.createElement("div");
-    h.className = "apm-lb-shift-filter-hint", h.style.fontSize = "11px", h.style.color = "var(--apm-text-muted, #888)", h.style.padding = "4px 0 0", h.style.lineHeight = "1.3", h.appendChild(e.createTextNode(L("nightShiftFilterHint") + " "));
-    let y = e.createElement("span");
-    return y.style.color = "var(--apm-warning, orange)", y.textContent = L("nightShiftCaveat"), h.appendChild(y), s.appendChild(h), p.onchange = (b) => {
-      N.set(Et, b.target.checked), f.disabled = !b.target.checked, g.disabled = !b.target.checked, r();
-    }, f.onchange = (b) => {
-      N.set(Mr, b.target.value), r();
-    }, f.onkeydown = (b) => {
-      b.key === "Enter" && (b.preventDefault(), s.dispatchEvent(new Event("apm-shift-config-submit", { bubbles: !0 })));
+    let y = e.createElement("div");
+    y.className = "apm-lb-shift-filter-hint", y.style.fontSize = "11px", y.style.color = "var(--apm-text-muted, #888)", y.style.padding = "4px 0 0", y.style.lineHeight = "1.3", y.appendChild(e.createTextNode(L("nightShiftFilterHint") + " "));
+    let x = e.createElement("span");
+    return x.style.color = "var(--apm-warning, orange)", x.textContent = L("nightShiftCaveat"), y.appendChild(x), s.appendChild(y), p.onchange = (h) => {
+      N.set(kt, h.target.checked), f.disabled = !h.target.checked, g.disabled = !h.target.checked, r();
+    }, f.onchange = (h) => {
+      N.set(Pr, h.target.value), r();
+    }, f.onkeydown = (h) => {
+      h.key === "Enter" && (h.preventDefault(), s.dispatchEvent(new Event("apm-shift-config-submit", { bubbles: !0 })));
     }, g.onclick = () => {
-      f.value = "", N.set(Mr, ""), r();
+      f.value = "", N.set(Pr, ""), r();
     }, s;
   }
-  var $c = le(() => {
+  var Bc = le(() => {
     _e();
     se();
     qe();
   });
 
   // src/modules/labor/labor-booker-popup.js
-  function Gy(e) {
+  function Yb(e) {
     if (!Y.ptpTrackingEnabled) return null;
     let t = Br({ win: e });
     if (!t) return null;
-    let o = (N.get(Ot) || {})[t];
+    let o = (N.get(It) || {})[t];
     if (!o || o.status !== "COMPLETE")
       return { text: "No PTP completed", warn: !0 };
     let n = (Date.now() - o.time) / 36e5;
     return { text: `PTP completed ${(Math.round(n * 10) / 10).toFixed(1)}h ago`, warn: !1 };
   }
-  function zy(e) {
+  function Jb(e) {
     if (!e.Ext?.ComponentQuery) return null;
     try {
       let t = e.Ext.ComponentQuery.query("uxtabcontainer[itemId=HDR]")[0];
@@ -5975,7 +5975,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
           if (n) {
             let a = n.get("datecompleted");
             if (a) {
-              let s = Lc(a);
+              let s = Pc(a);
               if (s) return s;
             }
           }
@@ -5987,7 +5987,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
         if (n && n.getRecord) {
           let a = n.getRecord();
           if (a && a.get("datecompleted")) {
-            let s = Lc(a.get("datecompleted"));
+            let s = Pc(a.get("datecompleted"));
             if (s) return s;
           }
         }
@@ -5997,8 +5997,8 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
     }
     return null;
   }
-  function Ha() {
-    xt() || Uy.queryDOM('.uft-id-newrec[data-qtip="Add Labor"]', ({ el: e, win: t, doc: r }) => {
+  function Ua() {
+    vt() || Kb.queryDOM('.uft-id-newrec[data-qtip="Add Labor"]', ({ el: e, win: t, doc: r }) => {
       if (!t.Ext?.getCmp) return;
       let o = r.getElementById("apm-quick-book-btn");
       if (o && r.body.contains(o)) return;
@@ -6023,7 +6023,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
             let u = p.getEl()?.dom?.querySelector("#apm-quick-book-btn");
             u && u.addEventListener("click", (m) => {
               m.preventDefault(), m.stopPropagation(), Ce.toggle("apm-labor-popup", () => {
-                d.debug("LaborBooker", "Quick Book button atomic toggle -> opening"), Vy(t, u);
+                d.debug("LaborBooker", "Quick Book button atomic toggle -> opening"), Qb(t, u);
               });
             });
           }
@@ -6031,7 +6031,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
       }), d.debug("LaborBooker", `Quick Book injected into BOO toolbar at index ${c}`);
     });
   }
-  async function Vy(e, t) {
+  async function Qb(e, t) {
     let r = e.document.getElementById("apm-labor-popup");
     if (!r) {
       r = e.document.createElement("div"), r.id = "apm-labor-popup", r.className = "apm-ui-panel apm-lb-popup";
@@ -6039,18 +6039,18 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
       f.className = "apm-lb-form";
       let g = e.document.createElement("div");
       g.className = "apm-lb-header", g.innerHTML = '<div class="apm-lb-title-group"><h3 class="apm-lb-title">Quick Book Labor</h3><span id="apm-lb-ptp-status" class="apm-lb-ptp-badge"></span></div>';
-      let h = e.document.createElement("button");
-      h.id = "apm-lb-close-x", h.innerHTML = "\u2716", h.className = "apm-lb-close", h.onclick = () => Ce.closeAll(!0), g.appendChild(h), f.appendChild(g);
-      let y = e.document.createElement("div");
-      y.className = "apm-lb-date-row", y.innerHTML = `<label class="apm-lb-date-label">${L("dateLabel")}</label>`;
-      let b = e.document.createElement("input");
-      b.id = "apm-lb-date", b.type = "date", b.className = "apm-lb-date-input", y.appendChild(b), y.onclick = () => {
-        b.showPicker ? b.showPicker() : b.focus();
-      }, f.appendChild(y);
+      let y = e.document.createElement("button");
+      y.id = "apm-lb-close-x", y.innerHTML = "\u2716", y.className = "apm-lb-close", y.onclick = () => Ce.closeAll(!0), g.appendChild(y), f.appendChild(g);
       let x = e.document.createElement("div");
-      x.className = "apm-lb-hint", x.textContent = L("doubleClickHint"), f.appendChild(x);
+      x.className = "apm-lb-date-row", x.innerHTML = `<label class="apm-lb-date-label">${L("dateLabel")}</label>`;
+      let h = e.document.createElement("input");
+      h.id = "apm-lb-date", h.type = "date", h.className = "apm-lb-date-input", x.appendChild(h), x.onclick = () => {
+        h.showPicker ? h.showPicker() : h.focus();
+      }, f.appendChild(x);
+      let b = e.document.createElement("div");
+      b.className = "apm-lb-hint", b.textContent = L("doubleClickHint"), f.appendChild(b);
       let v = e.document.createElement("div");
-      v.className = "apm-lb-presets", af().forEach((q) => {
+      v.className = "apm-lb-presets", cf().forEach((q) => {
         let j = e.document.createElement("button");
         j.innerHTML = q, j.className = "apm-lb-preset", j.onclick = () => {
           let Z = e.document.getElementById("apm-lb-hours"), P = e.document.getElementById("apm-lb-correction").checked;
@@ -6060,7 +6060,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
           Z.value = G, v.querySelectorAll(".apm-lb-preset").forEach((J) => J.classList.remove("active")), j.classList.add("active");
           let I = e.document.getElementById("apm-lb-date").value, X = e.document.querySelector('input[name="lb-type"]').value;
           Ce.closeAll(!0), setTimeout(() => {
-            C(L("bookingHours", G) + " \u23F3", "var(--apm-accent)"), qa({ hours: G, date: I, type: X }, e);
+            C(L("bookingHours", G) + " \u23F3", "var(--apm-accent)"), Wa({ hours: G, date: I, type: X }, e);
           }, 10);
         }, v.appendChild(j);
       });
@@ -6068,11 +6068,11 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
       E.className = "apm-lb-fmt-label", E.textContent = L("formatLabel"), v.appendChild(E);
       let k = ["auto", "dot", "comma"], S = { auto: "Auto", dot: "Decimal", comma: "Comma" }, w = e.document.createElement("button");
       w.className = "apm-lb-preset apm-lb-fmt-btn";
-      let T = N.get(tn, "auto");
+      let T = N.get(rn, "auto");
       w.textContent = S[T] || "Auto", w.title = L("decimalSep") || "Decimal separator", w.onclick = () => {
-        let q = N.get(tn, "auto"), j = k[(k.indexOf(q) + 1) % k.length];
-        N.set(tn, j), w.textContent = S[j], v.querySelectorAll(".apm-lb-preset:not(.apm-lb-fmt-btn)").forEach((Z, P) => {
-          let G = af();
+        let q = N.get(rn, "auto"), j = k[(k.indexOf(q) + 1) % k.length];
+        N.set(rn, j), w.textContent = S[j], v.querySelectorAll(".apm-lb-preset:not(.apm-lb-fmt-btn)").forEach((Z, P) => {
+          let G = cf();
           G[P] && (Z.textContent = G[P]);
         });
       }, v.appendChild(w), f.appendChild(v);
@@ -6108,11 +6108,11 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
       R.id = "apm-lb-book-btn", R.innerHTML = L("bookLabor"), R.className = "apm-lb-book-btn", f.appendChild(R), r.appendChild(f);
       let A = e.document.createElement("div");
       A.id = "apm-lb-shift-popover", A.className = "apm-lb-shift-popover", A.style.display = "none", A.appendChild(xs(e.document, {
-        onChange: () => Wa(e)
+        onChange: () => Ha(e)
       })), A.addEventListener("apm-shift-config-submit", () => {
         A.style.display = "none";
       });
-      let z = i("div", { className: "apm-lb-summary" }, [
+      let V = i("div", { className: "apm-lb-summary" }, [
         i("h4", { className: "apm-lb-summary-title" }, L("shiftSummary")),
         i("div", { id: "apm-lb-sum-content", className: "apm-lb-summary-content" }, [
           i("div", { className: "apm-lb-summary-loading" }, L("fetching"))
@@ -6123,7 +6123,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
           A
         ])
       ]);
-      r.appendChild(z), e.document.body.appendChild(r);
+      r.appendChild(V), e.document.body.appendChild(r);
       let W = e.document.getElementById("apm-lb-shift-cog"), M = r.querySelector(".apm-lb-shift-cog-label"), F = e.document.getElementById("apm-lb-shift-popover"), U = (q) => {
         q.stopPropagation(), F.style.display = F.style.display === "none" ? "flex" : "none";
       };
@@ -6141,81 +6141,81 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
     s.length === 2 && (s[0].classList.add("active"), s[1].classList.remove("active"));
     let l = r.querySelector('input[name="lb-type"]');
     l && (l.value = "N");
-    let c = zy(e);
+    let c = Jb(e);
     if (c) {
-      let g = Ct(/* @__PURE__ */ new Date());
+      let g = At(/* @__PURE__ */ new Date());
       c < g ? o && (o.value = c) : o && (o.value = g);
-    } else o && (o.value = Ct());
+    } else o && (o.value = At());
     let p = r.querySelector("h3"), u = e.document.getElementById("apm-lb-book-btn");
     p && (p.textContent = L("quickBookLabor"));
     let m = r.querySelector("#apm-lb-ptp-status");
     if (m) {
-      let f = Gy(e);
+      let f = Yb(e);
       f ? (m.textContent = f.text, m.className = f.warn ? "apm-lb-ptp-badge apm-lb-ptp-warn" : "apm-lb-ptp-badge apm-lb-ptp-ok", m.style.display = "") : m.style.display = "none";
     }
     u && (u.textContent = L("bookLabor"), u.onclick = () => {
       let f = n.value;
       if (!f || f === "-") return C(L("enterHours"), "var(--apm-danger)");
-      let g = e.document.getElementById("apm-lb-correction").checked, h = parseFloat(f.replace(/\s/g, "").replace(",", "."));
-      if (isNaN(h) || h === 0) {
+      let g = e.document.getElementById("apm-lb-correction").checked, y = parseFloat(f.replace(/\s/g, "").replace(",", "."));
+      if (isNaN(y) || y === 0) {
         C(L("enterValidHours"), "var(--apm-danger)");
         return;
       }
-      let y = g ? `-${Math.abs(h)}` : Math.abs(h).toString(), b = go() ? y.replace(".", ",") : y, x = o.value, v = e.document.querySelector('input[name="lb-type"]').value;
+      let x = g ? `-${Math.abs(y)}` : Math.abs(y).toString(), h = go() ? x.replace(".", ",") : x, b = o.value, v = e.document.querySelector('input[name="lb-type"]').value;
       Ce.closeAll(!0), setTimeout(() => {
-        C(L("bookingHours", b) + " \u23F3", "var(--apm-accent)"), qa({ hours: y, date: x, type: v }, e);
+        C(L("bookingHours", h) + " \u23F3", "var(--apm-accent)"), Wa({ hours: x, date: b, type: v }, e);
       }, 10);
     }), r.style.display = "flex", r.style.visibility = "visible";
     try {
-      let f = t.getBoundingClientRect(), g = r.getBoundingClientRect(), h = f.left + f.width / 2 - g.width / 2, y = f.top - (g.height || 350) - 10, b = 15;
-      h < b && (h = b), h + g.width > e.innerWidth - b && (h = e.innerWidth - g.width - b), y < b && (y = f.bottom + 10), r.style.top = y + "px", r.style.left = h + "px";
+      let f = t.getBoundingClientRect(), g = r.getBoundingClientRect(), y = f.left + f.width / 2 - g.width / 2, x = f.top - (g.height || 350) - 10, h = 15;
+      y < h && (y = h), y + g.width > e.innerWidth - h && (y = e.innerWidth - g.width - h), x < h && (x = f.bottom + 10), r.style.top = x + "px", r.style.left = y + "px";
     } catch {
       r.style.top = "50%", r.style.left = "50%", r.style.transform = "translate(-50%, -50%)";
     }
-    setTimeout(() => Wa(e), 10);
+    setTimeout(() => Ha(e), 10);
   }
-  async function Wa(e) {
+  async function Ha(e) {
     let t = e.document.getElementById("apm-lb-sum-content");
     if (!t || e.document.getElementById("apm-labor-popup")?.style.display === "none") return;
     let r = e.document.getElementById("apm-lb-night-toggle")?.checked, o = Jt();
     if (o)
       try {
-        let n = N.get(Mr, "");
+        let n = N.get(Pr, "");
         r && n && await ot.bootstrapNightShift(o);
-        let l = Date.now() - ot.getLastFetch() < 3e4 && ot.getCache().length > 0 ? ot.getCache() : await ot.getData(o, !1, 2), p = Ct(/* @__PURE__ */ new Date()), u = /* @__PURE__ */ new Date();
+        let l = Date.now() - ot.getLastFetch() < 3e4 && ot.getCache().length > 0 ? ot.getCache() : await ot.getData(o, !1, 2), p = At(/* @__PURE__ */ new Date()), u = /* @__PURE__ */ new Date();
         u.setDate(u.getDate() - 1);
-        let m = Ct(u), f = r && n && n !== "00:00", g = (S) => {
+        let m = At(u), f = r && n && n !== "00:00", g = (S) => {
           let w = Qr(S);
-          return w ? Ct(w) : S;
-        }, h = (S) => parseFloat(String(S ?? "").replace(",", ".")), y = l;
+          return w ? At(w) : S;
+        }, y = (S) => parseFloat(String(S ?? "").replace(",", ".")), x = l;
         if (f) {
-          let S = Mc(n), w = Fc();
-          y = l.filter((T) => {
+          let S = Ic(n), w = Dc();
+          x = l.filter((T) => {
             if (!T.datework) return !1;
             if (T._enteredAt)
               return T._enteredAt >= S;
-            let B = g(T.datework), D = h(T.hrswork), $ = w.find(
-              (K) => g(K.datework) === B && h(K.hours) === D
+            let B = g(T.datework), D = y(T.hrswork), $ = w.find(
+              (K) => g(K.datework) === B && y(K.hours) === D
             );
             return $ ? $.bookedAt >= S : !0;
           });
         }
-        let { breakdown: b } = ot.calculateTally(
-          y,
+        let { breakdown: h } = ot.calculateTally(
+          x,
           r ? 2 : 1
-        ), v = r && (b[m] || 0) > 0 ? [m, p] : [p], E = v.reduce((S, w) => S + (b[w] || 0), 0);
+        ), v = r && (h[m] || 0) > 0 ? [m, p] : [p], E = v.reduce((S, w) => S + (h[w] || 0), 0);
         t.innerHTML = "", v.forEach((S) => {
-          let w = b[S] || 0, T = i("div", { className: "apm-lb-summary-row" }, [
+          let w = h[S] || 0, T = i("div", { className: "apm-lb-summary-row" }, [
             i("span", { className: "apm-lb-summary-day" }, S === p ? L("today") : L("yesterday")),
             e.document.createTextNode(" "),
-            i("strong", { className: "apm-lb-summary-hours" }, Pc(w) + "h")
+            i("strong", { className: "apm-lb-summary-hours" }, Mc(w) + "h")
           ]);
           t.appendChild(T);
         });
         let k = i("div", { className: "apm-lb-summary-total" }, [
           i("span", {}, L("total")),
           e.document.createTextNode(" "),
-          i("span", {}, Pc(E) + "h")
+          i("span", {}, Mc(E) + "h")
         ]);
         t.appendChild(k);
       } catch (n) {
@@ -6226,70 +6226,70 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
           t.appendChild(i("div", { className: "apm-lb-summary-empty" }, L("noHoursYet")));
       }
   }
-  var Uy, nf, af, sf = le(() => {
-    sr();
+  var Kb, lf, cf, df = le(() => {
+    lr();
     te();
     We();
     qe();
     Te();
     se();
     hs();
-    Pt();
-    kr();
+    Dt();
+    Tr();
     _e();
-    oa();
+    na();
     Fo();
     Qt();
     Me();
-    $c();
-    ys();
     Bc();
-    Uy = new Lt({ feature: "laborBooker", screens: { wo: !0 } }), nf = ["0.1", "0.25", "0.5", "0.75", "1", "1.5", "2", "2.5", "3"], af = () => go() ? nf.map((e) => e.replace(".", ",")) : nf;
+    bs();
+    Fc();
+    Kb = new Ot({ feature: "laborBooker", screens: { wo: !0 } }), lf = ["0.1", "0.25", "0.5", "0.75", "1", "1.5", "2", "2.5", "3"], cf = () => go() ? lf.map((e) => e.replace(".", ",")) : lf;
   });
 
   // src/modules/labor/labor-booker.js
-  var lf = {};
-  ii(lf, {
+  var pf = {};
+  ii(pf, {
     LaborBooker: () => vs
   });
-  var vs, qc = le(() => {
-    vr();
-    sr();
+  var vs, $c = le(() => {
+    wr();
+    lr();
     ue();
     te();
     Fo();
-    kr();
-    Bc();
-    sf();
+    Tr();
+    Fc();
+    df();
     vs = (function() {
-      let e = null, t = !1, r = new Lt({ feature: "laborBooker", screens: { wo: !0 } });
+      let e = null, t = !1, r = new Ot({ feature: "laborBooker", screens: { wo: !0 } });
       function o() {
         t || (window.addEventListener("APM_SESSION_UPDATED", () => {
           let n = rt();
-          if (!ye(n)) return;
+          if (!be(n)) return;
           let a = n.document.getElementById("apm-labor-popup");
-          a && a.style.visibility === "visible" && Wa(n);
+          a && a.style.visibility === "visible" && Ha(n);
         }), window.addEventListener("APM_LABOR_SYNC", () => {
           let n = rt();
-          ye(n) && Wa(n);
+          be(n) && Ha(n);
         }), r.onViewChange((n) => {
           if (n.subTab !== "Book Labor") return;
           clearTimeout(e);
           let a = 0, s = () => {
-            Ha(), ++a < 5 && (e = setTimeout(s, 1e3));
+            Ua(), ++a < 5 && (e = setTimeout(s, 1e3));
           };
           s();
         }, { delay: 0 }), t = !0);
       }
       return {
         init: function() {
-          r.isEnabled() && (o(), Ha(), Ce.registerPanel("apm-labor-popup", ["#apm-quick-book-btn", ".apm-autofill-btn"]), r.onAjax("labor-booker", ".HDR", () => {
-            setTimeout(() => Ha(), 1e3);
+          r.isEnabled() && (o(), Ua(), Ce.registerPanel("apm-labor-popup", ["#apm-quick-book-btn", ".apm-autofill-btn"]), r.onAjax("labor-booker", ".HDR", () => {
+            setTimeout(() => Ua(), 1e3);
           }));
         },
-        injectQuickBook: Ha,
+        injectQuickBook: Ua,
         quickBookHours: async function(n, a, s) {
-          return qa({ hours: n, date: Ct(/* @__PURE__ */ new Date()), type: "N" }, a, s);
+          return Wa({ hours: n, date: At(/* @__PURE__ */ new Date()), type: "N" }, a, s);
         }
       };
     })();
@@ -6309,14 +6309,14 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
   function ws(e) {
     e.wins = ne();
   }
-  function cf(e, t) {
+  function uf(e, t) {
     if (!e?.ComponentQuery) return null;
     let r = e.ComponentQuery.query(`uxtabcontainer[itemId=${t}]`);
     if (r.length === 0) return null;
     let o = Be.from(r[0]), n = o ? r.find((a) => o.contains(a)) : null;
     return !n && r.length > 1 && d.debug("AutoFill", `findActiveTabContainer: ${r.length} '${t}' containers, none on active screen`), n || null;
   }
-  function Hc() {
+  function Wc() {
     let e = Be.active();
     if (!e) return null;
     try {
@@ -6342,8 +6342,8 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
     }
     return null;
   }
-  function df() {
-    let { subTab: e, tab: t } = ge();
+  function mf() {
+    let { subTab: e, tab: t } = he();
     d.debug("AutoFill", `Title tab detection: "${e || "(none)"}" \u2192 ${t}`);
     let r = Be.active(), o = null, n = null;
     if (r) {
@@ -6357,7 +6357,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
           if (!s.Ext?.ComponentQuery) continue;
           let l = s.Ext.ComponentQuery.query("combobox[name=activity]");
           if (l.length > 0) {
-            let c = String(l[0].getValue() || "").trim(), p = Nr(c);
+            let c = String(l[0].getValue() || "").trim(), p = Ir(c);
             p === 10 ? a = "10" : p === 1 ? a = "1" : a = String(p), d.debug("AutoFill", `Activity detected: val="${c}" \u2192 normalized=${p} \u2192 ${a}`);
             break;
           }
@@ -6389,11 +6389,11 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
       }, t);
     });
   }
-  function Nr(e) {
+  function Ir(e) {
     let r = String(e ?? "").trim().replace(/[\u00A0\t]/g, " ").match(/^(\d+)/);
     return r ? parseInt(r[1], 10) : NaN;
   }
-  function jy(e, t) {
+  function Xb(e, t) {
     let r = e.store;
     if (!r || typeof r.findRecord != "function") return null;
     let o = e.valueField, n = e.displayField;
@@ -6407,22 +6407,22 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
     }
     return null;
   }
-  function pf(e, t) {
+  function ff(e, t) {
     if (!(typeof e.isXType != "function" || !e.isXType("combobox")))
       try {
-        let r = jy(e, t);
+        let r = Xb(e, t);
         e.fireEvent("select", e, r ? [r] : t);
       } catch (r) {
         d.debug("AutoFill", `select event failed for ${e.name || e.itemId}: ${r.message}`);
       }
   }
-  function uf(e, t, r, o) {
+  function gf(e, t, r, o) {
     if (!t || o === void 0 || o === null) return !1;
     let n = e.ComponentQuery.query(`[name="${r}"]`, t)[0] || e.ComponentQuery.query(`[name="${r}"]`)[0];
     if (n) {
       (n.readOnly || n.disabled) && d.debug("AutoFill", "Overriding protected field:", n.name || n.itemId), typeof n.setReadOnly == "function" && n.setReadOnly(!1), typeof n.setDisabled == "function" && n.setDisabled(!1), n.setValue(o);
       let a = t.getRecord();
-      return a && a.set(r, o), pf(n, o), n.fireEvent("change", n, o), n.fireEvent("blur", n), !0;
+      return a && a.set(r, o), ff(n, o), n.fireEvent("change", n, o), n.fireEvent("blur", n), !0;
     }
     return !1;
   }
@@ -6438,7 +6438,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
         let l = new KeyboardEvent("keydown", { key: "Tab", code: "Tab", keyCode: 9, which: 9, bubbles: !0 });
         s.dispatchEvent(l), s.blur();
       }
-      return pf(n, o), n.fireEvent("change", n, o), n.fireEvent("blur", n), !0;
+      return ff(n, o), n.fireEvent("change", n, o), n.fireEvent("blur", n), !0;
     }
     return !1;
   }
@@ -6456,11 +6456,11 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
     }
     return d.warn("AutoFill", `${n} value rejected: set "${l}", got "${s}"`), C(`Warning: ${n} "${l}" was not accepted by EAM`, "#e67e22"), !1;
   }
-  async function mf(e, t) {
+  async function hf(e, t) {
     if (!t.Ext) return e;
     let o = Ci(t);
     try {
-      let { records: n } = await Pn({
+      let { records: n } = await Ln({
         endpoint: "OSEQPP.xmlhttp",
         gridName: "LVOBJL",
         userFunction: "WSJOBS",
@@ -6496,17 +6496,17 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
   async function Ss(e, t, { silent: r = !1 } = {}) {
     if (!e || isNaN(e) || e <= 0 || !t.Ext) return null;
     try {
-      let n = await Promise.resolve().then(() => (qc(), lf)), a = n.LaborBooker || n;
+      let n = await Promise.resolve().then(() => ($c(), pf)), a = n.LaborBooker || n;
       return a && typeof a.quickBookHours == "function" ? await a.quickBookHours(e, t, { silent: r }) : (d.warn("AutoFill", "LaborBooker.quickBookHours not found."), null);
     } catch (n) {
       return d.error("AutoFill", "Failed to execute automated labor booking:", n), { result: "error", error: n.message };
     }
   }
-  async function ff(e, t, r) {
+  async function yf(e, t, r) {
     if (!e || !t)
       return d.warn("AutoFill", "fetchScheduledHours: missing WO number or organization"), null;
     try {
-      let { records: o, values: n } = await Pn({
+      let { records: o, values: n } = await Ln({
         // Plain WSJOBS.SCH (NOT .xmlhttp). EAM's .xmlhttp endpoints are
         // grid-data-only by design — they return LIST.DATA_ONLY.STORED
         // regardless of COMPONENT_INFO_TYPE, so pageData.values never
@@ -6557,9 +6557,9 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
   }
   function Es(e = "Saving Checklist\u2026") {
     let t = window.top?.document || document;
-    if (t.getElementById(Wc)) return;
+    if (t.getElementById(qc)) return;
     let r = t.createElement("div");
-    if (r.id = Wc, r.innerHTML = `
+    if (r.id = qc, r.innerHTML = `
         <div style="display:flex;flex-direction:column;align-items:center;gap:12px">
             <div style="display:flex;align-items:end;gap:3px;height:24px">
                 ${[0, 1, 2, 3, 4].map((o) => `<div style="width:4px;height:24px;background:#fff;border-radius:2px;transform-origin:bottom;will-change:transform;animation:apmChkBar .8s ${o * 0.1}s ease-in-out infinite"></div>`).join("")}
@@ -6582,11 +6582,11 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
   }
   function ks() {
     try {
-      (window.top?.document || document).getElementById(Wc)?.remove();
+      (window.top?.document || document).getElementById(qc)?.remove();
     } catch {
     }
   }
-  function zr(e) {
+  function Vr(e) {
     let r = e.ComponentQuery.query("button[tooltip=Submit], button[text=Submit]").find((n) => n.rendered && !(typeof n.isHidden == "function" && n.isHidden()));
     if (r) return r;
     let o = e.ComponentQuery.query(
@@ -6594,11 +6594,11 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
     );
     return o.find((n) => n.rendered && !(typeof n.isHidden == "function" && n.isHidden())) || o[0] || null;
   }
-  function Ua() {
+  function Ga() {
     let e = Wr("span.recorddesc", { readOnly: !0 });
     return e ? e.el.textContent.trim() : "";
   }
-  async function Vr(e, { recordviewOnly: t = !0, maxAttempts: r = 20, delayMs: o = 250 } = {}) {
+  async function zr(e, { recordviewOnly: t = !0, maxAttempts: r = 20, delayMs: o = 250 } = {}) {
     for (let n = 0; n < r; n++) {
       for (let a of e?.wins || ne()) {
         if (!a?.Ext?.ComponentQuery) continue;
@@ -6609,7 +6609,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
     }
     return null;
   }
-  async function Uc(e, { deepVisCheck: t = !0 } = {}) {
+  async function Hc(e, { deepVisCheck: t = !0 } = {}) {
     for (let r of e())
       try {
         if (!r?.Ext?.ComponentQuery) continue;
@@ -6621,33 +6621,33 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
           if (!a.includes("wsjobs") && !a.includes("ctjobs")) continue;
           let s = o.getSelectionModel?.().getSelection?.();
           if (s?.length)
-            return d.info("AutoFill", `Grid with selection \u2014 navigating to record (grid: ${o.id})`), await ia(o, s[0], r), r;
+            return d.info("AutoFill", `Grid with selection \u2014 navigating to record (grid: ${o.id})`), await sa(o, s[0], r), r;
         }
       } catch {
       }
     return null;
   }
-  var Le, Wc, jr = le(() => {
-    Tt();
-    Rr();
+  var Le, qc, jr = le(() => {
+    yt();
+    Or();
     ue();
     no();
-    sa();
+    la();
     te();
     We();
     nt();
-    Pt();
+    Dt();
     gs();
     Le = {
       lastKnownTitle: "",
       lastKnownEquipment: "",
       autofillLock: !1
-    }, Wc = "apm-checklist-mask";
+    }, qc = "apm-checklist-mask";
   });
 
   // src/modules/autofill/workflows/assign-to-me.js
-  async function Gc() {
-    if (xt()) {
+  async function Uc() {
+    if (vt()) {
       C("AutoFill is running \u2014 please wait.", "#e74c3c");
       return;
     }
@@ -6659,42 +6659,42 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
         return;
       }
       C("Assigning\u2026", "#f1c40f", !0);
-      let t = ho(), r = await Vr(t);
+      let t = ho(), r = await zr(t);
       if (!r) {
         C("Form not found", "#e74c3c");
         return;
       }
       let o = r.win, n = o.Ext, a = r.form, s = a.getRecord?.();
       try {
-        let b = ((n.ComponentQuery.query('[name="organization"]', a)[0] || n.ComponentQuery.query('[name="organization"]')[0])?.getValue?.() || "").trim();
-        if (b)
-          d.debug("AutoFill", `Assign To Me: org already set (${b}), skipping`);
+        let h = ((n.ComponentQuery.query('[name="organization"]', a)[0] || n.ComponentQuery.query('[name="organization"]')[0])?.getValue?.() || "").trim();
+        if (h)
+          d.debug("AutoFill", `Assign To Me: org already set (${h}), skipping`);
         else {
-          let x = Ci(o);
-          x && (await st(n, a, "organization", x), await ce(o), await Ie(o), await ce(o));
+          let b = Ci(o);
+          b && (await st(n, a, "organization", b), await ce(o), await Ie(o), await ce(o));
         }
-      } catch (y) {
-        d.warn("AutoFill", "Assign To Me: org field error, continuing:", y);
+      } catch (x) {
+        d.warn("AutoFill", "Assign To Me: org field error, continuing:", x);
       }
       let c = ((n.ComponentQuery.query('[name="workordertype"]', a)[0] || n.ComponentQuery.query('[name="workordertype"]')[0])?.getValue?.() || "").trim(), p = c.toLowerCase() === "breakdown";
       p ? (await st(n, a, "workordertype", "Corrective"), await ce(o), await Ie(o), await ce(o)) : d.debug("AutoFill", `Assign To Me: type is "${c}", not Breakdown \u2014 skipping`);
       let u = [], f = ((n.ComponentQuery.query('[name="udfchar13"]', a)[0] || n.ComponentQuery.query('[name="udfchar13"]')[0])?.getValue?.() || "").trim();
       f ? d.debug("AutoFill", `Assign To Me: execution already set (${f}), skipping`) : u.push(["udfchar13", "EXDN"]);
-      let h = ((n.ComponentQuery.query('[name="udfchar24"]', a)[0] || n.ComponentQuery.query('[name="udfchar24"]')[0])?.getValue?.() || "").trim();
-      h ? d.debug("AutoFill", `Assign To Me: safety already set (${h}), skipping`) : u.push(["udfchar24", "NO"]), u.push(["assignedto", e]);
-      for (let [y, b] of u) {
-        let x = n.ComponentQuery.query(`[name="${y}"]`, a)[0] || n.ComponentQuery.query(`[name="${y}"]`)[0];
-        x && ((x.readOnly || x.disabled) && d.debug("AutoFill", "Overriding protected field:", x.name || x.itemId), typeof x.setReadOnly == "function" && x.setReadOnly(!1), typeof x.setDisabled == "function" && x.setDisabled(!1), x.suspendEvents(), x.setValue(b), x.resumeEvents());
+      let y = ((n.ComponentQuery.query('[name="udfchar24"]', a)[0] || n.ComponentQuery.query('[name="udfchar24"]')[0])?.getValue?.() || "").trim();
+      y ? d.debug("AutoFill", `Assign To Me: safety already set (${y}), skipping`) : u.push(["udfchar24", "NO"]), u.push(["assignedto", e]);
+      for (let [x, h] of u) {
+        let b = n.ComponentQuery.query(`[name="${x}"]`, a)[0] || n.ComponentQuery.query(`[name="${x}"]`)[0];
+        b && ((b.readOnly || b.disabled) && d.debug("AutoFill", "Overriding protected field:", b.name || b.itemId), typeof b.setReadOnly == "function" && b.setReadOnly(!1), typeof b.setDisabled == "function" && b.setDisabled(!1), b.suspendEvents(), b.setValue(h), b.resumeEvents());
       }
       if (s) {
         s.beginEdit();
-        for (let [y, b] of u)
-          s.set(y, b);
+        for (let [x, h] of u)
+          s.set(x, h);
         s.endEdit();
       }
-      for (let [y, b] of u) {
-        let x = n.ComponentQuery.query(`[name="${y}"]`, a)[0] || n.ComponentQuery.query(`[name="${y}"]`)[0];
-        x && (x.fireEvent("change", x, b), x.fireEvent("blur", x));
+      for (let [x, h] of u) {
+        let b = n.ComponentQuery.query(`[name="${x}"]`, a)[0] || n.ComponentQuery.query(`[name="${x}"]`)[0];
+        b && (b.fireEvent("change", b, h), b.fireEvent("blur", b));
       }
       await st(n, a, "workorderstatus", "In Progress"), await ce(o), await Ie(o), await ce(o), p && tr(n, a, "workordertype", "Corrective", "WO Type"), tr(n, a, "workorderstatus", "In Progress", "Status"), C(`Assigned to ${e}`, "#2ecc71");
     } catch (e) {
@@ -6703,17 +6703,17 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
       ft(!1);
     }
   }
-  var gf = le(() => {
+  var bf = le(() => {
     te();
     We();
     Qt();
     jr();
-    Pt();
+    Dt();
   });
 
   // src/modules/autofill/workflows/repair-workflow.js
-  async function Ln(e) {
-    if (!xt()) {
+  async function Dn(e) {
+    if (!vt()) {
       ft(!0);
       try {
         let t = e;
@@ -6722,7 +6722,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
           return;
         }
         C(L("autoFillingRepair", t.name || "template"), "#f1c40f", !0);
-        let r = ho(), o = await Vr(r, { recordviewOnly: !1 });
+        let r = ho(), o = await zr(r, { recordviewOnly: !1 });
         if (!o) {
           C(L("repairFormNotFound"), "#e74c3c");
           return;
@@ -6732,7 +6732,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
           let m = s.ComponentQuery.query("button[action=newRec]").find((f) => f.rendered && !(typeof f.isHidden == "function" && f.isHidden()));
           if (m) {
             C(L("creatingRecord"), "#f1c40f", !0), m.handler ? m.handler.call(m.scope || m, m) : m.fireEvent("click", m), await ce(n, 3e3, 200), await Ie(n), await ce(n);
-            let g = s.ComponentQuery.query("form").find((h) => h.rendered && h.isVisible?.(!0) && !h.id.includes("unboundform") && !h.id.includes("prompt"));
+            let g = s.ComponentQuery.query("form").find((y) => y.rendered && y.isVisible?.(!0) && !y.id.includes("unboundform") && !y.id.includes("prompt"));
             g && (a = g.getForm());
           }
         }
@@ -6743,14 +6743,14 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
             if (typeof m.setReadOnly == "function" && m.setReadOnly(!1), typeof m.setDisabled == "function" && m.setDisabled(!1), m.setValue(""), m.inputEl?.dom && m.inputEl.dom.focus(), typeof m.onTriggerClick == "function")
               m.onTriggerClick();
             else {
-              let h = m.getTriggers?.() || {}, y = h.search || h.lov || Object.values(h)[0];
-              y?.handler ? y.handler.call(y.scope || m) : y?.onClick && y.onClick();
+              let y = m.getTriggers?.() || {}, x = y.search || y.lov || Object.values(y)[0];
+              x?.handler ? x.handler.call(x.scope || m) : x?.onClick && x.onClick();
             }
             await ce(n, 3e3, 200);
-            let g = s.ComponentQuery.query("grid").find((h) => h.isVisible?.(!0) && h.getStore?.()?.getCount() > 0);
+            let g = s.ComponentQuery.query("grid").find((y) => y.isVisible?.(!0) && y.getStore?.()?.getCount() > 0);
             if (g) {
-              let h = g.getStore().getAt(0);
-              h && (g.getSelectionModel().select(h), g.fireEvent("itemdblclick", g.getView(), h), await ce(n, 2e3, 200), await Ie(n), await ce(n));
+              let y = g.getStore().getAt(0);
+              y && (g.getSelectionModel().select(y), g.fireEvent("itemdblclick", g.getView(), y), await ce(n, 2e3, 200), await Ie(n), await ce(n));
             } else
               d.warn("AutoFill", "Issued WO LOV grid not found after trigger");
           } else
@@ -6758,8 +6758,8 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
         } catch (m) {
           d.warn("AutoFill", "Issued WO search failed:", m);
         }
-        t.qty && uf(s, a, "wspf_10_repr_qty", String(t.qty)), t.requestedBy && (await st(s, a, "wspf_10_repr_reqorigin", t.requestedBy), await ce(n)), await ce(n, 2e3, 100), C(L("savingRepair"), "#2ecc71", !0);
-        let u = zr(s);
+        t.qty && gf(s, a, "wspf_10_repr_qty", String(t.qty)), t.requestedBy && (await st(s, a, "wspf_10_repr_reqorigin", t.requestedBy), await ce(n)), await ce(n, 2e3, 100), C(L("savingRepair"), "#2ecc71", !0);
+        let u = Vr(s);
         if (u && (u.handler ? u.handler.call(u.scope || u, u) : u.fireEvent("click", u), await ce(n, 5e3, 500), await Ie(n)), t.initiateRepair) {
           C("Initiating Repair...", "#3498db", !0);
           let m = n.document.querySelector(".uft-id-amz-genrepair");
@@ -6771,7 +6771,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
       }
     }
   }
-  var zc = le(() => {
+  var Gc = le(() => {
     te();
     We();
     qe();
@@ -6780,7 +6780,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
   });
 
   // src/modules/autofill/grid-iteration.js
-  function Vo(e, t) {
+  function zo(e, t) {
     let r = e?.getStore?.(), o = e?.getView?.();
     if (!r || !o) {
       d.debug("AutoFill", "iterateGridRecords: missing store or view");
@@ -6803,7 +6803,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
   });
 
   // src/modules/autofill/workflows/shift-report-workflow.js
-  async function Ky(e, t) {
+  async function Zb(e, t) {
     let r = t.activeWin, o = t.activeExt;
     if (!r || !o) return;
     C(L("navigatingChecklist"), "#9b59b6", !0);
@@ -6841,7 +6841,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
       }
       return s();
     }, c = async () => {
-      let p = zr(o);
+      let p = Vr(o);
       p && (p.el?.dom ? p.el.dom.click() : p.handler ? p.handler.call(p.scope || p, p) : p.fireEvent("click", p), await ce(r, 5e3, 200), await Ie(r));
     };
     await l(5e3), Es("Saving Checklist\u2026");
@@ -6853,48 +6853,48 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
         d.warn("AutoFill", "Task sequence combo not found");
         continue;
       }
-      let g = f[0], h = g.getStore();
-      h.getCount() === 0 && !h.isLoading() && await new Promise((w) => {
-        h.load({
+      let g = f[0], y = g.getStore();
+      y.getCount() === 0 && !y.isLoading() && await new Promise((w) => {
+        y.load({
           callback: (T, B, D) => {
             d.debug("AutoFill", `taskCombo: store.load \u2192 ${D ? T.length + " records" : "failed"}`), w();
           }
         });
       });
-      let y = null;
-      if (h.each((w) => {
+      let x = null;
+      if (y.each((w) => {
         let T = String(w.get(g.displayField) || "");
         if (parseInt(T.match(/^(\d+)/)?.[1], 10) === u)
-          return y = w, !1;
-      }), !y) {
+          return x = w, !1;
+      }), !x) {
         C(`Task ${u} not found.`, "#e74c3c");
         continue;
       }
-      let b = y.get(g.valueField), x = !1, v = s();
+      let h = x.get(g.valueField), b = !1, v = s();
       if (v && v.getStore().getCount() > 0) {
         let T = v.getStore().getAt(0)?.get("casemanagementtasksequence");
-        T && String(T) === String(b) && (x = !0, d.debug("AutoFill", `Grid already has task ${u} data \u2014 skipping combo switch`));
+        T && String(T) === String(h) && (b = !0, d.debug("AutoFill", `Grid already has task ${u} data \u2014 skipping combo switch`));
       }
-      if (!x) {
-        C(`Switching to Task ${u}...`, "#3498db", !0), g.setValue(b);
+      if (!b) {
+        C(`Switching to Task ${u}...`, "#3498db", !0), g.setValue(h);
         try {
-          g.fireEvent("select", g, y);
+          g.fireEvent("select", g, x);
         } catch (w) {
           d.debug("AutoFill", `select event failed for task ${u}: ${w.message}`);
         }
-        g.fireEvent("change", g, b), g.fireEvent("blur", g), await re(150), await Ie(r), await ce(r, 5e3, 0);
+        g.fireEvent("change", g, h), g.fireEvent("blur", g), await re(150), await Ie(r), await ce(r, 5e3, 0);
         for (let w = 0; w < 8e3; w += 200) {
           let T = s();
           if (T && T.getStore().getCount() > 0) {
             let D = T.getStore().getAt(0)?.get("casemanagementtasksequence");
-            if (D && String(D) === String(b)) {
-              x = !0;
+            if (D && String(D) === String(h)) {
+              b = !0;
               break;
             }
           }
           await re(200);
         }
-        if (!x) {
+        if (!b) {
           d.info("AutoFill", `Grid not verified for task ${u} \u2014 toggling ACK tab`);
           try {
             if (a && !a.isDestroyed) {
@@ -6907,15 +6907,15 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
             let T = s();
             if (T && T.getStore().getCount() > 0) {
               let D = T.getStore().getAt(0)?.get("casemanagementtasksequence");
-              if (D && String(D) === String(b)) {
-                x = !0;
+              if (D && String(D) === String(h)) {
+                b = !0;
                 break;
               }
             }
             await re(200);
           }
         }
-        if (!x) {
+        if (!b) {
           C(`Task ${u}: grid did not reload.`, "#e74c3c");
           continue;
         }
@@ -6926,7 +6926,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
         continue;
       }
       let k = 0, S = 0;
-      if (Vo(E, ({ row: w }) => {
+      if (zo(E, ({ row: w }) => {
         if (k + S >= m) return !1;
         let T = w.querySelector('input[type="checkbox"]');
         if (T) {
@@ -6956,10 +6956,10 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
     }
   }
   async function Vc(e, t) {
-    if (!xt()) {
+    if (!vt()) {
       ft(!0);
       try {
-        let r = ho(), o = await Vr(r);
+        let r = ho(), o = await zr(r);
         if (!o) {
           d.warn("AutoFill", "Shift Report form not found after polling"), C(L("shiftReportFormNotFound"), "#e74c3c");
           return;
@@ -6970,21 +6970,21 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
         if (!l) {
           let g = Wr('input[name="description"]', { readOnly: !0 })?.el?.value?.trim() || "";
           !g && e && (g = e);
-          let h = g.toLowerCase(), y = Tr(), b = bn(), x = [], v = /* @__PURE__ */ new Set();
-          for (let [E, k] of b)
-            if (h.includes(E))
+          let y = g.toLowerCase(), x = Cr(), h = bn(), b = [], v = /* @__PURE__ */ new Set();
+          for (let [E, k] of h)
+            if (y.includes(E))
               for (let S of k) {
                 if (S.screen !== "shiftReport" || v.has(S.presetKey)) continue;
                 v.add(S.presetKey);
-                let w = y.autofill?.shiftReport?.[S.presetKey];
-                w && x.push({ ...w, name: S.presetKey });
+                let w = x.autofill?.shiftReport?.[S.presetKey];
+                w && b.push({ ...w, name: S.presetKey });
               }
-          if (x.length === 1)
-            l = x[0];
-          else if (x.length > 1) {
-            d.info("AutoFill", `${x.length} shift report profiles match \u2014 showing picker`), ft(!1);
-            let { showDefaultProfilePicker: E } = await Promise.resolve().then(() => (Ga(), Cs));
-            E(x);
+          if (b.length === 1)
+            l = b[0];
+          else if (b.length > 1) {
+            d.info("AutoFill", `${b.length} shift report profiles match \u2014 showing picker`), ft(!1);
+            let { showDefaultProfilePicker: E } = await Promise.resolve().then(() => (Va(), Cs));
+            E(b);
             return;
           }
           if (!l) {
@@ -6998,44 +6998,44 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
         if (p) {
           C("Setting User Login...", "#f1c40f", !0);
           let f = ["responsible", "reportedby", "enteredby", "userslogon", "personresponsible"], g = !1;
-          for (let h of f)
-            if (g = await st(a, s, h, p), g) {
-              d.info("AutoFill", `Set user login: ${h}=${p}`);
+          for (let y of f)
+            if (g = await st(a, s, y, p), g) {
+              d.info("AutoFill", `Set user login: ${y}=${p}`);
               break;
             }
           if (!g) {
-            let y = a.ComponentQuery.query("field[name]:not([destroyed=true])").slice(0, 30).map((b) => b.name).filter(Boolean);
-            d.warn("AutoFill", `User login field not found. Tried: ${f.join(", ")}. Available: ${y.join(", ")}`);
+            let x = a.ComponentQuery.query("field[name]:not([destroyed=true])").slice(0, 30).map((h) => h.name).filter(Boolean);
+            d.warn("AutoFill", `User login field not found. Tried: ${f.join(", ")}. Available: ${x.join(", ")}`);
           }
           await ce(n), await Ie(n), await ce(n);
         } else
           d.warn("AutoFill", "Session user not available \u2014 skipping user login");
         l.status && (d.info("AutoFill", `Setting casestatus=${l.status}`), C("Setting Status...", "#f1c40f", !0), await st(a, s, "casestatus", l.status), await ce(n), await Ie(n), await ce(n)), d.info("AutoFill", "Saving Shift Report before checklists"), C(L("savingShiftReport"), "#2ecc71", !0);
-        let u = zr(a);
+        let u = Vr(a);
         u ? (u.handler ? u.handler.call(u.scope || u, u) : u.fireEvent("click", u), await ce(n, 5e3, 500)) : d.warn("AutoFill", "Save button not found for Shift Report");
         let m = [];
-        l.actChecks10 > 0 && m.push({ target: 10, count: l.actChecks10 }), l.actChecks20 > 0 && m.push({ target: 20, count: l.actChecks20 }), m.length > 0 && (d.info("AutoFill", `Running Shift Report checklists: ${m.map((f) => `task ${f.target}\xD7${f.count}`).join(", ")}`), await Ky(m, r)), d.info("AutoFill", "Shift Report flow complete"), C(L("shiftReportComplete"), "#2ecc71");
+        l.actChecks10 > 0 && m.push({ target: 10, count: l.actChecks10 }), l.actChecks20 > 0 && m.push({ target: 20, count: l.actChecks20 }), m.length > 0 && (d.info("AutoFill", `Running Shift Report checklists: ${m.map((f) => `task ${f.target}\xD7${f.count}`).join(", ")}`), await Zb(m, r)), d.info("AutoFill", "Shift Report flow complete"), C(L("shiftReportComplete"), "#2ecc71");
       } finally {
         ft(!1);
       }
     }
   }
-  var jc = le(() => {
-    Tt();
-    Rr();
+  var zc = le(() => {
+    yt();
+    Or();
     ue();
     te();
     We();
     qe();
     Qt();
-    ha();
+    ya();
     jr();
-    Pt();
+    Dt();
     Ts();
   });
 
   // src/core/primitives/numbers.js
-  function bo(e) {
+  function yo(e) {
     if (e == null) return NaN;
     if (typeof e == "number") return e;
     let t = String(e).trim();
@@ -7047,41 +7047,41 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
   });
 
   // src/modules/autofill/services/wo-shared.js
-  function Dn(e) {
+  function Fn(e) {
     return Br({ win: e });
   }
   function _s(e) {
-    return !he.isEnabled("ptpSandbox") || !Y.ptpTrackingEnabled || !e ? !0 : (N.get(Ot) || {})[e]?.status === "COMPLETE";
+    return !fe.isEnabled("ptpSandbox") || !Y.ptpTrackingEnabled || !e ? !0 : (N.get(It) || {})[e]?.status === "COMPLETE";
   }
   async function Rs(e, t, r) {
     if (e.laborMode === "scheduled") {
-      let o = r?.woNumber || Dn(t), n = t.Ext, s = (r?.mainForm || n?.ComponentQuery?.query("form[id*=recordview]")?.find((h) => h.rendered && !h.isDestroyed && h.isVisible?.(!0)))?.getRecord?.(), l = s?.get("organization") || r?.organization || "", c = s?.get("workorderrtype") || "";
+      let o = r?.woNumber || Fn(t), n = t.Ext, s = (r?.mainForm || n?.ComponentQuery?.query("form[id*=recordview]")?.find((y) => y.rendered && !y.isDestroyed && y.isVisible?.(!0)))?.getRecord?.(), l = s?.get("organization") || r?.organization || "", c = s?.get("workorderrtype") || "";
       C("Fetching scheduled hours...", "#f1c40f", !0);
-      let p = await ff(o, l, c);
+      let p = await yf(o, l, c);
       if (!p || p.scheduled <= 0)
         return C("No scheduled hours found", "#95a5a6"), { hours: 0, reason: "no_scheduled_hours" };
-      let u = bo(e.laborFraction), m = Number.isFinite(u) ? u : 1, f = +(p.scheduled * m).toFixed(2);
+      let u = yo(e.laborFraction), m = Number.isFinite(u) ? u : 1, f = +(p.scheduled * m).toFixed(2);
       if (e.laborIgnoreBooked)
         return d.info("AutoFill", `Scheduled mode (ignore booked): booking ${f}h (${p.scheduled} \xD7 ${m}, ignoring ${p.booked}h booked)`), { hours: f };
       let g = Math.max(0, f - p.booked);
       return g <= 0 ? (C("No remaining scheduled hours to book", "#95a5a6"), { hours: 0, reason: "no_remaining_hours" }) : (d.info("AutoFill", `Scheduled mode: booking ${g}h (${p.scheduled} \xD7 ${m} - ${p.booked} booked)`), { hours: g });
     }
-    return { hours: bo(e.laborHours) || 0 };
+    return { hours: yo(e.laborHours) || 0 };
   }
-  var Kc = le(() => {
+  var jc = le(() => {
     te();
     We();
     Te();
-    Ht();
+    Lt();
     se();
     _e();
     jr();
-    oa();
+    na();
     As();
   });
 
   // src/modules/autofill/workflows/wo-fields.js
-  function hf(e) {
+  function xf(e) {
     if (e == null || typeof e == "string") return null;
     let t = /* @__PURE__ */ new Date();
     return t.setDate(t.getDate() + e), Ro(t);
@@ -7094,7 +7094,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
     Le.autofillLock = !0;
     try {
       C(L("locatingForm"), "#f1c40f", !0);
-      let r = await Vr(t);
+      let r = await zr(t);
       if (!r) {
         C(L("formNotFound"), "#e74c3c");
         return;
@@ -7107,12 +7107,12 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
         return !g || g.isDestroyed ? !1 : g.isVisible?.(!0) !== !1;
       }, c = async () => {
         if (l(n)) return;
-        let f = await Vr(t, { recordviewOnly: !0 });
+        let f = await zr(t, { recordviewOnly: !0 });
         f && (o = f.win, a = o.Ext, n = f.form, t && (t.activeWin = o, t.activeExt = a, t.mainForm = n));
       };
       if (e.org && (C("Setting Organization...", "#f1c40f", !0), await st(a, n, "organization", e.org), await ce(o), await Ie(o), await ce(o), await c(), tr(a, n, "organization", e.org, "Organization")), e.dept && (C("Setting Department...", "#f1c40f", !0), await st(a, n, "department", e.dept), await ce(o), await Ie(o), await ce(o), await c(), tr(a, n, "department", e.dept, "Department")), e.woTitle && await st(a, n, "description", e.woTitle), e.type && (C("Setting Work Order Type...", "#f1c40f", !0), await st(a, n, "workordertype", e.type), await ce(o), await Ie(o), await ce(o), await c(), tr(a, n, "workordertype", e.type, "WO Type")), e.eq) {
         C("Searching Equipment Database...", "#f1c40f", !0);
-        let f = await mf(e.eq, o);
+        let f = await hf(e.eq, o);
         C("Setting Equipment...", "#f1c40f", !0), await st(a, n, "equipment", f), await ce(o), await Ie(o), await ce(o), await c(), tr(a, n, "equipment", f, "Equipment");
       }
       e.shift && (C("Setting Shift...", "#f1c40f", !0), await st(a, n, "shift", e.shift), await ce(o), await Ie(o), await ce(o), await c(), tr(a, n, "shift", e.shift, "Shift")), C(L("injectingData"), "#f1c40f", !0);
@@ -7124,54 +7124,54 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
         ["failurecode", e.fail],
         ["causecode", e.cause],
         ["assignedto", e.assign],
-        ["schedstartdate", hf(e.start)],
-        ["schedenddate", hf(e.end)]
+        ["schedstartdate", xf(e.start)],
+        ["schedenddate", xf(e.end)]
       ].filter(([, f]) => f != null && f !== "");
       if (u.length > 0) {
         let f = n, g = f.getRecord?.();
-        for (let [h, y] of u) {
-          let b = a.ComponentQuery.query(`[name="${h}"]`, f)[0] || a.ComponentQuery.query(`[name="${h}"]`)[0];
-          b && ((b.readOnly || b.disabled) && d.debug("AutoFill", "Overriding protected field:", b.name || b.itemId), typeof b.setReadOnly == "function" && b.setReadOnly(!1), typeof b.setDisabled == "function" && b.setDisabled(!1), b.suspendEvents(), b.setValue(y), b.resumeEvents());
+        for (let [y, x] of u) {
+          let h = a.ComponentQuery.query(`[name="${y}"]`, f)[0] || a.ComponentQuery.query(`[name="${y}"]`)[0];
+          h && ((h.readOnly || h.disabled) && d.debug("AutoFill", "Overriding protected field:", h.name || h.itemId), typeof h.setReadOnly == "function" && h.setReadOnly(!1), typeof h.setDisabled == "function" && h.setDisabled(!1), h.suspendEvents(), h.setValue(x), h.resumeEvents());
         }
         if (g) {
           g.beginEdit();
-          for (let [h, y] of u)
-            g.set(h, y);
+          for (let [y, x] of u)
+            g.set(y, x);
           g.endEdit();
         }
-        for (let [h, y] of u) {
-          let b = a.ComponentQuery.query(`[name="${h}"]`, f)[0] || a.ComponentQuery.query(`[name="${h}"]`)[0];
-          b && (b.fireEvent("change", b, y), b.fireEvent("blur", b));
+        for (let [y, x] of u) {
+          let h = a.ComponentQuery.query(`[name="${y}"]`, f)[0] || a.ComponentQuery.query(`[name="${y}"]`)[0];
+          h && (h.fireEvent("change", h, x), h.fireEvent("blur", h));
         }
       }
       e.status && (C("Updating Work Order Status...", "#f1c40f", !0), await st(a, n, "workorderstatus", e.status), await ce(o), tr(a, n, "workorderstatus", e.status, "Status")), await ce(o, 2e3, 100), C(L("dispatchingSave"), "#2ecc71", !0);
-      let m = zr(a);
+      let m = Vr(a);
       if (m) {
-        if (m.handler ? m.handler.call(m.scope || m, m) : m.fireEvent("click", m), e.laborHours && bo(e.laborHours) > 0 || e.laborMode === "scheduled") {
-          let f = t?.woNumber || Dn(o);
+        if (m.handler ? m.handler.call(m.scope || m, m) : m.fireEvent("click", m), e.laborHours && yo(e.laborHours) > 0 || e.laborMode === "scheduled") {
+          let f = t?.woNumber || Fn(o);
           if (!_s(f))
             d.info("AutoFill", `PTP not completed for WO ${f} \u2014 skipping labor booking`), s = { result: "skipped_ptp" };
           else {
             C(L("savingBeforeLabor"), "#f1c40f", !0), await ce(o, 5e3, 500);
-            let { hours: g, reason: h } = await Rs(e, o, t);
-            g > 0 ? (C(L("autoBookingLabor", g), "#1abc9c", !0), s = await Ss(g, o, { silent: !0 })) : (h === "no_scheduled_hours" || h === "no_remaining_hours") && (s = { result: "skipped_no_hours" });
+            let { hours: g, reason: y } = await Rs(e, o, t);
+            g > 0 ? (C(L("autoBookingLabor", g), "#1abc9c", !0), s = await Ss(g, o, { silent: !0 })) : (y === "no_scheduled_hours" || y === "no_remaining_hours") && (s = { result: "skipped_no_hours" });
           }
         }
       } else
         return C(L("saveBtnMissing"), "#e74c3c"), null;
-      return await Ye(o), await Ie(o), s;
+      return await He(o), await Ie(o), s;
     } finally {
       Le.autofillLock = !1;
     }
   }
-  var bf = le(() => {
-    Tt();
-    sr();
+  var vf = le(() => {
+    yt();
+    lr();
     te();
     We();
     qe();
     jr();
-    Kc();
+    jc();
     As();
   });
 
@@ -7180,10 +7180,10 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
     let n = e.lotoMode, a = e.techChecks5 || 0, s = e.techChecks10 || e.pmChecks || 0, l = Array.isArray(e.advancedChecklistLoto) && e.advancedChecklistLoto.length > 0 ? e.advancedChecklistLoto : null, c = Array.isArray(e.advancedChecklist5) && e.advancedChecklist5.length > 0 ? e.advancedChecklist5 : null, p = Array.isArray(e.advancedChecklist10) && e.advancedChecklist10.length > 0 ? e.advancedChecklist10 : null;
     if (d.debug("AutoFill", `Checklist config: loto=${n}, advLoto=${!!l}, 5T=${a}, adv5=${!!c}, 10T=${s}, adv10=${!!p}`), !(e._tasks && e._tasks.some((O) => O.count > 0)) && (!n || n === "none") && !l && a === 0 && s === 0 && !c && !p) return;
     C(L("navigatingChecklist"), "#9b59b6", !0);
-    let m = null, f = null, g = null, h = null;
+    let m = null, f = null, g = null, y = null;
     if (r?.recordTabPanel && !r.recordTabPanel.isDestroyed) {
       let O = r.recordTabPanel.down("uxtabcontainer[itemId=ACK]");
-      O && (h = r.activeWin, m = h?.Ext, f = O, g = r.recordTabPanel, d.debug("AutoFill", "ACK container found via scoped tabPanel lookup"));
+      O && (y = r.activeWin, m = y?.Ext, f = O, g = r.recordTabPanel, d.debug("AutoFill", "ACK container found via scoped tabPanel lookup"));
     }
     if (!f)
       for (let O = 0; O < 15; O++) {
@@ -7195,7 +7195,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
               d.debug("AutoFill", `ACK container has combos but not '${o}' \u2014 skipping (wrong screen)`);
               continue;
             }
-            h = H.win, m = H.win.Ext, f = R, g = f.up("tabpanel");
+            y = H.win, m = H.win.Ext, f = R, g = f.up("tabpanel");
             break;
           }
         }
@@ -7206,25 +7206,25 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
       C(L("checklistNotFound"), "#e74c3c");
       return;
     }
-    let y = () => {
+    let x = () => {
       let O = m.ComponentQuery.query("gridpanel", f);
       return O.length > 0 ? O[0] : null;
-    }, b = (O = 1e4) => ce(h, O, 0), x = async (O = 5e3) => {
+    }, h = (O = 1e4) => ce(y, O, 0), b = async (O = 5e3) => {
       let H = 0, Q = !1;
       for (; H < O; ) {
-        let R = y();
+        let R = x();
         if (R && R.getStore().getCount() > 0) return;
         !Q && H >= 800 && (C("Waiting for Grid Data...", "#f39c12", !0), Q = !0), await re(50), H += 50;
       }
     };
-    !g.isDestroyed && g.getActiveTab() !== f && g.setActiveTab(f), await b();
-    let v = y();
-    (!v || v.getStore().getCount() === 0) && await x(3e3);
+    !g.isDestroyed && g.getActiveTab() !== f && g.setActiveTab(f), await h();
+    let v = x();
+    (!v || v.getStore().getCount() === 0) && await b(3e3);
     let E = async () => {
-      let O = zr(m);
-      O && (O.el?.dom ? O.el.dom.click() : O.handler ? O.handler.call(O.scope || O, O) : O.fireEvent("click", O)), await b(), await Ie(h);
+      let O = Vr(m);
+      O && (O.el?.dom ? O.el.dom.click() : O.handler ? O.handler.call(O.scope || O, O) : O.fireEvent("click", O)), await h(), await Ie(y);
     }, k = () => new Promise((O) => {
-      let H = h || window;
+      let H = y || window;
       (H.requestAnimationFrame || requestAnimationFrame).call(H, () => setTimeout(O, 0));
     }), S = async (O) => {
       let H = m.ComponentQuery.query(`combobox[name=${o}]`, f);
@@ -7237,27 +7237,27 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
           }
         });
       });
-      let A = String(Q.getValue() || "").trim(), z = String(Q.getRawValue() || "").trim(), W = Nr(O);
-      if (Nr(A) === W || Nr(z) === W) {
-        d.debug("AutoFill", `switchActivity: already on '${O}' (val='${A}', disp='${z}')`);
-        let U = y();
-        return (!U || U.getStore().getCount() === 0) && await x(3e3), !0;
+      let A = String(Q.getValue() || "").trim(), V = String(Q.getRawValue() || "").trim(), W = Ir(O);
+      if (Ir(A) === W || Ir(V) === W) {
+        d.debug("AutoFill", `switchActivity: already on '${O}' (val='${A}', disp='${V}')`);
+        let U = x();
+        return (!U || U.getStore().getCount() === 0) && await b(3e3), !0;
       }
       let F = null;
       if (R.each((U) => {
-        if (Nr(U.get(Q.valueField)) === W || Nr(U.get(Q.displayField)) === W)
+        if (Ir(U.get(Q.valueField)) === W || Ir(U.get(Q.displayField)) === W)
           return F = U, !1;
       }), F) {
         C(`Switching to Activity ${O}...`, "#3498db", !0);
-        let U = y(), q = U?.getStore()?.getCount() || 0, j = U?.getStore()?.getAt(0)?.id || null;
-        Q.setValue(F.get(Q.valueField)), o === "activity" && Q.fireEvent("select", Q, [F]), Q.fireEvent("change", Q, F.get(Q.valueField)), await re(150), await Ie(h), await b();
+        let U = x(), q = U?.getStore()?.getCount() || 0, j = U?.getStore()?.getAt(0)?.id || null;
+        Q.setValue(F.get(Q.valueField)), o === "activity" && Q.fireEvent("select", Q, [F]), Q.fireEvent("change", Q, F.get(Q.valueField)), await re(150), await Ie(y), await h();
         for (let Z = 0; Z < 8e3; Z += 100) {
-          let P = y();
+          let P = x();
           if (P) {
             let G = P.getStore(), I = G.getCount(), X = G.getAt(0)?.id || null;
             if (I > 0 && X !== j || I > 0 && q === 0) break;
             if (I === 0 && q > 0) {
-              await x(5e3);
+              await b(5e3);
               break;
             }
           }
@@ -7268,12 +7268,12 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
       return d.info("AutoFill", `switchActivity: activity '${O}' not available (${R.getCount()} records in combo). WO may not support this activity.`), !1;
     }, w = 100, T = async (O) => {
       let H = O.getStore(), Q = H.getCount(), R = O.getView(), A = R.bufferedRenderer || R.getFeature?.("bufferedrenderer");
-      if (A && typeof A.scrollTo == "function" && (d.debug("AutoFill", `BufferedRenderer scroll: ${Q} \u2192 targeting index ${Q + 50}`), A.scrollTo(Q + 50), await b(), await re(100), await b(), H.getCount() > Q))
+      if (A && typeof A.scrollTo == "function" && (d.debug("AutoFill", `BufferedRenderer scroll: ${Q} \u2192 targeting index ${Q + 50}`), A.scrollTo(Q + 50), await h(), await re(100), await h(), H.getCount() > Q))
         return !0;
-      let z = R.getScrollable?.() || R.getScroller?.();
-      if (z) {
-        let W = z.getMaxPosition?.()?.y || z.getSize?.()?.y || 1e4;
-        if (d.debug("AutoFill", `DOM scroll: scrolling to bottom (${W})`), z.scrollTo?.(0, W) || z.scrollTo?.("top", W), await b(), await re(100), await b(), H.getCount() > Q) return !0;
+      let V = R.getScrollable?.() || R.getScroller?.();
+      if (V) {
+        let W = V.getMaxPosition?.()?.y || V.getSize?.()?.y || 1e4;
+        if (d.debug("AutoFill", `DOM scroll: scrolling to bottom (${W})`), V.scrollTo?.(0, W) || V.scrollTo?.("top", W), await h(), await re(100), await h(), H.getCount() > Q) return !0;
       }
       return d.debug("AutoFill", `loadMoreRecords: no additional records loaded (stuck at ${Q})`), !1;
     }, B = (O, H) => {
@@ -7287,7 +7287,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
         }
       return O.focus(), O.value = H, O.dispatchEvent(new Event("input", { bubbles: !0 })), O.dispatchEvent(new Event("change", { bubbles: !0 })), O.blur(), !0;
     }, D = async (O, H = null, Q = null) => {
-      let R = O.getStore(), A = 0, z = 0, W = 0, M = {}, F = R.getCount();
+      let R = O.getStore(), A = 0, V = 0, W = 0, M = {}, F = R.getCount();
       for (d.debug("AutoFill", `processCheckboxes: initial loaded=${F}, serverTotal=${R.getTotalCount?.() || 0}`); await T(O); )
         d.debug("AutoFill", `processCheckboxes: pre-load progress ${R.getCount()} records`);
       let U = R.getCount();
@@ -7295,21 +7295,21 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
       let q = Q ? Math.min(Q.length, U) : H != null && U > 0 ? Math.min(H, U) : null;
       d.debug("AutoFill", `processCheckboxes: target=${H}, effectiveTarget=${q}, loaded=${U}, advancedMode=${!!Q}`), C(`Filling ${q || U} checklist items...`, "#3498db", !0);
       let j = Q ? Math.min(Q.length, U) : U;
-      return Vo(O, ({ row: Z, index: P }) => {
-        if (P >= j || !Q && q != null && z + A >= q) return !1;
+      return zo(O, ({ row: Z, index: P }) => {
+        if (P >= j || !Q && q != null && V + A >= q) return !1;
         let G = Array.from(
           Z.querySelectorAll('input[type="checkbox"]')
         ).filter((J) => !(J.getAttribute("data-componentid") || "").startsWith("checkboxfield"));
         for (let J of G) {
-          let V = J.getAttribute("data-componentid") || "(none)", oe = V.replace(/-?\d+.*$/, "") || V;
+          let z = J.getAttribute("data-componentid") || "(none)", oe = z.replace(/-?\d+.*$/, "") || z;
           M[oe] = (M[oe] || 0) + 1;
         }
         let I = Z.querySelector('input[data-componentid^="uxnumber"]'), X = G.length === 0 && !!I;
         if (Q) {
           let J = Q[P];
           if (!J) return;
-          let V = G.length >= 2;
-          if (J.action === "yes" && G.length >= 1 ? (G[0].checked || (G[0].click(), A++), V && G[1].checked && (G[1].click(), A++)) : J.action === "no" ? V ? (G[1].checked || (G[1].click(), A++), G[0].checked && (G[0].click(), A++)) : G.length === 1 && G[0].checked && (G[0].click(), A++) : J.action === "text" && X && J.resultText ? (B(I, J.resultText), A++) : G.length === 0 && !X && W++, J.notes) {
+          let z = G.length >= 2;
+          if (J.action === "yes" && G.length >= 1 ? (G[0].checked || (G[0].click(), A++), z && G[1].checked && (G[1].click(), A++)) : J.action === "no" ? z ? (G[1].checked || (G[1].click(), A++), G[0].checked && (G[0].click(), A++)) : G.length === 1 && G[0].checked && (G[0].click(), A++) : J.action === "text" && X && J.resultText ? (B(I, J.resultText), A++) : G.length === 0 && !X && W++, J.notes) {
             let oe = Z.querySelector('input[data-componentid^="textfield"][maxlength="4000"]');
             oe && (B(oe, J.notes), A++);
           }
@@ -7323,12 +7323,12 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
             return;
           }
           let J = G[0];
-          J.checked ? z++ : (J.click(), A++);
+          J.checked ? V++ : (J.click(), A++);
         }
-      }), A > 0 && await k(), d.info("AutoFill", `Checklist run: rows=${j}, prefixes=${JSON.stringify(M)}, modified=${A}, alreadyDone=${z}, skipped=${W}`), { modified: A, alreadyDone: z };
+      }), A > 0 && await k(), d.info("AutoFill", `Checklist run: rows=${j}, prefixes=${JSON.stringify(M)}, modified=${A}, alreadyDone=${V}, skipped=${W}`), { modified: A, alreadyDone: V };
     }, $ = async () => {
       if ((!n || n === "none") && !l || !await S("1")) return;
-      let H = y();
+      let H = x();
       if (!H || H.getStore().getCount() === 0) return;
       if (l) {
         let { modified: R, alreadyDone: A } = await D(
@@ -7340,19 +7340,19 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
         return;
       }
       let Q = 0;
-      Vo(H, ({ row: R }) => {
+      zo(H, ({ row: R }) => {
         let A = R.querySelectorAll('input[type="checkbox"]');
         A.length < 2 || (n === "yes" ? (A[0].checked || (A[0].click(), Q++), A[1].checked && (A[1].click(), Q++)) : n === "no" && (A[1].checked || (A[1].click(), Q++), A[0].checked && (A[0].click(), Q++)));
       }), Q > 0 ? (C(`Synced ${Q} LOTO items.`, "#2ecc71", !0), await k(), await E()) : (d.debug("AutoFill", "1-Tech: all items already in target state"), C(L("checklistComplete"), "#2ecc71", !0));
     }, K = async (O) => {
       let H = !O && p;
       if (s <= 0 && !H || !await S(O || "10")) return;
-      let A = y();
+      let A = x();
       if (!A || A.getStore().getCount() === 0) {
         C(L("noItemsOnTech", "10"), "#e74c3c");
         return;
       }
-      let { modified: z, alreadyDone: W } = await D(
+      let { modified: V, alreadyDone: W } = await D(
         A,
         H ? p.length : s,
         H ? p : null
@@ -7367,16 +7367,16 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
           let j = m.ComponentQuery.query("button:not([destroyed=true])", f).find((Z) => Z.rendered && !Z.isDestroyed && /^Actions$/i.test(Z.getText?.() || Z.text || ""));
           if (j?.menu?.items?.items) {
             let Z = j.menu.items.items.find((P) => P.action === "createfollowupwo");
-            Z?.handler && (Z.handler.call(Z.scope || Z, Z), await b(), d.info("AutoFill", `Follow-up WO created for 10-Tech row ${M + 1}`));
+            Z?.handler && (Z.handler.call(Z.scope || Z, Z), await h(), d.info("AutoFill", `Follow-up WO created for 10-Tech row ${M + 1}`));
           }
         }
-      if (z > 0) {
-        let M = [`Synced ${z} PM Checks`];
+      if (V > 0) {
+        let M = [`Synced ${V} PM Checks`];
         W > 0 && M.push(`${W} already done`), C(M.join(" \u2014 ") + ".", "#2ecc71", !0), await k(), await E();
       } else W > 0 ? C(`${W} PM Checks already completed.`, "#2ecc71", !0) : C(L("noItemsOnTech", "10"), "#e74c3c");
     }, ee = async () => {
       if (a <= 0 && !c || !await S("5")) return;
-      let H = y();
+      let H = x();
       if (!H || H.getStore().getCount() === 0) {
         C(L("noItemsOnTech", "5"), "#e74c3c");
         return;
@@ -7389,14 +7389,14 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
       if (c)
         for (let A = 0; A < c.length; A++) {
           if (!c[A].followUp) continue;
-          let z = H.getStore().getAt(A);
-          if (!z) continue;
+          let V = H.getStore().getAt(A);
+          if (!V) continue;
           let W = H.getSelectionModel();
-          W?.select && W.select(z);
+          W?.select && W.select(V);
           let F = m.ComponentQuery.query("button:not([destroyed=true])", f).find((U) => U.rendered && !U.isDestroyed && /^Actions$/i.test(U.getText?.() || U.text || ""));
           if (F?.menu?.items?.items) {
             let U = F.menu.items.items.find((q) => q.action === "createfollowupwo");
-            U?.handler && (U.handler.call(U.scope || U, U), await b(), d.info("AutoFill", `Follow-up WO created for 5-Tech row ${A + 1}`));
+            U?.handler && (U.handler.call(U.scope || U, U), await h(), d.info("AutoFill", `Follow-up WO created for 5-Tech row ${A + 1}`));
           }
         }
       if (Q > 0) {
@@ -7407,7 +7407,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
     if (Es("Saving Checklist\u2026"), t == null) {
       let O = m.ComponentQuery.query(`combobox[name=${o}]`, f);
       if (O.length > 0) {
-        let H = String(O[0].getValue() || "").trim(), Q = Nr(H);
+        let H = String(O[0].getValue() || "").trim(), Q = Ir(H);
         Q > 0 && (t = String(Q), d.debug("AutoFill", `Detected current activity from combo: ${t}`));
       }
     }
@@ -7419,19 +7419,19 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
           s = O.count, await K(O.activity), s = H;
         }
     } else t === "10" ? (d.info("AutoFill", "Starting from 10-Tech (context-aware)"), await K(), await ee(), await $()) : t === "5" ? (await ee(), await $(), await K()) : (await $(), await ee(), await K());
-    await ce(h, 1e4, 500), ks();
+    await ce(y, 1e4, 500), ks();
     try {
-      let O = !g?.isDestroyed && g?.down ? g.down("uxtabcontainer[itemId=HDR]") : cf(m, "HDR");
+      let O = !g?.isDestroyed && g?.down ? g.down("uxtabcontainer[itemId=HDR]") : uf(m, "HDR");
       if (O) {
         let H = g?.isDestroyed ? O.up("tabpanel") : g;
-        H && !H.isDestroyed && (H.setActiveTab(O), await b());
+        H && !H.isDestroyed && (H.setActiveTab(O), await h());
       }
     } catch (O) {
       d.warn("AutoFill", "Could not return to Record View tab:", O);
     }
   }
-  var yf = le(() => {
-    Tt();
+  var wf = le(() => {
+    yt();
     no();
     te();
     We();
@@ -7442,23 +7442,23 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
 
   // src/modules/autofill/workflows/wo-workflow.js
   async function Is(e, t) {
-    if (!xt()) {
+    if (!vt()) {
       ft(!0), pe.pause(3e4);
       try {
-        let r = pr(), o = Nt[r] || "wo";
+        let r = ur(), o = Mt[r] || "wo";
         if (o === "repair")
-          return ft(!1), Ln(t);
+          return ft(!1), Dn(t);
         if (o === "shiftReport")
           return ft(!1), Vc(e, t);
-        let n = performance.now(), a = null, s = "", l = Wr("span.recorddesc", { readOnly: !0 }), { view: c } = ge(), p = !!l && c === "record";
-        l && (s = l.el.textContent.trim()), p ? d.debug("AutoFill", `Record view confirmed via recorddesc: "${s}"`) : (a = await Uc(() => ne()), a ? s = Ua() : d.info("AutoFill", "No record header or WO grid \u2014 may be new/blank record"));
-        let u = Dn(l?.win ?? (a || window));
+        let n = performance.now(), a = null, s = "", l = Wr("span.recorddesc", { readOnly: !0 }), { view: c } = he(), p = !!l && c === "record";
+        l && (s = l.el.textContent.trim()), p ? d.debug("AutoFill", `Record view confirmed via recorddesc: "${s}"`) : (a = await Hc(() => ne()), a ? s = Ga() : d.info("AutoFill", "No record header or WO grid \u2014 may be new/blank record"));
+        let u = Fn(l?.win ?? (a || window));
         u && d.debug("AutoFill", `WO number resolved: ${u}`);
         let m = ho();
         m.woNumber = u;
-        let f = Hc();
+        let f = Wc();
         f && (m.recordTabPanel = f.tabPanel, m.activeWin = f.win, m.activeExt = f.win.Ext);
-        let g = a ? { tab: "HDR", activity: null, win: a, tabPanel: null } : df();
+        let g = a ? { tab: "HDR", activity: null, win: a, tabPanel: null } : mf();
         if (g.tab === "UNKNOWN" && m.recordTabPanel && !m.recordTabPanel.isDestroyed) {
           let $ = m.recordTabPanel.getActiveTab?.();
           if ($)
@@ -7466,137 +7466,137 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
               d.info("AutoFill", "Tab detection override: UNKNOWN \u2192 ACK (anchor tabPanel active card)"), g = { ...g, tab: "ACK" };
               let K = m.activeExt?.ComponentQuery?.query("combobox[name=activity]") || [];
               if (K.length > 0) {
-                let ee = String(K[0].getValue() || "").trim(), O = Nr(ee);
+                let ee = String(K[0].getValue() || "").trim(), O = Ir(ee);
                 O > 0 && (g.activity = String(O));
               }
             } else ($.down?.("uxtabcontainer[itemId=HDR]") || $.itemId === "HDR") && (d.info("AutoFill", "Tab detection override: UNKNOWN \u2192 HDR (anchor tabPanel active card)"), g = { ...g, tab: "HDR" });
         }
         if ((g.tab === "LIST" || g.tab === "UNKNOWN" && c === "list") && !a)
-          if (d.info("AutoFill", "List view detected \u2014 searching for selected grid row"), a = await Uc(
-            () => cn().map(($) => $.defaultView).filter(Boolean),
+          if (d.info("AutoFill", "List view detected \u2014 searching for selected grid row"), a = await Hc(
+            () => dn().map(($) => $.defaultView).filter(Boolean),
             { deepVisCheck: !1 }
           ), a)
-            s = Ua(), g = { tab: "HDR", activity: null, win: a, tabPanel: null };
+            s = Ga(), g = { tab: "HDR", activity: null, win: a, tabPanel: null };
           else {
             d.warn("AutoFill", "List view but no grid with selection found \u2014 cannot navigate to record"), C("Select a record in the list first.", "#e74c3c");
             return;
           }
         if (a && !m.recordTabPanel) {
-          let $ = Hc();
+          let $ = Wc();
           $ && (m.recordTabPanel = $.tabPanel, m.activeWin = $.win, m.activeExt = $.win.Ext);
         }
         g.win && !m.activeWin && (m.activeWin = g.win), d.info("AutoFill", `Context: tab=${g.tab}, activity=${g.activity}${a ? " (post-grid-nav, forced HDR)" : ""}`);
-        let h = !1;
+        let y = !1;
         if (!p && !a) {
           for (let $ of m.wins)
             try {
               let K = $.EAM?.FocusManager?.activeView;
               if (K?.isRecordView && !K.lastRecordid) {
-                h = !0;
+                y = !0;
                 break;
               }
             } catch {
             }
-          !h && c === "record" && (h = !0);
+          !y && c === "record" && (y = !0);
         }
-        ca(), h ? (Le.lastKnownTitle = "", Le.lastKnownEquipment = "") : (!s && e && (s = e), !s && Le.lastKnownTitle && (s = Le.lastKnownTitle));
-        let y = s.toLowerCase(), b = t || null, x = "";
-        if (!b) {
+        da(), y ? (Le.lastKnownTitle = "", Le.lastKnownEquipment = "") : (!s && e && (s = e), !s && Le.lastKnownTitle && (s = Le.lastKnownTitle));
+        let x = s.toLowerCase(), h = t || null, b = "";
+        if (!h) {
           try {
             let $ = Be.active();
             if ($)
               for (let K of $.queryExtAll('[name="equipment"]')) {
                 let ee = (K.getValue?.() || "").toString().trim();
                 if (ee) {
-                  x = ee;
+                  b = ee;
                   break;
                 }
               }
           } catch {
           }
-          !h && !x && Le.lastKnownEquipment && (x = Le.lastKnownEquipment);
+          !y && !b && Le.lastKnownEquipment && (b = Le.lastKnownEquipment);
         }
-        let v = x.toLowerCase();
-        if (!b && !s && !x && da().length === 0) {
+        let v = b.toLowerCase();
+        if (!h && !s && !b && pa().length === 0) {
           C("Error: Could not read WO Title.", "#e74c3c");
           return;
         }
-        let E = Tr();
-        if (!b) {
+        let E = Cr();
+        if (!h) {
           let $ = [], K = /* @__PURE__ */ new Set(), ee = /* @__PURE__ */ new Set(), O = /* @__PURE__ */ new Set(), H = bn();
-          for (let [A, z] of H)
-            if (y.includes(A))
-              for (let W of z)
+          for (let [A, V] of H)
+            if (x.includes(A))
+              for (let W of V)
                 W.screen === o && ee.add(W.presetKey);
           if (v) {
             let A = Ii();
-            for (let [z, W] of A)
-              if (v.includes(z))
+            for (let [V, W] of A)
+              if (v.includes(V))
                 for (let M of W)
                   M.screen === o && O.add(M.presetKey);
           }
           let Q = E.autofill?.[o] || {}, R = /* @__PURE__ */ new Set([...ee, ...O]);
           for (let A of R) {
             if (K.has(A)) continue;
-            let z = Q[A];
-            if (!z || z.isDefault) continue;
-            let W = Array.isArray(z.keyword) ? z.keyword.length > 0 : !!z.keyword, M = Array.isArray(z.equipmentKeyword) ? z.equipmentKeyword.length > 0 : !!z.equipmentKeyword, F = !1;
-            W && M ? F = ee.has(A) && O.has(A) : W ? F = ee.has(A) : M && (F = O.has(A)), F && (K.add(A), $.push({ ...z, name: A }));
+            let V = Q[A];
+            if (!V || V.isDefault) continue;
+            let W = Array.isArray(V.keyword) ? V.keyword.length > 0 : !!V.keyword, M = Array.isArray(V.equipmentKeyword) ? V.equipmentKeyword.length > 0 : !!V.equipmentKeyword, F = !1;
+            W && M ? F = ee.has(A) && O.has(A) : W ? F = ee.has(A) : M && (F = O.has(A)), F && (K.add(A), $.push({ ...V, name: A }));
           }
           if ($.length === 1)
-            b = $[0];
+            h = $[0];
           else if ($.length > 1) {
-            d.info("AutoFill", `${$.length} profiles match "${y || v}" \u2014 showing picker`), ft(!1);
-            let { showDefaultProfilePicker: A } = await Promise.resolve().then(() => (Ga(), Cs));
+            d.info("AutoFill", `${$.length} profiles match "${x || v}" \u2014 showing picker`), ft(!1);
+            let { showDefaultProfilePicker: A } = await Promise.resolve().then(() => (Va(), Cs));
             A($);
             return;
           }
         }
-        if (!b && !y && !v) {
-          let $ = da(o);
+        if (!h && !x && !v) {
+          let $ = pa(o);
           if ($.length === 1)
-            b = $[0], d.info("AutoFill", `Using default profile "${$[0].name}" for blank record`);
+            h = $[0], d.info("AutoFill", `Using default profile "${$[0].name}" for blank record`);
           else if ($.length > 1) {
             d.info("AutoFill", `${$.length} default profiles \u2014 showing picker`), ft(!1);
-            let { showDefaultProfilePicker: K } = await Promise.resolve().then(() => (Ga(), Cs));
+            let { showDefaultProfilePicker: K } = await Promise.resolve().then(() => (Va(), Cs));
             K($);
             return;
           }
         }
-        if (!b) {
-          let $ = s || x || "", K = $.length > 25 ? $.substring(0, 25) + "..." : $;
+        if (!h) {
+          let $ = s || b || "", K = $.length > 25 ? $.substring(0, 25) + "..." : $;
           C(L("noMatch", K), "#e74c3c");
           return;
         }
-        let k = Array.isArray(b.keyword) ? b.keyword.join(", ") : b.keyword || "", S = Array.isArray(b.equipmentKeyword) ? b.equipmentKeyword.join(", ") : "";
-        C(L("autoFilling", k || S || b.woTitle || b.name), "#f1c40f", !0);
-        let w = !!(b.org || b.type || b.eq || b.exec || b.safety || b.close || b.prob || b.fail || b.cause || b.assign || b.shift || b.status || b.start != null || b.end != null || b.laborHours && bo(b.laborHours) > 0 || b.laborMode === "scheduled"), T = b.lotoMode && b.lotoMode !== "none" || b.techChecks5 > 0 || b.techChecks10 > 0 || b.pmChecks > 0 || Array.isArray(b.advancedChecklistLoto) || Array.isArray(b.advancedChecklist5) || Array.isArray(b.advancedChecklist10);
-        d.info("AutoFill", `Matched: "${b.name || b.woTitle || "?"}" (record=${w}, checklist=${T})`), T || d.info("AutoFill", `Checklist skipped: loto=${b.lotoMode || "none"}, 5T=${b.techChecks5 || 0}, 10T=${b.techChecks10 || 0}, advLoto=${!!b.advancedChecklistLoto}, adv5=${!!b.advancedChecklist5}, adv10=${!!b.advancedChecklist10}`);
-        let B = b.laborHours && bo(b.laborHours) > 0 || b.laborMode === "scheduled", D = null;
+        let k = Array.isArray(h.keyword) ? h.keyword.join(", ") : h.keyword || "", S = Array.isArray(h.equipmentKeyword) ? h.equipmentKeyword.join(", ") : "";
+        C(L("autoFilling", k || S || h.woTitle || h.name), "#f1c40f", !0);
+        let w = !!(h.org || h.type || h.eq || h.exec || h.safety || h.close || h.prob || h.fail || h.cause || h.assign || h.shift || h.status || h.start != null || h.end != null || h.laborHours && yo(h.laborHours) > 0 || h.laborMode === "scheduled"), T = h.lotoMode && h.lotoMode !== "none" || h.techChecks5 > 0 || h.techChecks10 > 0 || h.pmChecks > 0 || Array.isArray(h.advancedChecklistLoto) || Array.isArray(h.advancedChecklist5) || Array.isArray(h.advancedChecklist10);
+        d.info("AutoFill", `Matched: "${h.name || h.woTitle || "?"}" (record=${w}, checklist=${T})`), T || d.info("AutoFill", `Checklist skipped: loto=${h.lotoMode || "none"}, 5T=${h.techChecks5 || 0}, 10T=${h.techChecks10 || 0}, advLoto=${!!h.advancedChecklistLoto}, adv5=${!!h.advancedChecklist5}, adv10=${!!h.advancedChecklist10}`);
+        let B = h.laborHours && yo(h.laborHours) > 0 || h.laborMode === "scheduled", D = null;
         if (g.tab === "ACK")
-          d.info("AutoFill", `Starting from checklist tab, activity=${g.activity} (context-aware)`), T && await Ns(b, g.activity, m), w && (d.info("AutoFill", "Switching to HDR for record fill after checklists"), await Yc(m) ? (await ce(m.activeWin || m.wins[0], 3e3, 100), ws(m), D = await Os(b, m)) : (d.error("AutoFill", "Could not find Record View tab \u2014 aborting record fill"), C("Error: Could not find Record View tab.", "#e74c3c")));
+          d.info("AutoFill", `Starting from checklist tab, activity=${g.activity} (context-aware)`), T && await Ns(h, g.activity, m), w && (d.info("AutoFill", "Switching to HDR for record fill after checklists"), await Kc(m) ? (await ce(m.activeWin || m.wins[0], 3e3, 100), ws(m), D = await Os(h, m)) : (d.error("AutoFill", "Could not find Record View tab \u2014 aborting record fill"), C("Error: Could not find Record View tab.", "#e74c3c")));
         else if (g.tab === "LABOR" && B) {
-          let $ = u || Dn(g.win);
+          let $ = u || Fn(g.win);
           if (!_s($))
             d.info("AutoFill", `PTP not completed for WO ${$} \u2014 skipping labor booking`), D = { result: "skipped_ptp" };
           else {
             d.info("AutoFill", "Starting from Book Labor tab \u2014 booking labor first");
-            let { hours: ee, reason: O } = await Rs(b, g.win, m);
+            let { hours: ee, reason: O } = await Rs(h, g.win, m);
             ee > 0 ? (C(L("autoBookingLabor", ee), "#1abc9c", !0), D = await Ss(ee, g.win, { silent: !0 })) : (O === "no_scheduled_hours" || O === "no_remaining_hours") && (D = { result: "skipped_no_hours" });
           }
-          let K = { ...b, laborHours: 0, laborMode: "fixed" };
-          w && (d.info("AutoFill", "Switching to HDR for record fill after labor"), await Yc(m) ? (await ce(m.activeWin || m.wins[0], 3e3, 100), ws(m), await Os(K, m)) : (d.error("AutoFill", "Could not find Record View tab \u2014 aborting record fill"), C("Error: Could not find Record View tab.", "#e74c3c"))), T && await Ns(b, null, m);
+          let K = { ...h, laborHours: 0, laborMode: "fixed" };
+          w && (d.info("AutoFill", "Switching to HDR for record fill after labor"), await Kc(m) ? (await ce(m.activeWin || m.wins[0], 3e3, 100), ws(m), await Os(K, m)) : (d.error("AutoFill", "Could not find Record View tab \u2014 aborting record fill"), C("Error: Could not find Record View tab.", "#e74c3c"))), T && await Ns(h, null, m);
         } else {
           d.info("AutoFill", `Starting from ${g.tab} tab`);
           let $ = !0;
           if (w) {
-            if ($ = await Yc(m), !$) {
+            if ($ = await Kc(m), !$) {
               d.error("AutoFill", "Could not find Record View tab \u2014 aborting"), C("Error: Could not find Record View tab.", "#e74c3c");
               return;
             }
-            await ce(m.activeWin || m.wins[0], 3e3, 100), ws(m), D = await Os(b, m);
+            await ce(m.activeWin || m.wins[0], 3e3, 100), ws(m), D = await Os(h, m);
           }
-          T && await Ns(b, null, m);
+          T && await Ns(h, null, m);
         }
         D?.result === "skipped_ptp" ? C("AutoFill complete \u2014 labor skipped (PTP not completed).", "#e67e22") : D?.result === "skipped_no_hours" ? C("AutoFill complete \u2014 no scheduled hours to book.", "#e67e22") : D?.result === "failed" ? C(L("autoFillCompleteLaborFailed"), "#e74c3c") : D?.result === "error" ? C(L("autoFillCompleteLaborError"), "#e74c3c") : D?.result === "success" ? C(L("autoFillCompleteLaborBooked") + " \u26A1", "#1abc9c") : C(L("autoFillComplete"), "#1abc9c"), ve.recordAutofillFlow(Math.round(performance.now() - n));
       } catch (r) {
@@ -7606,11 +7606,11 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
       }
     }
   }
-  async function Yc(e = null) {
+  async function Kc(e = null) {
     let t = async (o, n = 4e3) => {
       let a = Math.floor(n / 100);
       for (let s = 0; s < a; s++) {
-        if (await re(100), ge().subTab === "Record View")
+        if (await re(100), he().subTab === "Record View")
           return await ce(o, 2e3, 50), !0;
         if (s >= 10 && Be.from(o)?.queryExt("form[id*=recordview]"))
           return d.info("AutoFill", "HDR confirmed via visible recordview form (title lagging)"), await ce(o, 2e3, 50), !0;
@@ -7620,16 +7620,16 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
     if (e?.recordTabPanel && !e.recordTabPanel.isDestroyed) {
       let o = e.recordTabPanel.down("uxtabcontainer[itemId=HDR]");
       if (o)
-        return ge().subTab === "Record View" ? !0 : !ge().subTab && e.activeWin && Be.from(e.activeWin)?.queryExt("form[id*=recordview]") ? (d.debug("AutoFill", "ensureHDRTab: already on Record View (form visible, title lagging)"), !0) : (d.info("AutoFill", "Switching to Record View (HDR) tab..."), e.recordTabPanel.setActiveTab(o), await t(e.activeWin || e.wins?.[0]) || d.warn("AutoFill", `HDR switch not confirmed after 4s (subTab: "${ge().subTab}")`), !0);
+        return he().subTab === "Record View" ? !0 : !he().subTab && e.activeWin && Be.from(e.activeWin)?.queryExt("form[id*=recordview]") ? (d.debug("AutoFill", "ensureHDRTab: already on Record View (form visible, title lagging)"), !0) : (d.info("AutoFill", "Switching to Record View (HDR) tab..."), e.recordTabPanel.setActiveTab(o), await t(e.activeWin || e.wins?.[0]) || d.warn("AutoFill", `HDR switch not confirmed after 4s (subTab: "${he().subTab}")`), !0);
     }
     let r = Be.active();
     if (r)
       try {
-        if (ge().subTab === "Record View") return !0;
+        if (he().subTab === "Record View") return !0;
         let o = r.queryExt("uxtabcontainer[itemId=HDR]");
         if (o) {
           let a = o.up("tabpanel");
-          return a && (d.info("AutoFill", "Switching to Record View (HDR) tab... (global fallback)"), a.setActiveTab(o), await t(r.win) || d.warn("AutoFill", `HDR switch not confirmed after 4s (subTab: "${ge().subTab}")`)), !0;
+          return a && (d.info("AutoFill", "Switching to Record View (HDR) tab... (global fallback)"), a.setActiveTab(o), await t(r.win) || d.warn("AutoFill", `HDR switch not confirmed after 4s (subTab: "${he().subTab}")`)), !0;
         }
         let n = r.queryExt("form[id*=recordview]");
         if (n) {
@@ -7643,9 +7643,9 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
       }
     return d.warn("AutoFill", "ensureHDRTab: could not locate Record View tab"), !1;
   }
-  var xf = le(() => {
-    Tt();
-    Rr();
+  var Sf = le(() => {
+    yt();
+    Or();
     ue();
     no();
     te();
@@ -7654,43 +7654,43 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
     Qt();
     se();
     mt();
-    At();
+    _t();
     nt();
-    Pt();
+    Dt();
     jr();
-    Kc();
-    As();
-    zc();
     jc();
-    bf();
-    yf();
+    As();
+    Gc();
+    zc();
+    vf();
+    wf();
   });
 
   // src/modules/autofill/autofill-engine.js
-  var vf = le(() => {
-    gf();
+  var Ef = le(() => {
+    bf();
+    Gc();
     zc();
-    jc();
-    xf();
+    Sf();
   });
 
   // src/modules/autofill/autofill-triggers.js
   var Cs = {};
   ii(Cs, {
-    initAutoFillObserver: () => ed,
-    injectAutoFillTriggers: () => Bn,
-    injectChecklistBulkButtons: () => Fn,
-    showDefaultProfilePicker: () => Tf
+    initAutoFillObserver: () => Zc,
+    injectAutoFillTriggers: () => $n,
+    injectChecklistBulkButtons: () => Bn,
+    showDefaultProfilePicker: () => _f
   });
-  function Jy(e) {
-    let t = pr();
-    if ((Nt[t] || "wo") === "repair") {
-      let o = mr()?.autofill?.repair || {}, n = Object.entries(o).map(([a, s]) => ({ name: a, ...s }));
-      n.length === 1 ? Ln(n[0]) : n.length > 1 ? Tf(n) : C(L("noRepairTemplates"), "#e74c3c");
+  function tx(e) {
+    let t = ur();
+    if ((Mt[t] || "wo") === "repair") {
+      let o = fr()?.autofill?.repair || {}, n = Object.entries(o).map(([a, s]) => ({ name: a, ...s }));
+      n.length === 1 ? Dn(n[0]) : n.length > 1 ? _f(n) : C(L("noRepairTemplates"), "#e74c3c");
     } else
       Is(e);
   }
-  function Tf(e) {
+  function _f(e) {
     let t = document.getElementById("apm-autofill-picker");
     t && t.remove();
     let r = document.getElementById("apm-btn-do-autofill") || document.querySelector(".apm-af-trigger"), o = r ? r.getBoundingClientRect() : null, n = () => {
@@ -7733,8 +7733,8 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
         c.style.borderColor = "transparent", c.style.background = "transparent";
       }, c.onclick = () => {
         n();
-        let p = pr();
-        (Nt[p] || "wo") === "repair" ? Ln(l) : Is("", l);
+        let p = ur();
+        (Mt[p] || "wo") === "repair" ? Dn(l) : Is("", l);
       }, c;
     })), s = i("div", {
       id: "apm-autofill-picker",
@@ -7760,13 +7760,13 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
       s.style.opacity = "1";
     }), s.focus();
   }
-  function Qy(e) {
-    if (Sf.has(e)) return;
-    Sf.add(e);
-    let t = () => Fn(), r = e.getView?.();
+  function rx(e) {
+    if (Tf.has(e)) return;
+    Tf.add(e);
+    let t = () => Bn(), r = e.getView?.();
     r?.on && r.on("refresh", t), e.on && e.on("reconfigure", t);
   }
-  async function Xy(e, t) {
+  async function ox(e, t) {
     let o = t.Ext.ComponentQuery.query("gridpanel").find((p) => !p.isDestroyed && p.rendered && p.isVisible?.(!0) && typeof p.getDataspy == "function");
     if (!o) {
       C("No checklist grid found.", "#e74c3c");
@@ -7780,15 +7780,15 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
       a.scrollTo(0, 0), await new Promise((m) => setTimeout(m, 50));
     }
     let s = 0, l = 0, c = {};
-    Vo(o, ({ row: p }) => {
+    zo(o, ({ row: p }) => {
       let u = Array.from(
         p.querySelectorAll('input[type="checkbox"]')
       ).filter((f) => !(f.getAttribute("data-componentid") || "").startsWith("checkboxfield"));
       if (u.length === 0) return;
       l++;
       for (let f of u) {
-        let g = f.getAttribute("data-componentid") || "(none)", h = g.replace(/-?\d+.*$/, "") || g;
-        c[h] = (c[h] || 0) + 1;
+        let g = f.getAttribute("data-componentid") || "(none)", y = g.replace(/-?\d+.*$/, "") || g;
+        c[y] = (c[y] || 0) + 1;
       }
       let m = u.length >= 2;
       if (e === "yes")
@@ -7800,48 +7800,48 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
           f.checked && (f.click(), s++);
     }), d.info("AutoFill", `Bulk ${e}: rows=${l}, prefixes=${JSON.stringify(c)}, modified=${s}`), s > 0 ? (await new Promise((u) => requestAnimationFrame(() => setTimeout(u, 0))), C(`${e === "clear" ? "Cleared" : e === "yes" ? "Checked Yes on" : "Checked No on"} ${s} items.`, "#2ecc71")) : C("No changes needed.", "#3498db");
   }
-  function Fn() {
-    if (!Kr.isEnabled() || xt() || ge().tab !== "ACK") return;
+  function Bn() {
+    if (!Kr.isEnabled() || vt() || he().tab !== "ACK") return;
     let e = Be.active();
-    if (e && !(jo?.isConnected && jo.ownerDocument === e.doc && jo.querySelector("#" + Xc)))
+    if (e && !(jo?.isConnected && jo.ownerDocument === e.doc && jo.querySelector("#" + Qc)))
       try {
         let { win: t } = e;
         if (!t?.Ext?.ComponentQuery) return;
         let o = t.Ext.ComponentQuery.query("gridpanel").find((l) => !l.isDestroyed && l.rendered && l.isVisible?.(!0) && typeof l.getDataspy == "function");
         if (!o) return;
-        Qy(o);
+        rx(o);
         let a = (o.down?.("gridcolumn[dataIndex=result]") || o.columns?.find?.((l) => l.dataIndex === "result"))?.el?.dom;
         if (!a) {
           jo && (d.debug("AutoFill", "Result column header gone after prior injection \u2014 column removed or grid replaced"), jo = null);
           return;
         }
-        if (a.querySelector("#" + Xc)) {
+        if (a.querySelector("#" + Qc)) {
           jo = a;
           return;
         }
         d.debug("AutoFill", "Injecting checklist bulk buttons into Result column header");
         let s = document.createElement("div");
-        s.id = Xc, s.className = "apm-ack-bulk-group", s.innerHTML = '<button class="apm-ack-bulk-btn apm-ack-bulk-yes" title="Check all Yes">Yes</button><button class="apm-ack-bulk-btn apm-ack-bulk-no" title="Check all No">No</button><button class="apm-ack-bulk-btn apm-ack-bulk-clear" title="Clear all">Clear</button>', s.addEventListener("click", (l) => {
+        s.id = Qc, s.className = "apm-ack-bulk-group", s.innerHTML = '<button class="apm-ack-bulk-btn apm-ack-bulk-yes" title="Check all Yes">Yes</button><button class="apm-ack-bulk-btn apm-ack-bulk-no" title="Check all No">No</button><button class="apm-ack-bulk-btn apm-ack-bulk-clear" title="Clear all">Clear</button>', s.addEventListener("click", (l) => {
           let c = l.target.closest(".apm-ack-bulk-btn");
           if (!c) return;
           l.stopPropagation();
           let p = null;
-          c.classList.contains("apm-ack-bulk-yes") ? p = "yes" : c.classList.contains("apm-ack-bulk-no") ? p = "no" : c.classList.contains("apm-ack-bulk-clear") && (p = "clear"), p && Xy(p, t);
+          c.classList.contains("apm-ack-bulk-yes") ? p = "yes" : c.classList.contains("apm-ack-bulk-no") ? p = "no" : c.classList.contains("apm-ack-bulk-clear") && (p = "clear"), p && ox(p, t);
         }), a.appendChild(s), jo = a;
       } catch (t) {
         d.warn("AutoFill", "Checklist bulk button injection error:", t);
       }
   }
-  function Bn() {
+  function $n() {
     if (!Kr.isEnabled()) return;
-    if (xt()) {
+    if (vt()) {
       d.debug("AutoFill", "Scan skipped: AutoFill is currently running");
       return;
     }
-    let e = pr(), t = Nt[e] || null;
+    let e = ur(), t = Mt[e] || null;
     if (!t) {
-      e && e !== Qc && (d.debug("AutoFill", `Screen "${e}" is not an autofill-enabled screen`), Qc = e), yo = !1;
-      for (let c of cn())
+      e && e !== Jc && (d.debug("AutoFill", `Screen "${e}" is not an autofill-enabled screen`), Jc = e), bo = !1;
+      for (let c of dn())
         try {
           let p = c.defaultView;
           if (typeof p?.Ext?.getCmp != "function") continue;
@@ -7851,21 +7851,21 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
             let f = c.getElementById("apm-btn-do-autofill");
             f && f.remove();
           }
-          let m = c.getElementById(Zc);
+          let m = c.getElementById(Xc);
           m && m.remove();
         } catch {
         }
       return;
     }
-    Qc = "";
-    let o = ge().view === "list", n = Date.now();
-    e !== Jc && (yo = !1);
-    let a = yo && !o ? 3e3 : Yy;
-    if (e === Jc && n - wf < a) return;
-    wf = n, Jc = e;
+    Jc = "";
+    let o = he().view === "list", n = Date.now();
+    e !== Yc && (bo = !1);
+    let a = bo && !o ? 3e3 : ex;
+    if (e === Yc && n - kf < a) return;
+    kf = n, Yc = e;
     let s = Be.active();
     if (!s) return;
-    let l = mr();
+    let l = fr();
     try {
       let c = s.doc, p = s.win;
       if (!c?.body || typeof p?.Ext?.getCmp != "function" || !p.Ext.ComponentQuery) return;
@@ -7936,11 +7936,11 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
         let k = p.EAM?.FocusManager?.activeView;
         k?.isRecordView && !k.lastRecordid && (Le.lastKnownEquipment = "");
       }
-      let g = p.Ext.getCmp("apm-btn-do-autofill"), h = c.getElementById("apm-btn-do-autofill"), y = () => {
-        g && !g.isDestroyed ? g.destroy() : h && h.remove();
-      }, b = () => g && !g.isDestroyed && g.getEl?.()?.dom && c.body.contains(g.getEl().dom) ? g.isVisible?.(!0) !== !1 : h && c.body.contains(h) ? s.containsEl(h) : !1, x = !1;
+      let g = p.Ext.getCmp("apm-btn-do-autofill"), y = c.getElementById("apm-btn-do-autofill"), x = () => {
+        g && !g.isDestroyed ? g.destroy() : y && y.remove();
+      }, h = () => g && !g.isDestroyed && g.getEl?.()?.dom && c.body.contains(g.getEl().dom) ? g.isVisible?.(!0) !== !1 : y && c.body.contains(y) ? s.containsEl(y) : !1, b = !1;
       if (t === "repair")
-        x = !0;
+        b = !0;
       else {
         let k = /* @__PURE__ */ new Set(), S = /* @__PURE__ */ new Set();
         if (u) {
@@ -7958,7 +7958,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
               for (let ee of K)
                 ee.screen === t && S.add(ee.presetKey);
         }
-        let B = mr().autofill?.[t];
+        let B = fr().autofill?.[t];
         if (B) {
           let D = /* @__PURE__ */ new Set([...k, ...S]);
           for (let $ of D) {
@@ -7967,32 +7967,32 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
             let ee = Array.isArray(K.keyword) ? K.keyword.length > 0 : !!K.keyword, O = Array.isArray(K.equipmentKeyword) ? K.equipmentKeyword.length > 0 : !!K.equipmentKeyword;
             if (ee && O) {
               if (k.has($) && S.has($)) {
-                x = !0;
+                b = !0;
                 break;
               }
             } else {
-              x = !0;
+              b = !0;
               break;
             }
           }
         }
-        if (!x && !u && !m && t === "wo" && !o) {
+        if (!b && !u && !m && t === "wo" && !o) {
           let D = p.EAM?.FocusManager?.activeView;
           if (f || D?.isRecordView && !D.lastRecordid) {
-            let K = da("wo");
-            K.length > 0 && (x = !0, d.debug("AutoFill", `Blank record \u2014 ${K.length} default profile(s)`));
+            let K = pa("wo");
+            K.length > 0 && (b = !0, d.debug("AutoFill", `Blank record \u2014 ${K.length} default profile(s)`));
           }
         }
       }
-      if (!x) {
-        (g || h) && (d.debug("AutoFill", `Removing button: no match for "${u}"`), y(), yo = !1);
+      if (!b) {
+        (g || y) && (d.debug("AutoFill", `Removing button: no match for "${u}"`), x(), bo = !1);
         return;
       }
-      if (b()) {
-        yo = !0;
+      if (h()) {
+        bo = !0;
         return;
       }
-      yo = !1, y();
+      bo = !1, x();
       let v = null, E = -1;
       try {
         let k = p.EAM?.Utils?.getMainToolbar?.();
@@ -8017,8 +8017,8 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
             let S = k.el.dom.querySelector("button");
             S && S.addEventListener("click", (w) => {
               w.preventDefault();
-              let T = Ua().toLowerCase();
-              Jy(T || u);
+              let T = Ga().toLowerCase();
+              tx(T || u);
             });
           }
         }
@@ -8027,10 +8027,10 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
       d.warn("AutoFill", "Trigger injection error:", c);
     }
   }
-  function Ef(e, t, r) {
-    if (!Kr.isEnabled() || xt() || !e || e.isDestroyed || r.getElementById(Zc)) return;
-    let o = pr();
-    if ((Nt[o] || null) === "wo")
+  function Cf(e, t, r) {
+    if (!Kr.isEnabled() || vt() || !e || e.isDestroyed || r.getElementById(Xc)) return;
+    let o = ur();
+    if ((Mt[o] || null) === "wo")
       try {
         let a = e.down?.('[name="description"]');
         if (!a || !a.rendered || a.isDestroyed) return;
@@ -8038,21 +8038,21 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
         if (!l) return;
         l.style.setProperty("display", "flex", "important"), l.style.setProperty("align-items", "center", "important"), l.style.setProperty("overflow", "visible", "important"), l.style.setProperty("max-width", "none", "important");
         let c = r.createElement("button");
-        c.id = Zc, c.textContent = "Assign To Me", c.className = "apm-flip-trigger", c.addEventListener("click", (p) => {
-          p.preventDefault(), Gc();
+        c.id = Xc, c.textContent = "Assign To Me", c.className = "apm-flip-trigger", c.addEventListener("click", (p) => {
+          p.preventDefault(), Uc();
         }), l.appendChild(c), d.debug("AutoFill", "Assign To Me button injected");
       } catch (a) {
         d.warn("AutoFill", "Assign To Me injection error:", a);
       }
   }
-  function Zy(e, t, r) {
+  function nx(e, t, r) {
     if (!e || e.isDestroyed) return;
     if (e._apmAssignToMeWired) {
-      Ef(e, t, r);
+      Cf(e, t, r);
       return;
     }
     e._apmAssignToMeWired = !0;
-    let o = () => Ef(e, t, r);
+    let o = () => Cf(e, t, r);
     try {
       e.on("afterrecordchange", o), e.on("afterrender", o);
     } catch (n) {
@@ -8060,42 +8060,42 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
     }
     o();
   }
-  function kf() {
-    if (!Kr.isEnabled() || xt()) return;
-    let e = pr();
-    if ((Nt[e] || null) !== "wo") return;
+  function Af() {
+    if (!Kr.isEnabled() || vt()) return;
+    let e = ur();
+    if ((Mt[e] || null) !== "wo") return;
     let r = Be.active();
     if (!r) return;
     let { win: o, doc: n } = r;
     if (!n?.body || !o?.Ext?.ComponentQuery) return;
     let s = o.Ext.ComponentQuery.query("form[id*=recordview]")?.find((l) => l.rendered && !l.isDestroyed && l.isVisible?.(!0));
-    s && Zy(s, o, n);
+    s && nx(s, o, n);
   }
-  function ed() {
+  function Zc() {
     if (d.debug("AutoFill", "initAutoFillObserver entry"), !Kr.isEnabled()) {
       d.warn("AutoFill", "initAutoFillObserver exited: flag disabled");
       return;
     }
-    d.debug("AutoFill", "initAutoFillObserver proceeding"), Bn(), kf(), Fn();
+    d.debug("AutoFill", "initAutoFillObserver proceeding"), $n(), Af(), Bn();
     let e = "", t = null;
     Kr.onViewChange(() => {
-      yo = !1;
-      let r = pr();
+      bo = !1;
+      let r = ur();
       r && r !== e && (d.debug("AutoFill", `Screen changed: "${e}" \u2192 "${r}"`), e = r), Le.lastKnownTitle = "", Le.lastKnownEquipment = "", clearTimeout(t);
       let o = 0, n = () => {
-        Bn(), kf(), Fn(), ++o < 8 && (t = setTimeout(n, 1e3));
+        $n(), Af(), Bn(), ++o < 8 && (t = setTimeout(n, 1e3));
       };
       n();
     }, { delay: 0 }), Kr.onAjax("autofill", ".HDR", () => {
-      yo = !1, Bn();
+      bo = !1, $n();
     }, { delay: 1500 }), Kr.onAjax("autofill-ack", ".ACK", () => {
-      Fn();
+      Bn();
     }, { delay: 1500 }), pe.registerTask("autofill-button-poll", 3e4, () => {
-      Kr.isEnabled() && (Bn(), Fn());
+      Kr.isEnabled() && ($n(), Bn());
     }, { isIdle: !1 });
   }
-  var Kr, wf, Jc, yo, Qc, Yy, Zc, Xc, Sf, jo, Ga = le(() => {
-    Pt();
+  var Kr, kf, Yc, bo, Jc, ex, Xc, Qc, Tf, jo, Va = le(() => {
+    Dt();
     ue();
     no();
     Me();
@@ -8108,16 +8108,16 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
     Fo();
     nt();
     jr();
-    vf();
+    Ef();
     Oe();
     Ts();
-    Kr = new Lt({ feature: "autoFill" }), wf = 0, Jc = "", yo = !1, Qc = "", Yy = 400, Zc = "apm-btn-assign-to-me";
-    Xc = "apm-checklist-bulk-btns", Sf = /* @__PURE__ */ new WeakSet(), jo = null;
-    _.register("injectAutoFillTriggers", Bn);
+    Kr = new Ot({ feature: "autoFill" }), kf = 0, Yc = "", bo = !1, Jc = "", ex = 400, Xc = "apm-btn-assign-to-me";
+    Qc = "apm-checklist-bulk-btns", Tf = /* @__PURE__ */ new WeakSet(), jo = null;
+    _.register("injectAutoFillTriggers", $n);
   });
 
   // src/index.js
-  Ve();
+  je();
   te();
   Oe();
   We();
@@ -8125,17 +8125,17 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
   // src/core/theme/theme-enforcer.js
   te();
   Zr();
-  Ve();
+  je();
   ue();
   se();
 
   // src/core/theme/theme-shield.js
   se();
-  It();
-  Ve();
+  Ct();
+  je();
   qe();
   te();
-  function Op(e, t, r, o) {
+  function Mp(e, t, r, o) {
     let { isTransition: n, isSSO: a, isSAML: s, isIDP: l, isEAMAuth: c } = o;
     if (r && (n || a || s || c || t.cookie.includes(`${To}=1`)))
       try {
@@ -8160,7 +8160,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
             let m = t.createElement("div");
             m.id = "apm-sso-rescue";
             let f = t.createElement("a");
-            f.href = `${Lr}logindisp?tenant=${Dr() || "AMAZONRMENA_PRD"}`, f.style.cssText = "color:#3498db;text-decoration:underline;font-family:sans-serif;font-size:14px;pointer-events:auto;cursor:pointer;font-weight:bold;", f.textContent = L("stuckReturnEam"), m.appendChild(f), m.style.cssText = "position:fixed; bottom:20px; left:50%; transform:translateX(-50%); z-index:2147483647; text-align:center; padding:10px; background:rgba(0,0,0,0.7); border-radius:8px;", u.appendChild(m), e === e.top && d.info("APM Master", "SSO Safety Net deployed.");
+            f.href = `${Dr}logindisp?tenant=${nr() || "AMAZONRMENA_PRD"}`, f.style.cssText = "color:#3498db;text-decoration:underline;font-family:sans-serif;font-size:14px;pointer-events:auto;cursor:pointer;font-weight:bold;", f.textContent = L("stuckReturnEam"), m.appendChild(f), m.style.cssText = "position:fixed; bottom:20px; left:50%; transform:translateX(-50%); z-index:2147483647; text-align:center; padding:10px; background:rgba(0,0,0,0.7); border-radius:8px;", u.appendChild(m), e === e.top && d.info("APM Master", "SSO Safety Net deployed.");
           }
         }, 1e4);
       } catch (p) {
@@ -8175,9 +8175,9 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
       p && (d.warn("APM Master", "Nuclear Shield safety timeout triggered."), p.style.opacity = "0", setTimeout(() => p.remove(), 450));
     }, 5e3);
   }
-  function Np(e, t, r) {
+  function Pp(e, t, r) {
     e === e.top && !e[de.THEME_UNLOAD] && (e.addEventListener("beforeunload", () => {
-      if (typeof GM_getValue < "u" && GM_getValue(kt) === "dark" || t.cookie.includes(`${kt}=dark`)) {
+      if (typeof GM_getValue < "u" && GM_getValue(Tt) === "dark" || t.cookie.includes(`${Tt}=dark`)) {
         if (e === e.top) {
           let n = e.location.hostname.split(".").slice(-2).join("."), s = n.includes("hxgnsmartcloud") || n.includes("hexagon") || n.includes("amazon") || n.includes("a2z") ? `domain=.${n};` : "";
           t.cookie = `${To}=1; path=/; ${s} max-age=15; SameSite=Lax`;
@@ -8189,7 +8189,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
       }
     }), e[de.THEME_UNLOAD] = !0);
   }
-  function Ip(e) {
+  function Lp(e) {
     e.documentElement.classList.remove("apm-shield-active");
     let t = ["apm-global-flash-guard", "apm-total-blackout-shield", "apm-nuclear-shield", "apm-unload-blackout", "apm-flash-prevent", "apm-dark-canvas", "apm-shield-css"];
     for (let r of t) {
@@ -8206,7 +8206,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
   te();
   se();
   ue();
-  function eh(e, t, r) {
+  function ah(e, t, r) {
     for (let n of ["apm-flash-prevent", "apm-dark-canvas", "apm-theme-root-vars"]) {
       let a = t.getElementById(n);
       a && a.remove();
@@ -8214,13 +8214,13 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
     let o = t.querySelector('meta[name="color-scheme"][content="dark"]');
     if (o && o.remove(), e === e.top)
       try {
-        typeof GM_setValue < "u" && GM_setValue(kt, "default");
+        typeof GM_setValue < "u" && GM_setValue(Tt, "default");
         let n = e.location.hostname.split(".").slice(-2).join("."), a = n.includes("hxgnsmartcloud") || n.includes("hexagon") || n.includes("amazon") || n.includes("a2z") ? `domain=.${n};` : "";
-        t.cookie = `${kt}=default; path=/; ${a} max-age=31536000; SameSite=Lax`;
+        t.cookie = `${Tt}=default; path=/; ${a} max-age=31536000; SameSite=Lax`;
       } catch {
       }
   }
-  function th(e, t) {
+  function ih(e, t) {
     let r = /(?:^|-)dark(?:$|-)/.test(t);
     if (!r) {
       for (let n of ["apm-flash-prevent", "apm-dark-canvas"]) {
@@ -8238,7 +8238,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
         `, (e.head || e.documentElement).appendChild(o);
     }
   }
-  function rh(e, t, r, o) {
+  function sh(e, t, r, o) {
     let n = "eam/" + r + ".json", a = {
       pollCount: 0,
       origBeforeLoad: null,
@@ -8316,7 +8316,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
     }
     return { hookEam: s, hookExt: l, hookState: a };
   }
-  function oh(e, t, r) {
+  function lh(e, t, r) {
     let o = (n) => {
       if (n.tagName === "LINK" && n.rel === "stylesheet" && n.href) {
         let a = n.href.toLowerCase();
@@ -8333,16 +8333,16 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
         } catch {
         }
       e.querySelectorAll('link[rel="stylesheet"]').forEach(o), r._sentinel = new MutationObserver((a) => {
-        if (ye(e.defaultView))
+        if (be(e.defaultView))
           for (let s of a)
             for (let l of s.addedNodes || [])
               l.nodeType === 1 && l.tagName === "LINK" && o(l);
       }), r._sentinel.observe(e.documentElement, { childList: !0, subtree: !0 }), r.sentinelActive = !0;
     }
   }
-  function nh(e, t, r, o, n, a, s) {
+  function ch(e, t, r, o, n, a, s) {
     let l = () => {
-      if (ye(e) && (s.pollCount++, !o.hooksApplied)) {
+      if (be(e) && (s.pollCount++, !o.hooksApplied)) {
         try {
           if (e.Ext && a(e.Ext), e.EAM && n(e.EAM), e.Ext?.__apmManifestHooked && e.EAM) {
             o.hooksApplied = !0;
@@ -8360,7 +8360,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
               clearInterval(o._pollInterval), o._pollInterval = null;
               return;
             }
-            if (!ye(e)) {
+            if (!be(e)) {
               clearInterval(o._pollInterval), o._pollInterval = null;
               return;
             }
@@ -8375,7 +8375,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
     };
     l();
   }
-  function ah(e, t, r) {
+  function dh(e, t, r) {
     let o = () => {
       for (let n = 0; n < e.frames.length; n++)
         try {
@@ -8391,21 +8391,21 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
       }, 1e3);
     }
   }
-  function ih(e, t, r) {
+  function ph(e, t, r) {
     let o = /(?:^|-)dark(?:$|-)/.test(r), n = t.getElementById("apm-theme-root-vars") || t.createElement("style");
     n.id || (n.id = "apm-theme-root-vars", (t.head || t.documentElement).appendChild(n));
     let a = r.replace(/[^a-z0-9\-]/g, "");
     if (n.textContent = `:root { --apm-active-theme: "${a}"; }`, e === e.top)
       try {
         let s = e.location.hostname.split(".").slice(-2).join("."), l = s.includes("hxgnsmartcloud") || s.includes("hexagon") || s.includes("amazon") || s.includes("a2z") ? `domain=.${s};` : "";
-        typeof GM_setValue < "u" && GM_setValue(kt, o ? "dark" : "default"), o ? t.cookie = `${kt}=dark; path=/; ${l} max-age=31536000; SameSite=Lax` : t.cookie = `${kt}=default; path=/; ${l} max-age=31536000; SameSite=Lax`;
+        typeof GM_setValue < "u" && GM_setValue(Tt, o ? "dark" : "default"), o ? t.cookie = `${Tt}=dark; path=/; ${l} max-age=31536000; SameSite=Lax` : t.cookie = `${Tt}=default; path=/; ${l} max-age=31536000; SameSite=Lax`;
       } catch {
       }
   }
-  function Mp(e, t, r, o) {
-    if (!ye(e)) return;
+  function Dp(e, t, r, o) {
+    if (!be(e)) return;
     if (o._pollTimeout && (clearTimeout(o._pollTimeout), o._pollTimeout = null), o._pollInterval && (clearInterval(o._pollInterval), o._pollInterval = null), o._warnedTimeout = !1, t.documentElement.dataset.apmTheme = r || "default", !r || r === "default") {
-      if (o.activeTheme = r || "default", eh(e, t, r), o._sentinel) {
+      if (o.activeTheme = r || "default", ah(e, t, r), o._sentinel) {
         try {
           o._sentinel.disconnect();
         } catch {
@@ -8415,21 +8415,21 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
       o._broadcastInterval && (clearInterval(o._broadcastInterval), o._broadcastInterval = null), o.hooksApplied = !1;
       return;
     }
-    o.activeTheme = r, th(t, r);
-    let { hookEam: n, hookExt: a, hookState: s } = rh(e, t, r, o);
-    oh(t, r, o), nh(e, t, r, o, n, a, s), ah(e, r, o), ih(e, t, r), e === e.top && d.info("APM Master", `Theme Applied: ${r}`);
+    o.activeTheme = r, ih(t, r);
+    let { hookEam: n, hookExt: a, hookState: s } = sh(e, t, r, o);
+    lh(t, r, o), ch(e, t, r, o, n, a, s), dh(e, r, o), ph(e, t, r), e === e.top && d.info("APM Master", `Theme Applied: ${r}`);
   }
 
   // src/core/theme/theme-broadcast.js
   se();
-  ta();
-  Ve();
+  ra();
+  je();
   Zr();
   ue();
-  function Lp(e, t, r, o) {
+  function Bp(e, t, r, o) {
     if (e[de.THEME_MSG] || (e.addEventListener("message", (n) => {
       let a = n.data;
-      if (Er(n.origin)) {
+      if (kr(n.origin)) {
         if (a && (a.type === "APM_SET_THEME" || a.apmMaster === "theme")) {
           let s = (a.value || a.theme || "default").toLowerCase();
           if (!/^[a-z0-9\-]+$/.test(s)) return;
@@ -8443,22 +8443,22 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
             }
         }
       }
-    }), e[de.THEME_MSG] = !0), ye(e))
+    }), e[de.THEME_MSG] = !0), be(e))
       try {
         if (!e[de.STORAGE_PATCH]) {
           let n = e.localStorage.setItem;
           e.localStorage.setItem = function(a, s) {
             let l = n.apply(this, arguments);
-            if (a === je || a === tt || a === St) {
-              let c = dr.getPreferredTheme();
+            if (a === Ke || a === tt || a === Et) {
+              let c = pr.getPreferredTheme();
               if (c !== "default") {
-                if (o(c), ye(e))
+                if (o(c), be(e))
                   for (let p = 0; p < e.frames.length; p++)
                     try {
                       ht(e.frames[p], { type: "APM_SET_THEME", value: c });
                     } catch {
                     }
-              } else if (o("default"), ye(e))
+              } else if (o("default"), be(e))
                 for (let p = 0; p < e.frames.length; p++)
                   try {
                     ht(e.frames[p], { type: "APM_SET_THEME", value: "default" });
@@ -8475,23 +8475,23 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
   // src/core/theme/theme-enforcer.js
   function Ei(e = window, t = document) {
     try {
-      if (!ye(e)) return;
-      let r = typeof GM_getValue < "u" && GM_getValue(kt) === "dark" || t.cookie.includes(`${kt}=dark`), { isEAM: o, isPTP: n, isIDP: a, isSubmit: s, isTop: l, isEAMAuth: c } = ie;
+      if (!be(e)) return;
+      let r = typeof GM_getValue < "u" && GM_getValue(Tt) === "dark" || t.cookie.includes(`${Tt}=dark`), { isEAM: o, isPTP: n, isIDP: a, isSubmit: s, isTop: l, isEAMAuth: c } = ie;
       if (r) {
         let f = t.getElementById("apm-dark-canvas") || t.createElement("style");
         f.id = "apm-dark-canvas", f.textContent = "html { background-color: #121212 !important; color-scheme: dark !important; }", (t.head || t.documentElement).appendChild(f);
       }
-      if (Op(e, t, r, ie), Np(e, t, r), a || c || s && !o || !o && !n) return;
+      if (Mp(e, t, r, ie), Pp(e, t, r), a || c || s && !o || !o && !n) return;
       e.__apmThemeState = e.__apmThemeState || {
         activeTheme: null,
         sentinelActive: !1,
         flashGuardApplied: !0
       };
       let p = e.__apmThemeState, u = (f) => {
-        Mp(e, t, f, p), Ip(t);
+        Dp(e, t, f, p), Lp(t);
       };
-      Lp(e, t, p, u);
-      let m = dr.getPreferredTheme();
+      Bp(e, t, p, u);
+      let m = pr.getPreferredTheme();
       if (m !== "default")
         u(m);
       else if (u("default"), e !== e.top) {
@@ -8519,8 +8519,8 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
   te();
   ue();
   _e();
-  Ve();
-  var Dp = (e) => {
+  je();
+  var $p = (e) => {
     if (!e || e === "null" || e === "{}" || e === "[]") return !0;
     try {
       let t = typeof e == "string" ? JSON.parse(e) : e;
@@ -8530,13 +8530,13 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
     } catch {
     }
     return !1;
-  }, Sl = {
+  }, wl = {
     run() {
       if (!Fe() || window[de.MIGRATION_RAN]) return;
       window[de.MIGRATION_RAN] = !0;
-      let e = N.get(Vn, []);
+      let e = N.get(jn, []);
       Array.isArray(e) || (e = []);
-      let t = N.get(ol, {});
+      let t = N.get(rl, {});
       (!t || typeof t != "object" || Array.isArray(t)) && (t = {});
       let r = [
         { id: "general_v1", fn: () => this.migrateGeneralSettings() },
@@ -8574,27 +8574,27 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
           } catch (s) {
             d.error("Migration", `Error in ${o}:`, s);
           }
-      }), N.set(Vn, e), N.set(ol, t), d.debug("Migration", "Migration process finished.");
+      }), N.set(jn, e), N.set(rl, t), d.debug("Migration", "Migration process finished.");
     },
     promoteToGlobal() {
       [
-        je,
+        Ke,
         De,
         Qe,
         tt,
         rr,
-        qt,
-        Ir,
-        yr,
-        St,
+        Wt,
+        Mr,
+        xr,
         Et,
-        xr
+        kt,
+        vr
       ].forEach((t) => {
         N.get(t, null, { promote: !0 });
       });
     },
     migrateGeneralSettings() {
-      this.safeMigrate("ApmGeneralSettings", je), this.safeMigrate("apm_general_settings", je), this.safeMigrate("apm_gen_settings", je), this.safeMigrate("apmUiTheme", St);
+      this.safeMigrate("ApmGeneralSettings", Ke), this.safeMigrate("apm_general_settings", Ke), this.safeMigrate("apm_gen_settings", Ke), this.safeMigrate("apmUiTheme", Et);
     },
     migrateAutofillPresets() {
       let e = (o) => (o && typeof o == "object" && !o.autofill && !o.config && (o = {
@@ -8624,7 +8624,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
       });
     },
     migrateLabor() {
-      this.safeMigrate("apmLaborSavedEmps", qt), this.safeMigrate("apmLaborActiveEmp", Ir), this.safeMigrate("apmLaborDockPos", yr);
+      this.safeMigrate("apmLaborSavedEmps", Wt), this.safeMigrate("apmLaborActiveEmp", Mr), this.safeMigrate("apmLaborDockPos", xr);
     },
     /**
      * Reads a value from both GM storage and localStorage for a legacy key.
@@ -8657,17 +8657,17 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
     },
     renameKeys() {
       [
-        ["apmNightShiftOn", Et],
-        ["apmLastKnownEmpId", xr],
-        ["ApmSession", Pr],
-        ["apm_ptp_history", Ot],
+        ["apmNightShiftOn", kt],
+        ["apmLastKnownEmpId", vr],
+        ["ApmSession", Lr],
+        ["apm_ptp_history", It],
         ["apm_last_update_check", ko]
       ].forEach(([t, r]) => {
         if (t === r) return;
         let o = this.readLegacyValue(t);
         if (!o || o === "null") return;
         let n = this.readLegacyValue(r);
-        if (!n || Dp(n)) {
+        if (!n || $p(n)) {
           let a;
           try {
             a = JSON.parse(o);
@@ -8820,7 +8820,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
           l = typeof s == "string" ? JSON.parse(s) : s;
         } catch {
         }
-        let c = l && !Dp(l);
+        let c = l && !$p(l);
         if (!n && c) return;
         let p = this.readLegacyValue(e);
         if (!p || p === "null" || p === "{}" || p === "[]") return;
@@ -8848,10 +8848,10 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
 
   // src/core/boot-manager.js
   te();
-  Ve();
+  je();
   ue();
-  At();
-  var El = class {
+  _t();
+  var Sl = class {
     constructor() {
       this.states = {
         dom: !1,
@@ -8921,7 +8921,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
           let s = null;
           try {
             let l = window.top;
-            s = t.Ext || (ye(l) ? l.Ext : null);
+            s = t.Ext || (be(l) ? l.Ext : null);
           } catch {
             s = t.Ext;
           }
@@ -8949,12 +8949,12 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
       } else
         o();
     }
-  }, mn = new El();
+  }, fn = new Sl();
 
   // src/index.js
-  kr();
+  Tr();
   mt();
-  Ht();
+  Lt();
 
   // src/core/session.js
   Te();
@@ -8962,12 +8962,12 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
   ue();
   _e();
   se();
-  It();
+  Ct();
   Te();
-  Ve();
+  je();
   Oe();
   mt();
-  var fn = {
+  var gn = {
     _liveConfirmed: /* @__PURE__ */ new Set(),
     _lastActivity: Date.now(),
     _nextHeartbeat: 0,
@@ -8992,18 +8992,18 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
       });
     },
     restore() {
-      let e = N.get(Pr);
+      let e = N.get(Lr);
       if (e)
         try {
           let { eamid: t, tenant: r, user: o } = e;
-          Object.assign(be.session, { eamid: t, tenant: r, user: o }), ie.isTop && d.debug("APM Session", "Restored from storage:", be.session);
+          Object.assign(ye.session, { eamid: t, tenant: r, user: o }), ie.isTop && d.debug("APM Session", "Restored from storage:", ye.session);
         } catch (t) {
           d.debug("Session", "Failed to restore session:", t);
         }
     },
     save() {
-      let { eamid: e, tenant: t, user: r } = be.session;
-      N.set(Pr, { eamid: e, tenant: t, user: r });
+      let { eamid: e, tenant: t, user: r } = ye.session;
+      N.set(Lr, { eamid: e, tenant: t, user: r });
     },
     hookXHR() {
       if (XMLHttpRequest.prototype[de.SESSION_XHR_HOOK]) return;
@@ -9012,10 +9012,10 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
       XMLHttpRequest.prototype.open = function(o, n) {
         return this._apmUrl = (n || "").toString(), t.apply(this, arguments);
       }, XMLHttpRequest.prototype.send = function(o) {
-        if (be.session.isInitialized) return r.apply(this, arguments);
+        if (ye.session.isInitialized) return r.apply(this, arguments);
         let n = this._apmUrl, a = o && typeof o == "string" ? o : null;
         return this.addEventListener("load", function() {
-          be.session.isInitialized || this.status === 200 && (e.tryCaptureFromTraffic(n, a), this.responseText && e.processResponse(n, this.responseText));
+          ye.session.isInitialized || this.status === 200 && (e.tryCaptureFromTraffic(n, a), this.responseText && e.processResponse(n, this.responseText));
         }), r.apply(this, arguments);
       };
     },
@@ -9051,7 +9051,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
       }
       if (r)
         try {
-          dl({ tenant: r });
+          cl({ tenant: r });
         } catch (o) {
           d.debug("Session", "eam-capture write-through failed:", o?.message || o);
         }
@@ -9066,12 +9066,12 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
     },
     updateState(e, t) {
       if (!t) return;
-      if (be.session[e] !== t) {
+      if (ye.session[e] !== t) {
         let o = t;
-        e === "user" && typeof t == "string" && t.includes("@") && (o = t.split("@")[0].toUpperCase()), d.debug("APM Session", `Captured ${e}: ${e === "eamid" ? "[redacted]" : o}`), be.session[e] = o, this.save(), e === "user" && N.set(xr, o);
+        e === "user" && typeof t == "string" && t.includes("@") && (o = t.split("@")[0].toUpperCase()), d.debug("APM Session", `Captured ${e}: ${e === "eamid" ? "[redacted]" : o}`), ye.session[e] = o, this.save(), e === "user" && N.set(vr, o);
       }
-      this._liveConfirmed.add(e), !be.session.isInitialized && this._liveConfirmed.has("eamid") && this._liveConfirmed.has("tenant") && this._liveConfirmed.has("user") && (be.session.isInitialized = !0, be.session.isFresh = !0, window.dispatchEvent(new CustomEvent("APM_SESSION_UPDATED", {
-        detail: { ...be.session, firstInit: !0 }
+      this._liveConfirmed.add(e), !ye.session.isInitialized && this._liveConfirmed.has("eamid") && this._liveConfirmed.has("tenant") && this._liveConfirmed.has("user") && (ye.session.isInitialized = !0, ye.session.isFresh = !0, window.dispatchEvent(new CustomEvent("APM_SESSION_UPDATED", {
+        detail: { ...ye.session, firstInit: !0 }
       })));
     },
     monitorStatus() {
@@ -9135,7 +9135,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
      */
     refreshSession: async function() {
       if (window.__apmRedirecting) return;
-      let e = be.session;
+      let e = ye.session;
       if (!(!e.eamid || !e.tenant) && !(!window.location.hostname.includes("eam.hxgnsmartcloud.com") && !window.location.hostname.includes("eam.aws.a2z.com"))) {
         if (Date.now() - this._lastActivity > this._ACTIVITY_TIMEOUT) {
           d.debug("APM Session", "Skipping heartbeat \u2014 no user activity in last 3 hours.");
@@ -9144,7 +9144,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
         if (!(Date.now() < this._nextHeartbeat)) {
           d.debug("APM Session", "Refreshing session heartbeat...");
           try {
-            let t = e.tenant || Dr(), r = "/web/base/BSSTRT.xmlhttp", o = new URLSearchParams({
+            let t = e.tenant || nr(), r = "/web/base/BSSTRT.xmlhttp", o = new URLSearchParams({
               COMPONENT_INFO_TYPE: "DATA_ONLY",
               CURRENT_TAB_NAME: "HDR",
               eamid: e.eamid,
@@ -9167,7 +9167,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
       }
     },
     async probeSession() {
-      let e = be.session;
+      let e = ye.session;
       if (!e.eamid || !e.tenant) {
         this._probing = !1;
         return;
@@ -9177,7 +9177,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
           COMPONENT_INFO_TYPE: "DATA_ONLY",
           CURRENT_TAB_NAME: "HDR",
           eamid: e.eamid,
-          tenant: e.tenant || Dr()
+          tenant: e.tenant || nr()
         }), r = await fetch("/web/base/BSSTRT.xmlhttp", {
           method: "POST",
           credentials: "same-origin",
@@ -9231,7 +9231,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
       } catch {
       }
       d.info("APM Session", "Session timeout detected. Auto-redirecting...");
-      let e = rt().top, t = nr();
+      let e = rt().top, t = ar();
       e.location.replace(t), setTimeout(() => {
         e.location.href !== t && (e.location.href = t);
       }, 500);
@@ -9246,20 +9246,20 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
   mt();
   te();
   se();
-  var Tl = "apm-wake-session-prompt", Cl = !1;
-  function ch() {
-    return Cl;
+  var kl = "apm-wake-session-prompt", Tl = !1;
+  function fh() {
+    return Tl;
   }
-  function Bp() {
-    _.register("isWakePromptVisible", ch), window.addEventListener("APM_SESSION_WAKE_NEEDED", () => {
+  function Wp() {
+    _.register("isWakePromptVisible", fh), window.addEventListener("APM_SESSION_WAKE_NEEDED", () => {
       try {
-        ph();
+        hh();
       } catch (e) {
         d.error("WakePrompt", "show failed:", e);
       }
     });
   }
-  function dh() {
+  function gh() {
     try {
       let e = sessionStorage.getItem("apm_tab_id");
       if (e) {
@@ -9276,11 +9276,11 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
     }
     return !1;
   }
-  function ph() {
-    Cl = !0;
-    let e = document.getElementById(Tl);
+  function hh() {
+    Tl = !0;
+    let e = document.getElementById(kl);
     e && e.remove();
-    let t = dh(), r = "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif", o = {
+    let t = gh(), r = "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif", o = {
       border: "none",
       borderRadius: "var(--apm-radius-sm, 4px)",
       fontWeight: "bold",
@@ -9290,8 +9290,8 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
       padding: "6px 14px",
       transition: "filter 0.15s, background 0.15s"
     }, n = () => {
-      Cl = !1;
-      let c = document.getElementById(Tl);
+      Tl = !1;
+      let c = document.getElementById(kl);
       c && (c.style.opacity = "0", c.style.transform = "translateX(-50%) translateY(-20px)", setTimeout(() => c.remove(), 300));
       try {
         pe.resume(!0);
@@ -9302,7 +9302,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
       let c = _.get("forceRedirect");
       typeof c == "function" && c();
     }, s = i("div", {
-      id: Tl,
+      id: kl,
       style: {
         position: "fixed",
         top: "15px",
@@ -9434,10 +9434,10 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
   te();
   _e();
   Oe();
-  Ve();
+  je();
   ki();
-  var gn = [];
-  function Hp(e, t) {
+  var hn = [];
+  function Vp(e, t) {
     if (e === t) return !1;
     let r = e.split(".").map(Number), o = t.split(".").map(Number);
     for (let n = 0; n < Math.max(r.length, o.length); n++) {
@@ -9447,32 +9447,32 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
     }
     return !1;
   }
-  function uh() {
-    let e = N.get(al);
-    return e || (e = crypto.randomUUID(), N.set(al, e)), e;
+  function yh() {
+    let e = N.get(nl);
+    return e || (e = crypto.randomUUID(), N.set(nl, e)), e;
   }
-  function mh() {
+  function bh() {
     let e = navigator.userAgent;
     return /Firefox/i.test(e) ? "fx" : /Edg/i.test(e) ? "edge" : /Chrome/i.test(e) ? "cr" : "other";
   }
-  function qp(e) {
+  function Up(e) {
     _.register("updateInfo", e), N.set(di, e);
   }
-  function Wp() {
+  function Gp() {
     if (_.get("updateInfo")) return _.get("updateInfo").available;
     try {
       let e = N.get(di);
-      return !e || typeof e != "object" ? !1 : e.available && e.version && !Hp(pt, e.version) ? (N.set(di, ""), !1) : (_.register("updateInfo", e), e.available && gn.forEach((t) => t()), e.available);
+      return !e || typeof e != "object" ? !1 : e.available && e.version && !Vp(pt, e.version) ? (N.set(di, ""), !1) : (_.register("updateInfo", e), e.available && hn.forEach((t) => t()), e.available);
     } catch {
       return !1;
     }
   }
   function Ti(e) {
-    return gn.includes(e) || gn.push(e), _.get("updateInfo")?.available && e(), () => {
-      gn = gn.filter((t) => t !== e);
+    return hn.includes(e) || hn.push(e), _.get("updateInfo")?.available && e(), () => {
+      hn = hn.filter((t) => t !== e);
     };
   }
-  function hn(e) {
+  function yn(e) {
     try {
       if (typeof GM_openInTab == "function") {
         if ((typeof GM_info < "u" && GM_info && GM_info.scriptHandler || "") === "Tampermonkey") {
@@ -9494,39 +9494,39 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
   function Oo() {
     let e = Y.updateTrack === "beta";
     return {
-      check: e ? qd : Bd,
-      fallback: e ? Wd : $d,
-      download: e ? Hd : si
+      check: e ? Ud : Wd,
+      fallback: e ? Gd : Hd,
+      download: e ? Vd : si
     };
   }
-  function fh(e) {
+  function xh(e) {
     let t = new URLSearchParams({
       v: pt,
-      id: uh(),
-      r: il,
+      id: yh(),
+      r: al,
       t: Y.updateTrack || "stable",
-      b: mh()
+      b: bh()
     });
     return `${e}?${t}`;
   }
-  function ra(e = !1, t = null) {
+  function oa(e = !1, t = null) {
     if (window[de.UPDATE_CHECKED] && !e) {
-      Wp(), d.info("APM Master", "Update check already completed this session."), typeof t == "function" && t(_.get("updateInfo")?.available ?? !1);
+      Gp(), d.info("APM Master", "Update check already completed this session."), typeof t == "function" && t(_.get("updateInfo")?.available ?? !1);
       return;
     }
     let r = (/* @__PURE__ */ new Date()).toISOString().split("T")[0];
     if (N.get(ko) === r && !e) {
-      let c = Wp();
+      let c = Gp();
       d.info("APM Master", `Update already checked today. Skipping auto-check.${c ? " (cached: update available)" : ""}`), window[de.UPDATE_CHECKED] = !0, typeof t == "function" && t(c);
       return;
     }
-    let { check: n, fallback: a, download: s } = Oo(), l = fh(n);
+    let { check: n, fallback: a, download: s } = Oo(), l = xh(n);
     d.info("APM Master", `Checking for updates (${Y.updateTrack})...`, pt), to(l).catch(() => (d.info("APM Master", "Analytics proxy unreachable, falling back to GitHub."), to(a))).then((c) => c.text()).then((c) => {
       window[de.UPDATE_CHECKED] = !0, N.set(ko, r);
       let p = c.match(/\/\/\s*@version\s+([0-9]+(?:\.[0-9]+)*)/);
       if (p && p[1]) {
         let u = p[1];
-        Hp(pt, u) ? (qp({ available: !0, version: u, url: s }), d.info("APM Master", `Update available! Current: ${pt}, Remote: ${u} (${Y.updateTrack})`)) : (qp({ available: !1 }), d.info("APM Master", `Software is up to date (${pt}).`)), gn.forEach((m) => m()), typeof t == "function" && t(_.get("updateInfo")?.available ?? !1);
+        Vp(pt, u) ? (Up({ available: !0, version: u, url: s }), d.info("APM Master", `Update available! Current: ${pt}, Remote: ${u} (${Y.updateTrack})`)) : (Up({ available: !1 }), d.info("APM Master", `Software is up to date (${pt}).`)), hn.forEach((m) => m()), typeof t == "function" && t(_.get("updateInfo")?.available ?? !1);
       } else
         d.info("APM Master", `Update check: no @version found in response (${c.length} chars, track: ${Y.updateTrack}).`), typeof t == "function" && t(!1);
     }).catch((c) => {
@@ -9536,18 +9536,18 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
 
   // src/core/message-router.js
   se();
-  Ve();
+  je();
   Te();
-  kr();
+  Tr();
   _e();
   Zr();
   Oe();
   te();
-  ta();
+  ra();
   ue();
-  Pt();
-  oa();
-  function Ol(e) {
+  Dt();
+  na();
+  function Rl(e) {
     try {
       for (let t of document.querySelectorAll("iframe"))
         if (t.contentWindow === e.source) return t;
@@ -9555,9 +9555,9 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
     }
     return null;
   }
-  function yh(e) {
+  function Eh(e) {
     try {
-      let r = Ol(e);
+      let r = Rl(e);
       if (r) {
         let n = (r.getAttribute("src") || r.src || "").match(/[?&](?:workordernum|workOrderId|workorder_id)=(\d+)/i);
         if (n) return n[1];
@@ -9566,9 +9566,9 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
     }
     return Br() || null;
   }
-  var xh = 300 * 1e3, Vp = /* @__PURE__ */ new WeakMap();
-  function vh(e) {
-    let t = Ol(e);
+  var kh = 300 * 1e3, Yp = /* @__PURE__ */ new WeakMap();
+  function Th(e) {
+    let t = Rl(e);
     if (!t) {
       d.debug("Router", "APM_PTP_AUTH_FAILED but iframe not found by source");
       return;
@@ -9578,25 +9578,25 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
       d.info("PTP Auth", "Auth failure: iframe src lacks required params, not reloading");
       return;
     }
-    let o = Date.now(), n = Vp.get(t) || 0;
-    if (o - n < xh) {
+    let o = Date.now(), n = Yp.get(t) || 0;
+    if (o - n < kh) {
       let a = Math.round((o - n) / 1e3);
       d.info("PTP Auth", `Auth failure within cooldown (${a}s since last reload), skipping`);
       return;
     }
-    Vp.set(t, o), d.info("PTP Auth", "Reloading PTP iframe to recover from auth failure");
+    Yp.set(t, o), d.info("PTP Auth", "Reloading PTP iframe to recover from auth failure");
     try {
       t.src = r;
     } catch (a) {
       d.warn("PTP Auth", "Failed to reload PTP iframe:", a);
     }
   }
-  function wh(e) {
-    if (!Pp(e.origin)) {
+  function Ch(e) {
+    if (!Fp(e.origin)) {
       d.debug("Router", `requestUrlParams from non-PTP origin ${e.origin}: ignored`);
       return;
     }
-    let t = Ol(e);
+    let t = Rl(e);
     if (!t) return;
     let r = t.getAttribute("src") || t.src || "";
     if (!/[?&]workordernum=/i.test(r) || !/[?&]organization=/i.test(r)) {
@@ -9608,8 +9608,8 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
     } catch {
     }
   }
-  function Sh() {
-    if (window !== window.top || _l().length === 0) return !1;
+  function Ah() {
+    if (window !== window.top || Al().length === 0) return !1;
     for (let e = 0; e < window.frames.length; e++)
       try {
         if (window.frames[e].location.hostname === window.location.hostname)
@@ -9618,11 +9618,11 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
       }
     return !1;
   }
-  function jp() {
-    let e = Sh();
+  function Jp() {
+    let e = Ah();
     window.addEventListener("message", (t) => {
       let r = t.data;
-      if (r && r.type !== "workspaceProxyMessage" && Er(t.origin)) {
+      if (r && r.type !== "workspaceProxyMessage" && kr(t.origin)) {
         if (e && r.type && r.type.startsWith("APM_PTP_") && !r._relayed) {
           let o = { ...r, _relayed: !0 };
           for (let n = 0; n < window.frames.length; n++)
@@ -9633,7 +9633,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
           return;
         }
         if (r.type === "APM_PTP_HEARTBEAT" && (_.get("ptpHeartbeat")?.(), ie.isTop && _.get("ptpStatusCheck")?.()), r.type === "APM_GET_THEME" || r.apmMaster === "getTheme") {
-          let o = dr.getPreferredTheme() || "default";
+          let o = pr.getPreferredTheme() || "default";
           try {
             t.source?.postMessage({
               type: "APM_SET_THEME",
@@ -9642,7 +9642,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
             }, t.origin);
           } catch {
           }
-          let n = yh(t);
+          let n = Eh(t);
           if (n)
             try {
               t.source?.postMessage({ type: "APM_PTP_CONTEXT", wo: n }, t.origin);
@@ -9654,27 +9654,27 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
             let o = _.get("ptpInitTimerUI"), n = _.get("ptpStartCountdown"), a = o?.();
             a && a.style.display === "none" && (a.style.display = "flex"), n?.();
           }
-          if (r.wo && Rl(r.wo, "INCOMPLETE"), r.msgId)
+          if (r.wo && _l(r.wo, "INCOMPLETE"), r.msgId)
             try {
               t.source?.postMessage({ type: "APM_PTP_ACK", msgId: r.msgId }, t.origin);
             } catch {
             }
         }
-        if (r.type === "APM_PTP_CANCELLED" && (_.get("ptpStopTimer")?.(), r.wo && Rl(r.wo, "CANCELLED"), r.msgId))
+        if (r.type === "APM_PTP_CANCELLED" && (_.get("ptpStopTimer")?.(), r.wo && _l(r.wo, "CANCELLED"), r.msgId))
           try {
             t.source?.postMessage({ type: "APM_PTP_ACK", msgId: r.msgId }, t.origin);
           } catch {
           }
-        if (r.type === "APM_PTP_COMPLETED" && r.wo && (Rl(r.wo, "COMPLETE"), _.get("ptpStopTimer")?.(), r.msgId))
+        if (r.type === "APM_PTP_COMPLETED" && r.wo && (_l(r.wo, "COMPLETE"), _.get("ptpStopTimer")?.(), r.msgId))
           try {
             t.source?.postMessage({ type: "APM_PTP_ACK", msgId: r.msgId }, t.origin);
           } catch {
           }
         if (r.type === "APM_PTP_STOP_TIMER" && _.get("ptpStopTimer")?.(), r.type === "APM_PTP_AUTH_FAILED") {
           let o = (r.url || "").split("?")[0].split("/").pop() || "unknown";
-          d.info("PTP Auth", `Auth failure status=${r.status} on ${o} \u2014 user likely needs SSO bounce`), vh(t);
+          d.info("PTP Auth", `Auth failure status=${r.status} on ${o} \u2014 user likely needs SSO bounce`), Th(t);
         }
-        if (r.type === "requestUrlParams" && wh(t), r.type === "APM_PTP_IPTP_COMPLETED" || r.type === "APM_PTP_IPTP_CANCELLED") {
+        if (r.type === "requestUrlParams" && Ch(t), r.type === "APM_PTP_IPTP_COMPLETED" || r.type === "APM_PTP_IPTP_CANCELLED") {
           let o = r.type === "APM_PTP_IPTP_COMPLETED" ? "completed" : "cancelled";
           d.info("PTP", `iPTP ${o} for alias ${r.alias}`);
         }
@@ -9696,8 +9696,8 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
       }
     });
   }
-  function Rl(e, t) {
-    let r = N.get(Ot) || {};
+  function _l(e, t) {
+    let r = N.get(It) || {};
     if (r._v || (Object.keys(r).forEach((l) => {
       typeof r[l] == "number" && (r[l] = { status: "COMPLETE", time: r[l] });
     }), r._v = 2), r[e]?.status === "COMPLETE")
@@ -9706,7 +9706,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
     let o = Date.now() - 720 * 60 * 60 * 1e3;
     for (let l of Object.keys(r))
       l !== "_v" && r[l].time < o && delete r[l];
-    N.set(Ot, r);
+    N.set(It, r);
     let n = { wo: e, data: r[e] };
     window.dispatchEvent(new CustomEvent("APM_PTP_UPDATED_EVENT", { detail: n }));
     let a = /* @__PURE__ */ new Set(), s = (l) => {
@@ -9714,7 +9714,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
         a.add(l);
         try {
           if (l !== window) {
-            if (!ye(l)) return;
+            if (!be(l)) return;
             l.dispatchEvent(new CustomEvent("APM_PTP_UPDATED_EVENT", { detail: n }));
           }
           for (let c = 0; c < l.frames.length; c++)
@@ -9730,19 +9730,19 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
   }
 
   // src/index.js
-  At();
+  _t();
 
   // src/core/frame-manager.js
   ue();
   te();
-  ur();
+  mr();
 
   // src/core/ext-consistency.js
-  Mt();
+  Pt();
 
   // src/core/ext/ext-guards.js
-  var Nl = () => {
-  }, Eh = Object.freeze({
+  var Ol = () => {
+  }, _h = Object.freeze({
     isRecordView: void 0,
     isListView: void 0,
     isDetailView: void 0,
@@ -9768,14 +9768,14 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
       getCount: () => 0,
       indexOf: () => -1,
       getAt: () => null,
-      each: Nl,
+      each: Ol,
       first: () => null,
       last: () => null
     }),
-    updateLayout: Nl,
-    doLayout: Nl
+    updateLayout: Ol,
+    doLayout: Ol
   });
-  function na(e) {
+  function aa(e) {
     let t = e?.EAM?.FocusManager;
     if (!t || t.__apmActiveViewGuard) return;
     let r = Object.getOwnPropertyDescriptor(t, "activeView");
@@ -9783,7 +9783,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
     let o = t.activeView;
     Object.defineProperty(t, "activeView", {
       get() {
-        return o ?? Eh;
+        return o ?? _h;
       },
       set(n) {
         o = n;
@@ -9792,7 +9792,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
       enumerable: !0
     }), t.__apmActiveViewGuard = !0;
   }
-  function Kp(e) {
+  function Qp(e) {
     try {
       let t = e?.Ext?.ClassManager;
       if (!t) return;
@@ -9816,12 +9816,12 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
   te();
   Te();
   se();
-  Ve();
-  ur();
+  je();
+  mr();
   Oe();
   mt();
-  var kh = Object.keys(fe).filter((e) => fe[e]?.entityKey === "workordernum").map((e) => e.toLowerCase()), Yp = null, Jp = /* @__PURE__ */ new WeakSet(), Ai = !1;
-  var aa = {
+  var Rh = Object.keys(ge).filter((e) => ge[e]?.entityKey === "workordernum").map((e) => e.toLowerCase()), Xp = null, Zp = /* @__PURE__ */ new WeakSet(), Ai = !1;
+  var ia = {
     init() {
       _.register("bindConsistencyListeners", () => this.bindAll()), _.register("triggerDiscoveryBurst", () => this.triggerDiscoveryBurst()), _.register("triggerResponsiveInjections", () => this.triggerInjections()), this.registerGlobalAjaxHooks();
     },
@@ -9836,21 +9836,21 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
       });
     },
     triggerInjections() {
-      clearTimeout(Yp), !_.get("getIsAutoFillRunning")?.() && (Yp = setTimeout(() => {
+      clearTimeout(Xp), !_.get("getIsAutoFillRunning")?.() && (Xp = setTimeout(() => {
         _.get("injectAutoFillTriggers")?.();
       }, 100));
     },
     bindAll() {
-      if (Sr()) return;
+      if (Er()) return;
       let e = ne();
       for (let t of e)
-        if (ye(t)) {
+        if (be(t)) {
           try {
-            Kp(t);
+            Qp(t);
           } catch {
           }
           try {
-            if (Jp.has(t))
+            if (Zp.has(t))
               continue;
             Ne.install(t), this.setupComponentWatcher(t), this.setupComponentListeners(t);
             for (let r of _.listHooks("consistencyHook:")) {
@@ -9861,7 +9861,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
                 d.error("ExtConsistency", `${r} failed:`, n);
               }
             }
-            Jp.add(t);
+            Zp.add(t);
           } catch (r) {
             d.debug("ExtConsistency", "Error binding to window:", r);
           }
@@ -9872,7 +9872,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
      * after AJAX activity or major UI changes.
      */
     triggerDiscoveryBurst() {
-      if (Ai || Sr()) return;
+      if (Ai || Er()) return;
       Ai = !0;
       let e = pe;
       if (!e) {
@@ -9924,7 +9924,7 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
     },
     setupComponentListeners(e) {
       if (!e.Ext || !e.Ext.ComponentQuery) return;
-      na(e);
+      aa(e);
       let t = e.Ext.ComponentQuery.query("tabpanel, uxtabpanel");
       t.length > 0 && d.debug("ExtConsistency", `Found ${t.length} tabpanels in window ${e.location?.pathname}`), t.forEach((o) => {
         this.captureTabDefaults(o), this.bindTabListeners(o);
@@ -9961,16 +9961,16 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
         if (!u || u === "&#160;") return;
         let m = _.get("getPresets"), f = _.get("updatePresetConfig");
         if (!m || !f) return;
-        let g = m(), h = bt(t), y = g.config.hiddenTabs || {}, b = y[h] || [];
+        let g = m(), y = bt(t), x = g.config.hiddenTabs || {}, h = x[y] || [];
         if (s === "remove") {
-          if (d.debug("ExtConsistency", `Native REMOVE detected for: ${u} (Silo: ${h})`), !b.includes(u)) {
-            let x = { ...y, [h]: [...b, u] };
-            f({ hiddenTabs: x });
+          if (d.debug("ExtConsistency", `Native REMOVE detected for: ${u} (Silo: ${y})`), !h.includes(u)) {
+            let b = { ...x, [y]: [...h, u] };
+            f({ hiddenTabs: b });
           }
         } else if (s === "add") {
-          d.debug("ExtConsistency", `Native ADD detected for: ${u} (Silo: ${h})`);
-          let x = b.filter((w) => w !== u), v = { ...y, [h]: x }, E = { ...g.config.tabOrders || {} }, k = E[h], S = typeof k == "string" ? k.split(",").map((w) => w.trim()) : Array.isArray(k) ? [...k] : [];
-          S.includes(u) || S.push(u), E[h] = S, f({ hiddenTabs: v, tabOrders: E });
+          d.debug("ExtConsistency", `Native ADD detected for: ${u} (Silo: ${y})`);
+          let b = h.filter((w) => w !== u), v = { ...x, [y]: b }, E = { ...g.config.tabOrders || {} }, k = E[y], S = typeof k == "string" ? k.split(",").map((w) => w.trim()) : Array.isArray(k) ? [...k] : [];
+          S.includes(u) || S.push(u), E[y] = S, f({ hiddenTabs: v, tabOrders: E });
         }
       };
       e.on("tabchange", o), e.on("add", (a, s) => {
@@ -9987,14 +9987,14 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
       d.debug("ExtConsistency", `Binding grid: ${e.id}, Store: ${r?.storeId || "none"}`);
       let o = (a) => {
         !a || a[de.GRID_HOOK] || (this.hookStoreReader(a), d.debug("ExtConsistency", `Hooking datachanged event for store: ${a.storeId || "unnamed"}`), a.on("datachanged", (s) => {
-          e.isDestroyed || s?.isLoading?.() || pp(e);
+          e.isDestroyed || s?.isLoading?.() || fp(e);
         }), a[de.GRID_HOOK] = !0);
       };
       o(e.getStore()), e.on("reconfigure", (a, s) => {
         d.debug("ExtConsistency", `Grid reconfigured: ${e.id}. Re-hooking...`), o(s), _.get("setupExtGridListeners")?.(t);
       });
       let n = (r?.storeId || "").toLowerCase();
-      if (kh.some((a) => n.includes(a))) {
+      if (Rh.some((a) => n.includes(a))) {
         let a = e.getSelectionModel?.();
         a && !a.__apmSelChangeBound && (a.on("selectionchange", () => this.triggerInjections()), a.__apmSelChangeBound = !0);
       }
@@ -10006,13 +10006,13 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
 
   // src/core/frame-manager.js
   Oe();
-  Ve();
-  kr();
+  je();
+  Tr();
   Te();
-  vr();
+  wr();
 
   // src/core/primitives/tokens.js
-  var Th = {
+  var Oh = {
     "apm-surface-0": "#35404a",
     "apm-surface-inset": "#2b343c",
     "apm-surface-sunken": "#22292f",
@@ -10064,8 +10064,8 @@ if (typeof GM_getValue !== 'undefined' && GM_getValue('apm_theme_hint') === 'dar
     "apm-text-xl": "17px",
     "apm-text-hero": "32px"
   };
-  function Ch(e = {}) {
-    let t = { ...Th, ...e };
+  function Nh(e = {}) {
+    let t = { ...Oh, ...e };
     return `:root {
 ${Object.entries(t).map(([o, n]) => `    --${o}: ${n};`).join(`
 `)}
@@ -10074,11 +10074,11 @@ ${Object.entries(t).map(([o, n]) => `    --${o}: ${n};`).join(`
   function _i(e, t = {}) {
     if (!e) return;
     let r = e.getElementById("apm-design-tokens");
-    r || (r = e.createElement("style"), r.id = "apm-design-tokens", (e.head || e.documentElement).appendChild(r)), r.textContent = Ch(t);
+    r || (r = e.createElement("style"), r.id = "apm-design-tokens", (e.head || e.documentElement).appendChild(r)), r.textContent = Nh(t);
   }
 
   // src/ui/styles.js
-  var Il = `
+  var Nl = `
 /* =========================
  * Shared Control Styles
  * ========================= */
@@ -10947,11 +10947,37 @@ body.apm-modal-active .rain-cloud-always .lightning-bolt { animation-play-state:
 .apm-comment-counter.apm-cc-red { color: #e74c3c; opacity: 1; }
 .apm-comment-counter.apm-cc-yellow { color: #e67e22; opacity: 1; }
 .apm-comment-counter.apm-cc-green { color: #27ae60; opacity: 1; }
+
+/* \u2500\u2500 Copy Closing Comments to Comments Tab \u2500\u2500 */
+.apm-cc-copy-btn {
+    display: inline-block;
+    margin-left: 10px;
+    padding: 2px 8px;
+    font-size: 11px;
+    font-weight: 600;
+    font-family: inherit;
+    color: var(--apm-text);
+    background: var(--apm-surface-2, transparent);
+    border: 1px solid var(--apm-border);
+    border-radius: 3px;
+    cursor: pointer;
+    line-height: 1.4;
+    user-select: none;
+    transition: background 0.15s, border-color 0.15s, opacity 0.15s;
+}
+.apm-cc-copy-btn:hover:not(:disabled) {
+    background: var(--apm-surface-hover, var(--apm-surface-2));
+    border-color: var(--apm-accent, var(--apm-border));
+}
+.apm-cc-copy-btn:disabled {
+    opacity: 0.5;
+    cursor: wait;
+}
 `;
-  function Qp() {
+  function eu() {
     if (document.getElementById("apm-static-styles")) return;
     let e = document.createElement("style");
-    e.id = "apm-static-styles", e.textContent = Il, (document.head || document.documentElement).appendChild(e), _i(document);
+    e.id = "apm-static-styles", e.textContent = Nl, (document.head || document.documentElement).appendChild(e), _i(document);
   }
   var Ri = `
 <svg viewBox="0 0 24 24" width="22" height="22" style="vertical-align: text-bottom; margin-bottom: 2px; overflow: visible;">
@@ -10969,15 +10995,15 @@ body.apm-modal-active .rain-cloud-always .lightning-bolt { animation-play-state:
     <path class="raindrop drop-9" d="M17,20 L16,24" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" opacity="0.6"/>
     <path class="raindrop drop-10" d="M11,19 L10,23" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" opacity="0.6"/>
 </svg>
-`, Xp = `
+`, tu = `
 <svg viewBox="0 0 10 10" width="8" height="8" style="fill: currentColor; opacity: 0.8;">
     <path d="M0 3 L10 3 L5 8 Z"/>
 </svg>
 `;
 
   // src/core/frame-manager.js
-  var Io = /* @__PURE__ */ new Map(), Zp = !1, eu = !1;
-  function Ah(e) {
+  var Io = /* @__PURE__ */ new Map(), ru = !1, ou = !1;
+  function Ih(e) {
     if (!(!e || e.__apmViewChangeBridgeInstalled)) {
       e.__apmViewChangeBridgeInstalled = !0;
       try {
@@ -10997,12 +11023,12 @@ body.apm-modal-active .rain-cloud-always .lightning-bolt { animation-play-state:
       }
     }
   }
-  function ru(e) {
+  function au(e) {
     if (!e || e.getElementById("apm-static-styles")) return;
     let t = e.createElement("style");
-    t.id = "apm-static-styles", t.textContent = Il, (e.head || e.documentElement).appendChild(t), _i(e);
+    t.id = "apm-static-styles", t.textContent = Nl, (e.head || e.documentElement).appendChild(t), _i(e);
   }
-  function ou(e, t) {
+  function iu(e, t) {
     let r = new MutationObserver((n) => {
       let a = !1;
       for (let s of n)
@@ -11021,12 +11047,12 @@ body.apm-modal-active .rain-cloud-always .lightning-bolt { animation-play-state:
             break;
           }
         }
-      a && on("frame:gridMutation", { win: e, doc: t });
+      a && nn("frame:gridMutation", { win: e, doc: t });
     }), o = t.body || t.documentElement;
     return o ? r.observe(o, { childList: !0, subtree: !0 }) : d.debug("FrameManager", "Skipping observer: document not ready or empty"), r;
   }
-  function _h() {
-    eu || (eu = !0, Xe("frame:styleRefresh", ({ win: e, doc: t }) => {
+  function Mh() {
+    ou || (ou = !0, Xe("frame:styleRefresh", ({ win: e, doc: t }) => {
       if (!e || !t) return;
       let r = Io.get(e);
       if (r) {
@@ -11035,18 +11061,18 @@ body.apm-modal-active .rain-cloud-always .lightning-bolt { animation-play-state:
         } catch (o) {
           d.debug("FrameManager", "Old observer disconnect failed:", o?.message || o);
         }
-        r.observer = ou(e, t), d.debug("FrameManager", "Re-observed replaced document for:", e.location?.href);
+        r.observer = iu(e, t), d.debug("FrameManager", "Re-observed replaced document for:", e.location?.href);
       }
     }));
   }
-  function tu(e, t) {
+  function nu(e, t) {
     if (!e || Io.has(t)) return;
-    ru(e), on("frame:attached", { win: t, doc: e }), d.debug("FrameManager", "Setting up Centralized Reactive Observer for:", t.location.href);
-    let r = ou(t, e);
-    Io.set(t, { active: !0, observer: r }), _h();
+    au(e), nn("frame:attached", { win: t, doc: e }), d.debug("FrameManager", "Setting up Centralized Reactive Observer for:", t.location.href);
+    let r = iu(t, e);
+    Io.set(t, { active: !0, observer: r }), Mh();
   }
-  function Ml() {
-    if (Sr()) return;
+  function Il() {
+    if (Er()) return;
     let e = ne();
     for (let [t, r] of Io.entries())
       try {
@@ -11054,15 +11080,15 @@ body.apm-modal-active .rain-cloud-always .lightning-bolt { animation-play-state:
       } catch {
         Io.delete(t);
       }
-    if (!Zp) {
-      Zp = !0;
+    if (!ru) {
+      ru = !0;
       let t = null, r = null;
       Ne.onRequestComplete("discovery-burst", (o, n, a, s) => {
         let c = (s?.url || "").toUpperCase();
         (c.includes("REQUEST") || c.includes("SEARCH") || c.includes("GRID") || c.includes(".XMLHTTP") || c.includes(".HDR") || c.includes(".LST") || c.includes("GRIDDATA") || c.includes("GETCACHE") || c.includes("COMMON")) && (r = o, clearTimeout(t), t = setTimeout(() => {
           if (_.triggerDiscoveryBurst?.(), _.triggerResponsiveInjections?.(), r && !r.closed)
             try {
-              on("frame:ajaxBurst", { win: r, doc: r.document });
+              nn("frame:ajaxBurst", { win: r, doc: r.document });
             } catch (p) {
               d.debug("FrameManager", "Burst window inaccessible:", p.message);
             }
@@ -11070,16 +11096,16 @@ body.apm-modal-active .rain-cloud-always .lightning-bolt { animation-play-state:
         }, 150));
       });
     }
-    tu(document, window), Ne.install(window), document.querySelectorAll("iframe").forEach((t) => {
+    nu(document, window), Ne.install(window), document.querySelectorAll("iframe").forEach((t) => {
       if (!t.hasApmLoadBound) {
         t.addEventListener("load", () => {
-          ie.isTop && _.checkSession?.(), setTimeout(Ml, 250);
+          ie.isTop && _.checkSession?.(), setTimeout(Il, 250);
         }), t.hasApmLoadBound = !0;
         try {
           let r = t.contentWindow, o = t.contentDocument;
           if (r && o && o.readyState !== "loading") {
             let n = !o.getElementById("apm-static-styles"), a = !Io.has(r);
-            if ((n || a) && (ru(o), Ei(r, o), n && !a && on("frame:styleRefresh", { win: r, doc: o })), on("frame:beforeAjax", { win: r, doc: o }), aa.setupComponentWatcher(r), Ne.install(r), !o.hasApmEventsBound && !r.__apmEventsBound) {
+            if ((n || a) && (au(o), Ei(r, o), n && !a && nn("frame:styleRefresh", { win: r, doc: o })), nn("frame:beforeAjax", { win: r, doc: o }), ia.setupComponentWatcher(r), Ne.install(r), !o.hasApmEventsBound && !r.__apmEventsBound) {
               let l = () => {
                 try {
                   if (o.hasApmEventsBound || r.__apmEventsBound) return;
@@ -11089,7 +11115,7 @@ body.apm-modal-active .rain-cloud-always .lightning-bolt { animation-play-state:
                     _.get("handleGlobalClick")?.(c);
                   }, !0), o.addEventListener("click", (c) => {
                     (c.target.closest?.(".apm-nametag") || c.target.closest?.(".apm-copy-icon")) && (c.preventDefault(), c.stopPropagation());
-                  }, !0), Ce.hookFrame(r), Ah(r), o.hasApmEventsBound = !0, r.__apmEventsBound = !0;
+                  }, !0), Ce.hookFrame(r), Ih(r), o.hasApmEventsBound = !0, r.__apmEventsBound = !0;
                 } catch (c) {
                   d.debug("FrameManager", "Failed to bind events:", c);
                 }
@@ -11097,7 +11123,7 @@ body.apm-modal-active .rain-cloud-always .lightning-bolt { animation-play-state:
               r.Ext && r.Ext.onReady ? r.Ext.onReady(l) : l();
             }
             let s = () => {
-              tu(o, r);
+              nu(o, r);
             };
             r.Ext && r.Ext.onReady ? r.Ext.onReady(s) : s();
           }
@@ -11112,7 +11138,7 @@ body.apm-modal-active .rain-cloud-always .lightning-bolt { animation-play-state:
   qe();
 
   // src/boot.js
-  sa();
+  la();
   ue();
   te();
   mt();
@@ -11121,7 +11147,7 @@ body.apm-modal-active .rain-cloud-always .lightning-bolt { animation-play-state:
   Te();
   te();
   ue();
-  function lu() {
+  function pu() {
     if (!Fe()) return;
     let e = 0, t = () => {
       if (typeof Ext < "u" && Ext.form && Ext.form.field && Ext.form.field.Date) {
@@ -11141,9 +11167,9 @@ body.apm-modal-active .rain-cloud-always .lightning-bolt { animation-play-state:
   se();
   te();
   Oe();
-  var cu = !1;
-  function du() {
-    typeof window > "u" || cu || (cu = !0, window.addEventListener("storage", (e) => {
+  var uu = !1;
+  function mu() {
+    typeof window > "u" || uu || (uu = !0, window.addEventListener("storage", (e) => {
       if (!e.newValue) return;
       let t = `storageSyncHook:${e.key}`;
       if (_.has(t)) {
@@ -11158,16 +11184,16 @@ body.apm-modal-active .rain-cloud-always .lightning-bolt { animation-play-state:
         }
       }
       switch (e.key) {
-        case je:
-          Ih(e.newValue);
+        case Ke:
+          Fh(e.newValue);
           break;
-        case Pr:
-          Mh(e.newValue);
+        case Lr:
+          Bh(e.newValue);
           break;
       }
     }));
   }
-  function Ih(e) {
+  function Fh(e) {
     try {
       let t = JSON.parse(e), { flags: r, ...o } = t, n = Y.flags ? { ...Y.flags } : {};
       for (let s of Object.keys(o))
@@ -11179,13 +11205,13 @@ body.apm-modal-active .rain-cloud-always .lightning-bolt { animation-play-state:
       d.warn("Sync", "Failed to sync general settings", t);
     }
   }
-  function Mh(e) {
+  function Bh(e) {
     try {
       let t = JSON.parse(e), r = ["eamid", "tenant", "user"];
       for (let o of r)
-        Object.prototype.hasOwnProperty.call(t, o) && (be.session[o] = t[o]);
-      be.session.isInitialized && window.dispatchEvent(new CustomEvent("APM_SESSION_UPDATED", {
-        detail: { ...be.session }
+        Object.prototype.hasOwnProperty.call(t, o) && (ye.session[o] = t[o]);
+      ye.session.isInitialized && window.dispatchEvent(new CustomEvent("APM_SESSION_UPDATED", {
+        detail: { ...ye.session }
       }));
     } catch (t) {
       d.warn("Sync", "Failed to sync session", t);
@@ -11193,24 +11219,24 @@ body.apm-modal-active .rain-cloud-always .lightning-bolt { animation-play-state:
   }
 
   // src/boot.js
-  Ve();
-  Ht();
-  At();
+  je();
+  Lt();
+  _t();
   nt();
   Te();
-  It();
-  vr();
+  Ct();
+  wr();
   Qt();
 
   // src/modules/forecast/engine/hooks.js
-  ur();
+  mr();
   te();
 
   // src/modules/forecast/engine/guard.js
   Fo();
-  var Wl = null;
-  function pa() {
-    return Wl || (Wl = new Lt({ feature: "forecast" })), Wl;
+  var ql = null;
+  function ua() {
+    return ql || (ql = new Ot({ feature: "forecast" })), ql;
   }
 
   // src/modules/forecast/engine/toast-manager.js
@@ -11224,7 +11250,7 @@ body.apm-modal-active .rain-cloud-always .lightning-bolt { animation-play-state:
   _e();
   nt();
   ue();
-  var Ue = {
+  var Ge = {
     WSJOBS: [
       { display: "All Work Orders", short: "All WOs", value: "2005" },
       { display: "Closed Work Orders", short: "Closed WOs", value: "100646" },
@@ -11243,34 +11269,34 @@ body.apm-modal-active .rain-cloud-always .lightning-bolt { animation-play-state:
     ]
   };
   function Ut(e) {
-    let t = Ue[e];
+    let t = Ge[e];
     if (!t) return "";
     let r = t.find((o) => o.default);
     return r ? r.value : t[0].value;
   }
   function $r(e, t) {
-    let r = Ue[e];
+    let r = Ge[e];
     if (!r) return "Open Work Orders";
     let o = r.find((n) => n.value === t);
     return o ? o.display : r.find((n) => n.default)?.display || "Open Work Orders";
   }
   function Gt(e, t) {
-    let r = Ue[e];
+    let r = Ge[e];
     if (!r) return !1;
     let o = r.find((a) => a.value === t);
     if (!o) return !1;
     let n = o.display;
     return n.startsWith("Closed") || n.startsWith("All") && !n.includes("Open");
   }
-  function Hl(e, t) {
+  function Wl(e, t) {
     if (Gt(e, t)) return !0;
-    let r = Ue[e];
+    let r = Ge[e];
     return r ? !!r.find((n) => n.value === t)?.toggleable : !1;
   }
-  function yn(e, t, r = null) {
-    return e ? document.getElementById("eam-dataspy-select")?.value || null : r?.dataspy ? r.dataspy : me.dataspyMode === "active" && Ul(t) || Ut(t);
+  function xn(e, t, r = null) {
+    return e ? document.getElementById("eam-dataspy-select")?.value || null : r?.dataspy ? r.dataspy : me.dataspyMode === "active" && Hl(t) || Ut(t);
   }
-  function Ul(e) {
+  function Hl(e) {
     for (let t of ne())
       try {
         let r = t.Ext.ComponentQuery.query('combobox[name="dataspylist"]:not([destroyed=true])');
@@ -11278,14 +11304,14 @@ body.apm-modal-active .rain-cloud-always .lightning-bolt { animation-play-state:
           if (!o.rendered || o.isDestroyed || !o.isVisible?.(!0)) continue;
           let n = o.getRawValue?.() || "";
           if (!n) continue;
-          let s = (Ue[e] || Ue.WSJOBS).find((l) => l.display === n);
+          let s = (Ge[e] || Ge.WSJOBS).find((l) => l.display === n);
           if (s) return s.value;
         }
       } catch {
       }
     return null;
   }
-  var Cr = [], Ar = "", Ee = [], Dt = "", fr = {}, me = {
+  var Ar = [], _r = "", Ee = [], Ft = "", gr = {}, me = {
     week: "0",
     days: [!1, !0, !0, !0, !0, !0, !1],
     // Mon-Fri default
@@ -11310,43 +11336,43 @@ body.apm-modal-active .rain-cloud-always .lightning-bolt { animation-play-state:
   function Ae(e) {
     me = { ...me, ...e };
   }
-  function Gl(e) {
-    Cr = e;
-  }
-  function Mi(e) {
+  function Ul(e) {
     Ar = e;
   }
-  function _r(e) {
+  function Mi(e) {
+    _r = e;
+  }
+  function Rr(e) {
     Ee = e;
   }
   function qr(e) {
-    if (Dt = e, !e || e === "manual") return;
+    if (Ft = e, !e || e === "manual") return;
     let t = Ee.find((r) => r.id === e);
-    (t?.target === "WSJOBS" || t?.target === "CTJOBS") && (fr[t.target] = e);
+    (t?.target === "WSJOBS" || t?.target === "CTJOBS") && (gr[t.target] = e);
   }
-  function fu(e, t) {
-    (e === "WSJOBS" || e === "CTJOBS") && (fr[e] = t);
+  function yu(e, t) {
+    (e === "WSJOBS" || e === "CTJOBS") && (gr[e] = t);
   }
   function Pi(e) {
-    Dt = e;
+    Ft = e;
     let t = document.getElementById("eam-profile-select");
     t && (t.value = e);
   }
-  function gu() {
-    let e = ge().screen;
-    (e === "WSJOBS" || e === "CTJOBS") && (Dt = fr[e] || "");
+  function bu() {
+    let e = he().screen;
+    (e === "WSJOBS" || e === "CTJOBS") && (Ft = gr[e] || "");
   }
   function Li(e) {
-    for (let t of Object.keys(fr))
-      fr[t] === e && (fr[t] = "");
+    for (let t of Object.keys(gr))
+      gr[t] === e && (gr[t] = "");
   }
-  function hu() {
+  function xu() {
     try {
       let e = N.get(rr);
       if (e) {
-        e._v === void 0 && (e._v = 0, d.debug("Forecast", "Preferences loaded as legacy v0")), e.orgs && Array.isArray(e.orgs) && (Cr = e.orgs.filter((o) => o !== "All Sites" && o !== "-- All Sites --" && o !== "")), Ar = e.selectedOrg !== void 0 && (e.selectedOrg === "" || Cr.includes(e.selectedOrg)) ? e.selectedOrg : "";
+        e._v === void 0 && (e._v = 0, d.debug("Forecast", "Preferences loaded as legacy v0")), e.orgs && Array.isArray(e.orgs) && (Ar = e.orgs.filter((o) => o !== "All Sites" && o !== "-- All Sites --" && o !== "")), _r = e.selectedOrg !== void 0 && (e.selectedOrg === "" || Ar.includes(e.selectedOrg)) ? e.selectedOrg : "";
         let t = e.customProfiles || e.profiles || e.dataspys;
-        Ee = Array.isArray(t) ? t : [], Dt = e.selectedProfileId || "", e.screenProfileIds && typeof e.screenProfileIds == "object" ? fr = { ...e.screenProfileIds } : fr = { [e.target || "WSJOBS"]: Dt }, me = {
+        Ee = Array.isArray(t) ? t : [], Ft = e.selectedProfileId || "", e.screenProfileIds && typeof e.screenProfileIds == "object" ? gr = { ...e.screenProfileIds } : gr = { [e.target || "WSJOBS"]: Ft }, me = {
           week: e.week || "0",
           days: Array.isArray(e.days) && e.days.length === 7 ? e.days : [!1, !0, !0, !0, !0, !0, !1],
           eqText: e.eqText || "",
@@ -11364,23 +11390,23 @@ body.apm-modal-active .rain-cloud-always .lightning-bolt { animation-play-state:
           dataspyMode: e.dataspyMode || "default",
           dateDirection: e.dateDirection || null
         };
-        let r = ge().screen;
-        return (r === "WSJOBS" || r === "CTJOBS") && fr[r] !== void 0 && (Dt = fr[r]), e;
+        let r = he().screen;
+        return (r === "WSJOBS" || r === "CTJOBS") && gr[r] !== void 0 && (Ft = gr[r]), e;
       }
     } catch (e) {
       d.warn("Forecast", "Failed to load preferences:", e);
     }
-    return Cr = [], Ar = "", null;
+    return Ar = [], _r = "", null;
   }
   function Pe() {
     let e = {
       _v: 2,
       ...me,
-      orgs: Cr,
-      selectedOrg: Ar,
+      orgs: Ar,
+      selectedOrg: _r,
       customProfiles: Ee,
-      selectedProfileId: Dt,
-      screenProfileIds: { ...fr }
+      selectedProfileId: Ft,
+      screenProfileIds: { ...gr }
     };
     try {
       N.set(rr, e);
@@ -11394,7 +11420,7 @@ body.apm-modal-active .rain-cloud-always .lightning-bolt { animation-play-state:
   te();
   We();
   qe();
-  function bu() {
+  function vu() {
     try {
       let e = i("div", { id: "apm-spies-modal", className: "apm-modal-overlay apm-ui-panel", style: { display: "none" } }, [
         i("div", { className: "apm-modal-content", style: { width: "420px" } }, [
@@ -11470,7 +11496,7 @@ body.apm-modal-active .rain-cloud-always .lightning-bolt { animation-play-state:
           ])
         ])
       ]);
-      return Gh(e), e;
+      return Yh(e), e;
     } catch (e) {
       return d.error("ProfileManager", "Build failed:", e), i("div");
     }
@@ -11488,7 +11514,7 @@ body.apm-modal-active .rain-cloud-always .lightning-bolt { animation-play-state:
     }
     r.focus();
   }
-  function Gh(e) {
+  function Yh(e) {
     e.querySelector("#apm-spies-close").onclick = () => {
       e.style.display = "none";
     };
@@ -11517,10 +11543,10 @@ body.apm-modal-active .rain-cloud-always .lightning-bolt { animation-play-state:
       };
       d.info("Forecast", `Saving Profile: ${r}`, n);
       let a = Ee.findIndex((s) => s.id === o);
-      a >= 0 ? _r(Ee.map((s, l) => l === a ? n : s)) : _r([...Ee, n]), qr(o), oo(), Ft(), Pe(), C(L("profileSaved"), "var(--apm-success)");
+      a >= 0 ? Rr(Ee.map((s, l) => l === a ? n : s)) : Rr([...Ee, n]), qr(o), oo(), Bt(), Pe(), C(L("profileSaved"), "var(--apm-success)");
     }, e.querySelector("#spy-btn-delete").onclick = () => {
       let r = t.value;
-      r && confirm("Delete this profile?") && (Li(r), _r(Ee.filter((o) => o.id !== r)), Dt === r && qr("manual"), oo(), Ft(), Pe(), t.value = "", t.onchange());
+      r && confirm("Delete this profile?") && (Li(r), Rr(Ee.filter((o) => o.id !== r)), Ft === r && qr("manual"), oo(), Bt(), Pe(), t.value = "", t.onchange());
     };
   }
   function oo() {
@@ -11530,20 +11556,20 @@ body.apm-modal-active .rain-cloud-always .lightning-bolt { animation-play-state:
     }), t.innerHTML = "", t.appendChild(i("option", { value: "manual" }, "[ Manual Native Search ]")), Ee.forEach((r) => {
       let o = r.target === "CTJOBS" ? " [CT]" : "";
       t.appendChild(i("option", { value: r.id }, `Profile: ${r.name}${o}`));
-    }), t.value = Dt || "manual");
+    }), t.value = Ft || "manual");
   }
-  var zh = { 0: "This Week", 1: "Next 2 Weeks", 2: "Next 3 Weeks", 3: "Next 4 Weeks" }, Vh = { 0: "This Week", 1: "Last 2 Weeks", 2: "Last 3 Weeks", 3: "Last 4 Weeks" }, jh = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
-  function zl(e) {
+  var Jh = { 0: "This Week", 1: "Next 2 Weeks", 2: "Next 3 Weeks", 3: "Next 4 Weeks" }, Qh = { 0: "This Week", 1: "Last 2 Weeks", 2: "Last 3 Weeks", 3: "Last 4 Weeks" }, Xh = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+  function Gl(e) {
     if (!e || !e.dateOverride) return "";
     if (e.weeks === "none") return "No Date Filter";
-    let n = ((typeof e.isPast == "boolean" ? e.isPast : Gt(e.target || "WSJOBS", e.dataspy)) ? Vh : zh)[String(e.weeks)] || "This Week";
+    let n = ((typeof e.isPast == "boolean" ? e.isPast : Gt(e.target || "WSJOBS", e.dataspy)) ? Qh : Jh)[String(e.weeks)] || "This Week";
     if (e.arbitraryDays && Array.isArray(e.days)) {
-      let a = e.days.map((s, l) => s ? jh[l] : null).filter(Boolean);
+      let a = e.days.map((s, l) => s ? Xh[l] : null).filter(Boolean);
       a.length > 0 && a.length < 7 && (n += ` (${a.join(", ")} only)`);
     }
     return n;
   }
-  function Ft() {
+  function Bt() {
     let e = document.getElementById("eam-profile-select"), t = document.getElementById("eam-profile-summary"), r = document.getElementById("eam-profile-summary-text"), o = document.getElementById("eam-manual-inputs"), n = document.querySelector(".eam-fc-desc-box"), a = document.getElementById("eam-schedule-section");
     if (!e) return;
     let s = e.value;
@@ -11555,7 +11581,7 @@ body.apm-modal-active .rain-cloud-always .lightning-bolt { animation-play-state:
         t && (t.style.display = "block"), o && (o.style.display = "none"), n && (n.style.display = "none");
         let c = [];
         l.equipment && c.push(`Eq: ${l.equipment}`), l.eqDesc && c.push(`EqDesc: ${l.eqDesc}`), l.desc && c.push(`Desc: ${l.desc}`), l.assigned && c.push(`Assigned: ${l.assigned}`), l.shift && c.push(`Shift: ${l.shift}`), l.type && c.push(`Type: ${l.type}`), l.org && c.push(`Org: ${l.org}`);
-        let p = zl(l);
+        let p = Gl(l);
         p && c.push(`Dates: ${p}`);
         let u = l.target || "WSJOBS", m = $r(u, l.dataspy || ""), f = c.length > 0 ? c.join(" | ") : "No specific filters set (All Records)";
         r.replaceChildren(
@@ -11567,77 +11593,77 @@ body.apm-modal-active .rain-cloud-always .lightning-bolt { animation-play-state:
   }
 
   // src/modules/forecast/engine/toast-manager.js
-  var Vl = null, jl = null;
-  function yu(e) {
-    jl = e;
+  var Vl = null, zl = null;
+  function wu(e) {
+    zl = e;
   }
-  function ua() {
-    let e = ge().screen;
+  function ma() {
+    let e = he().screen;
     if (e !== "WSJOBS" && e !== "CTJOBS") {
-      cr(), Vl = null;
+      dr(), Vl = null;
       return;
     }
-    let t = xn(e);
+    let t = vn(e);
     if (!t) {
-      cr(), Vl = null;
+      dr(), Vl = null;
       return;
     }
     let r = Ee.find((a) => a.id === t.profileId);
     if (!r) return;
-    let o = zl(r), n = o ? L("dataspyActive", `${r.name} \u2014 ${o}`, L("clickToClear")) : L("dataspyActive", r.name, L("clickToClear"));
+    let o = Gl(r), n = o ? L("dataspyActive", `${r.name} \u2014 ${o}`, L("clickToClear")) : L("dataspyActive", r.name, L("clickToClear"));
     C(n, "#1abc9c", !0, () => {
-      jl && jl(e);
+      zl && zl(e);
     }), Vl = e;
   }
-  function xu() {
-    window.addEventListener("APM_EAM_VIEW_CHANGE", ua);
+  function Su() {
+    window.addEventListener("APM_EAM_VIEW_CHANGE", ma);
   }
 
   // src/modules/forecast/engine/context.js
-  var ma = /* @__PURE__ */ new Map(), Kl = /* @__PURE__ */ new Map();
-  function wu(e, t) {
-    if (!Kh(e, t)) {
-      ma.delete(e.target), ua();
+  var fa = /* @__PURE__ */ new Map(), jl = /* @__PURE__ */ new Map();
+  function ku(e, t) {
+    if (!Zh(e, t)) {
+      fa.delete(e.target), ma();
       return;
     }
-    ma.set(e.target, Object.freeze({
+    fa.set(e.target, Object.freeze({
       mode: e.mode,
       target: e.target,
       maddonParams: t.maddonParams ? Object.freeze({ ...t.maddonParams }) : null,
       urlParams: t.urlParams ? Object.freeze({ ...t.urlParams }) : null,
       profileId: e.profile?.id || null,
       ts: Date.now()
-    })), ua();
+    })), ma();
   }
-  function xn(e) {
-    return ma.get(e) || null;
+  function vn(e) {
+    return fa.get(e) || null;
   }
-  function Yl(e) {
-    e ? ma.delete(e) : ma.clear(), ua();
+  function Kl(e) {
+    e ? fa.delete(e) : fa.clear(), ma();
   }
-  function Su(e, t, r = 1e4) {
-    !e || !t?.maddonParams && !t?.urlParams || Kl.set(e, Object.freeze({
+  function Tu(e, t, r = 1e4) {
+    !e || !t?.maddonParams && !t?.urlParams || jl.set(e, Object.freeze({
       maddonParams: t.maddonParams ? Object.freeze({ ...t.maddonParams }) : null,
       urlParams: t.urlParams ? Object.freeze({ ...t.urlParams }) : null,
       expiresAt: Date.now() + r
     }));
   }
-  function Eu(e) {
-    let t = Kl.get(e);
-    return !t || (Kl.delete(e), Date.now() > t.expiresAt) ? null : t;
+  function Cu(e) {
+    let t = jl.get(e);
+    return !t || (jl.delete(e), Date.now() > t.expiresAt) ? null : t;
   }
-  function Kh(e, t) {
+  function Zh(e, t) {
     if (e.mode === "clear" || e.mode === "quick" || e.todayStrict) return !1;
     let r = !!t.maddonParams && Object.keys(t.maddonParams).length > 0, o = !!t.urlParams && Object.keys(t.urlParams).length > 0;
     return r || o;
   }
 
   // src/modules/forecast/engine/hooks.js
-  function Yh(e) {
+  function ey(e) {
     let t = e.url || "", o = (e.params || {}).GRID_NAME || "";
     return o && o !== "WSJOBS" && o !== "CTJOBS" ? null : t.includes("WSJOBS.xmlhttp") || o === "WSJOBS" ? "WSJOBS" : t.includes("CTJOBS.xmlhttp") || o === "CTJOBS" ? "CTJOBS" : null;
   }
-  function Jh(e, t) {
+  function ty(e, t) {
     let r = typeof e.params == "object" ? e.params : typeof e.params == "string" ? Object.fromEntries(new URLSearchParams(e.params)) : {}, n = Object.keys(r).filter((u) => u.startsWith("MADDON_FILTER_SEQNUM_")).map((u) => {
       let m = u.split("_");
       return parseInt(m[m.length - 1], 10);
@@ -11666,7 +11692,7 @@ body.apm-modal-active .rain-cloud-always .lightning-bolt { animation-play-state:
       e.params = { ...p };
     d.debug("Forecast-MADDON", `Injected ${c.length} MADDON filters (target from URL)`);
   }
-  function Qh(e, t) {
+  function ry(e, t) {
     if (t) {
       if (typeof e.params == "object" && e.params !== null)
         Object.assign(e.params, t);
@@ -11680,7 +11706,7 @@ body.apm-modal-active .rain-cloud-always .lightning-bolt { animation-play-state:
       d.debug("Forecast-URL", `Injected URL-filter params (${t.filterfields}=${t.filtervalue})`);
     }
   }
-  function Xh(e, t) {
+  function oy(e, t) {
     let r = /MADDON_FILTER_SEQNUM_(\d+)/g, o = [], n;
     for (; (n = r.exec(e)) !== null; )
       o.push(parseInt(n[1], 10));
@@ -11692,38 +11718,38 @@ body.apm-modal-active .rain-cloud-always .lightning-bolt { animation-play-state:
   }
   Ne.onBeforeRequest("forecast-maddon", (e, t, r) => {
     try {
-      if (!pa().isEnabled()) return;
-      let n = Yh(r);
+      if (!ua().isEnabled()) return;
+      let n = ey(r);
       if (!n) return;
-      let a = xn(n);
+      let a = vn(n);
       if (!a || !a.maddonParams && !a.urlParams || (r.url || "").includes("GETCACHE") || (r.params || {}).COMPONENT_INFO_TYPE_MODE === "CACHE") return;
-      a.maddonParams && Jh(r, a.maddonParams), a.urlParams && Qh(r, a.urlParams);
+      a.maddonParams && ty(r, a.maddonParams), a.urlParams && ry(r, a.urlParams);
     } catch (o) {
       d.error("Forecast", "MADDON hook error:", o);
     }
   });
   Ne.onXhrBeforeSend("forecast-maddon-xhr", (e, t, r) => {
     try {
-      if (!pa().isEnabled()) return;
+      if (!ua().isEnabled()) return;
       let n = t.includes("WSJOBS.xmlhttp"), a = t.includes("CTJOBS.xmlhttp");
       if (!n && !a || t.includes("GETCACHE")) return;
       let s = r && typeof r == "string" ? r : "", l = s + t;
       if (l.includes("COMPONENT_INFO_TYPE_MODE=CACHE")) return;
       let c = l.match(/[?&]GRID_NAME=([^&]*)|(?:^|&)GRID_NAME=([^&]*)/), p = c && (c[1] || c[2]) || "";
       if (p && p !== "WSJOBS" && p !== "CTJOBS") return;
-      let u = n ? "WSJOBS" : "CTJOBS", m = xn(u), f = m;
+      let u = n ? "WSJOBS" : "CTJOBS", m = vn(u), f = m;
       if (!m) {
-        let v = Eu(u);
+        let v = Cu(u);
         if (!v) return;
         f = v;
       }
       if (!f.maddonParams && !f.urlParams) return;
-      let g = f.maddonParams ? Object.keys(f.maddonParams).filter((v) => v.startsWith("MADDON_FILTER_ALIAS_NAME_")).map((v) => f.maddonParams[v]) : [], h = g.length === 0 || g.every((v) => l.includes(v)), y = !f.urlParams || l.includes(`filtervalue=${encodeURIComponent(f.urlParams.filtervalue)}`) || l.includes(`filtervalue=${f.urlParams.filtervalue}`);
-      if (h && y) return;
-      let b = {};
-      f.maddonParams && Object.assign(b, Xh(s, f.maddonParams)), f.urlParams && Object.assign(b, f.urlParams);
-      let x = new URLSearchParams(b).toString();
-      return d.debug("Forecast-XHR", `Persistent hook injected MADDON=${g.length}, URL=${f.urlParams ? 1 : 0}`), r && typeof r == "string" ? r + "&" + x : x;
+      let g = f.maddonParams ? Object.keys(f.maddonParams).filter((v) => v.startsWith("MADDON_FILTER_ALIAS_NAME_")).map((v) => f.maddonParams[v]) : [], y = g.length === 0 || g.every((v) => l.includes(v)), x = !f.urlParams || l.includes(`filtervalue=${encodeURIComponent(f.urlParams.filtervalue)}`) || l.includes(`filtervalue=${f.urlParams.filtervalue}`);
+      if (y && x) return;
+      let h = {};
+      f.maddonParams && Object.assign(h, oy(s, f.maddonParams)), f.urlParams && Object.assign(h, f.urlParams);
+      let b = new URLSearchParams(h).toString();
+      return d.debug("Forecast-XHR", `Persistent hook injected MADDON=${g.length}, URL=${f.urlParams ? 1 : 0}`), r && typeof r == "string" ? r + "&" + b : b;
     } catch (o) {
       d.error("Forecast", "XHR MADDON hook error:", o);
     }
@@ -11770,7 +11796,7 @@ body.apm-modal-active .rain-cloud-always .lightning-bolt { animation-play-state:
       o.style.display = "none";
     }, 15e3);
   }
-  function ku() {
+  function Au() {
     let e = document.createElement("div");
     e.className = "thunder-overlay";
     let t = document.createElement("div");
@@ -11784,16 +11810,16 @@ body.apm-modal-active .rain-cloud-always .lightning-bolt { animation-play-state:
   }
 
   // src/modules/forecast/engine/orchestrator.js
-  kr();
+  Tr();
   We();
   ue();
   nt();
 
   // src/modules/forecast/engine/nav.js
-  Tt();
+  yt();
   ue();
   nt();
-  ha();
+  ya();
   te();
   se();
 
@@ -11818,23 +11844,23 @@ body.apm-modal-active .rain-cloud-always .lightning-bolt { animation-play-state:
 
   // src/modules/forecast/engine/nav.js
   no();
-  Pt();
+  Dt();
   function ao(e, t, r) {
     return r === "WSJOBS" || r === "CTJOBS" ? r : t?.target === "WSJOBS" || t?.target === "CTJOBS" ? t.target : e.advancedVisible && (e.targetFromUI === "WSJOBS" || e.targetFromUI === "CTJOBS") ? e.targetFromUI : e.titleScreen === "WSJOBS" || e.titleScreen === "CTJOBS" ? e.titleScreen : "WSJOBS";
   }
-  function _u(e) {
+  function Nu(e) {
     let t = Be.forScreen(e);
     return !t || !t.queryExt(
       "gridpanel:not([destroyed=true])",
-      (o) => o.columns?.length > Kn && (!o.isVisible || o.isVisible(!0))
+      (o) => o.columns?.length > Yn && (!o.isVisible || o.isVisible(!0))
     ) ? null : { win: t.win, Ext: t.win.Ext };
   }
-  var Cu = 3, Au = [0, 1500, 3e3];
-  function eb(e) {
+  var Ru = 3, Ou = [0, 1500, 3e3];
+  function ay(e) {
     return e === "WSJOBS" || e === "CTJOBS";
   }
-  async function tb(e) {
-    let t = zp(e);
+  async function iy(e) {
+    let t = Kp(e);
     for (let r of ne())
       try {
         let o = r.EAM?.Utils?.getMainContentPanel?.();
@@ -11842,41 +11868,41 @@ body.apm-modal-active .rain-cloud-always .lightning-bolt { animation-play-state:
         if (t) {
           let a = o.down(`uxtabiframe[screenId=${e}]`);
           if (a && !a.isDestroyed)
-            return o.setActiveTab(a), await Ql(e), !0;
+            return o.setActiveTab(a), await Jl(e), !0;
         }
         let n = o.items?.items?.find?.((a) => a?.itemId === "NONCACHE");
         if (n) {
           let a = n.down?.(`[userFunction=${e}]`);
           if (a && !a.isDestroyed)
-            return o.setActiveTab(n), await Ql(e), !0;
+            return o.setActiveTab(n), await Jl(e), !0;
         }
       } catch {
       }
     return !1;
   }
-  async function Xl(e) {
-    if (Xn() === e) return !1;
-    if (await tb(e))
+  async function Ql(e) {
+    if (Zn() === e) return !1;
+    if (await iy(e))
       return d.info("Forecast", `Navigated to ${e} via screen-cache`), !0;
-    for (let t = 0; t < Cu; t++) {
-      t > 0 && (d.debug("Forecast", `launchScreen retry ${t}/${Cu - 1} after ${Au[t]}ms`), await re(Au[t]));
+    for (let t = 0; t < Ru; t++) {
+      t > 0 && (d.debug("Forecast", `launchScreen retry ${t}/${Ru - 1} after ${Ou[t]}ms`), await re(Ou[t]));
       for (let r of ne())
         try {
-          if (ga(r, e))
-            return await re(1500), await Ql(e), d.info("Forecast", `Navigated to ${e} via launchScreen`), !0;
+          if (ha(r, e))
+            return await re(1500), await Jl(e), d.info("Forecast", `Navigated to ${e} via launchScreen`), !0;
         } catch {
         }
     }
     throw new Bi(e);
   }
-  async function Ql(e) {
-    let t = Xn();
-    if (!eb(t) || t === e) return;
+  async function Jl(e) {
+    let t = Zn();
+    if (!ay(t) || t === e) return;
     d.debug("Forecast", `Post-nav screen mismatch: active=${t}, target=${e}. Force-navigating...`);
     let r = !1;
     for (let o of ne())
       try {
-        if (ga(o, e)) {
+        if (ha(o, e)) {
           await re(1500), r = !0;
           break;
         }
@@ -11884,13 +11910,13 @@ body.apm-modal-active .rain-cloud-always .lightning-bolt { animation-play-state:
       }
     r || d.warn("Forecast", `Force-navigate to ${e} failed in all frames \u2014 waitForGridReady will catch this`);
   }
-  async function Ru(e, t = 7e3) {
+  async function Iu(e, t = 7e3) {
     let r = Date.now() + t, o = "no-scope";
     for (; Date.now() < r; ) {
       let a = Be.forScreen(e);
       if (a) {
         let s = a.queryExt("gridpanel:not([destroyed=true])", (l) => {
-          if (!l.getStore || !l.columns || l.columns.length <= Kn || l.up("window")) return !1;
+          if (!l.getStore || !l.columns || l.columns.length <= Yn || l.up("window")) return !1;
           if (l.isVisible && !l.isVisible(!0))
             return o = "not-visible", !1;
           let c = l.getStore();
@@ -11902,11 +11928,11 @@ body.apm-modal-active .rain-cloud-always .lightning-bolt { animation-play-state:
       }
       await re(250);
     }
-    let n = _u(e);
+    let n = Nu(e);
     throw d.warn("Forecast", `waitForGridReady timeout: target=${e}, frame=${n ? "found" : "null"}, reason=${o}`), new $i(e, t);
   }
-  async function Ou(e) {
-    if (ge().view === "list") return;
+  async function Mu(e) {
+    if (he().view === "list") return;
     let t = Be.forScreen(e);
     if (!t) {
       d.debug("Forecast", `returnToListView: no frame found for ${e}`);
@@ -11962,8 +11988,8 @@ body.apm-modal-active .rain-cloud-always .lightning-bolt { animation-play-state:
   }
 
   // src/modules/forecast/engine/date-utils.js
-  sr();
-  function vn(e, t, r, o, n = 1) {
+  lr();
+  function wn(e, t, r, o, n = 1) {
     if (t === null || r === null) return null;
     let a = parseInt(e, 10), s = /* @__PURE__ */ new Date(), l = new Date(s);
     l.setDate(s.getDate() - s.getDay());
@@ -11973,7 +11999,7 @@ body.apm-modal-active .rain-cloud-always .lightning-bolt { animation-play-state:
 
   // src/modules/forecast/engine/strategies/normal.js
   te();
-  var Zl = {
+  var Xl = {
     name: "normal",
     contributors: ["profile", "manual", "date"],
     buildIntent(e, t = {}) {
@@ -11985,7 +12011,7 @@ body.apm-modal-active .rain-cloud-always .lightning-bolt { animation-play-state:
           let c = parseInt(o.weeks, 10) || 0, u = (Array.isArray(o.days) ? o.days : [!0, !0, !0, !0, !0, !0, !0]).map((m, f) => m ? f : -1).filter((m) => m >= 0);
           if (u.length > 0) {
             let m = Math.min(...u), f = Math.max(...u);
-            l = vn(String(c), m, f, c > 0, s) || l;
+            l = wn(String(c), m, f, c > 0, s) || l;
           }
         }
       else if (e.customDates) {
@@ -11997,7 +12023,7 @@ body.apm-modal-active .rain-cloud-always .lightning-bolt { animation-play-state:
         l = { start: c(e.customStart), end: c(e.customEnd) };
       } else if (e.weekOffset !== "none") {
         let c = (e.dayChecks || []).map((p, u) => p ? u : -1).filter((p) => p >= 0);
-        c.length > 0 && (l = vn(
+        c.length > 0 && (l = wn(
           e.weekOffset,
           Math.min(...c),
           Math.max(...c),
@@ -12026,12 +12052,12 @@ body.apm-modal-active .rain-cloud-always .lightning-bolt { animation-play-state:
   };
 
   // src/modules/forecast/engine/strategies/today.js
-  sr();
-  var ec = {
+  lr();
+  var Zl = {
     name: "today",
     contributors: ["profile", "manual", "date"],
     buildIntent(e, t = {}) {
-      let r = _o(/* @__PURE__ */ new Date()), o = { start: r, end: r }, n = e.profileSelect, a = n && n !== "manual" && Ee.find((p) => p.id === n) || null, s = !!a?.dateOverride, l = s ? null : a ? { ...a, desc: "" } : null, c = s ? yn(e.advancedVisible, e.titleScreen, null) : e.dataspyValue;
+      let r = _o(/* @__PURE__ */ new Date()), o = { start: r, end: r }, n = e.profileSelect, a = n && n !== "manual" && Ee.find((p) => p.id === n) || null, s = !!a?.dateOverride, l = s ? null : a ? { ...a, desc: "" } : null, c = s ? xn(e.advancedVisible, e.titleScreen, null) : e.dataspyValue;
       return {
         mode: "today",
         target: ao(e, a, t.targetOverride),
@@ -12060,12 +12086,12 @@ body.apm-modal-active .rain-cloud-always .lightning-bolt { animation-play-state:
      * returns false because intent.todayStrict === true).
      */
     postExecute(e) {
-      e.todayStrict && (Pi("manual"), Ft());
+      e.todayStrict && (Pi("manual"), Bt());
     }
   };
 
   // src/modules/forecast/engine/strategies/quick.js
-  var tc = {
+  var ec = {
     name: "quick",
     contributors: [],
     buildIntent(e, t = {}) {
@@ -12085,7 +12111,7 @@ body.apm-modal-active .rain-cloud-always .lightning-bolt { animation-play-state:
   };
 
   // src/modules/forecast/engine/strategies/clear.js
-  var rc = {
+  var tc = {
     name: "clear",
     contributors: [],
     buildIntent(e, t = {}) {
@@ -12105,19 +12131,19 @@ body.apm-modal-active .rain-cloud-always .lightning-bolt { animation-play-state:
   };
 
   // src/modules/forecast/engine/strategies/index.js
-  var ya = /* @__PURE__ */ new Map();
-  ya.set(Zl.name, Zl);
-  ya.set(ec.name, ec);
-  ya.set(tc.name, tc);
-  ya.set(rc.name, rc);
-  function wn(e) {
-    return ya.get(e) || null;
+  var xa = /* @__PURE__ */ new Map();
+  xa.set(Xl.name, Xl);
+  xa.set(Zl.name, Zl);
+  xa.set(ec.name, ec);
+  xa.set(tc.name, tc);
+  function Sn(e) {
+    return xa.get(e) || null;
   }
 
   // src/modules/forecast/engine/intent.js
   nt();
-  function rb() {
-    let e = document.getElementById("eam-adv-site")?.style.display !== "none", t = ge().screen, r = (e ? document.getElementById("eam-target-select")?.value : null) || t || "WSJOBS", o = document.getElementById("eam-profile-select")?.value || "manual", n = o && o !== "manual" && Ee.find((a) => a.id === o) || null;
+  function sy() {
+    let e = document.getElementById("eam-adv-site")?.style.display !== "none", t = he().screen, r = (e ? document.getElementById("eam-target-select")?.value : null) || t || "WSJOBS", o = document.getElementById("eam-profile-select")?.value || "manual", n = o && o !== "manual" && Ee.find((a) => a.id === o) || null;
     return {
       profileSelect: o,
       descText: document.getElementById("eam-desc-text")?.value?.trim() || "",
@@ -12129,24 +12155,24 @@ body.apm-modal-active .rain-cloud-always .lightning-bolt { animation-play-state:
       weekOffset: document.getElementById("eam-week-select")?.value || "0",
       weekCumulative: document.getElementById("eam-week-select")?.dataset?.cumulative === "true",
       dateDirection: document.getElementById("eam-week-select")?.dataset?.direction || "future",
-      dayChecks: ob(),
+      dayChecks: ly(),
       todayOnly: document.getElementById("eam-today-only-toggle")?.checked || !1,
       targetFromUI: document.getElementById("eam-target-select")?.value || null,
-      dataspyValue: yn(e, r, n),
+      dataspyValue: xn(e, r, n),
       advancedVisible: e,
       quickSearchText: document.getElementById("apm-qs-input")?.value?.trim() || "",
       titleScreen: t
     };
   }
-  function ob() {
+  function ly() {
     let e = [!1, !1, !1, !1, !1, !1, !1];
     return document.querySelectorAll('#eam-day-checkboxes input[type="checkbox"]').forEach((r) => {
       let o = parseInt(r.value, 10);
       !isNaN(o) && o >= 0 && o < 7 && r.dataset.explicit === "true" && (e[o] = !0);
     }), e;
   }
-  function Nu(e, t = {}) {
-    let r = rb(), o = wn(e);
+  function Pu(e, t = {}) {
+    let r = sy(), o = Sn(e);
     if (!o) throw new qi(e);
     return Object.freeze(o.buildIntent(r, t));
   }
@@ -12159,8 +12185,8 @@ body.apm-modal-active .rain-cloud-always .lightning-bolt { animation-play-state:
   We();
   qe();
   te();
-  Rr();
-  var zt = ["CONTAINS", "NOTCONTAINS", "=", "!=", "BEGINS", "ENDS"], nb = ["=", "!=", ">=", "<="], wa = [
+  Or();
+  var Vt = ["CONTAINS", "NOTCONTAINS", "=", "!=", "BEGINS", "ENDS"], cy = ["=", "!=", ">=", "<="], Sa = [
     { key: "pm", label: "Preventative Maint", codes: ["SQ", "PDMM", "PDM", "PM"] },
     { key: "check", label: "System Check", codes: ["FAMCKLST", "SC", "CBM"] },
     { key: "cm", label: "Corrective", codes: ["CM"] },
@@ -12168,25 +12194,25 @@ body.apm-modal-active .rain-cloud-always .lightning-bolt { animation-play-state:
     { key: "project", label: "Type Project", codes: ["PR"] },
     { key: "audit", label: "Audit Follow-up", codes: ["AUDIT-F"] },
     { key: "followup", label: "Follow Up (PM)", codes: ["FPM", "FPDM", "CQ"] }
-  ], ab = ["100367"], ib = ["100646"], sb = ["2005", "100554", "100680"], Vt = [
-    { key: "desc", label: "Description", color: "#3498db", placeholder: "pump, motor...", ops: zt, group: "Text Search" },
-    { key: "equipment", label: "Equipment", color: "#2ecc71", placeholder: "PUMP-001", ops: zt, group: "Text Search" },
-    { key: "eqDesc", label: "Equip. Description", color: "#1abc9c", placeholder: "centrifugal", ops: zt, group: "Text Search" },
-    { key: "assigned", label: "Assigned To", color: "#e67e22", placeholder: "JSMITH", ops: zt, group: "Text Search" },
-    { key: "shift", label: "Shift", color: "#9b59b6", placeholder: "A, B", ops: zt, group: "Text Search" },
-    { key: "org", label: "Organization", color: "#95a5a6", placeholder: "BFI4", ops: zt, group: "Text Search" },
-    { key: "location", label: "Location", color: "#16a085", placeholder: "location code", ops: zt, group: "Text Search" },
-    { key: "department", label: "Department", color: "#8e44ad", placeholder: "BBM", ops: zt, group: "Text Search" },
+  ], dy = ["100367"], py = ["100646"], uy = ["2005", "100554", "100680"], zt = [
+    { key: "desc", label: "Description", color: "#3498db", placeholder: "pump, motor...", ops: Vt, group: "Text Search" },
+    { key: "equipment", label: "Equipment", color: "#2ecc71", placeholder: "PUMP-001", ops: Vt, group: "Text Search" },
+    { key: "eqDesc", label: "Equip. Description", color: "#1abc9c", placeholder: "centrifugal", ops: Vt, group: "Text Search" },
+    { key: "assigned", label: "Assigned To", color: "#e67e22", placeholder: "JSMITH", ops: Vt, group: "Text Search" },
+    { key: "shift", label: "Shift", color: "#9b59b6", placeholder: "A, B", ops: Vt, group: "Text Search" },
+    { key: "org", label: "Organization", color: "#95a5a6", placeholder: "BFI4", ops: Vt, group: "Text Search" },
+    { key: "location", label: "Location", color: "#16a085", placeholder: "location code", ops: Vt, group: "Text Search" },
+    { key: "department", label: "Department", color: "#8e44ad", placeholder: "BBM", ops: Vt, group: "Text Search" },
     { key: "createdBy", label: "Created By", color: "#34495e", placeholder: "ROSENDAH", ops: [], group: "Text Search", urlFilter: !0 },
     { key: "type", label: "WO Type", color: "#f39c12", placeholder: "pm, check, cm", ops: [], group: "Category" },
-    { key: "criticality", label: "Criticality", color: "#c0392b", placeholder: "1-5 or text", ops: zt, group: "Numeric / Ranked" },
-    { key: "priority", label: "Priority Level", color: "#d35400", placeholder: "1-5 or text", ops: zt, group: "Numeric / Ranked" },
-    { key: "labor", label: "Booked Labor", color: "#e74c3c", placeholder: "1, 8", ops: nb, group: "Numeric / Ranked" },
-    { key: "cancelReason", label: "Cancel Reason", color: "#7f8c8d", placeholder: "reason text", ops: zt, group: "Reason / Notes", scopedDataspies: ib, scopeLabel: "Closed Work Orders" },
-    { key: "holdReason", label: "Hold Reason", color: "#f1c40f", placeholder: "reason text", ops: zt, group: "Reason / Notes", scopedDataspies: sb, scopeLabel: "All / Reactive Open / SIM-T Open" },
+    { key: "criticality", label: "Criticality", color: "#c0392b", placeholder: "1-5 or text", ops: Vt, group: "Numeric / Ranked" },
+    { key: "priority", label: "Priority Level", color: "#d35400", placeholder: "1-5 or text", ops: Vt, group: "Numeric / Ranked" },
+    { key: "labor", label: "Booked Labor", color: "#e74c3c", placeholder: "1, 8", ops: cy, group: "Numeric / Ranked" },
+    { key: "cancelReason", label: "Cancel Reason", color: "#7f8c8d", placeholder: "reason text", ops: Vt, group: "Reason / Notes", scopedDataspies: py, scopeLabel: "Closed Work Orders" },
+    { key: "holdReason", label: "Hold Reason", color: "#f1c40f", placeholder: "reason text", ops: Vt, group: "Reason / Notes", scopedDataspies: uy, scopeLabel: "All / Reactive Open / SIM-T Open" },
     { key: "partsIssued", label: "Parts Issued", color: "#27ae60", bool: !0, ops: [], group: "Yes / No" },
-    { key: "pmIntrusive", label: "PM Is Intrusive", color: "#2980b9", bool: !0, ops: [], group: "Yes / No", scopedDataspies: ab, scopeLabel: "Open Work Orders" }
-  ], Iu = [
+    { key: "pmIntrusive", label: "PM Is Intrusive", color: "#2980b9", bool: !0, ops: [], group: "Yes / No", scopedDataspies: dy, scopeLabel: "Open Work Orders" }
+  ], Lu = [
     { value: "CONTAINS", label: "Contains", hint: "Matches if the field has this keyword anywhere" },
     { value: "NOTCONTAINS", label: "Does Not Contain", hint: "Hides work orders that match this keyword" },
     { value: "=", label: "Exact Match", hint: "Only matches if the field is exactly this value" },
@@ -12205,10 +12231,10 @@ body.apm-modal-active .rain-cloud-always .lightning-bolt { animation-play-state:
     BEGINS: "Starts with",
     ENDS: "Ends with"
   };
-  function nc(e) {
+  function oc(e) {
     return e ? [{ value: "0", label: "This Week" }, { value: "1", label: "Last 2 Weeks" }, { value: "2", label: "Last 3 Weeks" }, { value: "3", label: "Last 4 Weeks" }] : [{ value: "0", label: "This Week" }, { value: "1", label: "Next 2 Weeks" }, { value: "2", label: "Next 3 Weeks" }, { value: "3", label: "Next 4 Weeks" }];
   }
-  var lb = nc(!1), Mu = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"], Ui = /* @__PURE__ */ new Set([
+  var my = oc(!1), Du = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"], Ui = /* @__PURE__ */ new Set([
     "desc",
     "equipment",
     "eqDesc",
@@ -12223,9 +12249,9 @@ body.apm-modal-active .rain-cloud-always .lightning-bolt { animation-play-state:
     "cancelReason",
     "holdReason"
   ]), io = (e) => e === "NOTCONTAINS" || e === "!=";
-  function va() {
+  function wa() {
     let e = {};
-    for (let t of Vt) e[t.key] = [];
+    for (let t of zt) e[t.key] = [];
     return {
       profileId: null,
       profileName: "",
@@ -12239,7 +12265,7 @@ body.apm-modal-active .rain-cloud-always .lightning-bolt { animation-play-state:
       fields: e
     };
   }
-  function Pu(e) {
+  function Fu(e) {
     return e.length ? e.map((t) => {
       switch (t.operator) {
         case "NOTCONTAINS":
@@ -12267,7 +12293,7 @@ body.apm-modal-active .rain-cloud-always .lightning-bolt { animation-play-state:
       return o.startsWith(">=") ? (r = ">=", o = o.substring(2)) : o.startsWith("<=") ? (r = "<=", o = o.substring(2)) : (o.startsWith("!") && (r = "NOTCONTAINS", o = o.substring(1)), o.startsWith("=") ? (r = r === "NOTCONTAINS" ? "!=" : "=", o = o.substring(1)) : o.startsWith("^") ? (r = "BEGINS", o = o.substring(1)) : o.endsWith("$") && (r = "ENDS", o = o.substring(0, o.length - 1))), { keyword: o, operator: r };
     }) : [];
   }
-  function cb(e) {
+  function fy(e) {
     let t = {
       id: e.profileId || "prof_" + Date.now(),
       name: e.profileName,
@@ -12276,8 +12302,8 @@ body.apm-modal-active .rain-cloud-always .lightning-bolt { animation-play-state:
       exDates: ""
       // computed at query time, not stored
     };
-    for (let o of Vt)
-      t[o.key] = Pu(e.fields[o.key] || []);
+    for (let o of zt)
+      t[o.key] = Fu(e.fields[o.key] || []);
     let r = {};
     for (let o of Ui) {
       let a = (e.fields[o] || []).filter((l) => !io(l.operator));
@@ -12287,10 +12313,10 @@ body.apm-modal-active .rain-cloud-always .lightning-bolt { animation-play-state:
     }
     return Object.keys(r).length && (t.fieldJoiners = r), e.dateOverride && (t.dateOverride = !0, t.weeks = e.weeks, t.arbitraryDays = e.arbitraryDays, t.isPast = e.isPast, t.days = [...e.days]), t;
   }
-  function db(e) {
-    let t = va();
+  function gy(e) {
+    let t = wa();
     t.profileId = e.id, t.profileName = e.name || "", t.target = e.target || "WSJOBS", t.dataspy = e.dataspy || "";
-    for (let o of Vt)
+    for (let o of zt)
       t.fields[o.key] = Wi(e[o.key]);
     let r = e.fieldJoiners && typeof e.fieldJoiners == "object" ? e.fieldJoiners : null;
     if (r)
@@ -12303,34 +12329,34 @@ body.apm-modal-active .rain-cloud-always .lightning-bolt { animation-play-state:
       }
     return e.dateOverride && (t.dateOverride = !0, t.weeks = e.weeks || "0", t.arbitraryDays = !!e.arbitraryDays, t.isPast = typeof e.isPast == "boolean" ? e.isPast : Gt(t.target, t.dataspy), t.weeks === "none" ? t.days = [!1, !1, !1, !1, !1, !1, !1] : t.days = Array.isArray(e.days) ? [...e.days] : [!0, !0, !0, !0, !0, !0, !0]), t;
   }
-  function pb(e) {
+  function hy(e) {
     let t = [];
-    for (let l of Vt) {
+    for (let l of zt) {
       let c = e.fields[l.key];
       if (!c || !c.length) continue;
       let u = [i("span", { className: "fb-preview-field" }, l.label), " "];
       if (l.key === "type") {
-        u.push("is "), c.forEach((h, y) => {
-          y > 0 && u.push(i("span", { className: "fb-preview-joiner" }, " or "));
-          let b = wa.find((x) => x.key === h.keyword)?.label || h.keyword;
-          u.push(i("span", { className: "fb-preview-keyword" }, b));
+        u.push("is "), c.forEach((y, x) => {
+          x > 0 && u.push(i("span", { className: "fb-preview-joiner" }, " or "));
+          let h = Sa.find((b) => b.key === y.keyword)?.label || y.keyword;
+          u.push(i("span", { className: "fb-preview-keyword" }, h));
         }), t.push(u);
         continue;
       }
       if (l.bool) {
-        let h = c[0];
-        u.push("is "), u.push(i("span", { className: "fb-preview-keyword" }, h.keyword)), t.push(u);
+        let y = c[0];
+        u.push("is "), u.push(i("span", { className: "fb-preview-keyword" }, y.keyword)), t.push(u);
         continue;
       }
-      let m = c.filter((h) => !io(h.operator)), f = c.filter((h) => io(h.operator)), g = Ui.has(l.key);
-      m.length && m.forEach((h, y) => {
-        if (y > 0) {
-          let b = g && h.joiner === "AND" ? " and " : " or ";
-          u.push(i("span", { className: "fb-preview-joiner" }, b));
+      let m = c.filter((y) => !io(y.operator)), f = c.filter((y) => io(y.operator)), g = Ui.has(l.key);
+      m.length && m.forEach((y, x) => {
+        if (x > 0) {
+          let h = g && y.joiner === "AND" ? " and " : " or ";
+          u.push(i("span", { className: "fb-preview-joiner" }, h));
         }
-        u.push(Hi[h.operator].toLowerCase() + " "), u.push(i("span", { className: "fb-preview-keyword" }, `'${h.keyword}'`));
-      }), f.length && (m.length && u.push(i("span", { className: "fb-preview-joiner" }, " and ")), f.forEach((h, y) => {
-        y > 0 && u.push(i("span", { className: "fb-preview-joiner" }, " and ")), u.push(Hi[h.operator].toLowerCase() + " "), u.push(i("span", { className: "fb-preview-keyword" }, `'${h.keyword}'`));
+        u.push(Hi[y.operator].toLowerCase() + " "), u.push(i("span", { className: "fb-preview-keyword" }, `'${y.keyword}'`));
+      }), f.length && (m.length && u.push(i("span", { className: "fb-preview-joiner" }, " and ")), f.forEach((y, x) => {
+        x > 0 && u.push(i("span", { className: "fb-preview-joiner" }, " and ")), u.push(Hi[y.operator].toLowerCase() + " "), u.push(i("span", { className: "fb-preview-keyword" }, `'${y.keyword}'`));
       })), t.push(u);
     }
     let r = e.target || "WSJOBS", o = $r(r, e.dataspy || ""), n = i("div", { className: "fb-preview-target" }, `Target: ${r} \xB7 ${o}`), a = i("div");
@@ -12346,61 +12372,61 @@ body.apm-modal-active .rain-cloud-always .lightning-bolt { animation-play-state:
       if (s.appendChild(document.createTextNode(l)), e.weeks === "none")
         s.appendChild(i("span", { className: "fb-preview-joiner" }, "with ")), s.appendChild(i("span", { className: "fb-preview-keyword" }, "No Date Filter"));
       else {
-        let p = nc(e.isPast).find((u) => u.value === e.weeks)?.label || "This Week";
+        let p = oc(e.isPast).find((u) => u.value === e.weeks)?.label || "This Week";
         if (s.appendChild(i("span", { className: "fb-preview-joiner" }, "for ")), s.appendChild(i("span", { className: "fb-preview-keyword" }, p)), e.arbitraryDays) {
-          let u = e.days.map((m, f) => m ? Mu[f] : null).filter(Boolean);
+          let u = e.days.map((m, f) => m ? Du[f] : null).filter(Boolean);
           u.length > 0 && u.length < 7 && (s.appendChild(document.createTextNode(", ")), s.appendChild(i("span", { className: "fb-preview-keyword" }, u.join("\u2013") + " only")));
         }
       }
     }
     return a.appendChild(s), a;
   }
-  function xa(e, t) {
+  function va(e, t) {
     Array.from(e.querySelectorAll(".fb-day-btn")).forEach((o, n) => {
       let a = t.days[n];
       o.classList.toggle("fb-day-on", a), o.classList.toggle("fb-day-off", !a), o.querySelector(".fb-day-x").style.display = a ? "none" : "block";
     });
   }
-  function Lu() {
+  function Bu() {
     try {
       let E = function() {
         let P = [], G = !1;
-        for (let I of Vt) {
+        for (let I of zt) {
           let X = e.fields[I.key];
           if (!X.length) continue;
           G = !0, P.push(i("div", {
             className: "fb-chip-group-label",
             style: { color: I.color }
           }, I.label));
-          let J = X.map((et, $t) => ({ chip: et, origIdx: $t })), V = J.filter((et) => !io(et.chip.operator)), oe = J.filter((et) => io(et.chip.operator)), xe = [...V, ...oe], $e = Ui.has(I.key);
-          xe.forEach((et, $t) => {
+          let J = X.map((et, qt) => ({ chip: et, origIdx: qt })), z = J.filter((et) => !io(et.chip.operator)), oe = J.filter((et) => io(et.chip.operator)), xe = [...z, ...oe], $e = Ui.has(I.key);
+          xe.forEach((et, qt) => {
             let { chip: gt, origIdx: Yr } = et;
-            if ($t > 0) {
-              let Qs = xe[$t - 1], Mg = !io(gt.operator), Pg = !io(Qs.chip.operator);
-              if ($e && Mg && Pg) {
-                let ai = gt.joiner === "AND", Lg = i("button", {
+            if (qt > 0) {
+              let Js = xe[qt - 1], Bg = !io(gt.operator), $g = !io(Js.chip.operator);
+              if ($e && Bg && $g) {
+                let ai = gt.joiner === "AND", qg = i("button", {
                   className: "fb-joiner-divider" + (ai ? " fb-joiner-and" : ""),
                   type: "button",
                   title: ai ? "Both must match (AND). Click to switch to OR." : "Either can match (OR). Click to switch to AND.",
-                  onclick: (Dd) => {
-                    Dd.preventDefault(), Dd.stopPropagation(), gt.joiner = ai ? "OR" : "AND", E();
+                  onclick: ($d) => {
+                    $d.preventDefault(), $d.stopPropagation(), gt.joiner = ai ? "OR" : "AND", E();
                   }
                 }, ai ? "AND" : "OR");
-                P.push(Lg);
+                P.push(qg);
               } else
                 P.push(i("span", {
                   className: "fb-joiner-divider fb-joiner-fixed",
                   title: "Excludes always apply (AND)"
                 }, "AND"));
             }
-            let Nd = I.key === "type", Ng = !!I.bool, Ig = !!I.urlFilter, Id = Nd ? wa.find((Qs) => Qs.key === gt.keyword) : null, Md = Id ? Id.label : gt.keyword, Pd = Nd || Ng || Ig, Ld = Pd ? "" : Hi[gt.operator];
+            let Pd = I.key === "type", Dg = !!I.bool, Fg = !!I.urlFilter, Ld = Pd ? Sa.find((Js) => Js.key === gt.keyword) : null, Dd = Ld ? Ld.label : gt.keyword, Fd = Pd || Dg || Fg, Bd = Fd ? "" : Hi[gt.operator];
             P.push(i("div", {
               className: "fb-chip",
               style: { borderLeftColor: I.color },
-              title: Pd ? Md : `${Hi[gt.operator]}: ${gt.keyword}`
+              title: Fd ? Dd : `${Hi[gt.operator]}: ${gt.keyword}`
             }, [
-              ...Ld ? [i("span", { className: "fb-chip-op", style: { color: I.color } }, Ld)] : [],
-              i("span", { className: "fb-chip-text" }, Md),
+              ...Bd ? [i("span", { className: "fb-chip-op", style: { color: I.color } }, Bd)] : [],
+              i("span", { className: "fb-chip-text" }, Dd),
               i("button", {
                 className: "fb-chip-x",
                 title: "Remove",
@@ -12417,49 +12443,49 @@ body.apm-modal-active .rain-cloud-always .lightning-bolt { animation-play-state:
             { className: "fb-preview-empty", style: { padding: "12px", textAlign: "center" } },
             "No filters yet \u2014 add one above"
           )
-        ), r.replaceChildren(...P), o.replaceChildren(pb(e));
+        ), r.replaceChildren(...P), o.replaceChildren(hy(e));
       }, k = function() {
-        let P = Iu.find((G) => G.value === l.value);
+        let P = Lu.find((G) => G.value === l.value);
         n.textContent = P ? P.hint : "";
       }, S = function() {
-        let P = Vt.find((J) => J.key === s.value), G = P && P.key === "type", I = P && P.bool, X = P && P.urlFilter;
-        if (l.style.display = "", G ? (l.innerHTML = "", wa.forEach(
+        let P = zt.find((J) => J.key === s.value), G = P && P.key === "type", I = P && P.bool, X = P && P.urlFilter;
+        if (l.style.display = "", G ? (l.innerHTML = "", Sa.forEach(
           (J) => l.appendChild(i("option", { value: J.key }, J.label))
         ), a.style.display = "none", n.textContent = "Select a WO type category to add") : I ? (l.innerHTML = "", l.appendChild(i("option", { value: "YES" }, "Yes")), l.appendChild(i("option", { value: "NO" }, "No")), a.style.display = "none", n.textContent = "Select Yes or No, then Add") : X ? (l.style.display = "none", a.style.display = "", a.placeholder = P.placeholder, n.textContent = "Matches if the field contains this text. One value only.") : (a.style.display = "", a.placeholder = P ? P.placeholder : "Enter keyword...", w(P)), P && Array.isArray(P.scopedDataspies) && P.scopedDataspies.length) {
-          let J = e.dataspy || z.value || "";
+          let J = e.dataspy || V.value || "";
           if (!P.scopedDataspies.includes(J)) {
-            let V = n.textContent;
-            n.textContent = (V ? V + "  \u2014  " : "") + `\u26A0 Typically only meaningful on: ${P.scopeLabel || "specific dataspies"}`;
+            let z = n.textContent;
+            n.textContent = (z ? z + "  \u2014  " : "") + `\u26A0 Typically only meaningful on: ${P.scopeLabel || "specific dataspies"}`;
           }
         }
       }, w = function(P) {
-        let G = P ? P.ops : zt, I = l.value;
-        l.innerHTML = "", Iu.filter((X) => G.includes(X.value)).forEach((X) => l.appendChild(i("option", { value: X.value }, X.label))), G.includes(I) && (l.value = I), k();
+        let G = P ? P.ops : Vt, I = l.value;
+        l.innerHTML = "", Lu.filter((X) => G.includes(X.value)).forEach((X) => l.appendChild(i("option", { value: X.value }, X.label))), G.includes(I) && (l.value = I), k();
       }, T = function() {
-        let P = s.value, G = Vt.find((V) => V.key === P);
+        let P = s.value, G = zt.find((z) => z.key === P);
         if (P === "type") {
-          let V = l.value;
-          if (!V) return;
-          if (e.fields.type.some((xe) => xe.keyword === V)) {
+          let z = l.value;
+          if (!z) return;
+          if (e.fields.type.some((xe) => xe.keyword === z)) {
             C("This type is already added", "#e67e22");
             return;
           }
-          e.fields.type.push({ keyword: V, operator: "IN" }), E();
+          e.fields.type.push({ keyword: z, operator: "IN" }), E();
           return;
         }
         if (G && G.bool) {
-          let V = l.value;
-          if (V !== "YES" && V !== "NO") return;
+          let z = l.value;
+          if (z !== "YES" && z !== "NO") return;
           if (e.fields[P].length > 0) {
             C("Only one value (Yes or No) per boolean field", "#e67e22");
             return;
           }
-          e.fields[P].push({ keyword: V, operator: "=" }), E();
+          e.fields[P].push({ keyword: z, operator: "=" }), E();
           return;
         }
         if (G && G.urlFilter) {
-          let V = a.value.trim();
-          if (!V) {
+          let z = a.value.trim();
+          if (!z) {
             a.style.borderColor = "var(--apm-danger)", setTimeout(() => {
               a.style.borderColor = "";
             }, 800);
@@ -12469,7 +12495,7 @@ body.apm-modal-active .rain-cloud-always .lightning-bolt { animation-play-state:
             C(`Only one value per ${G.label}`, "#e67e22");
             return;
           }
-          e.fields[P].push({ keyword: V, operator: "CONTAINS" }), a.value = "", a.focus(), E();
+          e.fields[P].push({ keyword: z, operator: "CONTAINS" }), a.value = "", a.focus(), E();
           return;
         }
         let I = l.value, X = a.value.trim();
@@ -12479,61 +12505,61 @@ body.apm-modal-active .rain-cloud-always .lightning-bolt { animation-play-state:
           }, 800);
           return;
         }
-        if (e.fields[P].some((V) => V.keyword === X && V.operator === I)) {
+        if (e.fields[P].some((z) => z.keyword === X && z.operator === I)) {
           C("This filter already exists", "#e67e22");
           return;
         }
         e.fields[P].push({ keyword: X, operator: I }), a.value = "", a.focus(), E();
       }, B = function() {
         if (v)
-          for (let P of Vt) {
+          for (let P of zt) {
             let G = v.querySelector(`#fb-text-${P.key}`);
-            G && (G.value = Pu(e.fields[P.key]));
+            G && (G.value = Fu(e.fields[P.key]));
           }
       }, D = function() {
         if (v)
-          for (let P of Vt) {
+          for (let P of zt) {
             let G = v.querySelector(`#fb-text-${P.key}`);
             G && (e.fields[P.key] = Wi(G.value));
           }
       }, $ = function(P) {
         if (!P)
-          e = va();
+          e = wa();
         else {
           let I = Ee.find((X) => X.id === P);
-          I ? e = db(I) : e = va();
+          I ? e = gy(I) : e = wa();
         }
-        h.value = e.profileName, y.value = e.target, b.style.display = e.profileId ? "inline-block" : "none";
-        let G = Ue[e.target] || Ue.WSJOBS;
-        z.replaceChildren(
+        y.value = e.profileName, x.value = e.target, h.style.display = e.profileId ? "inline-block" : "none";
+        let G = Ge[e.target] || Ge.WSJOBS;
+        V.replaceChildren(
           ...G.map((I) => i("option", { value: I.value }, I.short))
-        ), e.dataspy && (z.value = e.dataspy), e.dateOverride || (e.isPast = Gt(e.target, e.dataspy)), W(), m.checked = e.dateOverride, e.arbitraryDays = e.dateOverride, c.style.display = e.dateOverride ? "block" : "none", M.checked = e.weeks === "none", F.style.display = e.weeks === "none" ? "none" : "block", e.dateOverride && e.weeks !== "none" && (u.value = e.weeks, xa(p, e)), t || B(), E();
+        ), e.dataspy && (V.value = e.dataspy), e.dateOverride || (e.isPast = Gt(e.target, e.dataspy)), W(), m.checked = e.dateOverride, e.arbitraryDays = e.dateOverride, c.style.display = e.dateOverride ? "block" : "none", M.checked = e.weeks === "none", F.style.display = e.weeks === "none" ? "none" : "block", e.dateOverride && e.weeks !== "none" && (u.value = e.weeks, va(p, e)), t || B(), E();
       }, K = function() {
         t || D();
-        let P = h.value.trim();
+        let P = y.value.trim();
         if (!P) {
-          C("Please enter a profile name", "#e74c3c"), h.focus();
+          C("Please enter a profile name", "#e74c3c"), y.focus();
           return;
         }
         if (e.dateOverride && e.arbitraryDays && e.weeks !== "none" && !e.days.some(Boolean)) {
           C("Select at least one day", "#e74c3c");
           return;
         }
-        e.profileName = P, e.target = y.value, e.dataspy = z.value || "", e.weeks !== "none" && (e.weeks = u.value);
-        let G = cb(e);
+        e.profileName = P, e.target = x.value, e.dataspy = V.value || "", e.weeks !== "none" && (e.weeks = u.value);
+        let G = fy(e);
         d.info("FilterBuilder", `Saving Profile: ${P}`, G);
         let I = Ee.findIndex((X) => X.id === G.id);
-        I >= 0 ? _r(Ee.map((X, J) => J === I ? G : X)) : _r([...Ee, G]), qr(G.id), e.profileId = G.id, oo(), Ft(), Pe(), O(), g.value = G.id, b.style.display = "inline-block", C(L("profileSaved"), "#2ecc71");
+        I >= 0 ? Rr(Ee.map((X, J) => J === I ? G : X)) : Rr([...Ee, G]), qr(G.id), e.profileId = G.id, oo(), Bt(), Pe(), O(), g.value = G.id, h.style.display = "inline-block", C(L("profileSaved"), "#2ecc71");
       }, ee = function() {
         let P = e.profileId;
-        P && confirm("Delete this profile?") && (_r(Ee.filter((G) => G.id !== P)), Dt === P && qr("manual"), oo(), Ft(), Pe(), O(), g.value = "", $(null), C(L("profileDeleted"), "#e74c3c"));
+        P && confirm("Delete this profile?") && (Rr(Ee.filter((G) => G.id !== P)), Ft === P && qr("manual"), oo(), Bt(), Pe(), O(), g.value = "", $(null), C(L("profileDeleted"), "#e74c3c"));
       }, O = function() {
         g.innerHTML = "", g.appendChild(i("option", { value: "" }, "-- Create New Profile --")), Ee.forEach((P) => {
           let G = P.target === "CTJOBS" ? " [CT]" : "";
           g.appendChild(i("option", { value: P.id }, `${P.name}${G}`));
         });
       }, H = function() {
-        let P = Vt.map((G) => {
+        let P = zt.map((G) => {
           let I = G.bool ? i("select", {
             id: `fb-text-${G.key}`,
             className: "eam-fc-select",
@@ -12565,32 +12591,32 @@ body.apm-modal-active .rain-cloud-always .lightning-bolt { animation-play-state:
       }, W = function() {
         if (!f) return;
         f.textContent = e.isPast ? "\u25C0 Past" : "\u25B6 Future", f.style.color = e.isPast ? "var(--apm-warning)" : "var(--apm-success)";
-        let P = nc(e.isPast), G = u.value;
+        let P = oc(e.isPast), G = u.value;
         u.replaceChildren(...P.map((I) => i("option", { value: I.value }, I.label))), u.value = G;
-      }, e = va(), t = !0, r, o, n, a, s, l, c, p, u, m, f, g, h, y, b, x, v, Q = i("button", { className: "fb-mode-btn fb-mode-active" }, "Visual"), R = i("button", { className: "fb-mode-btn" }, "Text");
+      }, e = wa(), t = !0, r, o, n, a, s, l, c, p, u, m, f, g, y, x, h, b, v, Q = i("button", { className: "fb-mode-btn fb-mode-active" }, "Visual"), R = i("button", { className: "fb-mode-btn" }, "Text");
       Q.onclick = () => {
-        t || (D(), t = !0, Q.classList.add("fb-mode-active"), R.classList.remove("fb-mode-active"), x.style.display = "block", v.style.display = "none", E());
+        t || (D(), t = !0, Q.classList.add("fb-mode-active"), R.classList.remove("fb-mode-active"), b.style.display = "block", v.style.display = "none", E());
       }, R.onclick = () => {
-        t && (t = !1, R.classList.add("fb-mode-active"), Q.classList.remove("fb-mode-active"), x.style.display = "none", v.style.display = "block", B());
+        t && (t = !1, R.classList.add("fb-mode-active"), Q.classList.remove("fb-mode-active"), b.style.display = "none", v.style.display = "block", B());
       };
       {
         let P = ["Reason / Notes", "Yes / No", "Numeric / Ranked", "Category", "Text Search"], G = "desc", I = /* @__PURE__ */ new Map();
-        for (let V of Vt) {
-          let oe = V.group || "Other";
-          I.has(oe) || I.set(oe, []), I.get(oe).push(V);
+        for (let z of zt) {
+          let oe = z.group || "Other";
+          I.has(oe) || I.set(oe, []), I.get(oe).push(z);
         }
         let X = [];
-        for (let V of P) I.has(V) && (X.push([V, I.get(V)]), I.delete(V));
-        for (let [V, oe] of I) X.push([V, oe]);
+        for (let z of P) I.has(z) && (X.push([z, I.get(z)]), I.delete(z));
+        for (let [z, oe] of I) X.push([z, oe]);
         let J = /* @__PURE__ */ new Set(["Text Search"]);
         s = i(
           "select",
           { className: "fb-field-select" },
-          X.map(([V, oe]) => {
-            let xe = J.has(V) ? [...oe].reverse() : oe;
+          X.map(([z, oe]) => {
+            let xe = J.has(z) ? [...oe].reverse() : oe;
             return i(
               "optgroup",
-              { label: V },
+              { label: z },
               xe.map(($e) => i("option", { value: $e.key, selected: $e.key === G }, $e.label))
             );
           })
@@ -12599,39 +12625,39 @@ body.apm-modal-active .rain-cloud-always .lightning-bolt { animation-play-state:
       s.addEventListener("change", S), l = i("select", { className: "fb-op-select" }), l.addEventListener("change", k), a = i("input", {
         type: "text",
         className: "fb-keyword-input",
-        placeholder: Vt[0].placeholder,
+        placeholder: zt[0].placeholder,
         style: { textTransform: "uppercase" }
       }), a.addEventListener("keydown", (P) => {
         P.key === "Enter" && (P.preventDefault(), T());
-      }), n = i("div", { className: "fb-hint" }), w(Vt[0]);
+      }), n = i("div", { className: "fb-hint" }), w(zt[0]);
       let A = i("button", { className: "fb-add-btn", onclick: T }, "+ Add");
-      r = i("div", { className: "fb-chip-list" }), o = i("div", { className: "fb-preview-text" }), g = i("select", { className: "eam-fc-select", style: { flex: "1" } }), g.addEventListener("change", () => $(g.value || null)), h = i("input", {
+      r = i("div", { className: "fb-chip-list" }), o = i("div", { className: "fb-preview-text" }), g = i("select", { className: "eam-fc-select", style: { flex: "1" } }), g.addEventListener("change", () => $(g.value || null)), y = i("input", {
         type: "text",
         className: "eam-fc-input-text",
         placeholder: "Profile Name...",
         style: { flex: "1" }
-      }), y = i("select", { className: "eam-fc-select", style: { width: "180px" } }, [
+      }), x = i("select", { className: "eam-fc-select", style: { width: "180px" } }, [
         i("option", { value: "WSJOBS" }, "Work Orders (WSJOBS)"),
         i("option", { value: "CTJOBS" }, "Compliance WOs (CTJOBS)")
       ]);
-      let z = i(
+      let V = i(
         "select",
         { className: "eam-fc-select", style: { flex: "1" } },
-        (Ue[e.target] || Ue.WSJOBS).map(
+        (Ge[e.target] || Ge.WSJOBS).map(
           (P) => i("option", { value: P.value }, P.short)
         )
       );
-      y.addEventListener("change", () => {
-        let P = y.value, G = Ue[P] || Ue.WSJOBS;
-        z.replaceChildren(
+      x.addEventListener("change", () => {
+        let P = x.value, G = Ge[P] || Ge.WSJOBS;
+        V.replaceChildren(
           ...G.map((I) => i("option", { value: I.value, selected: !!I.default }, I.short))
-        ), e.dataspy = Ut(P), z.value = e.dataspy, e.isPast = Gt(P, e.dataspy), W();
-      }), z.addEventListener("change", () => {
-        e.dataspy = z.value || "", e.isPast = Gt(y.value, e.dataspy), W(), S();
+        ), e.dataspy = Ut(P), V.value = e.dataspy, e.isPast = Gt(P, e.dataspy), W();
+      }), V.addEventListener("change", () => {
+        e.dataspy = V.value || "", e.isPast = Gt(x.value, e.dataspy), W(), S();
       }), m = i("input", { type: "checkbox" }), u = i(
         "select",
         { className: "eam-fc-select", style: { flex: "1" } },
-        lb.map((P) => i("option", { value: P.value }, P.label))
+        my.map((P) => i("option", { value: P.value }, P.label))
       ), f = i("button", {
         style: { background: "none", border: "none", cursor: "pointer", fontSize: "var(--apm-text-sm)", fontWeight: "600", padding: "2px 6px", whiteSpace: "nowrap" },
         onclick: () => {
@@ -12640,13 +12666,13 @@ body.apm-modal-active .rain-cloud-always .lightning-bolt { animation-play-state:
       }, "\u25B6 Future"), p = i(
         "div",
         { className: "fb-day-checkboxes" },
-        Mu.map((P, G) => {
+        Du.map((P, G) => {
           let I = i("span", { className: "fb-day-x", style: { display: "none" } }, "\u2716");
           return i("button", {
             className: "fb-day-btn fb-day-on",
             title: `Click to exclude ${P}`,
             onclick: () => {
-              e.days[G] = !e.days[G], xa(p, e), E();
+              e.days[G] = !e.days[G], va(p, e), E();
             }
           }, [
             i("span", { className: "fb-day-label" }, P),
@@ -12668,7 +12694,7 @@ body.apm-modal-active .rain-cloud-always .lightning-bolt { animation-play-state:
         )
       ]);
       M.addEventListener("change", () => {
-        M.checked ? (e.weeks = "none", e.days = [!1, !1, !1, !1, !1, !1, !1], F.style.display = "none") : (e.weeks = "0", e.days = [!0, !0, !0, !0, !0, !0, !0], u.value = "0", xa(p, e), F.style.display = "block"), E();
+        M.checked ? (e.weeks = "none", e.days = [!1, !1, !1, !1, !1, !1, !1], F.style.display = "none") : (e.weeks = "0", e.days = [!0, !0, !0, !0, !0, !0, !0], u.value = "0", va(p, e), F.style.display = "block"), E();
       }), c = i("div", { className: "fb-date-section", style: { display: "none" } }, [
         i("div", { className: "eam-fc-row", style: { marginBottom: "8px", gap: "8px" } }, [
           i("label", { style: { display: "flex", alignItems: "center", gap: "6px", cursor: "pointer", fontSize: "var(--apm-text-sm)", color: "var(--apm-text-secondary)" } }, [
@@ -12678,16 +12704,16 @@ body.apm-modal-active .rain-cloud-always .lightning-bolt { animation-play-state:
         ]),
         F
       ]), m.addEventListener("change", () => {
-        e.dateOverride = m.checked, e.arbitraryDays = e.dateOverride, c.style.display = e.dateOverride ? "block" : "none", e.dateOverride && xa(p, e), E();
+        e.dateOverride = m.checked, e.arbitraryDays = e.dateOverride, c.style.display = e.dateOverride ? "block" : "none", e.dateOverride && va(p, e), E();
       }), u.addEventListener("change", () => {
         e.weeks = u.value, E();
-      }), b = i("button", {
+      }), h = i("button", {
         className: "fb-btn fb-btn-delete",
         style: { display: "none" },
         onclick: ee
       }, "Delete");
       let U = i("button", { className: "fb-btn fb-btn-save", onclick: K }, "Save Profile"), q = i("button", { className: "fb-btn fb-btn-cancel" }, "Cancel");
-      x = i("div", { className: "fb-visual-mode" }, [
+      b = i("div", { className: "fb-visual-mode" }, [
         i("div", { className: "fb-add-row" }, [
           s,
           l,
@@ -12731,15 +12757,15 @@ body.apm-modal-active .rain-cloud-always .lightning-bolt { animation-play-state:
               ]),
               i("div", { className: "eam-fc-row", style: { marginBottom: "6px" } }, [
                 i("label", { className: "eam-fc-label", style: { width: "70px" } }, "Name:"),
-                h
-              ]),
-              i("div", { className: "eam-fc-row", style: { marginBottom: "6px" } }, [
-                i("label", { className: "eam-fc-label", style: { width: "70px" } }, "Target:"),
                 y
               ]),
               i("div", { className: "eam-fc-row", style: { marginBottom: "6px" } }, [
+                i("label", { className: "eam-fc-label", style: { width: "70px" } }, "Target:"),
+                x
+              ]),
+              i("div", { className: "eam-fc-row", style: { marginBottom: "6px" } }, [
                 i("label", { className: "eam-fc-label", style: { width: "70px" } }, "Dataspy:"),
-                z
+                V
               ])
             ]),
             // Date override section
@@ -12763,7 +12789,7 @@ body.apm-modal-active .rain-cloud-always .lightning-bolt { animation-play-state:
             // Divider
             i("div", { style: { borderBottom: "1px solid var(--apm-border)", margin: "0 0 12px 0" } }),
             // Filter builder (visual + text)
-            x,
+            b,
             v,
             // Preview
             i("div", { className: "fb-preview", style: { marginTop: "12px" } }, [
@@ -12774,7 +12800,7 @@ body.apm-modal-active .rain-cloud-always .lightning-bolt { animation-play-state:
           // Footer
           i("div", { className: "fb-action-bar" }, [
             U,
-            b
+            h
           ])
         ])
       ), j.addEventListener("click", (P) => {
@@ -12782,13 +12808,13 @@ body.apm-modal-active .rain-cloud-always .lightning-bolt { animation-play-state:
       }), j.addEventListener("keydown", (P) => {
         P.key === "Escape" && Z();
       }), O(), j.openBuilder = (P, G, I) => {
-        O(), I ? (g.value = I, $(I)) : (g.value === "" || !g.value) && (e = va(), h.value = "", b.style.display = "none", P && (e.fields.desc = Wi(P)), G && (e.fields.org = Wi(G)), E(), t || B()), m.checked = e.dateOverride, e.arbitraryDays = e.dateOverride, c.style.display = e.dateOverride ? "block" : "none", M.checked = e.weeks === "none", F.style.display = e.weeks === "none" ? "none" : "block", e.weeks !== "none" && (u.value = e.weeks), e.dateOverride && e.weeks !== "none" && xa(p, e), j.style.display = "flex", document.body.classList.add("apm-modal-active"), a.focus();
+        O(), I ? (g.value = I, $(I)) : (g.value === "" || !g.value) && (e = wa(), y.value = "", h.style.display = "none", P && (e.fields.desc = Wi(P)), G && (e.fields.org = Wi(G)), E(), t || B()), m.checked = e.dateOverride, e.arbitraryDays = e.dateOverride, c.style.display = e.dateOverride ? "block" : "none", M.checked = e.weeks === "none", F.style.display = e.weeks === "none" ? "none" : "block", e.weeks !== "none" && (u.value = e.weeks), e.dateOverride && e.weeks !== "none" && va(p, e), j.style.display = "flex", document.body.classList.add("apm-modal-active"), a.focus();
       }, j;
     } catch (e) {
       return d.error("FilterBuilder", "Build failed:", e), i("div");
     }
   }
-  function Du(e) {
+  function $u(e) {
     if (!e.dateOverride) return [];
     if (!Array.isArray(e.days)) return [];
     let t = parseInt(e.weeks, 10) || 0, r = typeof e.isPast == "boolean" ? e.isPast : Gt(e.target || "WSJOBS", e.dataspy), o = /* @__PURE__ */ new Date(), n = new Date(o);
@@ -12808,7 +12834,7 @@ body.apm-modal-active .rain-cloud-always .lightning-bolt { animation-play-state:
   }
 
   // src/modules/forecast/engine/maddon-builder.js
-  function Fu(e) {
+  function qu(e) {
     let t = {
       equipment: "equipment",
       eqDesc: "equipmentdesc",
@@ -12831,43 +12857,43 @@ body.apm-modal-active .rain-cloud-always .lightning-bolt { animation-play-state:
     for (let [s, l] of Object.entries(t)) {
       let c = e[s];
       if (!c) continue;
-      let p = c.split(",").map((x) => x.trim()).filter((x) => x);
+      let p = c.split(",").map((b) => b.trim()).filter((b) => b);
       if (p.length === 0) continue;
       if (d.debug("Forecast", `Smart-Parsing ${s} keywords: [${p.join(", ")}]`), r.has(s)) {
-        let x = o(p[0]);
-        n[`MADDON_FILTER_ALIAS_NAME_${a}`] = l, n[`MADDON_FILTER_OPERATOR_${a}`] = "=", n[`MADDON_FILTER_VALUE_${a}`] = x, n[`MADDON_FILTER_SEQNUM_${a}`] = a.toString(), n[`MADDON_FILTER_JOINER_${a}`] = "AND", n[`MADDON_LPAREN_${a}`] = "false", n[`MADDON_RPAREN_${a}`] = "false", a++;
+        let b = o(p[0]);
+        n[`MADDON_FILTER_ALIAS_NAME_${a}`] = l, n[`MADDON_FILTER_OPERATOR_${a}`] = "=", n[`MADDON_FILTER_VALUE_${a}`] = b, n[`MADDON_FILTER_SEQNUM_${a}`] = a.toString(), n[`MADDON_FILTER_JOINER_${a}`] = "AND", n[`MADDON_LPAREN_${a}`] = "false", n[`MADDON_RPAREN_${a}`] = "false", a++;
         continue;
       }
       if (s === "type") {
-        let x = [];
+        let b = [];
         for (let v of p) {
-          let E = wa.find((k) => k.key === v.trim().toLowerCase());
-          E ? x.push(...E.codes) : d.debug("Forecast", `Unknown WO type category: ${v}`);
+          let E = Sa.find((k) => k.key === v.trim().toLowerCase());
+          E ? b.push(...E.codes) : d.debug("Forecast", `Unknown WO type category: ${v}`);
         }
-        if (x.length > 0) {
-          let v = x.map((E) => `'${E}'`).join(",");
+        if (b.length > 0) {
+          let v = b.map((E) => `'${E}'`).join(",");
           n[`MADDON_FILTER_ALIAS_NAME_${a}`] = l, n[`MADDON_FILTER_OPERATOR_${a}`] = "IN", n[`MADDON_FILTER_VALUE_${a}`] = v, n[`MADDON_FILTER_SEQNUM_${a}`] = a.toString(), n[`MADDON_FILTER_JOINER_${a}`] = "AND", n[`MADDON_LPAREN_${a}`] = "false", n[`MADDON_RPAREN_${a}`] = "false", a++;
         }
         continue;
       }
-      let u = p.map((x) => {
-        let v = "CONTAINS", E = x, k = "include";
+      let u = p.map((b) => {
+        let v = "CONTAINS", E = b, k = "include";
         return s === "exDates" ? (v = "!=", k = "exclude") : E.startsWith(">=") ? (v = ">=", E = E.substring(2), k = "exclude") : E.startsWith("<=") ? (v = "<=", E = E.substring(2), k = "exclude") : (E.startsWith("!") && (v = "NOTCONTAINS", E = E.substring(1), k = "exclude"), E.startsWith("=") ? (v = v === "NOTCONTAINS" ? "!=" : "=", E = E.substring(1)) : E.startsWith("^") ? (v = "BEGINS", E = E.substring(1)) : E.endsWith("$") && (v = "ENDS", E = E.substring(0, E.length - 1))), { operator: v, value: E, type: k };
-      }), m = u.filter((x) => x.type === "include"), f = u.filter((x) => x.type === "exclude"), g = [...m, ...f], h = e.fieldJoiners && Array.isArray(e.fieldJoiners[s]) ? e.fieldJoiners[s] : null, y = (x) => h && h[x] === "AND" ? "AND" : "OR", b = 0;
-      g.forEach((x) => {
-        if (n[`MADDON_FILTER_ALIAS_NAME_${a}`] = l, n[`MADDON_FILTER_OPERATOR_${a}`] = x.operator, n[`MADDON_FILTER_VALUE_${a}`] = x.value, n[`MADDON_FILTER_SEQNUM_${a}`] = a.toString(), x.type === "include") {
-          let v = b === m.length - 1;
-          n[`MADDON_FILTER_JOINER_${a}`] = v ? "AND" : y(b);
+      }), m = u.filter((b) => b.type === "include"), f = u.filter((b) => b.type === "exclude"), g = [...m, ...f], y = e.fieldJoiners && Array.isArray(e.fieldJoiners[s]) ? e.fieldJoiners[s] : null, x = (b) => y && y[b] === "AND" ? "AND" : "OR", h = 0;
+      g.forEach((b) => {
+        if (n[`MADDON_FILTER_ALIAS_NAME_${a}`] = l, n[`MADDON_FILTER_OPERATOR_${a}`] = b.operator, n[`MADDON_FILTER_VALUE_${a}`] = b.value, n[`MADDON_FILTER_SEQNUM_${a}`] = a.toString(), b.type === "include") {
+          let v = h === m.length - 1;
+          n[`MADDON_FILTER_JOINER_${a}`] = v ? "AND" : x(h);
         } else
           n[`MADDON_FILTER_JOINER_${a}`] = "AND";
-        m.length > 1 ? (n[`MADDON_LPAREN_${a}`] = b === 0 && x.type === "include" ? "true" : "false", n[`MADDON_RPAREN_${a}`] = b === m.length - 1 && x.type === "include" ? "true" : "false") : (n[`MADDON_LPAREN_${a}`] = "false", n[`MADDON_RPAREN_${a}`] = "false"), x.type === "include" && b++, a++;
+        m.length > 1 ? (n[`MADDON_LPAREN_${a}`] = h === 0 && b.type === "include" ? "true" : "false", n[`MADDON_RPAREN_${a}`] = h === m.length - 1 && b.type === "include" ? "true" : "false") : (n[`MADDON_LPAREN_${a}`] = "false", n[`MADDON_RPAREN_${a}`] = "false"), b.type === "include" && h++, a++;
       });
     }
     return n;
   }
-  function Bu(e, t) {
+  function Wu(e, t) {
     if (!t.dateOverride || !t.arbitraryDays) return;
-    let r = Du(t);
+    let r = $u(t);
     if (r.length === 0) return;
     let n = Object.keys(e).filter((l) => l.startsWith("MADDON_FILTER_SEQNUM_")).map((l) => {
       let c = l.split("_");
@@ -12880,7 +12906,7 @@ body.apm-modal-active .rain-cloud-always .lightning-bolt { animation-play-state:
   }
 
   // src/modules/forecast/engine/filters/profile-source.js
-  var ac = {
+  var nc = {
     name: "profile",
     contribute(e) {
       if (!e.profile || e.mode === "clear" || e.mode === "quick") return null;
@@ -12888,17 +12914,17 @@ body.apm-modal-active .rain-cloud-always .lightning-bolt { animation-play-state:
       if (o && !o.includes(",")) {
         let s = o.trim();
         if (!s.startsWith("!=") && !s.startsWith("^") && !s.endsWith("$")) {
-          let c = mb(s);
+          let c = by(s);
           t.org = c.value, t.orgOpClass = c.opClass, delete r.org;
         }
       }
-      let n = Fu(r);
-      Bu(n, e.profile);
-      let a = ub(e.profile.createdBy);
+      let n = qu(r);
+      Wu(n, e.profile);
+      let a = yy(e.profile.createdBy);
       return { maddonParams: n, urlParams: a, extjsFields: t };
     }
   };
-  function ub(e) {
+  function yy(e) {
     if (!e) return null;
     let t = String(e).trim().replace(/^[!=^]+/, "").replace(/\$$/, "");
     return t ? {
@@ -12907,26 +12933,26 @@ body.apm-modal-active .rain-cloud-always .lightning-bolt { animation-play-state:
       filtervalue: t
     } : null;
   }
-  function mb(e) {
+  function by(e) {
     let t = e.trim(), r = "fo_con";
     return t.startsWith("!=") ? t = t.substring(2) : t.startsWith("!") ? (t = t.substring(1), r = "fo_dncon") : t.startsWith("=") ? (t = t.substring(1), r = "fo_eq") : t.startsWith("^") ? t = t.substring(1) : t.endsWith("$") && (t = t.slice(0, -1)), { value: t, opClass: r };
   }
 
   // src/modules/forecast/engine/filters/manual-source.js
-  var fb = {
+  var xy = {
     Contains: "fo_con",
     "Does Not Contain": "fo_dncon"
-  }, ic = {
+  }, ac = {
     name: "manual",
     contribute(e) {
       if (e.profile || e.mode === "clear" || e.mode === "quick") return null;
       let t = {}, r = (e.manual.descText || "").trim();
-      return r && (t.desc = r, t.descOpClass = fb[e.manual.descOp] || "fo_con"), e.manual.orgText && (t.org = e.manual.orgText, t.orgOpClass = "fo_con"), !t.desc && !t.org ? null : { maddonParams: null, extjsFields: t };
+      return r && (t.desc = r, t.descOpClass = xy[e.manual.descOp] || "fo_con"), e.manual.orgText && (t.org = e.manual.orgText, t.orgOpClass = "fo_con"), !t.desc && !t.org ? null : { maddonParams: null, extjsFields: t };
     }
   };
 
   // src/modules/forecast/engine/filters/date-source.js
-  var sc = {
+  var ic = {
     name: "date",
     contribute(e) {
       if (e.mode === "clear" || e.mode === "quick" || e.profile?.dateOverride && e.profile?.arbitraryDays && e.mode !== "today")
@@ -12947,26 +12973,26 @@ body.apm-modal-active .rain-cloud-always .lightning-bolt { animation-play-state:
 
   // src/modules/forecast/engine/filters/index.js
   var Gi = /* @__PURE__ */ new Map();
+  Gi.set(nc.name, nc);
   Gi.set(ac.name, ac);
   Gi.set(ic.name, ic);
-  Gi.set(sc.name, sc);
-  function $u(e) {
+  function Hu(e) {
     return Gi.get(e) || null;
   }
 
   // src/modules/forecast/engine/filter-set.js
-  function qu(e) {
-    let t = wn(e.mode), r = gb();
+  function Uu(e) {
+    let t = Sn(e.mode), r = vy();
     if (!t) return Object.freeze(r);
     for (let o of t.contributors) {
-      let n = $u(o);
+      let n = Hu(o);
       if (!n) continue;
       let a = n.contribute(e);
-      a && hb(r, a);
+      a && wy(r, a);
     }
     return e.mode === "quick" ? r.targetDataspy = "All Work Orders" : e.dataspyDisplay ? r.targetDataspy = e.dataspyDisplay : r.targetDataspy = $r(e.target, e.dataspyValue), Object.freeze(r);
   }
-  function gb() {
+  function vy() {
     return {
       maddonParams: null,
       urlParams: null,
@@ -12984,44 +13010,44 @@ body.apm-modal-active .rain-cloud-always .lightning-bolt { animation-play-state:
       targetDataspy: "Open Work Orders"
     };
   }
-  function hb(e, t) {
+  function wy(e, t) {
     t.maddonParams && (e.maddonParams = e.maddonParams ? { ...e.maddonParams, ...t.maddonParams } : { ...t.maddonParams }), t.urlParams && (e.urlParams = e.urlParams ? { ...e.urlParams, ...t.urlParams } : { ...t.urlParams }), t.extjsFields && Object.assign(e.extjsFields, t.extjsFields), t.targetDataspy && (e.targetDataspy = t.targetDataspy);
   }
 
   // src/modules/forecast/engine/execution.js
-  Tt();
-  sa();
+  yt();
+  la();
   ue();
-  ur();
+  mr();
   te();
   We();
   qe();
   mt();
   Te();
-  ha();
+  ya();
   nt();
-  var lc = "fo_con";
-  async function Wu(e, t) {
+  var sc = "fo_con";
+  async function Gu(e, t) {
     if (e.mode === "quick")
-      return await bb(e);
-    let r = await Xl(e.target);
-    await Ou(e.target);
-    let o = await Ru(e.target, r ? 15e3 : 7e3);
-    await yb(o, e, t), e.skipRun || await xb(o, e, t);
+      return await Sy(e);
+    let r = await Ql(e.target);
+    await Mu(e.target);
+    let o = await Iu(e.target, r ? 15e3 : 7e3);
+    await Ey(o, e, t), e.skipRun || await ky(o, e, t);
   }
-  async function bb(e) {
+  async function Sy(e) {
     if (!e.quickSearchText) {
       Xt("Enter WO.", "#e74c3c");
       return;
     }
-    su();
+    du();
     for (let t of ne())
       try {
         let r = t.EAM?.Nav;
         if (!r || typeof r.goTo != "function") continue;
         d.info("Forecast", `Quick search via Nav.goTo for ${e.quickSearchText}`);
         let o = `WSJOBS?USER_FUNCTION_NAME=${e.target}`;
-        lr(!0, 12e3), pe.pause(12e3);
+        cr(!0, 12e3), pe.pause(12e3);
         let n = Bo();
         r.goTo(o, {
           CURRENT_TAB_NAME: "HDR",
@@ -13032,12 +13058,12 @@ body.apm-modal-active .rain-cloud-always .lightning-bolt { animation-play-state:
         let s = await Oi(/* @__PURE__ */ new Set(["wsjobs", "ctjobs"]), { timeoutMs: 8e3 });
         if (!s.success) {
           for (let c = 0; c < 30; c++)
-            if (await re(250), ge().view === "record") {
+            if (await re(250), he().view === "record") {
               s.success = !0;
               break;
             }
         }
-        n(), lr(!1), pe.resume(), s.success ? (Xt("", "#18bc9c"), C(L("openedWO", e.quickSearchText), "#1abc9c", !1)) : Xt("WO not found.", "var(--apm-danger)");
+        n(), cr(!1), pe.resume(), s.success ? (Xt("", "#18bc9c"), C(L("openedWO", e.quickSearchText), "#1abc9c", !1)) : Xt("WO not found.", "var(--apm-danger)");
         let l = document.getElementById("apm-qs-input");
         l && (l.value = "");
         return;
@@ -13046,7 +13072,7 @@ body.apm-modal-active .rain-cloud-always .lightning-bolt { animation-play-state:
       }
     Xt("Quick search unavailable.", "var(--apm-danger)");
   }
-  async function yb(e, t, r) {
+  async function Ey(e, t, r) {
     let { Ext: o, win: n } = e, a = e.grid.getEl?.()?.dom?.ownerDocument, s = (m) => {
       let f = m.getEl?.()?.dom;
       return !f || !a ? !0 : f.ownerDocument === a;
@@ -13063,39 +13089,39 @@ body.apm-modal-active .rain-cloud-always .lightning-bolt { animation-play-state:
       for (let f of m) {
         let g = f.getStore?.();
         if (g && f.displayField) {
-          let h = g.findRecord(f.displayField, r.targetDataspy, 0, !1, !1, !0);
-          if (h) {
-            let y = h.get(f.valueField);
-            typeof y == "object" && y !== null && (y = y.id || y.value);
-            let b = f.getValue();
-            if (typeof b == "object" && b !== null && (b = b.id || b.value), String(b) !== String(y)) {
-              f.setValue(y), f.fireEvent("select", f, h), l = !0;
+          let y = g.findRecord(f.displayField, r.targetDataspy, 0, !1, !1, !0);
+          if (y) {
+            let x = y.get(f.valueField);
+            typeof x == "object" && x !== null && (x = x.id || x.value);
+            let h = f.getValue();
+            if (typeof h == "object" && h !== null && (h = h.id || h.value), String(h) !== String(x)) {
+              f.setValue(x), f.fireEvent("select", f, y), l = !0;
               break;
             }
           }
         }
       }
     }
-    l && await Ye(n);
+    l && await He(n);
     let c = (m, f, g) => {
       if (f == null) return;
-      let h = Array.isArray(m) ? m : [m], y = null;
-      for (let b of h) {
-        let x = o.ComponentQuery.query(`[name=${b}]:not([destroyed=true])`).filter(s);
-        if (x && x.length > 0) {
-          y = x[0];
+      let y = Array.isArray(m) ? m : [m], x = null;
+      for (let h of y) {
+        let b = o.ComponentQuery.query(`[name=${h}]:not([destroyed=true])`).filter(s);
+        if (b && b.length > 0) {
+          x = b[0];
           break;
         }
       }
-      if (y) {
+      if (x) {
         if (f === "") {
-          y.setValue(""), y.fireEvent("change", y, ""), y.fireEvent("blur", y);
+          x.setValue(""), x.fireEvent("change", x, ""), x.fireEvent("blur", x);
           return;
         }
-        if (y.setValue(f), y.fireEvent("change", y, f), y.fireEvent("blur", y), g) {
-          let b = y.getEl(), x = null, v = b.up(".x-box-inner") || b.up(".x-column-header-inner") || b.up(".x-container");
-          if (v && (x = v.down(".uft-id-btnfilteroperator") || v.down(".x-btn-icon-el-gridfilter-small"), x && x.hasCls("x-btn-icon-el-gridfilter-small") && (x = x.up(".x-btn"))), x) {
-            let E = o.getCmp(x.id);
+        if (x.setValue(f), x.fireEvent("change", x, f), x.fireEvent("blur", x), g) {
+          let h = x.getEl(), b = null, v = h.up(".x-box-inner") || h.up(".x-column-header-inner") || h.up(".x-container");
+          if (v && (b = v.down(".uft-id-btnfilteroperator") || v.down(".x-btn-icon-el-gridfilter-small"), b && b.hasCls("x-btn-icon-el-gridfilter-small") && (b = b.up(".x-btn"))), b) {
+            let E = o.getCmp(b.id);
             if (E && !E.isDestroyed && E.menu && !E.menu.isDestroyed && E.menu.items?.items) {
               let k = E.menu.items.items.find((S) => S && !S.isDestroyed && S.iconCls === g);
               k && (k.handler ? k.handler.call(k.scope || k, k) : k.fireEvent("click", k));
@@ -13106,24 +13132,24 @@ body.apm-modal-active .rain-cloud-always .lightning-bolt { animation-play-state:
     }, p = o.ComponentQuery.query("[name=selfiltervaluectrl]:not([destroyed=true])").filter(s);
     p && p.length > 0 && (p[0].setValue(""), p[0].fireEvent("change", p[0], ""), p[0].fireEvent("blur", p[0]));
     let u = r.extjsFields;
-    c("ff_organization", u.org, u.orgOpClass || lc), c("ff_workordernum", u.woNum, lc), c("ff_description", u.desc, u.descOpClass), c(["ff_schedstartdate", "ff_startdate"], u.start, u.startOpClass), c(["ff_schedenddate", "ff_enddate"], u.end, u.endOpClass), t.mode === "quick" && c("ff_status", "", lc);
+    c("ff_organization", u.org, u.orgOpClass || sc), c("ff_workordernum", u.woNum, sc), c("ff_description", u.desc, u.descOpClass), c(["ff_schedstartdate", "ff_startdate"], u.start, u.startOpClass), c(["ff_schedenddate", "ff_enddate"], u.end, u.endOpClass), t.mode === "quick" && c("ff_status", "", sc);
   }
-  async function xb(e, t, r) {
+  async function ky(e, t, r) {
     let { Ext: o, win: n } = e, a = e.grid.getEl?.()?.dom?.ownerDocument, s = o.ComponentQuery.query("button[text=Run]:not([destroyed=true])").filter((u) => {
       let m = u.getEl?.()?.dom;
       return !m || !a ? !0 : m.ownerDocument === a;
     });
     if (!s || s.length === 0) return;
     let l = s[0], c = r.maddonParams && Object.keys(r.maddonParams).length > 0, p = r.urlParams && Object.keys(r.urlParams).length > 0;
-    (c || p) && Su(t.target, {
+    (c || p) && Tu(t.target, {
       maddonParams: r.maddonParams,
       urlParams: r.urlParams
-    }), l.handler ? l.handler.call(l.scope || l, l) : l.fireEvent("click", l), await re(300), await Ye(n);
+    }), l.handler ? l.handler.call(l.scope || l, l) : l.fireEvent("click", l), await re(300), await He(n);
   }
 
   // src/modules/forecast/engine/persist.js
-  function Hu(e) {
-    e.mode !== "quick" && (fu(e.target, e.profile?.id || ""), Pe());
+  function Vu(e) {
+    e.mode !== "quick" && (yu(e.target, e.profile?.id || ""), Pe());
   }
 
   // src/modules/forecast/components/desc-autocomplete.js
@@ -13131,45 +13157,45 @@ body.apm-modal-active .rain-cloud-always .lightning-bolt { animation-play-state:
   _e();
   te();
   se();
-  var zu = 10, Ge = { pinned: [], recent: [] }, Bt = null, Zt = -1, at = null, Uu = !1, zi = !1;
-  function Vu(e) {
-    Bt && (Bt.contains(e.target) || e.target === at || ji());
+  var Ku = 10, Ve = { pinned: [], recent: [] }, $t = null, Zt = -1, at = null, zu = !1, Vi = !1;
+  function Yu(e) {
+    $t && ($t.contains(e.target) || e.target === at || ji());
+  }
+  function lc() {
+    let e = N.get(Xs);
+    e && e._v === 1 && (Ve.pinned = Array.isArray(e.pinned) ? e.pinned : [], Ve.recent = Array.isArray(e.recent) ? e.recent : []);
   }
   function cc() {
-    let e = N.get(Zs);
-    e && e._v === 1 && (Ge.pinned = Array.isArray(e.pinned) ? e.pinned : [], Ge.recent = Array.isArray(e.recent) ? e.recent : []);
+    N.set(Xs, { _v: 1, pinned: Ve.pinned, recent: Ve.recent });
   }
-  function dc() {
-    N.set(Zs, { _v: 1, pinned: Ge.pinned, recent: Ge.recent });
-  }
-  function Vi(e) {
+  function zi(e) {
     return (e || "").trim().toUpperCase();
   }
-  function vb() {
+  function Ty() {
     return [
-      ...Ge.pinned.map((e) => ({ term: e, pinned: !0 })),
-      ...Ge.recent.map((e) => ({ term: e, pinned: !1 }))
+      ...Ve.pinned.map((e) => ({ term: e, pinned: !0 })),
+      ...Ve.recent.map((e) => ({ term: e, pinned: !1 }))
     ];
   }
-  function wb(e) {
-    let t = Vi(e);
-    Ge.pinned = Ge.pinned.filter((r) => r !== t), Ge.recent = Ge.recent.filter((r) => r !== t);
+  function Cy(e) {
+    let t = zi(e);
+    Ve.pinned = Ve.pinned.filter((r) => r !== t), Ve.recent = Ve.recent.filter((r) => r !== t);
   }
-  function Sb(e) {
-    let t = Vi(e);
-    Ge.pinned.includes(t) ? (Ge.pinned = Ge.pinned.filter((r) => r !== t), Ge.recent = [t, ...Ge.recent].slice(0, zu)) : (Ge.recent = Ge.recent.filter((r) => r !== t), Ge.pinned = [...Ge.pinned, t]), dc();
+  function Ay(e) {
+    let t = zi(e);
+    Ve.pinned.includes(t) ? (Ve.pinned = Ve.pinned.filter((r) => r !== t), Ve.recent = [t, ...Ve.recent].slice(0, Ku)) : (Ve.recent = Ve.recent.filter((r) => r !== t), Ve.pinned = [...Ve.pinned, t]), cc();
   }
-  function Sn(e) {
-    if (!Bt) return;
-    Bt.textContent = "";
-    let t = Vi(e), r = vb().filter(
+  function En(e) {
+    if (!$t) return;
+    $t.textContent = "";
+    let t = zi(e), r = Ty().filter(
       ({ term: o }) => !t || o.includes(t)
     );
     if (r.length === 0) {
       ji();
       return;
     }
-    zi || (document.addEventListener("mousedown", Vu), zi = !0), r.forEach(({ term: o, pinned: n }, a) => {
+    Vi || (document.addEventListener("mousedown", Yu), Vi = !0), r.forEach(({ term: o, pinned: n }, a) => {
       let s = i("span", {
         className: "eam-desc-ac-pin" + (n ? " pinned" : ""),
         title: n ? "Unpin" : "Pin"
@@ -13180,66 +13206,66 @@ body.apm-modal-active .rain-cloud-always .lightning-bolt { animation-play-state:
         className: "eam-desc-ac-item" + (a === Zt ? " highlighted" : ""),
         dataset: { index: String(a), term: o }
       }, [s, l, c]);
-      Bt.appendChild(p);
-    }), Bt.style.display = "block";
+      $t.appendChild(p);
+    }), $t.style.display = "block";
   }
-  function Gu(e) {
+  function ju(e) {
     at && (at.value = e, Ae({ descText: e }), ji(), at.focus());
   }
   function ji() {
-    Bt && (Bt.style.display = "none"), Zt = -1, zi && (document.removeEventListener("mousedown", Vu), zi = !1);
+    $t && ($t.style.display = "none"), Zt = -1, Vi && (document.removeEventListener("mousedown", Yu), Vi = !1);
   }
-  function Eb() {
-    return Bt ? Array.from(Bt.querySelectorAll(".eam-desc-ac-item")) : [];
+  function _y() {
+    return $t ? Array.from($t.querySelectorAll(".eam-desc-ac-item")) : [];
   }
-  function ju() {
-    if (Uu || (at = document.getElementById("eam-desc-text"), !at)) return;
-    Uu = !0, cc();
+  function Ju() {
+    if (zu || (at = document.getElementById("eam-desc-text"), !at)) return;
+    zu = !0, lc();
     let e = i("div", { className: "eam-desc-ac-wrapper" });
-    at.parentNode.insertBefore(e, at), e.appendChild(at), Bt = i("div", { id: "eam-desc-ac-dropdown" }), e.appendChild(Bt);
+    at.parentNode.insertBefore(e, at), e.appendChild(at), $t = i("div", { id: "eam-desc-ac-dropdown" }), e.appendChild($t);
     let t = () => {
-      cc(), Zt = -1, Sn(at.value);
+      lc(), Zt = -1, En(at.value);
     };
     at.addEventListener("focus", t), at.addEventListener("click", t), at.addEventListener("input", () => {
-      Zt = -1, Sn(at.value);
+      Zt = -1, En(at.value);
     }), at.addEventListener("keydown", (r) => {
-      if (Bt.style.display === "none") return;
-      let o = Eb();
+      if ($t.style.display === "none") return;
+      let o = _y();
       if (o.length !== 0)
         if (r.key === "ArrowDown")
-          r.preventDefault(), Zt = (Zt + 1) % o.length, Sn(at.value);
+          r.preventDefault(), Zt = (Zt + 1) % o.length, En(at.value);
         else if (r.key === "ArrowUp")
-          r.preventDefault(), Zt = Zt <= 0 ? o.length - 1 : Zt - 1, Sn(at.value);
+          r.preventDefault(), Zt = Zt <= 0 ? o.length - 1 : Zt - 1, En(at.value);
         else if (r.key === "Enter" && Zt >= 0 && Zt < o.length) {
           r.preventDefault(), r.stopPropagation();
           let n = o[Zt].dataset.term;
-          Gu(n);
+          ju(n);
         } else r.key === "Escape" && ji();
-    }), Bt.addEventListener("mousedown", (r) => {
+    }), $t.addEventListener("mousedown", (r) => {
       r.preventDefault();
       let o = r.target.closest(".eam-desc-ac-item");
       if (!o) return;
       let n = o.dataset.term;
       if (r.target.closest(".eam-desc-ac-remove")) {
-        wb(n), dc(), Sn(at.value);
+        Cy(n), cc(), En(at.value);
         return;
       }
       if (r.target.closest(".eam-desc-ac-pin")) {
-        Sb(n), Sn(at.value);
+        Ay(n), En(at.value);
         return;
       }
-      Gu(n);
+      ju(n);
     });
   }
-  function Ku(e) {
-    let t = Vi(e);
-    t && (cc(), !(Ge.pinned.includes(t) || Ge.recent.includes(t)) && (Ge.recent = [t, ...Ge.recent].slice(0, zu), dc(), d.debug("Forecast", `Auto-saved description term: ${t}`)));
+  function Qu(e) {
+    let t = zi(e);
+    t && (lc(), !(Ve.pinned.includes(t) || Ve.recent.includes(t)) && (Ve.recent = [t, ...Ve.recent].slice(0, Ku), cc(), d.debug("Forecast", `Auto-saved description term: ${t}`)));
   }
 
   // src/modules/forecast/engine/orchestrator.js
   var Ki = !1;
-  async function Or(e = "normal", t = null) {
-    if (pa().isEnabled() && window.self === window.top && !Ki) {
+  async function Nr(e = "normal", t = null) {
+    if (ua().isEnabled() && window.self === window.top && !Ki) {
       try {
         if (ne().some((n) => {
           try {
@@ -13255,8 +13281,8 @@ body.apm-modal-active .rain-cloud-always .lightning-bolt { animation-play-state:
       }
       Ki = !0;
       try {
-        let o = Nu(e, { targetOverride: t }), n = qu(o);
-        d.info("Forecast", `Executing: mode=${o.mode}, target=${o.target}, profile=${o.profile?.id || "manual"}`), Ce.closeAll(!0), o.mode === "quick" ? Xt("Jumping...", "#3498db") : o.mode === "clear" ? Xt("Clearing...", "#f1c40f") : ku(), Yl(o.target), await Wu(o, n), wn(o.mode)?.postExecute?.(o), wu(o, n), Hu(o), d.info("Forecast", `Complete: ${o.mode} \u2192 ${o.target}`), o.mode !== "clear" && o.manual?.descText && Ku(o.manual.descText), o.mode === "clear" ? Xt("", "#1abc9c") : o.mode !== "quick" && Xt("", "#18bc9c");
+        let o = Pu(e, { targetOverride: t }), n = Uu(o);
+        d.info("Forecast", `Executing: mode=${o.mode}, target=${o.target}, profile=${o.profile?.id || "manual"}`), Ce.closeAll(!0), o.mode === "quick" ? Xt("Jumping...", "#3498db") : o.mode === "clear" ? Xt("Clearing...", "#f1c40f") : Au(), Kl(o.target), await Gu(o, n), Sn(o.mode)?.postExecute?.(o), ku(o, n), Vu(o), d.info("Forecast", `Complete: ${o.mode} \u2192 ${o.target}`), o.mode !== "clear" && o.manual?.descText && Qu(o.manual.descText), o.mode === "clear" ? Xt("", "#1abc9c") : o.mode !== "quick" && Xt("", "#18bc9c");
       } catch (o) {
         d.error("Forecast", "executeForecast error:", o), Xt(o.userMessage || "Error", "#e74c3c");
       } finally {
@@ -13264,10 +13290,10 @@ body.apm-modal-active .rain-cloud-always .lightning-bolt { animation-play-state:
       }
     }
   }
-  function pc(e = null) {
-    Yl(e);
-    let t = ge().screen;
-    (!e || e === t) && (Pi("manual"), Ft(), cr());
+  function dc(e = null) {
+    Kl(e);
+    let t = he().screen;
+    (!e || e === t) && (Pi("manual"), Bt(), dr());
   }
   function $o() {
     return Ki;
@@ -13277,18 +13303,18 @@ body.apm-modal-active .rain-cloud-always .lightning-bolt { animation-play-state:
   te();
 
   // src/modules/forecast/engine/index.js
-  yu(pc);
-  xu();
+  wu(dc);
+  Su();
 
   // src/modules/forecast/forecast-ui.js
   Me();
   We();
   qe();
   te();
-  kr();
+  Tr();
   Oe();
-  Ve();
-  Rr();
+  je();
+  Or();
   ue();
 
   // src/modules/forecast/components/forecast-search-form.js
@@ -13300,29 +13326,29 @@ body.apm-modal-active .rain-cloud-always .lightning-bolt { animation-play-state:
     past: ["This Week", "Last Week", "2 Weeks Ago", "3 Weeks Ago"],
     pastCum: ["This Week", "Last 2 Weeks", "Last 3 Weeks", "Last 4 Weeks"]
   };
-  function Yu(e, t) {
-    return (me.dateDirection === "past" || me.dateDirection === "future") && Hl(e, t) ? me.dateDirection === "past" : Gt(e, t);
+  function Xu(e, t) {
+    return (me.dateDirection === "past" || me.dateDirection === "future") && Wl(e, t) ? me.dateDirection === "past" : Gt(e, t);
   }
-  function Ea(e, t) {
+  function ka(e, t) {
     let r = e.dataset.cumulative === "true", o = t ? r ? Yi.pastCum : Yi.past : r ? Yi.futureCum : Yi.future, n = e.value;
     e.innerHTML = o.map((a, s) => `<option value="${s}">${a}</option>`) + '<option value="none">No Date Filter</option>', e.value = n, e.dataset.direction = t ? "past" : "future";
   }
-  function Ju(e, t) {
+  function Zu(e, t) {
     let r = e.closest("#eam-forecast-panel")?.querySelector("#eam-adv-site")?.style.display !== "none", o = e.querySelector("#eam-profile-select")?.value || "manual", n = o !== "manual" && Ee.find((a) => a.id === o) || null;
-    return yn(r, t, n);
+    return xn(r, t, n);
   }
-  function Sa(e, t, r) {
+  function Ea(e, t, r) {
     let o = e.querySelector("#eam-direction-toggle"), n = e.querySelector("#eam-week-select");
     if (!o || !n) return;
-    let a = Ju(e, t), s = Hl(t, a);
+    let a = Zu(e, t), s = Wl(t, a);
     if (o.style.display = s ? "inline-block" : "none", !s) {
-      Ae({ dateDirection: null }), Ea(n, !1);
+      Ae({ dateDirection: null }), ka(n, !1);
       return;
     }
-    let l = Yu(t, a);
-    o.textContent = l ? "\u25C0 Past" : "\u25B6 Future", o.style.color = l ? "var(--apm-warning)" : "var(--apm-success)", Ea(n, l);
+    let l = Xu(t, a);
+    o.textContent = l ? "\u25C0 Past" : "\u25B6 Future", o.style.color = l ? "var(--apm-warning)" : "var(--apm-success)", ka(n, l);
   }
-  function Qu(e = {}) {
+  function em(e = {}) {
     try {
       let t = i("div", { id: "eam-main-view" }, [
         // ── Profile / Dataspy (standard + advanced) ──
@@ -13368,7 +13394,7 @@ body.apm-modal-active .rain-cloud-always .lightning-bolt { animation-play-state:
                 i(
                   "select",
                   { id: "eam-dataspy-select", className: "eam-fc-select", style: { width: "100px", minWidth: "100px", flex: "none", color: "var(--apm-accent)", fontWeight: "bold", overflow: "hidden", textOverflow: "ellipsis" } },
-                  (Ue[me.target] || Ue.WSJOBS).map(
+                  (Ge[me.target] || Ge.WSJOBS).map(
                     (r) => i("option", { value: r.value, selected: r.value === me.dataspy }, r.short)
                   )
                 ),
@@ -13497,55 +13523,55 @@ body.apm-modal-active .rain-cloud-always .lightning-bolt { animation-play-state:
           i("span", { innerHTML: 'Shortcuts: <b style="color:var(--apm-text-tertiary);">Alt+T</b> Today | <b style="color:var(--apm-text-tertiary);">Alt+C</b> Clear' })
         ])
       ]);
-      return Tb(t, e), t;
+      return Oy(t, e), t;
     } catch (t) {
       return d.error("SearchForm", "Build failed:", t), i("div");
     }
   }
-  function Tb(e, t) {
+  function Oy(e, t) {
     let r = e.querySelector("#eam-btn-run"), o = e.querySelector("#eam-btn-today"), n = e.querySelector("#eam-help-btn"), a = e.querySelector("#eam-today-only-toggle"), s = e.querySelector("#eam-today-toggle-text"), l = e.querySelector("#eam-context-status"), c = e.querySelector("#eam-context-status-text"), p = e.querySelector("#eam-context-switch-btn"), u = () => {
       let I = e.querySelector("#eam-profile-select"), J = (I ? I.value : "manual") !== "manual";
       if (l && (l.style.display = J ? "none" : ""), !J) {
-        let V = e.querySelector("#eam-target-select"), oe = e.querySelector("#eam-dataspy-select"), xe = e.querySelector("#eam-org-select"), $e = V && V.options[V.selectedIndex]?.text || "Work Orders", et;
+        let z = e.querySelector("#eam-target-select"), oe = e.querySelector("#eam-dataspy-select"), xe = e.querySelector("#eam-org-select"), $e = z && z.options[z.selectedIndex]?.text || "Work Orders", et;
         if (me.dataspyMode === "active") {
-          let gt = me.target || "WSJOBS", Yr = Ul(gt);
+          let gt = me.target || "WSJOBS", Yr = Hl(gt);
           Yr ? et = $r(gt, Yr) : et = "Active Dataspy";
         } else {
           let gt = me.target || "WSJOBS";
           et = $r(gt, Ut(gt));
         }
-        let $t = xe && xe.value ? xe.value : "All Sites";
-        c.textContent = `Searching: ${$e} \xB7 ${et} \xB7 ${$t}`;
+        let qt = xe && xe.value ? xe.value : "All Sites";
+        c.textContent = `Searching: ${$e} \xB7 ${et} \xB7 ${qt}`;
       }
     }, m = e.querySelector("#eam-dataspy-mode-popover"), f = !1, g = (I) => {
-      !m.contains(I.target) && I.target !== p && y();
-    }, h = () => {
-      m.style.display = "block", f || (document.addEventListener("click", g), f = !0);
+      !m.contains(I.target) && I.target !== p && x();
     }, y = () => {
+      m.style.display = "block", f || (document.addEventListener("click", g), f = !0);
+    }, x = () => {
       m.style.display = "none", f && (document.removeEventListener("click", g), f = !1);
     };
     p.onclick = (I) => {
-      I.stopPropagation(), m.style.display !== "none" ? y() : h();
+      I.stopPropagation(), m.style.display !== "none" ? x() : y();
     }, m && m.addEventListener("change", (I) => {
-      I.target.name === "apm-dataspy-mode" && (Ae({ dataspyMode: I.target.value, dateDirection: null }), Pe(), u(), k(), y(), window.dispatchEvent(new CustomEvent("APM_DATASPY_MODE_CHANGE")));
+      I.target.name === "apm-dataspy-mode" && (Ae({ dataspyMode: I.target.value, dateDirection: null }), Pe(), u(), k(), x(), window.dispatchEvent(new CustomEvent("APM_DATASPY_MODE_CHANGE")));
     }), e.querySelector("#eam-org-select")?.addEventListener("change", () => {
       setTimeout(u, 10);
     });
-    let b = e.querySelector("#eam-btn-profile-edit"), x = e.querySelector("#eam-btn-profile-delete"), v = e.querySelector("#eam-btn-spies"), E = () => {
+    let h = e.querySelector("#eam-btn-profile-edit"), b = e.querySelector("#eam-btn-profile-delete"), v = e.querySelector("#eam-btn-spies"), E = () => {
       let I = e.querySelector("#eam-profile-select"), X = I && I.value !== "manual";
-      b.style.display = X ? "inline-block" : "none", x.style.display = X ? "inline-block" : "none", v.textContent = X ? "+" : "+ New", v.title = X ? "Create a new profile" : "Open the dataspy builder";
+      h.style.display = X ? "inline-block" : "none", b.style.display = X ? "inline-block" : "none", v.textContent = X ? "+" : "+ New", v.title = X ? "Create a new profile" : "Open the dataspy builder";
     }, k = () => {
       let I = B?.value || me.target, X = D?.value || me.dataspy;
-      Sa(e, I, X);
+      Ea(e, I, X);
     };
     e._refreshContextStatus = u, e._refreshProfileActions = E, e._refreshDirectionToggle = k, u(), E(), r.onclick = () => {
       if (!$o()) {
-        Or("normal");
+        Nr("normal");
         let I = e.querySelector("#eam-desc-text");
         I && (I.value = "", Ae({ descText: "" }));
       }
     }, o.onclick = () => {
-      $o() || Or("today");
+      $o() || Nr("today");
     }, n.onclick = () => {
       let I = document.getElementById("apm-help-overlay");
       I && (I.style.display = "flex");
@@ -13557,12 +13583,12 @@ body.apm-modal-active .rain-cloud-always .lightning-bolt { animation-play-state:
     S.addEventListener("input", () => {
       Ae({ descText: S.value.trim() });
     }), S.addEventListener("keydown", (I) => {
-      I.key === "Enter" && (I.preventDefault(), $o() || (Or("normal"), S.value = "", Ae({ descText: "" })));
+      I.key === "Enter" && (I.preventDefault(), $o() || (Nr("normal"), S.value = "", Ae({ descText: "" })));
     }), e.querySelector("#eam-week-select").addEventListener("change", (I) => {
       let X = I.target.value;
       if (X === "none")
-        Array.from(e.querySelectorAll('#eam-day-checkboxes input[type="checkbox"]')).forEach((V) => {
-          V.checked = !1, V.disabled = !0, V.dataset.explicit = "false", V.parentElement.style.cssText = "display:flex; flex-direction:column; align-items:center; gap:4px; color:var(--apm-text-disabled); opacity:0.5; cursor:not-allowed;";
+        Array.from(e.querySelectorAll('#eam-day-checkboxes input[type="checkbox"]')).forEach((z) => {
+          z.checked = !1, z.disabled = !0, z.dataset.explicit = "false", z.parentElement.style.cssText = "display:flex; flex-direction:column; align-items:center; gap:4px; color:var(--apm-text-disabled); opacity:0.5; cursor:not-allowed;";
         }), Ae({ week: "none", days: [!1, !1, !1, !1, !1, !1, !1] });
       else {
         let J = Array.from(e.querySelectorAll('#eam-day-checkboxes input[type="checkbox"]'));
@@ -13598,51 +13624,51 @@ body.apm-modal-active .rain-cloud-always .lightning-bolt { animation-play-state:
       Ae({ target: I });
       let X = Ut(I);
       if (D) {
-        let J = Ue[I] || Ue.WSJOBS;
+        let J = Ge[I] || Ge.WSJOBS;
         D.replaceChildren(
-          ...J.map((V) => i("option", { value: V.value, selected: !!V.default }, V.short))
+          ...J.map((z) => i("option", { value: z.value, selected: !!z.default }, z.short))
         ), D.value = X, Ae({ dataspy: X });
       }
-      Pe(), u(), Ae({ dateDirection: null }), Sa(e, I, X);
+      Pe(), u(), Ae({ dateDirection: null }), Ea(e, I, X);
     })), D && (D.value = me.dataspy || Ut(me.target), D.addEventListener("change", () => {
       Ae({ dataspy: D.value }), Ae({ dateDirection: null }), Pe(), u();
       let I = B?.value || me.target;
-      Sa(e, I, D.value);
+      Ea(e, I, D.value);
     }));
     let $ = e.querySelector("#eam-direction-toggle");
     $ && $.addEventListener("click", () => {
-      let I = B?.value || me.target, X = Ju(e, I), J = Yu(I, X);
-      Ae({ dateDirection: J ? "future" : "past" }), Pe(), Sa(e, I, X);
-    }), Sa(e, me.target, me.dataspy);
-    let K = e.querySelector("#eam-org-select"), ee = e.querySelector("#eam-add-org-row"), O = e.querySelector("#eam-add-org-input"), H = e.querySelector("#eam-add-org-confirm"), Q = e.querySelector("#eam-add-org-cancel"), R = e.querySelector("#eam-org-add-btn"), A = e.querySelector("#eam-org-remove-btn"), z = () => {
+      let I = B?.value || me.target, X = Zu(e, I), J = Xu(I, X);
+      Ae({ dateDirection: J ? "future" : "past" }), Pe(), Ea(e, I, X);
+    }), Ea(e, me.target, me.dataspy);
+    let K = e.querySelector("#eam-org-select"), ee = e.querySelector("#eam-add-org-row"), O = e.querySelector("#eam-add-org-input"), H = e.querySelector("#eam-add-org-confirm"), Q = e.querySelector("#eam-add-org-cancel"), R = e.querySelector("#eam-org-add-btn"), A = e.querySelector("#eam-org-remove-btn"), V = () => {
       ee.style.display = "block", O.value = "", O.focus();
     }, W = () => {
       ee.style.display = "none";
     }, M = () => {
-      A.style.display = Ar ? "inline-block" : "none";
+      A.style.display = _r ? "inline-block" : "none";
     }, F = () => {
       let I = (O.value || "").trim().toUpperCase();
-      I && (Cr.includes(I) || Gl([...Cr, I]), Mi(I), Ji(e), M(), Pe(), W());
+      I && (Ar.includes(I) || Ul([...Ar, I]), Mi(I), Ji(e), M(), Pe(), W());
     };
     K.addEventListener("change", () => {
       Mi(K.value), M(), Pe();
-    }), R.onclick = () => z(), A.onclick = () => {
-      let I = Ar;
-      I && (Gl(Cr.filter((X) => X !== I)), Mi(""), Ji(e), M(), Pe());
+    }), R.onclick = () => V(), A.onclick = () => {
+      let I = _r;
+      I && (Ul(Ar.filter((X) => X !== I)), Mi(""), Ji(e), M(), Pe());
     }, H.onclick = F, Q.onclick = W, O.addEventListener("keydown", (I) => {
       I.key === "Enter" && (I.preventDefault(), F()), I.key === "Escape" && W();
     }), M();
     let U = e.querySelector("#eam-date-mode-rel"), q = e.querySelector("#eam-date-mode-cust"), j = e.querySelector("#eam-relative-dates"), Z = e.querySelector("#eam-custom-dates"), P = Array.from(e.querySelectorAll('#eam-day-checkboxes input[type="checkbox"]')), G = (I) => {
       if (I) {
-        let X = e.querySelector("#eam-week-select"), J = X.dataset.cumulative === "true", V = P.filter((oe) => oe.dataset.explicit === "true").map((oe) => parseInt(oe.value, 10));
-        if (V.length > 0) {
-          let oe = X.dataset.direction === "past" ? -1 : 1, xe = vn(X.value, Math.min(...V), Math.max(...V), J, oe);
+        let X = e.querySelector("#eam-week-select"), J = X.dataset.cumulative === "true", z = P.filter((oe) => oe.dataset.explicit === "true").map((oe) => parseInt(oe.value, 10));
+        if (z.length > 0) {
+          let oe = X.dataset.direction === "past" ? -1 : 1, xe = wn(X.value, Math.min(...z), Math.max(...z), J, oe);
           if (xe) {
             let $e = (gt) => {
               let Yr = gt.split("/");
               return `${Yr[2]}-${Yr[0].padStart(2, "0")}-${Yr[1].padStart(2, "0")}`;
-            }, et = $e(xe.start), $t = $e(xe.end);
-            e.querySelector("#eam-custom-start").value = et, e.querySelector("#eam-custom-end").value = $t, Ae({ customStart: et, customEnd: $t });
+            }, et = $e(xe.start), qt = $e(xe.end);
+            e.querySelector("#eam-custom-start").value = et, e.querySelector("#eam-custom-end").value = qt, Ae({ customStart: et, customEnd: qt });
           }
         }
       }
@@ -13651,21 +13677,21 @@ body.apm-modal-active .rain-cloud-always .lightning-bolt { animation-play-state:
     U.onclick = () => G(!1), q.onclick = () => G(!0), P.forEach((I) => {
       I.addEventListener("change", (X) => {
         X.target.dataset.explicit = X.target.checked ? "true" : "false";
-        let J = P.map((oe) => oe.dataset.explicit === "true"), V = e.querySelector("#eam-week-select");
-        J.every((oe) => !oe) ? (V.value = "none", P.forEach((oe) => {
+        let J = P.map((oe) => oe.dataset.explicit === "true"), z = e.querySelector("#eam-week-select");
+        J.every((oe) => !oe) ? (z.value = "none", P.forEach((oe) => {
           oe.disabled = !0, oe.parentElement.style.cssText = "display:flex; flex-direction:column; align-items:center; gap:4px; color:var(--apm-text-disabled); opacity:0.5; cursor:not-allowed;";
-        }), Ae({ days: J, week: "none" })) : (V.value === "none" && (V.value = "0", Ae({ week: "0" })), Ae({ days: J }), Qi(e)), Pe();
+        }), Ae({ days: J, week: "none" })) : (z.value === "none" && (z.value = "0", Ae({ week: "0" })), Ae({ days: J }), Qi(e)), Pe();
       });
     });
   }
   function Ji(e) {
     let t = e.querySelector("#eam-org-select");
     if (!t) return;
-    t.replaceChildren(), t.appendChild(i("option", { value: "" }, "-- All Sites --")), Cr.forEach((o) => {
-      t.appendChild(i("option", { value: o, selected: o === Ar }, o));
-    }), t.value = Ar || "";
+    t.replaceChildren(), t.appendChild(i("option", { value: "" }, "-- All Sites --")), Ar.forEach((o) => {
+      t.appendChild(i("option", { value: o, selected: o === _r }, o));
+    }), t.value = _r || "";
     let r = e.querySelector("#eam-org-remove-btn");
-    r && (r.style.display = Ar ? "inline-block" : "none");
+    r && (r.style.display = _r ? "inline-block" : "none");
   }
   function Qi(e) {
     let t = Array.from(e.querySelectorAll('#eam-day-checkboxes input[type="checkbox"]')), r = t.filter((c) => c.dataset.explicit === "true").map((c) => parseInt(c.value, 10)), o = e.querySelector("#eam-week-select"), n = o.value;
@@ -13673,11 +13699,11 @@ body.apm-modal-active .rain-cloud-always .lightning-bolt { animation-play-state:
       let c = o.value === "none";
       t.forEach((p) => {
         p.checked = !1, p.disabled = c, p.parentElement.style.cssText = c ? "display:flex; flex-direction:column; align-items:center; gap:4px; color:var(--apm-text-disabled); opacity:0.5; cursor:not-allowed;" : "cursor:pointer; display:flex; flex-direction:column; align-items:center; gap:4px; color:var(--apm-text-secondary); opacity:1;";
-      }), o.dataset.cumulative === "true" && (o.dataset.cumulative = "false", Ea(o, o.dataset.direction === "past"));
+      }), o.dataset.cumulative === "true" && (o.dataset.cumulative = "false", ka(o, o.dataset.direction === "past"));
       return;
     }
     let a = Math.min(...r), s = Math.max(...r), l = a === 0 && s === 6;
-    l && o.dataset.cumulative !== "true" ? (o.dataset.cumulative = "true", Ea(o, o.dataset.direction === "past")) : !l && o.dataset.cumulative === "true" && (o.dataset.cumulative = "false", Ea(o, o.dataset.direction === "past")), t.forEach((c, p) => {
+    l && o.dataset.cumulative !== "true" ? (o.dataset.cumulative = "true", ka(o, o.dataset.direction === "past")) : !l && o.dataset.cumulative === "true" && (o.dataset.cumulative = "false", ka(o, o.dataset.direction === "past")), t.forEach((c, p) => {
       let u = "display:flex; flex-direction:column; align-items:center; gap:4px; ";
       p === a || p === s ? (c.checked = !0, c.disabled = !1, c.dataset.explicit = "true", c.parentElement.style.cssText = u + "color:var(--apm-success); opacity:1; cursor:pointer; font-weight:bold;") : p > a && p < s ? (c.checked = !0, c.disabled = !0, c.dataset.explicit = "false", c.parentElement.style.cssText = u + "color:var(--apm-text-disabled); opacity:0.5; cursor:not-allowed;") : (c.checked = !1, c.disabled = !1, c.dataset.explicit = "false", c.parentElement.style.cssText = u + "color:var(--apm-text-secondary); opacity:1; cursor:pointer;");
     });
@@ -13685,7 +13711,7 @@ body.apm-modal-active .rain-cloud-always .lightning-bolt { animation-play-state:
 
   // src/modules/forecast/components/forecast-quick-search.js
   Me();
-  function Xu() {
+  function tm() {
     if (window.self !== window.top) return null;
     let e = document.getElementById("apm-quick-search-container");
     if (e) return e;
@@ -13698,7 +13724,7 @@ body.apm-modal-active .rain-cloud-always .lightning-bolt { animation-play-state:
     let t = e.querySelector("#apm-qs-input"), r = e.querySelector("#apm-qs-btn");
     r.addEventListener("mouseover", () => r.style.background = "rgba(255,255,255,0.2)"), r.addEventListener("mouseout", () => r.style.background = "rgba(255,255,255,0.1)");
     let o = () => {
-      t.value.trim() && !$o() && Or("quick");
+      t.value.trim() && !$o() && Nr("quick");
     };
     return r.addEventListener("click", o), t.addEventListener("keydown", (n) => {
       n.key === "Enter" && (n.preventDefault(), n.stopPropagation(), o());
@@ -13706,25 +13732,25 @@ body.apm-modal-active .rain-cloud-always .lightning-bolt { animation-play-state:
   }
 
   // src/modules/forecast/forecast-ui.js
-  function Cb() {
+  function Ny() {
     Ti(() => {
       let e = document.getElementById("eam-update-container");
       e && (e.style.display = "block");
     });
   }
-  function mc() {
-    let e = Xu();
+  function uc() {
+    let e = tm();
     return e && !e.parentElement && document.body.appendChild(e), e;
   }
   function Xi() {
     try {
       if (window.self !== window.top) return;
-      Rb();
+      Py();
       let e = document.getElementById("eam-forecast-panel");
       if (!e) {
         let g = function() {
-          if (h(), me.dataspyMode !== "active") return;
-          let x = me.target || "WSJOBS";
+          if (y(), me.dataspyMode !== "active") return;
+          let b = me.target || "WSJOBS";
           for (let v of ne())
             try {
               let E = v.Ext.ComponentQuery.query('combobox[name="dataspylist"]:not([destroyed=true])');
@@ -13738,7 +13764,7 @@ body.apm-modal-active .rain-cloud-always .lightning-bolt { animation-play-state:
                 }
             } catch {
             }
-        }, h = function() {
+        }, y = function() {
           if (f && m) {
             try {
               f.isDestroyed || f.un("change", m);
@@ -13760,15 +13786,15 @@ body.apm-modal-active .rain-cloud-always .lightning-bolt { animation-play-state:
               i("button", { dataset: { mode: "advanced" }, className: "eam-fc-view-btn" }, "Advanced")
             ])
           ])
-        ]), r = Qu({}), o = bu(), n = Lu(), a = i("div", { id: "eam-status", className: "eam-fc-status" }), s = i("div", { id: "eam-update-container", className: "eam-fc-update-box" }, [
-          i("a", { href: Oo().download, target: "_blank", className: "apm-footer-update-btn", onclick: (x) => {
-            x.preventDefault(), hn(Oo().download);
+        ]), r = em({}), o = vu(), n = Bu(), a = i("div", { id: "eam-status", className: "eam-fc-status" }), s = i("div", { id: "eam-update-container", className: "eam-fc-update-box" }, [
+          i("a", { href: Oo().download, target: "_blank", className: "apm-footer-update-btn", onclick: (b) => {
+            b.preventDefault(), yn(Oo().download);
           } }, "\u2728 Update Available")
         ]);
-        e.appendChild(t), e.appendChild(r), e.appendChild(o), e.appendChild(a), e.appendChild(s), document.body.appendChild(e), document.body.appendChild(n), ju();
+        e.appendChild(t), e.appendChild(r), e.appendChild(o), e.appendChild(a), e.appendChild(s), document.body.appendChild(e), document.body.appendChild(n), Ju();
         let l = e.querySelector(".eam-fc-view-toggle"), c = e.querySelector("#eam-btn-spies");
-        l.addEventListener("click", (x) => {
-          let v = x.target.closest(".eam-fc-view-btn");
+        l.addEventListener("click", (b) => {
+          let v = b.target.closest(".eam-fc-view-btn");
           if (!v) return;
           let E = v.dataset.mode, k = me.viewMode;
           if (Ae({ viewMode: E }), k === "advanced" && E !== "advanced") {
@@ -13777,28 +13803,28 @@ body.apm-modal-active .rain-cloud-always .lightning-bolt { animation-play-state:
             let w = e.querySelector("#eam-dataspy-select");
             w && (w.value = S);
           }
-          uc(e, E), Pe();
+          pc(e, E), Pe();
         }), c.onclick = () => {
-          let x = e.querySelector("#eam-desc-text"), v = e.querySelector("#eam-org-select"), E = x ? x.value.trim() : "", k = v ? v.value.trim() : "";
+          let b = e.querySelector("#eam-desc-text"), v = e.querySelector("#eam-org-select"), E = b ? b.value.trim() : "", k = v ? v.value.trim() : "";
           n.openBuilder(E, k);
         };
         let p = e.querySelector("#eam-btn-profile-edit");
         p.onclick = () => {
-          let x = e.querySelector("#eam-profile-select"), v = x ? x.value : null;
+          let b = e.querySelector("#eam-profile-select"), v = b ? b.value : null;
           v && v !== "manual" && n.openBuilder("", "", v);
         };
         let u = e.querySelector("#eam-btn-profile-delete");
         u.onclick = () => {
-          let x = e.querySelector("#eam-profile-select"), v = x ? x.value : null;
+          let b = e.querySelector("#eam-profile-select"), v = b ? b.value : null;
           if (!v || v === "manual") return;
           let E = Ee.find((S) => S.id === v);
           if (!E || !confirm(`Delete profile "${E.name}"?`)) return;
-          Li(v), _r(Ee.filter((S) => S.id !== v)), qr("manual"), oo(), Ft(), Pe(), cr(), C(L("profileDeleted"), "#e74c3c");
+          Li(v), Rr(Ee.filter((S) => S.id !== v)), qr("manual"), oo(), Bt(), Pe(), dr(), C(L("profileDeleted"), "#e74c3c");
           let k = e.querySelector("#eam-main-view");
           k?._refreshProfileActions && k._refreshProfileActions(), k?._refreshContextStatus && k._refreshContextStatus();
-        }, e.querySelector("#eam-profile-select").onchange = (x) => {
-          let v = x.target.value;
-          if (qr(v), Ft(), Pe(), v !== "manual") {
+        }, e.querySelector("#eam-profile-select").onchange = (b) => {
+          let v = b.target.value;
+          if (qr(v), Bt(), Pe(), v !== "manual") {
             let k = Ee.find((S) => S.id === v);
             if (k?.dataspy) {
               Ae({ dataspy: k.dataspy });
@@ -13807,12 +13833,12 @@ body.apm-modal-active .rain-cloud-always .lightning-bolt { animation-play-state:
             }
           }
           let E = e.querySelector("#eam-main-view");
-          E?._refreshContextStatus && E._refreshContextStatus(), E?._refreshProfileActions && E._refreshProfileActions(), v === "manual" && cr();
-        }, Ab(e), Cb(), window.addEventListener("APM_EAM_VIEW_CHANGE", () => {
-          gu();
-          let x = me.target, v = document.getElementById("eam-dataspy-select");
+          E?._refreshContextStatus && E._refreshContextStatus(), E?._refreshProfileActions && E._refreshProfileActions(), v === "manual" && dr();
+        }, Iy(e), Ny(), window.addEventListener("APM_EAM_VIEW_CHANGE", () => {
+          bu();
+          let b = me.target, v = document.getElementById("eam-dataspy-select");
           if (v) {
-            let S = Ue[x] || Ue.WSJOBS;
+            let S = Ge[b] || Ge.WSJOBS;
             v.replaceChildren(
               ...S.map((B) => i("option", { value: B.value }, B.short))
             );
@@ -13820,28 +13846,28 @@ body.apm-modal-active .rain-cloud-always .lightning-bolt { animation-play-state:
             if (S.some((B) => B.value === w))
               v.value = w;
             else {
-              let B = Ut(x);
+              let B = Ut(b);
               v.value = B, Ae({ dataspy: B });
             }
           }
           let E = document.getElementById("eam-profile-select");
-          E && (E.value = Dt || "manual"), Ft();
+          E && (E.value = Ft || "manual"), Bt();
           let k = e.querySelector("#eam-main-view");
           k?._refreshContextStatus && k._refreshContextStatus(), k?._refreshProfileActions && k._refreshProfileActions(), k?._refreshDirectionToggle && k._refreshDirectionToggle();
         });
-        let m = null, f = null, y = !1, b = new MutationObserver(() => {
-          let x = e.style.display !== "none" && e.style.visibility !== "hidden";
-          if (x !== y)
-            if (y = x, x) {
+        let m = null, f = null, x = !1, h = new MutationObserver(() => {
+          let b = e.style.display !== "none" && e.style.visibility !== "hidden";
+          if (b !== x)
+            if (x = b, b) {
               let v = e.querySelector("#eam-main-view");
               v?._refreshContextStatus && v._refreshContextStatus(), v?._refreshDirectionToggle && v._refreshDirectionToggle(), g();
             } else
-              h();
+              y();
         });
-        b.observe(e, { attributes: !0, attributeFilter: ["style"] }), window.addEventListener("pagehide", () => {
-          b.disconnect(), h();
+        h.observe(e, { attributes: !0, attributeFilter: ["style"] }), window.addEventListener("pagehide", () => {
+          h.disconnect(), y();
         }, { once: !0 }), window.addEventListener("APM_DATASPY_MODE_CHANGE", () => {
-          e.style.display !== "none" && e.style.visibility !== "hidden" && (me.dataspyMode === "active" ? g() : h());
+          e.style.display !== "none" && e.style.visibility !== "hidden" && (me.dataspyMode === "active" ? g() : y());
         });
       }
     } catch (e) {
@@ -13849,7 +13875,7 @@ body.apm-modal-active .rain-cloud-always .lightning-bolt { animation-play-state:
     }
   }
   _.register("buildForecastUI", Xi);
-  function uc(e, t) {
+  function pc(e, t) {
     let r = e.querySelector("#eam-adv-profile"), o = e.querySelector("#eam-adv-site"), n = e.querySelector("#eam-context-status"), a = t === "standard" || t === "advanced", s = t === "advanced", l = t !== "advanced";
     r && (r.style.display = a ? "flex" : "none"), o && (o.style.display = s ? "flex" : "none"), n && (n.style.display = l ? "flex" : "none"), e.querySelectorAll(".eam-fc-view-btn").forEach((p) => {
       p.classList.toggle("active", p.dataset.mode === t);
@@ -13857,10 +13883,10 @@ body.apm-modal-active .rain-cloud-always .lightning-bolt { animation-play-state:
     let c = e.querySelector("#eam-main-view");
     c?._refreshContextStatus && c._refreshContextStatus(), c?._refreshDirectionToggle && c._refreshDirectionToggle();
   }
-  function Ab(e) {
-    let t = hu();
+  function Iy(e) {
+    let t = xu();
     if (!t) {
-      uc(e, "standard");
+      pc(e, "standard");
       return;
     }
     if (t.descOp) {
@@ -13874,7 +13900,7 @@ body.apm-modal-active .rain-cloud-always .lightning-bolt { animation-play-state:
     let r = me.dataspyMode || "default";
     e.querySelectorAll('input[name="apm-dataspy-mode"]').forEach((c) => {
       c.checked = c.value === r;
-    }), uc(e, me.viewMode || "standard");
+    }), pc(e, me.viewMode || "standard");
     let o = t.isCustomDateMode === !0;
     {
       let c = e.querySelector("#eam-relative-dates");
@@ -13908,19 +13934,19 @@ body.apm-modal-active .rain-cloud-always .lightning-bolt { animation-play-state:
     a && (a.value = t.target || "WSJOBS");
     let s = e.querySelector("#eam-dataspy-select");
     if (s) {
-      let c = t.target || "WSJOBS", p = Ue[c] || Ue.WSJOBS;
+      let c = t.target || "WSJOBS", p = Ge[c] || Ge.WSJOBS;
       s.replaceChildren(
         ...p.map((u) => i("option", { value: u.value }, u.short))
       ), s.value = me.dataspy || Ut(c);
     }
-    Ji(e), oo(), Qi(e), Ft();
+    Ji(e), oo(), Qi(e), Bt();
     let l = e.querySelector("#eam-main-view");
     if (l?._refreshProfileActions && l._refreshProfileActions(), t.week) {
       let c = e.querySelector("#eam-week-select");
       c && (c.value = t.week);
     }
   }
-  var _b = `
+  var My = `
 .eam-fc-btn-small {
     background: var(--apm-surface-raised);
     border: 1px solid var(--apm-border);
@@ -13972,14 +13998,14 @@ body.apm-modal-active .rain-cloud-always .lightning-bolt { animation-play-state:
     transform: rotate(45deg);
 }
 `;
-  function Rb() {
+  function Py() {
     if (document.getElementById("apm-fc-advanced-styles")) return;
     let e = document.createElement("style");
-    e.id = "apm-fc-advanced-styles", e.innerHTML = _b, (document.head || document.documentElement).appendChild(e);
+    e.id = "apm-fc-advanced-styles", e.innerHTML = My, (document.head || document.documentElement).appendChild(e);
   }
-  function Zu() {
+  function rm() {
     let e = (n, a = !1) => {
-      window.self !== window.top ? ht(window.top, { apmMaster: "hotkey", action: n, isWO: a }) : Or(n);
+      window.self !== window.top ? ht(window.top, { apmMaster: "hotkey", action: n, isWO: a }) : Nr(n);
     }, t = (n) => {
       if (!n || !n.altKey || typeof n.key != "string") return !1;
       let a = n.key.toLowerCase();
@@ -13997,7 +14023,7 @@ body.apm-modal-active .rain-cloud-always .lightning-bolt { animation-play-state:
       return !1;
     };
     if (window[de.HOTKEYS_BOUND]) return;
-    _.register("checkHotkey", t), _.register("executeForecast", Or), window.addEventListener("keydown", t, !0), window[de.HOTKEYS_BOUND] = !0;
+    _.register("checkHotkey", t), _.register("executeForecast", Nr), window.addEventListener("keydown", t, !0), window[de.HOTKEYS_BOUND] = !0;
     let r = null, o = () => {
       !window.Ext || !window.Ext.onReady || window.Ext.onReady(() => {
         let n = window.Ext.getDoc();
@@ -14006,17 +14032,17 @@ body.apm-modal-active .rain-cloud-always .lightning-bolt { animation-play-state:
         }), n[de.HOTKEYS_BOUND] = !0), r && r.removeTask("ext-hotkeys-bind");
       });
     };
-    Promise.resolve().then(() => (mt(), Fp)).then(({ APMScheduler: n }) => {
+    Promise.resolve().then(() => (mt(), qp)).then(({ APMScheduler: n }) => {
       r = n, n.registerTask("ext-hotkeys-bind", 2e3, o);
     });
   }
 
   // src/modules/forecast/forecast-filter.js
   mt();
-  Mt();
+  Pt();
   ct();
   te();
-  var em = /* @__PURE__ */ (function() {
+  var om = /* @__PURE__ */ (function() {
     let e = 0, t = null, r = "duedate", o = [
       { label: "Filter: Show All", bg: "var(--apm-text-disabled)", tooltip: `Currently showing all records.
 Click to filter: PMs Only \u2192 Non-PMs \u2192 Show All.
@@ -14045,13 +14071,13 @@ Filters the currently loaded list \u2014 does not perform a new search.` }
       f.suspendEvents();
       try {
         if (f._nativeGetTotalCount ? f.getTotalCount = f._nativeGetTotalCount : f._nativeGetTotalCount = f.getTotalCount, f.clearFilter(), e === 0) {
-          let h = f.getCount();
-          a(m, h);
+          let y = f.getCount();
+          a(m, y);
           return;
         }
-        f.filterBy((h) => {
-          let y = h.get(r), b = !y || String(y).trim() === "";
-          return e === 1 ? !b : b;
+        f.filterBy((y) => {
+          let x = y.get(r), h = !x || String(x).trim() === "";
+          return e === 1 ? !h : h;
         });
         let g = f.getCount();
         f.getTotalCount = function() {
@@ -14075,16 +14101,16 @@ Filters the currently loaded list \u2014 does not perform a new search.` }
     function p() {
       let u = n();
       if (!u) return;
-      let { win: m, doc: f, grid: g } = u, h = bt(m, g);
-      if (h && !c.has(h) || !h && !g.columns?.some((w) => w.dataIndex === r)) return;
-      let y = g.getStore();
-      e !== 0 && y.storeId !== t && s(), t = y.storeId;
-      let b = m.Ext;
-      if (!b || !b.ComponentQuery) return;
-      let x = b.getCmp("apm-pm-filter-cmp");
-      if (x && x.getEl?.()?.dom && f.body.contains(x.getEl().dom)) return;
-      x && x.destroy();
-      let v = null, E = -1, k = b.ComponentQuery.query('combobox[name="dataspylist"]:not([destroyed=true])');
+      let { win: m, doc: f, grid: g } = u, y = bt(m, g);
+      if (y && !c.has(y) || !y && !g.columns?.some((w) => w.dataIndex === r)) return;
+      let x = g.getStore();
+      e !== 0 && x.storeId !== t && s(), t = x.storeId;
+      let h = m.Ext;
+      if (!h || !h.ComponentQuery) return;
+      let b = h.getCmp("apm-pm-filter-cmp");
+      if (b && b.getEl?.()?.dom && f.body.contains(b.getEl().dom)) return;
+      b && b.destroy();
+      let v = null, E = -1, k = h.ComponentQuery.query('combobox[name="dataspylist"]:not([destroyed=true])');
       for (let w of k) {
         if (!w.rendered || w.isDestroyed || !w.isVisible?.(!0)) continue;
         let T = w.up("toolbar");
@@ -14098,7 +14124,7 @@ Filters the currently loaded list \u2014 does not perform a new search.` }
         if (w && w.offsetWidth > 0) {
           let T = w.closest(".x-field") || w.closest(".x-form-item");
           if (T && T.id) {
-            let B = b.getCmp(T.id);
+            let B = h.getCmp(T.id);
             if (B) {
               let D = B.up("toolbar") || B.up("container");
               D && D.rendered && !D.isDestroyed && (v = D, E = D.items.indexOf(B) + 1, d.debug("ForecastFilter", `Strategy 2: Found dataspy via DOM anchor (${D.id})`));
@@ -14149,7 +14175,7 @@ Filters the currently loaded list \u2014 does not perform a new search.` }
   Oe();
 
   // src/core/settings-registry.js
-  var Ob = ["label", "getValue", "setValue", "render"], ka = /* @__PURE__ */ new Map(), qo = {
+  var Ly = ["label", "getValue", "setValue", "render"], Ta = /* @__PURE__ */ new Map(), qo = {
     /**
      * Register a settings section.
      * @param {string} id     Stable identifier (e.g., 'colorcode').
@@ -14162,27 +14188,27 @@ Filters the currently loaded list \u2014 does not perform a new search.` }
      * @param {Function} spec.render  (hostElement) => DOM rendered into host
      */
     register(e, t) {
-      for (let r of Ob)
+      for (let r of Ly)
         if (!t || typeof t[r] > "u")
           throw new Error(`SettingsRegistry: missing required field "${r}" for "${e}"`);
-      if (ka.has(e))
+      if (Ta.has(e))
         throw new Error(`SettingsRegistry: "${e}" already registered`);
-      ka.set(e, { id: e, order: 100, ...t });
+      Ta.set(e, { id: e, order: 100, ...t });
     },
     get(e) {
-      return ka.get(e);
+      return Ta.get(e);
     },
     getAll() {
-      return Array.from(ka.values()).sort((e, t) => e.order - t.order);
+      return Array.from(Ta.values()).sort((e, t) => e.order - t.order);
     },
     _resetForTest() {
-      ka.clear();
+      Ta.clear();
     }
   };
 
   // src/modules/colorcode/colorcode-settings-ui.js
   Me();
-  function tm() {
+  function nm() {
     return i("div", { id: "apm-colorcode-fields", style: { display: "none", paddingBottom: "5px" }, className: "apm-panel-section" }, [
       i("div", { className: "apm-tab-content-scroll" }, [
         i("div", { className: "apm-cc-search-box", style: { background: "var(--apm-surface-sunken)", padding: "12px", borderRadius: "6px", border: "1px solid var(--apm-border)", marginBottom: "15px" } }, [
@@ -14274,16 +14300,16 @@ Use N-M for numeric ranges (e.g. 10500-10510)`, style: { fontSize: "12px", width
   qo.register("colorcode", {
     label: "ColorCode & Nametag",
     order: 30,
-    getValue: () => ({ rules: it(), settings: En() }),
+    getValue: () => ({ rules: it(), settings: kn() }),
     setValue: (e) => {
-      e?.rules && gr(e.rules), e?.settings && Ta(e.settings);
+      e?.rules && hr(e.rules), e?.settings && Ca(e.settings);
     },
-    render: () => tm()
+    render: () => nm()
   });
 
   // src/modules/colorcode/colorcode-prefs.js
   var Je = [], er = { uniformHighlight: !0, theme: "default" };
-  function nm() {
+  function sm() {
     try {
       let e = N.get(Qe);
       if (e && (e._v !== void 0 ? Je = e.rules || [] : Je = e), Array.isArray(Je)) {
@@ -14297,38 +14323,38 @@ Use N-M for numeric ranges (e.g. 10500-10510)`, style: { fontSize: "12px", width
         }
       }
       let t = N.get(tt);
-      t && (t._v === void 0 && (t._v = 0, d.debug("ColorCode", "Settings loaded as legacy v0")), er = { ...er, ...t }), er.theme = dr.getPreferredTheme();
+      t && (t._v === void 0 && (t._v = 0, d.debug("ColorCode", "Settings loaded as legacy v0")), er = { ...er, ...t }), er.theme = pr.getPreferredTheme();
     } catch (e) {
       d.warn("ColorCode", "Failed to load preferences", e);
     }
   }
-  function Nb() {
+  function Dy() {
     let e = { _v: 1, rules: Je };
     N.set(Qe, e);
   }
-  function Ib() {
+  function Fy() {
     er._v = 1, N.set(tt, er);
   }
-  var kn = null, Wo = null, rm = null, om = 0, Ca = 0;
+  var Tn = null, Wo = null, am = null, im = 0, Aa = 0;
   function it() {
     let e;
-    return Je && typeof Je == "object" && !Array.isArray(Je) && Je._v !== void 0 ? e = Je.rules || [] : e = Je, (!kn || om !== Ca || e !== rm) && (kn = JSON.stringify(e), om = Ca, rm = e, Wo = null), Wo || (Wo = JSON.parse(kn)), Wo;
+    return Je && typeof Je == "object" && !Array.isArray(Je) && Je._v !== void 0 ? e = Je.rules || [] : e = Je, (!Tn || im !== Aa || e !== am) && (Tn = JSON.stringify(e), im = Aa, am = e, Wo = null), Wo || (Wo = JSON.parse(Tn)), Wo;
   }
-  function gr(e) {
-    Je = e, Ca++, kn = null, Wo = null, Nb(), window.dispatchEvent(new CustomEvent("APM_CC_SYNC_REQUIRED"));
+  function hr(e) {
+    Je = e, Aa++, Tn = null, Wo = null, Dy(), window.dispatchEvent(new CustomEvent("APM_CC_SYNC_REQUIRED"));
   }
   function Zi() {
     if (!Array.isArray(Je) || !Je.some((t) => t.id === "__preview__")) return !1;
     let e = Je.length;
-    return Je = Je.filter((t) => t.id !== "__preview__"), Ca++, kn = null, Wo = null, e !== Je.length;
+    return Je = Je.filter((t) => t.id !== "__preview__"), Aa++, Tn = null, Wo = null, e !== Je.length;
   }
-  function En() {
+  function kn() {
     return er._v === void 0 && (er._v = 0, d.debug("ColorCode", "Settings accessed as legacy v0")), { ...er };
   }
-  function Ta(e) {
-    er = { ...er, ...e }, Ib(), window.dispatchEvent(new CustomEvent("APM_CC_SYNC_REQUIRED"));
+  function Ca(e) {
+    er = { ...er, ...e }, Fy(), window.dispatchEvent(new CustomEvent("APM_CC_SYNC_REQUIRED"));
   }
-  _.register("ccGetSettings", En);
+  _.register("ccGetSettings", kn);
   _.register("ccGetRules", it);
   _.register(`storageSyncHook:${Qe}`, (e) => {
     try {
@@ -14341,7 +14367,7 @@ Use N-M for numeric ranges (e.g. 10500-10510)`, style: { fontSize: "12px", width
         d.warn("Sync", "Unexpected CC rules format, skipping sync");
         return;
       }
-      Ca++, kn = null, Wo = null, window.dispatchEvent(new CustomEvent("APM_CC_SYNC_REQUIRED"));
+      Aa++, Tn = null, Wo = null, window.dispatchEvent(new CustomEvent("APM_CC_SYNC_REQUIRED"));
     } catch (t) {
       d.warn("Sync", "Failed to sync colorcode rules", t);
     }
@@ -14359,28 +14385,28 @@ Use N-M for numeric ranges (e.g. 10500-10510)`, style: { fontSize: "12px", width
   Te();
   te();
   se();
-  Mt();
+  Pt();
   ue();
-  ar();
+  ir();
   Oe();
-  At();
-  Ht();
+  _t();
+  Lt();
   _e();
 
   // src/modules/colorcode/nametag-filter.js
   te();
   Oe();
-  Mt();
+  Pt();
   ue();
   function so() {
     let e = rt();
     return (e.top || e).activeNametagFilter || "";
   }
-  function Mb(e) {
+  function By(e) {
     let t = rt(), r = t.top || t;
     r.activeNametagFilter = e || "";
   }
-  function fc(e, t) {
+  function mc(e, t) {
     if (!e) return;
     let r = `Records: ${t} of ${t}`, o = e.querySelectorAll(".x-toolbar-text"), n = !1;
     for (let a of o)
@@ -14403,13 +14429,13 @@ Use N-M for numeric ranges (e.g. 10500-10510)`, style: { fontSize: "12px", width
     let n = o.dom, a = t.grid.getView();
     r._nativeGetTotalCount || (r._nativeGetTotalCount = r.getTotalCount), r._nativeGetTotalCount && !r._apmCleanupBound && (r._apmCleanupBound = !0, t.grid.on("destroy", () => {
       r._nativeGetTotalCount && (r.getTotalCount = r._nativeGetTotalCount, delete r._nativeGetTotalCount);
-    })), Mb(e || "");
+    })), By(e || "");
     let l = performance.now();
     try {
       let c = ts(e);
       r.suspendEvents();
       try {
-        c.length === 0 ? (r.clearFilter(), r._nativeGetTotalCount && (r.getTotalCount = r._nativeGetTotalCount)) : (r.clearFilter(!0), r.filterBy((g) => (g._apmSearchText || (g._apmSearchText = Object.values(g.data).map((h) => h != null ? String(h).toLowerCase() : "").join(" ")), c.some((h) => g._apmSearchText.includes(h)))));
+        c.length === 0 ? (r.clearFilter(), r._nativeGetTotalCount && (r.getTotalCount = r._nativeGetTotalCount)) : (r.clearFilter(!0), r.filterBy((g) => (g._apmSearchText || (g._apmSearchText = Object.values(g.data).map((y) => y != null ? String(y).toLowerCase() : "").join(" ")), c.some((y) => g._apmSearchText.includes(y)))));
       } finally {
         try {
           r.resumeEvents();
@@ -14431,13 +14457,13 @@ Use N-M for numeric ranges (e.g. 10500-10510)`, style: { fontSize: "12px", width
       let f = r.getCount();
       c.length > 0 && (r.getTotalCount = function() {
         return this.getCount();
-      }), fc(n, f), a && !a.__apmFooterHook && (a.on("refresh", () => {
+      }), mc(n, f), a && !a.__apmFooterHook && (a.on("refresh", () => {
         if (so() && t.grid && !t.grid.isDestroyed && t.grid.rendered)
           try {
-            let h = t.grid.getEl();
-            h && h.dom && fc(h.dom, t.grid.getStore().getCount());
-          } catch (h) {
-            d.debug("Nametag", "Footer hook error:", h);
+            let y = t.grid.getEl();
+            y && y.dom && mc(y.dom, t.grid.getStore().getCount());
+          } catch (y) {
+            d.debug("Nametag", "Footer hook error:", y);
           }
       }), a.__apmFooterHook = !0), a && a.el && a.el.setScrollTop(0);
     } catch (c) {
@@ -14447,19 +14473,19 @@ Use N-M for numeric ranges (e.g. 10500-10510)`, style: { fontSize: "12px", width
 
   // src/modules/colorcode/colorcode-engine.js
   Me();
-  vr();
+  wr();
 
   // src/modules/colorcode/entity-engine.js
   se();
-  It();
+  Ct();
   te();
   ct();
-  ar();
-  gl();
+  ir();
+  fl();
   Te();
-  ur();
+  mr();
   Me();
-  var Kt = null, Ho = null, _a = null, jt = null, lo = /* @__PURE__ */ new Map(), Aa = /* @__PURE__ */ new Set(), am = {
+  var Kt = null, Ho = null, Ra = null, jt = null, lo = /* @__PURE__ */ new Map(), _a = /* @__PURE__ */ new Set(), lm = {
     par_part: "SSPART",
     partcode: "SSPART",
     wspf_10_repr_part: "SSPART",
@@ -14468,12 +14494,12 @@ Use N-M for numeric ranges (e.g. 10500-10510)`, style: { fontSize: "12px", width
     wspf_10_repr_issevent: "WSJOBS",
     // Follow-up WO column in checklist grids (WSJOBS + CTJOBS)
     followupwoactivity: "WSJOBS"
-  }, Pb = {
+  }, $y = {
     // Audit follow-up WOs should open regular WO screen, not loop back to audits
     ADJOBS: { followupwoactivity: "WSJOBS" }
-  }, Lb = /* @__PURE__ */ new Set(["par_part", "partcode", "wspf_10_repr_part"]), im = {
+  }, qy = /* @__PURE__ */ new Set(["par_part", "partcode", "wspf_10_repr_part"]), cm = {
     workordernum: "WSJOBS"
-  }, Db = /* @__PURE__ */ new Set(["udfnote01"]), rs = /* @__PURE__ */ new Set();
+  }, Wy = /* @__PURE__ */ new Set(["udfnote01"]), rs = /* @__PURE__ */ new Set();
   Ne.onBeforeRequest("entity-detect", (e, t, r) => {
     let o = r.url || "";
     if (o.includes("FUNCTION_CLASS=WEBL"))
@@ -14484,7 +14510,7 @@ Use N-M for numeric ranges (e.g. 10500-10510)`, style: { fontSize: "12px", width
             let l = n.pathname.split("/"), c = l[l.length - 1];
             c && c !== "base" && (s = c);
           }
-          fl(a, s), d.debug("ColorCode", `XHR entity detect: userFunc=${a}, systemFunc=${s}`);
+          ml(a, s), d.debug("ColorCode", `XHR entity detect: userFunc=${a}, systemFunc=${s}`);
         }
       } catch (n) {
         d.debug("ColorCode", "Error:", n.message || n);
@@ -14495,34 +14521,34 @@ Use N-M for numeric ranges (e.g. 10500-10510)`, style: { fontSize: "12px", width
     if (!(!o.includes(".HDR") && !o.includes(".LST")))
       try {
         let n = typeof r.params == "string" ? new URLSearchParams(r.params) : null, a = typeof r.params == "object" ? r.params : null, s = n?.get("USER_FUNCTION_NAME") || a?.USER_FUNCTION_NAME, l = n?.get("SYSTEM_FUNCTION_NAME") || a?.SYSTEM_FUNCTION_NAME;
-        s && s !== "WSTABS" && s !== "WSFLTR" && (fl(s, l), d.debug("ColorCode", `XHR entity detect (HDR/LST): userFunc=${s}, systemFunc=${l}`));
+        s && s !== "WSTABS" && s !== "WSFLTR" && (ml(s, l), d.debug("ColorCode", `XHR entity detect (HDR/LST): userFunc=${s}, systemFunc=${l}`));
       } catch (n) {
         d.debug("ColorCode", "Error:", n.message || n);
       }
   });
-  function gc(e) {
+  function fc(e) {
     return e === "COMPLETE" ? { icon: "\u2705", statusTxt: "Complete", color: "var(--apm-success)" } : e === "CANCELLED" ? { icon: "\u274C", statusTxt: "Cancelled", color: "var(--apm-danger)" } : { icon: "\u23F3", statusTxt: "Incomplete", color: "var(--apm-warning)" };
   }
-  function hc(e) {
+  function gc(e) {
     let t = e.getView?.();
     if (!t) return !1;
     let r = t.getId?.() || "";
     if (e.up?.("window"))
-      return e.headerCt?.items?.items?.some((a) => a.rendered && am[a.dataIndex]) ? "linkify" : !1;
+      return e.headerCt?.items?.items?.some((a) => a.rendered && lm[a.dataIndex]) ? "linkify" : !1;
     if (r.indexOf("checklistview") !== -1) return "linkify";
     let o = e.up?.("uxtabcontainer");
-    return o?.itemId === "BOO" ? !1 : o ? e.headerCt?.items?.items?.some((a) => a.rendered && Lb.has(a.dataIndex)) ? "linkify" : !1 : "full";
+    return o?.itemId === "BOO" ? !1 : o ? e.headerCt?.items?.items?.some((a) => a.rendered && qy.has(a.dataIndex)) ? "linkify" : !1 : "full";
   }
-  function sm(e) {
+  function dm(e) {
     let t = Ze();
     if (!t || t === "WSJOBS") {
-      let s = Ke(null);
+      let s = Ye(null);
       s?.screenId && s.screenId !== t && (t = s.screenId);
     }
-    jt = t || "WSJOBS", fe[jt] || (jt = "WSJOBS");
-    let r = fe[jt], o = _a !== r;
-    _a = r, o && d.info("ColorCode", `Active screen: ${jt} (${r.label})`);
-    let n = Ke(null), a = (s) => !n || n.containsComp(s);
+    jt = t || "WSJOBS", ge[jt] || (jt = "WSJOBS");
+    let r = ge[jt], o = Ra !== r;
+    Ra = r, o && d.info("ColorCode", `Active screen: ${jt} (${r.label})`);
+    let n = Ye(null), a = (s) => !n || n.containsComp(s);
     if (!o && Kt)
       try {
         let s = Ho?.Ext?.getCmp?.(Kt);
@@ -14542,7 +14568,7 @@ Use N-M for numeric ranges (e.g. 10500-10510)`, style: { fontSize: "12px", width
             if (c) {
               let p = !1;
               for (let u of c)
-                if (!(!u.rendered || u.isDestroyed || !u.headerCt) && u.getEl()?.dom?.ownerDocument === e && !Aa.has(u.id)) {
+                if (!(!u.rendered || u.isDestroyed || !u.headerCt) && u.getEl()?.dom?.ownerDocument === e && !_a.has(u.id)) {
                   p = !0;
                   break;
                 }
@@ -14554,34 +14580,34 @@ Use N-M for numeric ranges (e.g. 10500-10510)`, style: { fontSize: "12px", width
         }
       } catch {
       }
-    Kt = null, lo.clear(), rs = /* @__PURE__ */ new Set(), Aa.clear();
+    Kt = null, lo.clear(), rs = /* @__PURE__ */ new Set(), _a.clear();
     try {
       let s = e.defaultView || window;
       if (s.Ext && s.Ext.ComponentQuery) {
         let l = s.Ext.ComponentQuery.query("gridpanel:not([destroyed=true])");
         for (let c of l)
           if (!(!c.rendered || c.isDestroyed || !c.headerCt) && c.getEl()?.dom?.ownerDocument === e && a(c)) {
-            if (Aa.add(c.id), !Kt && r.drillbackFlag) {
+            if (_a.add(c.id), !Kt && r.drillbackFlag) {
               let p = c.headerCt.items.items.find(
                 (u) => u.dataIndex === r.dataIndex && u.rendered
               );
               p?.id && (Kt = p.id, Ho = s, d.debug("ColorCode", `Entity column found: ${p.id} (dataIndex=${r.dataIndex})`));
             }
             for (let p of c.headerCt.items.items) {
-              if (!p.rendered || !p.dataIndex || (Db.has(p.dataIndex) && rs.add(p.id), p.id === Kt)) continue;
-              let u = am[p.dataIndex];
+              if (!p.rendered || !p.dataIndex || (Wy.has(p.dataIndex) && rs.add(p.id), p.id === Kt)) continue;
+              let u = lm[p.dataIndex];
               if (!u) continue;
-              let m = Pb[jt];
+              let m = $y[jt];
               if (m && m[p.dataIndex])
                 u = m[p.dataIndex];
               else {
-                let g = fe[u];
+                let g = ge[u];
                 if (g && jt && jt !== u) {
-                  let h = fe[jt];
-                  h && h.systemFunc === g.systemFunc && (u = jt);
+                  let y = ge[jt];
+                  y && y.systemFunc === g.systemFunc && (u = jt);
                 }
               }
-              let f = fe[u];
+              let f = ge[u];
               f && (lo.set(p.id, { config: f, userFunc: u }), d.debug("ColorCode", `Sub-grid entity column: ${p.id} (dataIndex=${p.dataIndex}) \u2192 ${f.label}`));
             }
           }
@@ -14590,8 +14616,8 @@ Use N-M for numeric ranges (e.g. 10500-10510)`, style: { fontSize: "12px", width
       d.debug("ColorCode", "resolveEntityColumn grid search error:", s);
     }
   }
-  function Tn(e, t, r) {
-    let o = window.EAM && window.EAM.AppData && window.EAM.AppData.tenant ? window.EAM.AppData.tenant : be.session.tenant || op.tenant, n = new URLSearchParams({
+  function Cn(e, t, r) {
+    let o = window.EAM && window.EAM.AppData && window.EAM.AppData.tenant ? window.EAM.AppData.tenant : ye.session.tenant || ip.tenant, n = new URLSearchParams({
       tenant: o,
       SYSTEM_FUNCTION_NAME: t.systemFunc,
       USER_FUNCTION_NAME: r
@@ -14601,7 +14627,7 @@ Use N-M for numeric ranges (e.g. 10500-10510)`, style: { fontSize: "12px", width
   function os(e, t, r) {
     let o = r, n = e.hasAttribute("data-apm-linkified"), a = n && !e.querySelector(".apm-wo-link"), s = n ? e.querySelector(".apm-wo-link") : null, l = s && s.getAttribute("target") === "_blank" != !!Y?.openLinksInNewTab;
     if (!n || a || l) {
-      let c = null, p = t || fe.WSJOBS, u = jt || "WSJOBS";
+      let c = null, p = t || ge.WSJOBS, u = jt || "WSJOBS";
       if (Kt) {
         let m = e.closest(".x-grid-cell");
         if (m && m.getAttribute("data-columnid") === Kt) {
@@ -14614,8 +14640,8 @@ Use N-M for numeric ranges (e.g. 10500-10510)`, style: { fontSize: "12px", width
         if (m) {
           let f = m.getAttribute("data-columnid"), g = lo.get(f);
           if (g) {
-            let h = o.trim();
-            h && (c = h, p = g.config, u = g.userFunc);
+            let y = o.trim();
+            y && (c = y, p = g.config, u = g.userFunc);
           }
         }
       }
@@ -14625,26 +14651,26 @@ Use N-M for numeric ranges (e.g. 10500-10510)`, style: { fontSize: "12px", width
       }
       if (c) {
         p.entityKey === "workordernum" && (c = c.replace(/-\d+$/, ""));
-        let m = Tn(c, p, u), f = Y?.openLinksInNewTab, g = { className: "apm-wo-link", href: m };
+        let m = Cn(c, p, u), f = Y?.openLinksInNewTab, g = { className: "apm-wo-link", href: m };
         f && (g.target = "_blank");
-        let h = i("a", g, [c]), y = i("span", { className: "apm-copy-icon", title: "Copy link to clipboard", dataset: { woCopyUrl: m } }), b = i("span", { style: { whiteSpace: "nowrap" } }, [h, y]);
+        let y = i("a", g, [c]), x = i("span", { className: "apm-copy-icon", title: "Copy link to clipboard", dataset: { woCopyUrl: m } }), h = i("span", { style: { whiteSpace: "nowrap" } }, [y, x]);
         if (e.childElementCount > 0) {
-          let x = document.createTreeWalker(e, NodeFilter.SHOW_TEXT, null), v = null;
-          for (; x.nextNode(); )
-            if (x.currentNode.textContent.includes(c)) {
-              v = x.currentNode;
+          let b = document.createTreeWalker(e, NodeFilter.SHOW_TEXT, null), v = null;
+          for (; b.nextNode(); )
+            if (b.currentNode.textContent.includes(c)) {
+              v = b.currentNode;
               break;
             }
           if (v) {
             let E = v.textContent, k = E.indexOf(c), S = document.createDocumentFragment(), w = E.slice(0, k), T = E.slice(k + c.length);
-            w && S.appendChild(document.createTextNode(w)), S.appendChild(b), T && S.appendChild(document.createTextNode(T)), v.parentNode.replaceChild(S, v);
+            w && S.appendChild(document.createTextNode(w)), S.appendChild(h), T && S.appendChild(document.createTextNode(T)), v.parentNode.replaceChild(S, v);
           } else
-            e.appendChild(b);
+            e.appendChild(h);
         } else
-          e.textContent = "", e.appendChild(b);
+          e.textContent = "", e.appendChild(h);
         if (!f) {
-          let x = e.querySelector(".apm-wo-link");
-          x && x.addEventListener("click", (v) => {
+          let b = e.querySelector(".apm-wo-link");
+          b && b.addEventListener("click", (v) => {
             v.preventDefault(), v.stopPropagation();
             try {
               window.top.location.href = m;
@@ -14661,7 +14687,7 @@ Use N-M for numeric ranges (e.g. 10500-10510)`, style: { fontSize: "12px", width
     if (Y.ptpTrackingEnabled && e.hasAttribute("data-wo-num")) {
       let r = e.getAttribute("data-wo-num"), o = t || null, n = e.querySelector(".apm-ptp-status-tag");
       if (o) {
-        let { icon: a, statusTxt: s, color: l } = gc(o.status), c = `${s} PTP on ${new Date(o.time).toLocaleString()}`;
+        let { icon: a, statusTxt: s, color: l } = fc(o.status), c = `${s} PTP on ${new Date(o.time).toLocaleString()}`;
         if (n)
           n.title !== c && (n.title = c, n.style.color = l, n.querySelector("span").textContent = a);
         else {
@@ -14675,8 +14701,8 @@ Use N-M for numeric ranges (e.g. 10500-10510)`, style: { fontSize: "12px", width
       } else n && n.remove();
     } else Y.ptpTrackingEnabled || e.querySelector(".apm-ptp-status-tag")?.remove();
   }
-  function lm(e, t) {
-    let r = _a || fe.WSJOBS;
+  function pm(e, t) {
+    let r = Ra || ge.WSJOBS;
     if (Kt) {
       let n = e.querySelector(`.x-grid-cell[data-columnid="${Kt}"]`)?.querySelector(".x-grid-cell-inner");
       if (n) {
@@ -14694,35 +14720,35 @@ Use N-M for numeric ranges (e.g. 10500-10510)`, style: { fontSize: "12px", width
       }
     }
   }
-  function Ra() {
-    return _a;
+  function Oa() {
+    return Ra;
   }
   function as() {
     return jt;
   }
-  function bc() {
+  function hc() {
     return Kt;
   }
-  function cm() {
+  function um() {
     return Ho;
   }
-  function dm() {
+  function mm() {
     return lo;
   }
-  function pm() {
+  function fm() {
     return rs;
   }
-  function um() {
-    Kt = null, Ho = null, Aa.clear();
+  function gm() {
+    Kt = null, Ho = null, _a.clear();
   }
-  function mm() {
+  function hm() {
     return {
       activeScreen: jt,
-      entityLabel: _a?.label || null,
+      entityLabel: Ra?.label || null,
       entityColumnId: Kt,
       entityColumnWinAlive: !!Ho,
       subGridColumns: lo.size,
-      lastScannedGrids: Aa.size,
+      lastScannedGrids: _a.size,
       nametagExcluded: rs.size
     };
   }
@@ -14731,17 +14757,17 @@ Use N-M for numeric ranges (e.g. 10500-10510)`, style: { fontSize: "12px", width
   function ts(e) {
     return Array.isArray(e) ? e.map((t) => t.trim().toLowerCase()).filter((t) => t) : typeof e == "string" ? e.split(",").map((t) => t.trim().toLowerCase()).filter((t) => t) : [];
   }
-  var Na = /* @__PURE__ */ new WeakMap(), hr = 0, Ia = "", fm = !1;
-  function Fb() {
+  var Ia = /* @__PURE__ */ new WeakMap(), yr = 0, Ma = "", ym = !1;
+  function Hy() {
     let e = {};
     if (!Y || !Y.ptpTrackingEnabled) return e;
     try {
-      e = N.get(Ot) || {};
+      e = N.get(It) || {};
     } catch (t) {
       d.debug("ColorCode", "Error:", t.message || t);
     }
-    if (!fm) {
-      fm = !0;
+    if (!ym) {
+      ym = !0;
       let t = Date.now(), r = 10080 * 60 * 1e3, o = !1;
       for (let n in e) {
         let a = e[n], s = typeof a == "object" ? a.time : a;
@@ -14749,20 +14775,20 @@ Use N-M for numeric ranges (e.g. 10500-10510)`, style: { fontSize: "12px", width
       }
       if (o)
         try {
-          N.set(Ot, e);
+          N.set(It, e);
         } catch (n) {
           d.debug("ColorCode", "Error:", n.message || n);
         }
     }
     return e;
   }
-  function vc(e) {
+  function xc(e) {
     let t = parseInt(e.slice(1, 3), 16), r = parseInt(e.slice(3, 5), 16), o = parseInt(e.slice(5, 7), 16);
     return `${t}, ${r}, ${o}`;
   }
   function Uo(e) {
-    if (!he.isEnabled("colorCode")) return;
-    let t = it(), r = En(), o = xm(), n = e ? [e] : [document];
+    if (!fe.isEnabled("colorCode")) return;
+    let t = it(), r = kn(), o = Sm(), n = e ? [e] : [document];
     e || document.querySelectorAll("iframe").forEach((a) => {
       try {
         let s = a.contentDocument;
@@ -14788,8 +14814,8 @@ Use N-M for numeric ranges (e.g. 10500-10510)`, style: { fontSize: "12px", width
       p && p.remove();
     });
   }
-  var Cn = null, yc = "", bm = "__ccPreviewRule";
-  function ym() {
+  var An = null, yc = "", vm = "__ccPreviewRule";
+  function wm() {
     try {
       let t = (typeof unsafeWindow < "u" ? unsafeWindow : window).top;
       return t._APM || (t._APM = {}), t._APM;
@@ -14797,31 +14823,31 @@ Use N-M for numeric ranges (e.g. 10500-10510)`, style: { fontSize: "12px", width
       return window._APM || (window._APM = {}), window._APM;
     }
   }
-  function Ma(e) {
-    ym()[bm] = e || null, e ? d.debug("ColorCode Engine", "Preview override SET (cross-frame):", e) : d.debug("ColorCode Engine", "Preview override CLEARED (cross-frame)");
+  function Pa(e) {
+    wm()[vm] = e || null, e ? d.debug("ColorCode Engine", "Preview override SET (cross-frame):", e) : d.debug("ColorCode Engine", "Preview override CLEARED (cross-frame)");
   }
-  function xm() {
-    return ym()[bm] || null;
+  function Sm() {
+    return wm()[vm] || null;
   }
-  function Bb(e) {
+  function Uy(e) {
     let t = e.map((r) => `${r.id}:${Array.isArray(r.search) ? r.search.join(",") : r.search}:${r.fill}:${r.showTag}:${r.color}:${r.tag || ""}`).join("|");
-    return Cn && t === yc || (d.debug("ColorCode", `Compiling ${e.length} rules...`), yc = t, Cn = e.map((r) => {
+    return An && t === yc || (d.debug("ColorCode", `Compiling ${e.length} rules...`), yc = t, An = e.map((r) => {
       if (!r.search) return null;
       let o = ts(r.search);
       if (o.length === 0) return null;
       let n = o.map((a) => a.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")).join("|");
       return { ...r, regex: new RegExp(n, "i") };
-    }).filter((r) => r), d.info("ColorCode", `Compiled ${Cn.length} rule(s)`)), Cn;
+    }).filter((r) => r), d.info("ColorCode", `Compiled ${An.length} rule(s)`)), An;
   }
-  function vm(e, t, r) {
+  function Em(e, t, r) {
     if (t) {
       e.setAttribute("data-cc-rule", t.id);
-      let o = vc(t.color), n = r && r.uniformHighlight ? "0.22" : "0.15";
+      let o = xc(t.color), n = r && r.uniformHighlight ? "0.22" : "0.15";
       e.style.setProperty("--cc-row-bg", `rgba(${o}, ${n})`), e.style.setProperty("--cc-row-bg-alt", `rgba(${o}, 0.22)`), e.style.setProperty("--cc-row-bg-hover", `rgba(${o}, 0.30)`), e.style.setProperty("--cc-row-bg-sel", `rgba(${o}, 0.45)`);
     } else e.hasAttribute("data-cc-rule") && (e.removeAttribute("data-cc-rule"), ["--cc-row-bg", "--cc-row-bg-alt", "--cc-row-bg-hover", "--cc-row-bg-sel"].forEach((o) => e.style.removeProperty(o)));
   }
-  function $b(e, t) {
-    let r = pm();
+  function Gy(e, t) {
+    let r = fm();
     if (r.size > 0) {
       let n = e.closest(".x-grid-cell");
       if (n && r.has(n.getAttribute("data-columnid"))) return;
@@ -14858,14 +14884,14 @@ Use N-M for numeric ranges (e.g. 10500-10510)`, style: { fontSize: "12px", width
       }
     });
   }
-  function qb(e, t, r) {
-    let o = Ra() || fe.WSJOBS;
+  function Vy(e, t, r) {
+    let o = Oa() || ge.WSJOBS;
     os(e, o, e.textContent);
     let n = e.getAttribute("data-wo-num");
-    ns(e, n ? r[n] : null), $b(e, t);
+    ns(e, n ? r[n] : null), Gy(e, t);
   }
   var ls = !1;
-  function Wb(e) {
+  function zy(e) {
     let t = e.defaultView || window, r = [], o = "";
     if (t.Ext?.ComponentQuery)
       try {
@@ -14904,8 +14930,8 @@ Use N-M for numeric ranges (e.g. 10500-10510)`, style: { fontSize: "12px", width
     }
     return { items: r, sourceType: o };
   }
-  function Hb(e, t, r) {
-    let o = as() || "WSJOBS", n = Tn(t, r, o), a = Y?.openLinksInNewTab, s = document.createTreeWalker(e, NodeFilter.SHOW_TEXT, null), l = null;
+  function jy(e, t, r) {
+    let o = as() || "WSJOBS", n = Cn(t, r, o), a = Y?.openLinksInNewTab, s = document.createTreeWalker(e, NodeFilter.SHOW_TEXT, null), l = null;
     for (; s.nextNode(); )
       if (s.currentNode.textContent.includes(t)) {
         l = s.currentNode;
@@ -14916,10 +14942,10 @@ Use N-M for numeric ranges (e.g. 10500-10510)`, style: { fontSize: "12px", width
     if (p === -1) return;
     let u = c.slice(0, p), m = c.slice(p + t.length), f = l.parentNode, g = document.createDocumentFragment();
     u && g.appendChild(document.createTextNode(u));
-    let h = { className: "apm-wo-link", href: n };
-    a && (h.target = "_blank");
-    let y = i("a", h, [t]), b = i("span", { className: "apm-copy-icon", title: "Copy link to clipboard", dataset: { woCopyUrl: n } }), x = i("span", { className: "apm-sv-entity", style: { whiteSpace: "nowrap" } }, [y, b]);
-    g.appendChild(x), m && g.appendChild(document.createTextNode(m)), f.replaceChild(g, l), e.setAttribute("data-apm-linkified", "true"), x.setAttribute("data-wo-num", t), a || y.addEventListener("click", (v) => {
+    let y = { className: "apm-wo-link", href: n };
+    a && (y.target = "_blank");
+    let x = i("a", y, [t]), h = i("span", { className: "apm-copy-icon", title: "Copy link to clipboard", dataset: { woCopyUrl: n } }), b = i("span", { className: "apm-sv-entity", style: { whiteSpace: "nowrap" } }, [x, h]);
+    g.appendChild(b), m && g.appendChild(document.createTextNode(m)), f.replaceChild(g, l), e.setAttribute("data-apm-linkified", "true"), b.setAttribute("data-wo-num", t), a || x.addEventListener("click", (v) => {
       v.preventDefault(), v.stopPropagation();
       try {
         window.top.location.href = n;
@@ -14928,7 +14954,7 @@ Use N-M for numeric ranges (e.g. 10500-10510)`, style: { fontSize: "12px", width
       }
     });
   }
-  function Ub(e, t) {
+  function Ky(e, t) {
     e.querySelectorAll(".apm-nametag").forEach((o) => {
       let n = o.getAttribute("data-cc-id"), a = isNaN(Number(n)) ? n : Number(n);
       t.some((s) => s.id === a && s.showTag) || o.remove();
@@ -14957,13 +14983,13 @@ Use N-M for numeric ranges (e.g. 10500-10510)`, style: { fontSize: "12px", width
       }
     });
   }
-  var gm = "";
-  function Gb(e, t, r, o) {
-    let { items: n, sourceType: a } = Wb(e);
+  var bm = "";
+  function Yy(e, t, r, o) {
+    let { items: n, sourceType: a } = zy(e);
     if (n.length === 0) return;
     let s = `${n.length}:${a}`;
-    s !== gm && (d.debug("ColorCode", `Split view: processing ${n.length} items via ${a}`), gm = s);
-    let l = Ra() || fe.WSJOBS, c = so(), p = ts(c);
+    s !== bm && (d.debug("ColorCode", `Split view: processing ${n.length} items via ${a}`), bm = s);
+    let l = Oa() || ge.WSJOBS, c = so(), p = ts(c);
     n.forEach((u) => {
       try {
         let m = u.textContent, f = m.toLowerCase();
@@ -14972,21 +14998,21 @@ Use N-M for numeric ranges (e.g. 10500-10510)`, style: { fontSize: "12px", width
           u.classList.toggle("apm-sv-filtered", !E);
         } else
           u.classList.remove("apm-sv-filtered");
-        let g = Na.get(u);
-        if (!(g?.textRaw !== m) && g && g.gen === hr && !(g.hasTag && !u.querySelector(".apm-nametag") || g.hasEntity && !u.querySelector(".apm-wo-link") || g.hasFill && !u.hasAttribute("data-cc-rule")))
+        let g = Ia.get(u);
+        if (!(g?.textRaw !== m) && g && g.gen === yr && !(g.hasTag && !u.querySelector(".apm-nametag") || g.hasEntity && !u.querySelector(".apm-wo-link") || g.hasFill && !u.hasAttribute("data-cc-rule")))
           return;
-        let y = t.filter((E) => E.regex.test(f)), b = y.find((E) => E.fill), x = y.filter((E) => E.showTag).length, v = null;
+        let x = t.filter((E) => E.regex.test(f)), h = x.find((E) => E.fill), b = x.filter((E) => E.showTag).length, v = null;
         if (l.pattern) {
           let E = m.match(l.pattern);
           E && (v = E[1]);
         }
-        Na.set(u, {
+        Ia.set(u, {
           textRaw: m,
-          gen: hr,
-          hasFill: !!b,
-          hasTag: x > 0,
+          gen: yr,
+          hasFill: !!h,
+          hasTag: b > 0,
           hasEntity: !!v
-        }), vm(u, b, r), v && !u.querySelector(".apm-wo-link") && Hb(u, v, l), (y.length > 0 || u.querySelector(".apm-nametag")) && Ub(u, y), u._apmSvClickRelay || (u.addEventListener("mousedown", (E) => {
+        }), Em(u, h, r), v && !u.querySelector(".apm-wo-link") && jy(u, v, l), (x.length > 0 || u.querySelector(".apm-nametag")) && Ky(u, x), u._apmSvClickRelay || (u.addEventListener("mousedown", (E) => {
           if (E.target.closest(".apm-copy-icon, .apm-nametag, .apm-wo-link") || !so()) return;
           let S = Se();
           if (!S) return;
@@ -15000,8 +15026,8 @@ Use N-M for numeric ranges (e.g. 10500-10510)`, style: { fontSize: "12px", width
       }
     });
   }
-  function zb(e, t) {
-    let r = Ra() || fe.WSJOBS, o = as() || "WSJOBS";
+  function Jy(e, t) {
+    let r = Oa() || ge.WSJOBS, o = as() || "WSJOBS";
     try {
       e.querySelectorAll("span.recordcode").forEach((n) => {
         let a = n.textContent, s = null;
@@ -15013,7 +15039,7 @@ Use N-M for numeric ranges (e.g. 10500-10510)`, style: { fontSize: "12px", width
           l && (s = l);
         }
         if (s) {
-          let l = Tn(s, r, o);
+          let l = Cn(s, r, o);
           if (!n.hasAttribute("data-wo-num")) {
             n.setAttribute("data-wo-num", s);
             let m = i("span", { className: "apm-copy-icon", title: "Copy link to clipboard", dataset: { woCopyUrl: l } });
@@ -15031,12 +15057,12 @@ Use N-M for numeric ranges (e.g. 10500-10510)`, style: { fontSize: "12px", width
           if (Y.ptpTrackingEnabled) {
             let m = t[s], f = e.querySelector(".apm-ptp-status-tag-header");
             if (m) {
-              let { icon: g, statusTxt: h, color: y } = gc(m.status), b = `${h} PTP on ${new Date(m.time).toLocaleString()}`, x = () => {
+              let { icon: g, statusTxt: y, color: x } = fc(m.status), h = `${y} PTP on ${new Date(m.time).toLocaleString()}`, b = () => {
                 let k = i("span", { style: { fontSize: "14px" } }, [g]);
                 return i("span", {
                   className: "apm-ptp-status-tag-header",
-                  title: b,
-                  style: { fontSize: "13px", marginLeft: "8px", display: "inline-flex", alignItems: "center", gap: "4px", opacity: "1.0", cursor: "help", whiteSpace: "nowrap", color: y }
+                  title: h,
+                  style: { fontSize: "13px", marginLeft: "8px", display: "inline-flex", alignItems: "center", gap: "4px", opacity: "1.0", cursor: "help", whiteSpace: "nowrap", color: x }
                 }, [k, " PTP"]);
               }, v = e.querySelector('input[name="description"]'), E = v ? v.closest(".x-form-trigger-wrap") : null;
               if (E) {
@@ -15044,7 +15070,7 @@ Use N-M for numeric ranges (e.g. 10500-10510)`, style: { fontSize: "12px", width
                 if (k) {
                   k.style.setProperty("display", "flex", "important"), k.style.setProperty("align-items", "center", "important"), k.style.setProperty("overflow", "visible", "important"), k.style.setProperty("max-width", "none", "important");
                   let S = k.querySelector(".apm-ptp-status-tag-header");
-                  !f && !S ? E.after(x()) : f && f.title !== b && f.replaceWith(x());
+                  !f && !S ? E.after(b()) : f && f.title !== h && f.replaceWith(b());
                 }
               }
             } else f && f.remove();
@@ -15062,10 +15088,10 @@ Use N-M for numeric ranges (e.g. 10500-10510)`, style: { fontSize: "12px", width
       if (n && r.dataIndex) {
         let a = null, s = null;
         a = e.querySelector(`input[name="${r.dataIndex}"]`)?.value?.trim() || null;
-        let c = cm();
+        let c = um();
         if (!a && c?.Ext)
           try {
-            let m = c.Ext.getCmp(bc())?.up("gridpanel")?.getSelectionModel()?.getSelection();
+            let m = c.Ext.getCmp(hc())?.up("gridpanel")?.getSelectionModel()?.getSelection();
             m?.length === 1 && (a = m[0].get(r.dataIndex)?.toString()?.trim() || null, s = m[0].get("description")?.toString()?.trim() || null);
           } catch {
           }
@@ -15074,18 +15100,18 @@ Use N-M for numeric ranges (e.g. 10500-10510)`, style: { fontSize: "12px", width
         if (a && !n.querySelector("span.recordcode:not(.apm-flex-header)")) {
           if (!(p && p.dataset.woNum === a)) {
             p && (p.remove(), n.querySelector("span.recorddesc.apm-flex-header")?.remove(), n.querySelector(".apm-copy-title-icon")?.remove());
-            let u = Tn(a, r, o), m = Y?.openLinksInNewTab, f = { className: "apm-wo-link", href: u };
+            let u = Cn(a, r, o), m = Y?.openLinksInNewTab, f = { className: "apm-wo-link", href: u };
             m && (f.target = "_blank");
-            let g = i("a", f, [a]), h = i("span", { className: "apm-copy-icon", title: "Copy link to clipboard", dataset: { woCopyUrl: u } }), y = i("span", { className: "recordcode apm-flex-header", dataset: { woNum: a } }, [g, h]);
-            if (n.appendChild(y), s) {
-              let b = i("span", { className: "recorddesc apm-flex-header" }, [s]);
-              n.appendChild(b);
-              let x = i("span", {
+            let g = i("a", f, [a]), y = i("span", { className: "apm-copy-icon", title: "Copy link to clipboard", dataset: { woCopyUrl: u } }), x = i("span", { className: "recordcode apm-flex-header", dataset: { woNum: a } }, [g, y]);
+            if (n.appendChild(x), s) {
+              let h = i("span", { className: "recorddesc apm-flex-header" }, [s]);
+              n.appendChild(h);
+              let b = i("span", {
                 className: "apm-copy-icon apm-copy-title-icon",
                 title: "Copy title to clipboard",
                 dataset: { woCopyUrl: u, woCopyDesc: s, woNum: a }
               });
-              n.appendChild(x);
+              n.appendChild(b);
             }
           }
         } else !a && p && (p.remove(), n.querySelector("span.recorddesc.apm-flex-header")?.remove(), n.querySelector(".apm-copy-title-icon")?.remove());
@@ -15094,10 +15120,10 @@ Use N-M for numeric ranges (e.g. 10500-10510)`, style: { fontSize: "12px", width
       d.error("ColorCode", "Flex header injection error:", n);
     }
     try {
-      for (let [n, a] of Object.entries(im)) {
-        let s = fe[a];
+      for (let [n, a] of Object.entries(cm)) {
+        let s = ge[a];
         if (!s) continue;
-        let l = as(), c = l && fe[l];
+        let l = as(), c = l && ge[l];
         if (c && c.systemFunc === s.systemFunc) continue;
         let p = e.querySelector(`input[name="${n}"]`);
         if (!p) continue;
@@ -15106,15 +15132,15 @@ Use N-M for numeric ranges (e.g. 10500-10510)`, style: { fontSize: "12px", width
         s.entityKey === "workordernum" && (u = u.replace(/-\d+$/, ""));
         let m = p.closest(".x-form-trigger-wrap"), f = m?.parentElement || p.parentElement, g = f?.querySelector("[data-wo-num]");
         if (g && g.dataset.woNum !== u && g.remove(), !f || f.querySelector(".apm-copy-icon")) continue;
-        let h = Tn(u, s, a);
+        let y = Cn(u, s, a);
         f.style.setProperty("display", "flex", "important"), f.style.setProperty("align-items", "center", "important"), f.style.setProperty("overflow", "visible", "important");
-        let y = i("span", {
+        let x = i("span", {
           style: { display: "inline-flex", alignItems: "center", marginLeft: "4px", whiteSpace: "nowrap" },
           dataset: { woNum: u }
         }, [
-          i("span", { className: "apm-copy-icon", title: `Copy ${s.label} link`, dataset: { woCopyUrl: h } })
+          i("span", { className: "apm-copy-icon", title: `Copy ${s.label} link`, dataset: { woCopyUrl: y } })
         ]);
-        m ? m.after(y) : f.appendChild(y);
+        m ? m.after(x) : f.appendChild(x);
       }
     } catch (n) {
       d.error("ColorCode", "Header field linkification error:", n);
@@ -15122,8 +15148,8 @@ Use N-M for numeric ranges (e.g. 10500-10510)`, style: { fontSize: "12px", width
   }
   function co(e) {
     let t = e && e.querySelectorAll ? e : document;
-    if (!he.isEnabled("colorCode")) return;
-    let r = En(), o = xm(), n = it();
+    if (!fe.isEnabled("colorCode")) return;
+    let r = kn(), o = Sm(), n = it();
     if (o)
       n = n.filter((f) => f.id !== "__preview__"), o._editingId && (n = n.filter((f) => f.id !== o._editingId)), n = [...n, o];
     else {
@@ -15131,21 +15157,21 @@ Use N-M for numeric ranges (e.g. 10500-10510)`, style: { fontSize: "12px", width
       f && (d.warn("ColorCode", `Stale preview rule in AppState, stripping. search="${f.search}"`), n = n.filter((g) => g.id !== "__preview__"));
     }
     if (!r || !n || !Array.isArray(n)) return;
-    let a = Bb(n), s = Fb();
-    sm(t);
+    let a = Uy(n), s = Hy();
+    dm(t);
     let l = `${r.uniformHighlight}|${yc}`;
-    l !== Ia && (Ia = l, hr++, Uo());
+    l !== Ma && (Ma = l, yr++, Uo());
     let c = [], p = /* @__PURE__ */ new Set();
     try {
       let f = t.defaultView || window;
-      f.Ext && f.Ext.ComponentQuery && f.Ext.ComponentQuery.query("gridpanel:not([destroyed=true])").forEach((h) => {
-        if (!h.rendered || h.isDestroyed || h.getEl()?.dom?.ownerDocument !== t) return;
-        let y = hc(h);
-        if (!y) return;
-        let b = h.getView();
-        if (!b || !b.getNodes) return;
-        let x = b.getNodes();
-        x && x.length > 0 && (c.push(...x), y === "linkify" && x.forEach((v) => p.add(v)));
+      f.Ext && f.Ext.ComponentQuery && f.Ext.ComponentQuery.query("gridpanel:not([destroyed=true])").forEach((y) => {
+        if (!y.rendered || y.isDestroyed || y.getEl()?.dom?.ownerDocument !== t) return;
+        let x = gc(y);
+        if (!x) return;
+        let h = y.getView();
+        if (!h || !h.getNodes) return;
+        let b = h.getNodes();
+        b && b.length > 0 && (c.push(...b), x === "linkify" && b.forEach((v) => p.add(v)));
       });
     } catch (f) {
       d.error("ColorCode", "Error querying grids:", f);
@@ -15154,54 +15180,54 @@ Use N-M for numeric ranges (e.g. 10500-10510)`, style: { fontSize: "12px", width
     let u = /* @__PURE__ */ new Map(), m = 0;
     c.forEach((f) => {
       try {
-        let g = t.defaultView || window, y = f.closest(".x-grid")?.id, b = null;
-        if (y) {
-          if (!u.has(y)) {
-            let H = g.Ext?.getCmp(y);
-            u.set(y, H?.getView?.() || null);
+        let g = t.defaultView || window, x = f.closest(".x-grid")?.id, h = null;
+        if (x) {
+          if (!u.has(x)) {
+            let H = g.Ext?.getCmp(x);
+            u.set(x, H?.getView?.() || null);
           }
-          b = u.get(y);
+          h = u.get(x);
         }
-        let x = b?.getRecord?.(f), v = f.textContent, E = v.length, k = Na.get(f);
-        if (!(x && k?.recId !== x.internalId || k?.textRaw !== v) && k && k.gen === hr) {
+        let b = h?.getRecord?.(f), v = f.textContent, E = v.length, k = Ia.get(f);
+        if (!(b && k?.recId !== b.internalId || k?.textRaw !== v) && k && k.gen === yr) {
           if (!(k.hasTag && !f.querySelector(".apm-nametag") || k.hasEntity && !f.querySelector(".apm-wo-link") || k.hasFill && !f.hasAttribute("data-cc-rule"))) {
-            f.setAttribute("data-cc-gen", hr);
+            f.setAttribute("data-cc-gen", yr);
             return;
           }
           m++;
         }
-        let w = p.has(f), T = v.toLowerCase(), B = w ? [] : a.filter((H) => H.regex.test(T)), D = w ? null : B.find((H) => H.fill), $ = B.filter((H) => H.showTag).length, K = Ra() || fe.WSJOBS, ee = !!bc() || dm().size > 0 || !!K.pattern;
-        Na.set(f, {
+        let w = p.has(f), T = v.toLowerCase(), B = w ? [] : a.filter((H) => H.regex.test(T)), D = w ? null : B.find((H) => H.fill), $ = B.filter((H) => H.showTag).length, K = Oa() || ge.WSJOBS, ee = !!hc() || mm().size > 0 || !!K.pattern;
+        Ia.set(f, {
           len: E,
           textRaw: v,
-          recId: x?.internalId,
-          gen: hr,
+          recId: b?.internalId,
+          gen: yr,
           hasFill: !!D,
           hasTag: $ > 0,
           hasEntity: ee
-        }), vm(f, D, r);
+        }), Em(f, D, r);
         let O = Object.keys(s).length > 0;
         if (B.length === 0 && !ee && !O) {
-          f.setAttribute("data-cc-gen", hr);
+          f.setAttribute("data-cc-gen", yr);
           return;
         }
-        if (B.length > 0 ? f.querySelectorAll(".x-grid-cell-inner").forEach((Q) => qb(Q, B, s)) : (f.querySelectorAll(".apm-nametag").forEach((H) => H.remove()), lm(f, s)), ee) {
-          let H = !!f.querySelector(".apm-wo-link"), Q = Na.get(f);
+        if (B.length > 0 ? f.querySelectorAll(".x-grid-cell-inner").forEach((Q) => Vy(Q, B, s)) : (f.querySelectorAll(".apm-nametag").forEach((H) => H.remove()), pm(f, s)), ee) {
+          let H = !!f.querySelector(".apm-wo-link"), Q = Ia.get(f);
           Q && (Q.hasEntity = H);
         }
-        f.setAttribute("data-cc-gen", hr);
+        f.setAttribute("data-cc-gen", yr);
       } catch (g) {
         d.error("ColorCode", "Row processing error:", g);
       }
-    }), m > 0 && d.debug("ColorCode", `${m} rows needed repaint (decorations missing)`), Gb(t, a, r, s), zb(t, s);
+    }), m > 0 && d.debug("ColorCode", `${m} rows needed repaint (decorations missing)`), Yy(t, a, r, s), Jy(t, s);
   }
-  function wm(e) {
-    if (he.isEnabled("colorCode") && !(!e.Ext || !e.Ext.ComponentQuery))
+  function km(e) {
+    if (fe.isEnabled("colorCode") && !(!e.Ext || !e.Ext.ComponentQuery))
       try {
         e.__apmWinHooksInjected || (d.debug("ColorCode", `Initializing window hooks for ${e.location?.pathname}`), e.addEventListener("APM_PTP_UPDATED_EVENT", () => {
-          hr++, br(e.document, !0);
+          yr++, br(e.document, !0);
         }), e.__apmWinHooksInjected = !0);
-        let t = e.Ext.ComponentQuery.query("gridpanel, treepanel"), r = t.filter((n) => hc(n));
+        let t = e.Ext.ComponentQuery.query("gridpanel, treepanel"), r = t.filter((n) => gc(n));
         r.length > 0 && d.debug("ColorCode", `Found ${r.length}/${t.length} data grids for listener binding`), r.forEach((n) => {
           let a = n.getView();
           if (a && !a._apmHooksInjected) {
@@ -15263,23 +15289,23 @@ Use N-M for numeric ranges (e.g. 10500-10510)`, style: { fontSize: "12px", width
         d.warn("ColorCode", "setupExtGridListeners failed:", t);
       }
   }
-  var Ur = null, xc = 0, is = 0, ss = !1, Vb = 150, jb = 1e3, Oa = /* @__PURE__ */ new Set();
+  var Ur = null, bc = 0, is = 0, ss = !1, Qy = 150, Xy = 1e3, Na = /* @__PURE__ */ new Set();
   function br(e, t = !1) {
-    e && e.nodeType === 9 && Oa.add(e);
+    e && e.nodeType === 9 && Na.add(e);
     let r = Date.now(), o = () => {
       Ur = null, is = 0, !ss && (ss = !0, requestAnimationFrame(() => {
         ss = !1;
         let n = performance.now();
-        xc = Date.now();
-        let a = 0, s = Ke(null);
-        Oa.size > 0 ? (Oa.forEach((p) => {
+        bc = Date.now();
+        let a = 0, s = Ye(null);
+        Na.size > 0 ? (Na.forEach((p) => {
           try {
             if (!p || p.readyState === "loading" || p !== document && !s?.containsDoc(p)) return;
             co(p), a++;
           } catch (u) {
             d.debug("ColorCode", "Error:", u.message || u);
           }
-        }), Oa.clear()) : (co(document), a++, document.querySelectorAll("iframe").forEach((p) => {
+        }), Na.clear()) : (co(document), a++, document.querySelectorAll("iframe").forEach((p) => {
           try {
             let u = p.contentDocument;
             if (!u || u.readyState === "loading" || !s?.containsDoc(u)) return;
@@ -15296,35 +15322,35 @@ Use N-M for numeric ranges (e.g. 10500-10510)`, style: { fontSize: "12px", width
       Ur && clearTimeout(Ur), o();
       return;
     }
-    if (r - xc > 1e3) {
+    if (r - bc > 1e3) {
       Ur && clearTimeout(Ur), o();
       return;
     }
-    if (is || (is = r), r - is > jb) {
+    if (is || (is = r), r - is > Xy) {
       Ur && clearTimeout(Ur), o();
       return;
     }
-    clearTimeout(Ur), Ur = setTimeout(o, Vb);
+    clearTimeout(Ur), Ur = setTimeout(o, Qy);
   }
   function po(e) {
-    hr++, Ia = "", um(), br(e, !0);
+    yr++, Ma = "", gm(), br(e, !0);
   }
-  function Kb() {
+  function Zy() {
     return {
-      rowCacheGeneration: hr,
-      lastRuleFingerprint: Ia.slice(0, 50) + (Ia.length > 50 ? "..." : ""),
-      compiledRuleCount: Cn?.length || 0,
+      rowCacheGeneration: yr,
+      lastRuleFingerprint: Ma.slice(0, 50) + (Ma.length > 50 ? "..." : ""),
+      compiledRuleCount: An?.length || 0,
       splitViewProbed: ls,
       debounce: {
-        lastRunAgo: Date.now() - xc,
+        lastRunAgo: Date.now() - bc,
         rafPending: ss,
-        pendingContexts: Oa.size
+        pendingContexts: Na.size
       },
-      entity: mm()
+      entity: hm()
     };
   }
-  var hm = rt();
-  hm && (_.register("invalidateColorCodeCache", po), _.register("debouncedProcessColorCodeGrid", br), _.register("fullStyleUpdate", Uo), _.register("setupExtGridListeners", wm), _.register("ccDebugSnapshot", Kb), hm.addEventListener("APM_CC_SYNC_REQUIRED", () => {
+  var xm = rt();
+  xm && (_.register("invalidateColorCodeCache", po), _.register("debouncedProcessColorCodeGrid", br), _.register("fullStyleUpdate", Uo), _.register("setupExtGridListeners", km), _.register("ccDebugSnapshot", Zy), xm.addEventListener("APM_CC_SYNC_REQUIRED", () => {
     Uo(), po();
   }), window.addEventListener("resize", () => {
     br(document);
@@ -15336,7 +15362,7 @@ Use N-M for numeric ranges (e.g. 10500-10510)`, style: { fontSize: "12px", width
       d.error("ColorCode", "fullStyleUpdate on attach failed:", r);
     }
     try {
-      wm(e);
+      km(e);
     } catch (r) {
       d.error("ColorCode", "setupExtGridListeners on attach failed:", r);
     }
@@ -15369,19 +15395,19 @@ Use N-M for numeric ranges (e.g. 10500-10510)`, style: { fontSize: "12px", width
   });
 
   // src/modules/colorcode/colorcode-consolidate.js
-  function wc(e) {
+  function vc(e) {
     let t = (e || "#000000").replace("#", "");
     return t.length === 3 ? [parseInt(t[0] + t[0], 16), parseInt(t[1] + t[1], 16), parseInt(t[2] + t[2], 16)] : [parseInt(t.slice(0, 2), 16), parseInt(t.slice(2, 4), 16), parseInt(t.slice(4, 6), 16)];
   }
-  function Yb(e) {
+  function eb(e) {
     return "#" + e.map((t) => Math.round(t).toString(16).padStart(2, "0")).join("");
   }
-  function Jb(e, t) {
-    let [r, o, n] = wc(e), [a, s, l] = wc(t);
+  function tb(e, t) {
+    let [r, o, n] = vc(e), [a, s, l] = vc(t);
     return Math.sqrt(2 * (r - a) ** 2 + 4 * (o - s) ** 2 + 3 * (n - l) ** 2);
   }
-  var Qb = 60;
-  function Pa(e) {
+  var rb = 60;
+  function La(e) {
     if (!e || e.length < 2) return [];
     let t = /* @__PURE__ */ new Map();
     for (let o of e) {
@@ -15398,24 +15424,24 @@ Use N-M for numeric ranges (e.g. 10500-10510)`, style: { fontSize: "12px", width
         a.add(s);
         for (let c = s + 1; c < n.length; c++) {
           if (a.has(c)) continue;
-          l.some((u) => Jb(u.color, n[c].color) < Qb) && (l.push(n[c]), a.add(c));
+          l.some((u) => tb(u.color, n[c].color) < rb) && (l.push(n[c]), a.add(c));
         }
         if (l.length >= 2) {
           let c = /* @__PURE__ */ new Set(), p = [];
           for (let f of l) {
             let g = Array.isArray(f.search) ? f.search : [f.search].filter(Boolean);
-            for (let h of g) {
-              let y = h.toLowerCase().trim();
-              y && !c.has(y) && (c.add(y), p.push(h.trim()));
+            for (let y of g) {
+              let x = y.toLowerCase().trim();
+              x && !c.has(x) && (c.add(x), p.push(y.trim()));
             }
           }
-          let u = l.map((f) => wc(f.color)), m = [0, 1, 2].map(
-            (f) => u.reduce((g, h) => g + h[f], 0) / u.length
+          let u = l.map((f) => vc(f.color)), m = [0, 1, 2].map(
+            (f) => u.reduce((g, y) => g + y[f], 0) / u.length
           );
           r.push({
             tag: l[0].tag,
             // original casing from first rule
-            averagedColor: Yb(m),
+            averagedColor: eb(m),
             ruleIds: l.map((f) => f.id),
             mergedKeywords: p
           });
@@ -15424,7 +15450,7 @@ Use N-M for numeric ranges (e.g. 10500-10510)`, style: { fontSize: "12px", width
     }
     return r;
   }
-  function La(e, t) {
+  function Da(e, t) {
     if (!t || t.length === 0) return [...e];
     let r = /* @__PURE__ */ new Map();
     for (let a of t)
@@ -15457,21 +15483,21 @@ Use N-M for numeric ranges (e.g. 10500-10510)`, style: { fontSize: "12px", width
   _e();
   se();
   te();
-  var cs = 2, Sm = [
+  var cs = 2, Tm = [
     { id: "nametags", label: "Nametags (ColorCode)", keys: [Qe, tt] },
     { id: "autofill", label: "AutoFill Profiles", keys: [De] },
     { id: "taborder", label: "Tab & Grid Order", keys: [dt] },
     { id: "dataspys", label: "Dataspys & Forecast", keys: [rr] },
-    { id: "labor", label: "Labor Settings", keys: [el, yr, qt, Et] }
+    { id: "labor", label: "Labor Settings", keys: [Zs, xr, Wt, kt] }
   ];
-  function Em(e) {
+  function Cm(e) {
     try {
       return `APM:${btoa(unescape(encodeURIComponent(e)))}`;
     } catch (t) {
       throw d.error("SettingsIO", "Error encoding to Base64:", t), t;
     }
   }
-  function km(e) {
+  function Am(e) {
     try {
       if (typeof e != "string" || !e.startsWith("APM:"))
         return null;
@@ -15481,24 +15507,24 @@ Use N-M for numeric ranges (e.g. 10500-10510)`, style: { fontSize: "12px", width
       return d.error("SettingsIO", "Error decoding from Base64:", t), null;
     }
   }
-  var Tm = [
-    je,
+  var _m = [
+    Ke,
     Qe,
     tt,
     De,
     dt,
     rr,
-    el,
-    yr,
-    qt,
-    Et
-  ], Xb = [
-    je,
-    Pr,
+    Zs,
     xr,
-    Ot,
+    Wt,
+    kt
+  ], ob = [
+    Ke,
+    Lr,
+    vr,
+    It,
     ko
-  ], Zb = [
+  ], nb = [
     {
       // v1 → v2: tab/grid order moved out of PRESET_STORAGE_KEY.config into
       // its own TAB_ORDER_STORAGE_KEY. Old exports bundle the two together;
@@ -15532,10 +15558,10 @@ Use N-M for numeric ranges (e.g. 10500-10510)`, style: { fontSize: "12px", width
       }
     }
   ];
-  function Cm() {
+  function Rm() {
     try {
       let e = {};
-      for (let r of Tm) {
+      for (let r of _m) {
         let o = N.get(r);
         o != null && (e[r] = o);
       }
@@ -15550,7 +15576,7 @@ Use N-M for numeric ranges (e.g. 10500-10510)`, style: { fontSize: "12px", width
       throw d.error("SettingsIO", "Error exporting settings:", e), e;
     }
   }
-  function Am(e, t = {}) {
+  function Om(e, t = {}) {
     let r = { ok: !1, errors: [], warnings: [], migratedFrom: null, format: "json" };
     try {
       let o;
@@ -15567,7 +15593,7 @@ Use N-M for numeric ranges (e.g. 10500-10510)`, style: { fontSize: "12px", width
       if (r.migratedFrom = n, !o.settings || typeof o.settings != "object")
         return r.errors.push("Missing or invalid settings object"), r;
       let a = { ...o.settings }, s = n;
-      for (let c of Zb)
+      for (let c of nb)
         if (c.fromVersion === s && c.fromVersion < cs)
           try {
             a = c.transform(a, { warnings: r.warnings }) || a, s = c.toVersion, d.info("SettingsIO", `Applied migration ${c.fromVersion} -> ${c.toVersion}`);
@@ -15579,11 +15605,11 @@ Use N-M for numeric ranges (e.g. 10500-10510)`, style: { fontSize: "12px", width
         return r.errors.push("Could not migrate from schema v" + n + " to v" + cs), r;
       let l = 0;
       for (let [c, p] of Object.entries(a)) {
-        if (Xb.includes(c)) {
+        if (ob.includes(c)) {
           d.debug("SettingsIO", `Skipping excluded key: ${c}`);
           continue;
         }
-        if (!Tm.includes(c)) {
+        if (!_m.includes(c)) {
           d.warn("SettingsIO", `Import skipped unknown key: ${c}`);
           continue;
         }
@@ -15600,7 +15626,7 @@ Use N-M for numeric ranges (e.g. 10500-10510)`, style: { fontSize: "12px", width
             r.errors.push(`${c}: expected array or wrapped {_v, rules}, got ${typeof p}`);
             continue;
           }
-          if (c === qt && !Array.isArray(p)) {
+          if (c === Wt && !Array.isArray(p)) {
             r.errors.push(`${c}: expected array, got ${typeof p}`);
             continue;
           }
@@ -15619,19 +15645,19 @@ Use N-M for numeric ranges (e.g. 10500-10510)`, style: { fontSize: "12px", width
   // src/modules/colorcode/colorcode-lifecycle.js
   We();
   Me();
-  Mt();
+  Pt();
   ue();
   te();
 
   // src/modules/colorcode/colorcode-renderer.js
   Me();
-  It();
-  var An = "#e74c3c", ey = "#d5d5d5";
-  function _n() {
+  Ct();
+  var _n = "#e74c3c", ab = "#d5d5d5";
+  function Rn() {
     let e = document.getElementById("cc-chip-container");
     return e ? Array.from(e.querySelectorAll(".cc-chip")).map((t) => t.dataset.keyword || "").filter((t) => t) : [];
   }
-  function ty(e, { onRemove: t } = {}) {
+  function ib(e, { onRemove: t } = {}) {
     let r = i("span", {
       className: "cc-chip",
       title: e,
@@ -15673,7 +15699,7 @@ Use N-M for numeric ranges (e.g. 10500-10510)`, style: { fontSize: "12px", width
     ]);
     return r.dataset.keyword = e, r;
   }
-  function _m() {
+  function Nm() {
     let e = document.getElementById("cc-chip-container"), t = document.getElementById("cc-search");
     if (!e || !t || e.querySelector(".cc-chip-pending")) return;
     let r = i("span", {
@@ -15702,10 +15728,10 @@ Use N-M for numeric ranges (e.g. 10500-10510)`, style: { fontSize: "12px", width
     let r = e.trim();
     if (!r) return !1;
     let o = document.getElementById("cc-chip-container"), n = document.getElementById("cc-search");
-    if (!o || !n || _n().map((p) => p.toLowerCase()).includes(r.toLowerCase())) return !1;
-    let s = ty(r, {
+    if (!o || !n || Rn().map((p) => p.toLowerCase()).includes(r.toLowerCase())) return !1;
+    let s = ib(r, {
       onRemove: () => {
-        Da(), t && t();
+        Fa(), t && t();
       }
     }), l = o.querySelector(".cc-chip-pending") || n;
     o.insertBefore(s, l);
@@ -15717,25 +15743,25 @@ Use N-M for numeric ranges (e.g. 10500-10510)`, style: { fontSize: "12px", width
       }, "or");
       o.insertBefore(p, s);
     }
-    return Da(), t && t(), !0;
+    return Fa(), t && t(), !0;
   }
-  function Rn() {
+  function On() {
     let e = document.getElementById("cc-chip-container");
-    e && (e.querySelectorAll(".cc-chip, .cc-or-label").forEach((t) => t.remove()), Da());
+    e && (e.querySelectorAll(".cc-chip, .cc-or-label").forEach((t) => t.remove()), Fa());
   }
-  function Rm(e, { updatePreviewFn: t } = {}) {
-    Rn(), Array.isArray(e) && e.forEach((r) => mo(r, { updatePreviewFn: t }));
+  function Im(e, { updatePreviewFn: t } = {}) {
+    On(), Array.isArray(e) && e.forEach((r) => mo(r, { updatePreviewFn: t }));
   }
-  function Da() {
+  function Fa() {
     let e = document.getElementById("cc-chip-count");
     if (!e) return;
-    let t = _n().length;
+    let t = Rn().length;
     if (t >= 5 ? (e.textContent = `(${t} keywords)`, e.style.display = "") : e.style.display = "none", t > 10) {
       let r = document.getElementById("cc-chip-container");
       r && r.querySelectorAll(".cc-or-label").forEach((o) => o.remove());
     }
   }
-  function Sc(e) {
+  function wc(e) {
     let t = [], r = /^(\d+)-(\d+)$/;
     for (let o of e) {
       let n = o.match(r);
@@ -15753,7 +15779,7 @@ Use N-M for numeric ranges (e.g. 10500-10510)`, style: { fontSize: "12px", width
   function Gr(e, t) {
     e && (t ? (e.classList.add("active"), e.style.background = "var(--apm-accent-subtle)", e.style.borderColor = "var(--apm-accent)", e.style.color = "var(--apm-accent)") : (e.classList.remove("active"), e.style.background = "var(--apm-surface-inset)", e.style.borderColor = "var(--apm-border)", e.style.color = "var(--apm-text-disabled)"));
   }
-  function Om(e, { onDelete: t, onEdit: r, onMoveUp: o, onMoveDown: n }) {
+  function Mm(e, { onDelete: t, onEdit: r, onMoveUp: o, onMoveDown: n }) {
     let a = i("button", { className: "rule-up-btn", onclick: o, style: { background: "transparent", border: "none", color: "var(--apm-text-secondary)", cursor: "pointer", fontSize: "12px", padding: "0 4px" } }, ["\u25B2"]), s = i("button", { className: "rule-down-btn", onclick: n, style: { background: "transparent", border: "none", color: "var(--apm-text-secondary)", cursor: "pointer", fontSize: "12px", padding: "0 4px" } }, ["\u25BC"]), l = i("div", { style: { display: "flex", flexDirection: "column", gap: "2px", marginRight: "6px" } }, [a, s]), c = Array.isArray(e.search) ? e.search : (e.search || "").split(",").map((w) => w.trim()).filter((w) => w), p = 3, u = c.slice(0, p), m = c.length - p, f = [];
     u.forEach((w, T) => {
       T > 0 && f.push(i("span", { style: { fontSize: "9px", color: "var(--apm-text-muted)", fontStyle: "italic" } }, "or")), f.push(i("span", {
@@ -15773,9 +15799,9 @@ Use N-M for numeric ranges (e.g. 10500-10510)`, style: { fontSize: "12px", width
         }
       }, w));
     }), m > 0 && f.push(i("span", { style: { fontSize: "10px", color: "var(--apm-text-muted)", fontWeight: "normal" } }, `+${m} more`));
-    let g = i("span", { style: { display: "flex", flexWrap: "wrap", gap: "3px", alignItems: "center", overflow: "hidden" } }, f), h, y, b;
-    e.fill && e.showTag && e.tag ? (h = `Fill & Tag: ${e.tag}`, y = "var(--apm-success)", b = "var(--apm-success-subtle, rgba(26, 188, 156, 0.1))") : e.fill ? (h = "Fill Row Only", y = "var(--apm-warning)", b = "var(--apm-warning-subtle, rgba(243, 156, 18, 0.1))") : e.showTag && e.tag ? (h = `Tag Only: ${e.tag}`, y = "var(--apm-accent)", b = "var(--apm-accent-subtle, rgba(52, 152, 219, 0.1))") : (h = "Formatting Disabled", y = "var(--apm-text-disabled)", b = "var(--apm-disabled-subtle, rgba(127, 140, 141, 0.1))");
-    let x = i("span", { style: { fontSize: "10px", color: y, fontWeight: "bold", background: b, padding: "2px 6px", borderRadius: "10px", display: "inline-block", marginTop: "2px", width: "max-content" } }, [h]), v = i("div", { style: { display: "flex", flexDirection: "column", flexGrow: "1", overflow: "hidden", padding: "0 5px" } }, [g, x]), E = i("button", { className: "rule-edit-btn", onclick: r, style: { background: "var(--apm-border-strong)", color: "white", border: "none", borderRadius: "4px", padding: "4px 6px", cursor: "pointer", fontSize: "11px", transition: "background 0.2s" } }, ["\u270F\uFE0F"]), k = i("button", { className: "rule-delete-btn", onclick: t, style: { background: "transparent", color: "var(--apm-danger)", border: "none", borderRadius: "4px", padding: "4px 6px", cursor: "pointer", fontSize: "12px" } }, ["\u274C"]), S = i("div", { style: { display: "flex", alignItems: "center", gap: "6px" } }, [E, k]);
+    let g = i("span", { style: { display: "flex", flexWrap: "wrap", gap: "3px", alignItems: "center", overflow: "hidden" } }, f), y, x, h;
+    e.fill && e.showTag && e.tag ? (y = `Fill & Tag: ${e.tag}`, x = "var(--apm-success)", h = "var(--apm-success-subtle, rgba(26, 188, 156, 0.1))") : e.fill ? (y = "Fill Row Only", x = "var(--apm-warning)", h = "var(--apm-warning-subtle, rgba(243, 156, 18, 0.1))") : e.showTag && e.tag ? (y = `Tag Only: ${e.tag}`, x = "var(--apm-accent)", h = "var(--apm-accent-subtle, rgba(52, 152, 219, 0.1))") : (y = "Formatting Disabled", x = "var(--apm-text-disabled)", h = "var(--apm-disabled-subtle, rgba(127, 140, 141, 0.1))");
+    let b = i("span", { style: { fontSize: "10px", color: x, fontWeight: "bold", background: h, padding: "2px 6px", borderRadius: "10px", display: "inline-block", marginTop: "2px", width: "max-content" } }, [y]), v = i("div", { style: { display: "flex", flexDirection: "column", flexGrow: "1", overflow: "hidden", padding: "0 5px" } }, [g, b]), E = i("button", { className: "rule-edit-btn", onclick: r, style: { background: "var(--apm-border-strong)", color: "white", border: "none", borderRadius: "4px", padding: "4px 6px", cursor: "pointer", fontSize: "11px", transition: "background 0.2s" } }, ["\u270F\uFE0F"]), k = i("button", { className: "rule-delete-btn", onclick: t, style: { background: "transparent", color: "var(--apm-danger)", border: "none", borderRadius: "4px", padding: "4px 6px", cursor: "pointer", fontSize: "12px" } }, ["\u274C"]), S = i("div", { style: { display: "flex", alignItems: "center", gap: "6px" } }, [E, k]);
     return i("div", { className: "rule-item", style: { borderLeftColor: e.color, borderLeftWidth: "5px" } }, [l, v, S]);
   }
   function ds(e) {
@@ -15783,12 +15809,12 @@ Use N-M for numeric ranges (e.g. 10500-10510)`, style: { fontSize: "12px", width
       id: Date.now() + Math.random(),
       search: [String(r.searchText || "")].filter((o) => o),
       tag: String(r.appendText || "").replace(/\n/g, "\\n"),
-      color: String(r.color || ey),
+      color: String(r.color || ab),
       fill: !1,
       showTag: !!r.appendText
     })) : null;
   }
-  function Nm() {
+  function Pm() {
     let e = i("div", { className: "apm-modal-overlay", style: { zIndex: "2147483647" } }, [
       i("div", { className: "apm-modal-content", style: { width: "360px", maxWidth: "90vw" } }, [
         i("div", { className: "apm-modal-header" }, [
@@ -15814,7 +15840,7 @@ Use N-M for numeric ranges (e.g. 10500-10510)`, style: { fontSize: "12px", width
           i("button", {
             className: "apm-modal-btn apm-modal-btn-accent",
             onclick: () => {
-              window.top.location.href = nr();
+              window.top.location.href = ar();
             }
           }, "Refresh Now")
         ])
@@ -15822,7 +15848,7 @@ Use N-M for numeric ranges (e.g. 10500-10510)`, style: { fontSize: "12px", width
     ]);
     document.body.appendChild(e);
   }
-  function Im(e) {
+  function Lm(e) {
     return new Promise((t) => {
       let r = i("div", { className: "apm-modal-overlay", style: { zIndex: "2147483647" } }, [
         i("div", { className: "apm-modal-content", style: { width: "380px", maxWidth: "90vw" } }, [
@@ -15870,7 +15896,7 @@ Use N-M for numeric ranges (e.g. 10500-10510)`, style: { fontSize: "12px", width
       document.body.appendChild(r);
     });
   }
-  function Fa(e, t = {}) {
+  function Ba(e, t = {}) {
     let r = t.cancelLabel || "Cancel";
     return new Promise((o) => {
       let n = [], a = e.map((l, c) => {
@@ -15948,9 +15974,9 @@ Use N-M for numeric ranges (e.g. 10500-10510)`, style: { fontSize: "12px", width
   }
 
   // src/modules/colorcode/colorcode-lifecycle.js
-  var Mm = !1, Nn = null, On = null, Pm = !1, Lm = null, ry = null;
-  function oy() {
-    let e = _n(), t = document.getElementById("cc-search")?.value?.trim() || "", r = t ? [...e, t] : e, o = document.getElementById("cc-color")?.value || An, a = (document.getElementById("cc-tag")?.value || "").replace(/\n/g, "\\n"), s = document.getElementById("cc-btn-fill")?.classList.contains("active") ?? !0, l = document.getElementById("cc-btn-tag")?.classList.contains("active") ?? !0, c = {
+  var Dm = !1, In = null, Nn = null, Fm = !1, Bm = null, sb = null;
+  function lb() {
+    let e = Rn(), t = document.getElementById("cc-search")?.value?.trim() || "", r = t ? [...e, t] : e, o = document.getElementById("cc-color")?.value || _n, a = (document.getElementById("cc-tag")?.value || "").replace(/\n/g, "\\n"), s = document.getElementById("cc-btn-fill")?.classList.contains("active") ?? !0, l = document.getElementById("cc-btn-tag")?.classList.contains("active") ?? !0, c = {
       id: "__preview__",
       search: r,
       color: o,
@@ -15958,26 +15984,26 @@ Use N-M for numeric ranges (e.g. 10500-10510)`, style: { fontSize: "12px", width
       fill: s,
       showTag: l,
       _isPreview: !0,
-      _editingId: On || null
+      _editingId: Nn || null
     };
     return d.debug("ColorCode UI", "buildTempRuleFromFormState:", c), c;
   }
   function ps() {
-    if (Mm) {
+    if (Dm) {
       d.debug("ColorCode UI", "setupColorCodeLogic already initialized, skipping re-init");
       return;
     }
-    Mm = !0, d.debug("ColorCode UI", "setupColorCodeLogic initializing...");
+    Dm = !0, d.debug("ColorCode UI", "setupColorCodeLogic initializing...");
     let e = document.getElementById("apm-filter-banner");
     e || (e = document.createElement("div"), e.id = "apm-filter-banner", e.className = "apm-ui-panel", document.body.appendChild(e));
     let t = document.getElementById("cc-rules-container");
     if (!t) return;
     let r = () => {
-      let R = document.getElementById("cc-btn-fill"), A = document.getElementById("cc-btn-tag"), z = document.getElementById("cc-color"), W = document.getElementById("cc-tag"), M = document.getElementById("cc-preview-row"), F = document.getElementById("cc-preview-tag");
-      if (!M || !F || !z || !W) return;
-      let U = z.value, q = R?.classList.contains("active"), j = A?.classList.contains("active"), Z = W.value.trim();
+      let R = document.getElementById("cc-btn-fill"), A = document.getElementById("cc-btn-tag"), V = document.getElementById("cc-color"), W = document.getElementById("cc-tag"), M = document.getElementById("cc-preview-row"), F = document.getElementById("cc-preview-tag");
+      if (!M || !F || !V || !W) return;
+      let U = V.value, q = R?.classList.contains("active"), j = A?.classList.contains("active"), Z = W.value.trim();
       if (q) {
-        let P = vc(U);
+        let P = xc(U);
         M.style.background = `rgba(${P}, 0.22)`, M.style.borderLeft = `5px solid ${U}`;
       } else
         M.style.background = "transparent", M.style.borderLeft = "1px solid var(--apm-border)";
@@ -15988,18 +16014,18 @@ Use N-M for numeric ranges (e.g. 10500-10510)`, style: { fontSize: "12px", width
         t.appendChild(i("div", { style: { textAlign: "center", fontSize: "12px", color: "var(--apm-text-disabled)", margin: "10px" } }, ["No rules found."]));
         return;
       }
-      R.forEach((A, z) => {
-        let W = Om(A, {
+      R.forEach((A, V) => {
+        let W = Mm(A, {
           onDelete: () => {
             let M = it();
-            gr(M.filter((F) => F.id !== A.id)), a();
+            hr(M.filter((F) => F.id !== A.id)), a();
           },
           onEdit: () => {
-            On = A.id;
-            let M = it().find((F) => F.id === On);
+            Nn = A.id;
+            let M = it().find((F) => F.id === Nn);
             if (M) {
               let F = Array.isArray(M.search) ? M.search : (M.search || "").split(",").map((J) => J.trim()).filter((J) => J);
-              Rm(F, { updatePreviewFn: O });
+              Im(F, { updatePreviewFn: O });
               let U = document.getElementById("cc-search");
               U && (U.value = "");
               let q = document.getElementById("cc-tag");
@@ -16017,55 +16043,55 @@ Use N-M for numeric ranges (e.g. 10500-10510)`, style: { fontSize: "12px", width
           },
           onMoveUp: () => {
             let M = it(), F = M.findIndex((U) => U.id === A.id);
-            F > 0 && ([M[F - 1], M[F]] = [M[F], M[F - 1]], gr(M), a());
+            F > 0 && ([M[F - 1], M[F]] = [M[F], M[F - 1]], hr(M), a());
           },
           onMoveDown: () => {
             let M = it(), F = M.findIndex((U) => U.id === A.id);
-            F < M.length - 1 && ([M[F + 1], M[F]] = [M[F], M[F + 1]], gr(M), a());
+            F < M.length - 1 && ([M[F + 1], M[F]] = [M[F], M[F + 1]], hr(M), a());
           }
         });
         t.appendChild(W);
       });
     }, n = () => {
-      On = null, uo(), Rn();
+      Nn = null, uo(), On();
       let R = document.getElementById("cc-search");
       R && (R.value = "");
-      let A = document.getElementById("cc-bulk-container"), z = document.getElementById("cc-chip-container"), W = document.getElementById("cc-add-chip-btn"), M = document.getElementById("cc-bulk-toggle-btn"), F = document.getElementById("cc-bulk-textarea");
-      A && (A.style.display = "none"), z && (z.style.display = "flex"), W && (W.style.display = ""), M && (M.textContent = "Bulk", M.style.background = "var(--apm-surface-raised)", M.style.color = "var(--apm-text-secondary)"), F && (F.value = "");
+      let A = document.getElementById("cc-bulk-container"), V = document.getElementById("cc-chip-container"), W = document.getElementById("cc-add-chip-btn"), M = document.getElementById("cc-bulk-toggle-btn"), F = document.getElementById("cc-bulk-textarea");
+      A && (A.style.display = "none"), V && (V.style.display = "flex"), W && (W.style.display = ""), M && (M.textContent = "Bulk", M.style.background = "var(--apm-surface-raised)", M.style.color = "var(--apm-text-secondary)"), F && (F.value = "");
       let U = document.getElementById("cc-tag");
       U && (U.value = "");
       let q = document.getElementById("cc-color");
-      q && (q.value = An), Gr(document.getElementById("cc-btn-fill"), !0), Gr(document.getElementById("cc-btn-tag"), !0), H(), r();
+      q && (q.value = _n), Gr(document.getElementById("cc-btn-fill"), !0), Gr(document.getElementById("cc-btn-tag"), !0), H(), r();
       let j = document.getElementById("cc-add-btn-text"), Z = document.getElementById("cc-add-btn");
       j ? j.textContent = "Save Rule" : Z && (Z.textContent = "Save Rule"), Z && (Z.style.background = "var(--apm-accent)");
     }, a = () => {
       o();
     }, s = document.getElementById("cc-setting-uniform");
     s && (s.onchange = (R) => {
-      Ta({ uniformHighlight: R.target.checked });
+      Ca({ uniformHighlight: R.target.checked });
       let A = document.getElementById("cc-uniform-label");
       A && (A.textContent = R.target.checked ? "Uniform Shading" : "Alternating Shading");
     });
     let l = document.getElementById("cc-consolidate-btn");
     l && (l.onclick = async () => {
-      let R = it(), A = Pa(R);
+      let R = it(), A = La(R);
       if (A.length === 0) {
         C("No duplicate badge names found", "var(--apm-text-secondary)");
         return;
       }
-      let z = await Fa(A);
-      if (!z || z.length === 0) return;
-      let W = La(R, z);
-      gr(W), a();
-      let M = z.reduce((F, U) => F + U.ruleIds.length, 0);
-      C(`Consolidated ${M} rules into ${z.length}`, "var(--apm-success-bright)");
+      let V = await Ba(A);
+      if (!V || V.length === 0) return;
+      let W = Da(R, V);
+      hr(W), a();
+      let M = V.reduce((F, U) => F + U.ruleIds.length, 0);
+      C(`Consolidated ${M} rules into ${V.length}`, "var(--apm-success-bright)");
     });
     let c = document.getElementById("cc-setting-theme");
     c && (c.onchange = (R) => {
       let A = R.target.value;
-      Ta({ theme: A }), Promise.resolve().then(() => (Zr(), wl)).then(({ ThemeResolver: z }) => {
-        z.setGlobalTheme(A);
-      }), Nm();
+      Ca({ theme: A }), Promise.resolve().then(() => (Zr(), vl)).then(({ ThemeResolver: V }) => {
+        V.setGlobalTheme(A);
+      }), Pm();
     });
     let p = document.getElementById("cc-cancel-btn");
     p && (p.onclick = n);
@@ -16088,8 +16114,8 @@ Use N-M for numeric ranges (e.g. 10500-10510)`, style: { fontSize: "12px", width
         let P = document.getElementById("cc-bulk-textarea");
         if (P) {
           let J = P.value.split(`
-`).map((oe) => oe.trim()).filter((oe) => oe), V = Sc(J);
-          Rn(), V.forEach((oe) => mo(oe, { updatePreviewFn: O })), P.value = "";
+`).map((oe) => oe.trim()).filter((oe) => oe), z = wc(J);
+          On(), z.forEach((oe) => mo(oe, { updatePreviewFn: O })), P.value = "";
         }
         R.style.display = "none";
         let G = document.getElementById("cc-chip-container");
@@ -16099,31 +16125,31 @@ Use N-M for numeric ranges (e.g. 10500-10510)`, style: { fontSize: "12px", width
         let X = document.getElementById("cc-bulk-toggle-btn");
         X && (X.textContent = "Bulk", X.style.background = "var(--apm-surface-raised)", X.style.color = "var(--apm-text-secondary)");
       }
-      let A = document.getElementById("cc-search"), z = A?.value?.trim();
-      z && (mo(z, { updatePreviewFn: O }), A.value = ""), uo();
-      let W = _n();
+      let A = document.getElementById("cc-search"), V = A?.value?.trim();
+      V && (mo(V, { updatePreviewFn: O }), A.value = ""), uo();
+      let W = Rn();
       if (W.length === 0) return;
       let F = (document.getElementById("cc-tag")?.value.trim() || "").replace(/\n/g, "\\n"), U = document.getElementById("cc-btn-fill")?.classList.contains("active") ?? !1, q = document.getElementById("cc-btn-tag")?.classList.contains("active") ?? !1, j = {
         search: [...W],
         tag: F,
-        color: document.getElementById("cc-color")?.value || An,
+        color: document.getElementById("cc-color")?.value || _n,
         fill: U,
         showTag: q && F.length > 0
       }, Z = it();
-      if (On) {
-        let P = Z.findIndex((G) => G.id === On);
+      if (Nn) {
+        let P = Z.findIndex((G) => G.id === Nn);
         P > -1 && (Z[P] = { id: Z[P].id, ...j });
       } else
         Z.push({ id: Date.now(), ...j });
-      gr(Z), a(), H(), n(), A && A.focus();
+      hr(Z), a(), H(), n(), A && A.focus();
     });
-    let g = document.getElementById("cc-search"), h = document.getElementById("cc-tag");
+    let g = document.getElementById("cc-search"), y = document.getElementById("cc-tag");
     g && !g._apmChipKeysAttached && (document.addEventListener("keydown", (R) => {
       if (!(!R.target || R.target.id !== "cc-search")) {
         if (R.key !== "Tab" && R.stopPropagation(), R.key === "Enter") {
           R.preventDefault(), R.stopImmediatePropagation();
-          let A = document.getElementById("cc-search"), z = A?.value?.trim();
-          z && (mo(z, { updatePreviewFn: O }), A.value = ""), uo();
+          let A = document.getElementById("cc-search"), V = A?.value?.trim();
+          V && (mo(V, { updatePreviewFn: O }), A.value = ""), uo();
           return;
         }
         if (R.key === "Backspace" && R.target.value === "") {
@@ -16138,69 +16164,69 @@ Use N-M for numeric ranges (e.g. 10500-10510)`, style: { fontSize: "12px", width
           let M = W[W.length - 1];
           if (M.classList.contains("cc-chip-selected")) {
             let F = M.previousElementSibling;
-            F && F.classList.contains("cc-or-label") && F.remove(), M.remove(), Da(), O();
+            F && F.classList.contains("cc-or-label") && F.remove(), M.remove(), Fa(), O();
           } else
             M.classList.add("cc-chip-selected"), M.style.outline = "1px solid var(--apm-accent)";
         } else if (R.key !== "Backspace") {
           let A = document.getElementById("cc-chip-container");
-          A && A.querySelectorAll(".cc-chip-selected").forEach((z) => {
-            z.classList.remove("cc-chip-selected"), z.style.outline = "";
+          A && A.querySelectorAll(".cc-chip-selected").forEach((V) => {
+            V.classList.remove("cc-chip-selected"), V.style.outline = "";
           });
         }
       }
     }, !0), g.addEventListener("input", () => {
-      g.value.length > 0 ? _m() : uo();
+      g.value.length > 0 ? Nm() : uo();
     }), g.onpaste = (R) => {
       R.preventDefault();
-      let z = (R.clipboardData || window.clipboardData).getData("text").trim();
-      z && mo(z, { updatePreviewFn: O }), uo();
+      let V = (R.clipboardData || window.clipboardData).getData("text").trim();
+      V && mo(V, { updatePreviewFn: O }), uo();
     }, g._apmChipKeysAttached = !0);
-    let y = document.getElementById("cc-add-chip-btn");
-    y && (y.onclick = () => {
+    let x = document.getElementById("cc-add-chip-btn");
+    x && (x.onclick = () => {
       let R = g?.value?.trim();
       R && (mo(R, { updatePreviewFn: O }), g.value = "", g.focus()), uo();
     });
-    let b = document.getElementById("cc-chip-container");
-    b && b.addEventListener("click", (R) => {
-      (R.target === b || R.target.classList.contains("cc-or-label")) && g?.focus();
+    let h = document.getElementById("cc-chip-container");
+    h && h.addEventListener("click", (R) => {
+      (R.target === h || R.target.classList.contains("cc-or-label")) && g?.focus();
     });
-    let x = document.getElementById("cc-bulk-toggle-btn"), v = document.getElementById("cc-bulk-container"), E = document.getElementById("cc-chip-container"), k = document.getElementById("cc-add-chip-btn");
-    if (x && v && E && (x.onclick = () => {
+    let b = document.getElementById("cc-bulk-toggle-btn"), v = document.getElementById("cc-bulk-container"), E = document.getElementById("cc-chip-container"), k = document.getElementById("cc-add-chip-btn");
+    if (b && v && E && (b.onclick = () => {
       if (v.style.display !== "none") {
         let A = document.getElementById("cc-bulk-textarea");
         if (A) {
-          let z = A.value.split(`
-`).map((M) => M.trim()).filter((M) => M), W = Sc(z);
-          Rn(), W.forEach((M) => mo(M, { updatePreviewFn: O })), A.value = "";
+          let V = A.value.split(`
+`).map((M) => M.trim()).filter((M) => M), W = wc(V);
+          On(), W.forEach((M) => mo(M, { updatePreviewFn: O })), A.value = "";
         }
-        v.style.display = "none", E.style.display = "flex", k && (k.style.display = ""), x.textContent = "Bulk", x.style.background = "var(--apm-surface-raised)", x.style.color = "var(--apm-text-secondary)";
+        v.style.display = "none", E.style.display = "flex", k && (k.style.display = ""), b.textContent = "Bulk", b.style.background = "var(--apm-surface-raised)", b.style.color = "var(--apm-text-secondary)";
       } else {
-        let A = document.getElementById("cc-bulk-textarea"), z = _n();
-        A && (A.value = z.join(`
-`)), E.style.display = "none", k && (k.style.display = "none"), v.style.display = "block", x.textContent = "Done", x.style.background = "var(--apm-accent)", x.style.color = "white", A && A.focus();
+        let A = document.getElementById("cc-bulk-textarea"), V = Rn();
+        A && (A.value = V.join(`
+`)), E.style.display = "none", k && (k.style.display = "none"), v.style.display = "block", b.textContent = "Done", b.style.background = "var(--apm-accent)", b.style.color = "white", A && A.focus();
       }
-    }), h && !h._apmListenersAttached) {
+    }), y && !y._apmListenersAttached) {
       ["keyup", "keypress"].forEach((A) => {
-        h.addEventListener(A, (z) => {
-          z.key !== "Tab" && z.stopPropagation();
+        y.addEventListener(A, (V) => {
+          V.key !== "Tab" && V.stopPropagation();
         });
       });
       let R = () => {
-        h.style.height = "auto", h.style.height = Math.min(h.scrollHeight, 72) + "px";
+        y.style.height = "auto", y.style.height = Math.min(y.scrollHeight, 72) + "px";
       };
-      h.addEventListener("input", R), h.addEventListener("keydown", (A) => {
+      y.addEventListener("input", R), y.addEventListener("keydown", (A) => {
         A.key !== "Tab" && A.stopPropagation();
-      }), h._apmListenersAttached = !0;
+      }), y._apmListenersAttached = !0;
     }
     let S = document.getElementById("cc-export-btn");
     S && (S.onclick = (R) => {
       try {
         if (R.shiftKey) {
-          let A = it(), z = JSON.stringify(A, null, 2), W = new Blob([z], { type: "application/json" }), M = URL.createObjectURL(W), F = document.createElement("a"), q = (/* @__PURE__ */ new Date()).toISOString().split("T")[0];
+          let A = it(), V = JSON.stringify(A, null, 2), W = new Blob([V], { type: "application/json" }), M = URL.createObjectURL(W), F = document.createElement("a"), q = (/* @__PURE__ */ new Date()).toISOString().split("T")[0];
           F.href = M, F.download = `apm-colorcode-rules-${q}.json`, F.click(), URL.revokeObjectURL(M), C(`Downloaded ${A.length} rules`, "var(--apm-success-bright)");
         } else {
-          let A = JSON.stringify(it()), z = Em(A);
-          navigator.clipboard.writeText(z).then(() => C("Rules copied as Base64", "var(--apm-success-bright)")).catch(() => C("Failed to copy to clipboard", "var(--apm-danger)"));
+          let A = JSON.stringify(it()), V = Cm(A);
+          navigator.clipboard.writeText(V).then(() => C("Rules copied as Base64", "var(--apm-success-bright)")).catch(() => C("Failed to copy to clipboard", "var(--apm-danger)"));
         }
       } catch (A) {
         C("Export error: " + A.message, "var(--apm-danger)");
@@ -16220,16 +16246,16 @@ Use N-M for numeric ranges (e.g. 10500-10510)`, style: { fontSize: "12px", width
         return;
       }
       try {
-        let A, z = R.trim();
-        if (z.startsWith("APM:")) {
-          let q = km(z);
+        let A, V = R.trim();
+        if (V.startsWith("APM:")) {
+          let q = Am(V);
           if (!q) {
             C("Invalid Base64 format", "var(--apm-danger)");
             return;
           }
           A = JSON.parse(q);
-        } else if (z.startsWith("[") || z.startsWith("{"))
-          A = JSON.parse(z);
+        } else if (V.startsWith("[") || V.startsWith("{"))
+          A = JSON.parse(V);
         else {
           C("Expected Base64 (APM:...) or JSON array", "var(--apm-danger)");
           return;
@@ -16243,11 +16269,11 @@ Use N-M for numeric ranges (e.g. 10500-10510)`, style: { fontSize: "12px", width
           id: Date.now() + Math.random(),
           search: Array.isArray(q.search) ? q.search : String(q.search || "").split(",").map((j) => j.trim()).filter((j) => j),
           tag: String(q.tag || ""),
-          color: String(q.color || An),
+          color: String(q.color || _n),
           fill: !!q.fill,
           showTag: q.showTag !== !1
         }));
-        let M = await Im(A.length);
+        let M = await Lm(A.length);
         if (M === "cancel") return;
         let F;
         M === "replace" ? F = A : (F = it(), A.forEach((q) => {
@@ -16255,13 +16281,13 @@ Use N-M for numeric ranges (e.g. 10500-10510)`, style: { fontSize: "12px", width
         }));
         let U = !1;
         if (W) {
-          let q = Pa(F);
+          let q = La(F);
           if (q.length > 0) {
-            let j = await Fa(q, { cancelLabel: "Keep Separate" });
-            j && j.length > 0 && (F = La(F, j), U = !0);
+            let j = await Ba(q, { cancelLabel: "Keep Separate" });
+            j && j.length > 0 && (F = Da(F, j), U = !0);
           }
         }
-        gr(F), a(), U ? C(`Imported & consolidated ${A.length} rules into ${F.length}`, "var(--apm-success-bright)") : C(`${M === "replace" ? "Replaced" : "Merged"} ${A.length} rules`, "var(--apm-success-bright)"), T && (T.style.display = "none"), B && (B.value = "");
+        hr(F), a(), U ? C(`Imported & consolidated ${A.length} rules into ${F.length}`, "var(--apm-success-bright)") : C(`${M === "replace" ? "Replaced" : "Merged"} ${A.length} rules`, "var(--apm-success-bright)"), T && (T.style.display = "none"), B && (B.value = "");
       } catch (A) {
         C("Invalid format: " + A.message, "var(--apm-danger)");
       }
@@ -16271,32 +16297,32 @@ Use N-M for numeric ranges (e.g. 10500-10510)`, style: { fontSize: "12px", width
     }, !0), B._apmImportKeysAttached = !0), $ && $.addEventListener("change", (R) => {
       let A = R.target.files?.[0];
       if (!A) return;
-      let z = new FileReader();
-      z.onload = (W) => {
+      let V = new FileReader();
+      V.onload = (W) => {
         let M = W.target?.result;
         typeof M == "string" && K(M);
-      }, z.onerror = () => C("Failed to read file", "var(--apm-danger)"), z.readAsText(A);
+      }, V.onerror = () => C("Failed to read file", "var(--apm-danger)"), V.readAsText(A);
     }), D && (D.onclick = () => {
       $?.click();
     });
     let ee = 50;
     function O() {
-      clearTimeout(Nn), Nn = setTimeout(() => {
+      clearTimeout(In), In = setTimeout(() => {
         let R = document.getElementById("apm-settings-panel");
         if (!R || R.style.display === "none") {
-          Ma(null), po();
+          Pa(null), po();
           let U = Se();
           U && br(U.doc);
           return;
         }
         let A = Se();
         if (!A) return;
-        let z = oy(), W = Array.isArray(z.search) ? z.search.filter((U) => U) : [];
+        let V = lb(), W = Array.isArray(V.search) ? V.search.filter((U) => U) : [];
         if (W.length === 0) {
           H();
           return;
         }
-        Lm = z, Pm = !0, Ma(z);
+        Bm = V, Fm = !0, Pa(V);
         let M = A.doc, F = W.map((U) => U.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"));
         if (F.length > 0) {
           let U = new RegExp(F.join("|"), "i");
@@ -16312,12 +16338,12 @@ Use N-M for numeric ranges (e.g. 10500-10510)`, style: { fontSize: "12px", width
       }, ee);
     }
     function H() {
-      clearTimeout(Nn), Nn = null, Pm = !1, Lm = null, ry = null, Ma(null), Zi();
-      for (let A of cn())
+      clearTimeout(In), In = null, Fm = !1, Bm = null, sb = null, Pa(null), Zi();
+      for (let A of dn())
         try {
-          A.querySelectorAll('[data-cc-rule="__preview__"]').forEach((z) => {
-            z.removeAttribute("data-cc-rule"), ["--cc-row-bg", "--cc-row-bg-alt", "--cc-row-bg-hover", "--cc-row-bg-sel"].forEach((W) => z.style.removeProperty(W));
-          }), A.querySelectorAll('.apm-nametag[data-cc-id="__preview__"]').forEach((z) => z.remove());
+          A.querySelectorAll('[data-cc-rule="__preview__"]').forEach((V) => {
+            V.removeAttribute("data-cc-rule"), ["--cc-row-bg", "--cc-row-bg-alt", "--cc-row-bg-hover", "--cc-row-bg-sel"].forEach((W) => V.style.removeProperty(W));
+          }), A.querySelectorAll('.apm-nametag[data-cc-id="__preview__"]').forEach((V) => V.remove());
         } catch {
         }
       po();
@@ -16326,50 +16352,50 @@ Use N-M for numeric ranges (e.g. 10500-10510)`, style: { fontSize: "12px", width
     }
     ["cc-search", "cc-color", "cc-tag"].forEach((R) => {
       let A = document.getElementById(R);
-      A && (A.addEventListener("input", (z) => {
-        d.debug("ColorCode UI", `Input event on #${R}:`, z.target.value), O();
-      }), A.addEventListener("change", (z) => {
-        d.debug("ColorCode UI", `Change event on #${R}:`, z.target.value), O();
+      A && (A.addEventListener("input", (V) => {
+        d.debug("ColorCode UI", `Input event on #${R}:`, V.target.value), O();
+      }), A.addEventListener("change", (V) => {
+        d.debug("ColorCode UI", `Change event on #${R}:`, V.target.value), O();
       }));
     }), o(), r();
   }
-  function Ec() {
-    clearTimeout(Nn), Nn = null;
+  function Sc() {
+    clearTimeout(In), In = null;
     let e = document.getElementById("cc-search"), t = document.getElementById("cc-tag"), r = document.getElementById("cc-color"), o = document.getElementById("cc-btn-fill"), n = document.getElementById("cc-btn-tag");
-    Rn(), e && (e.value = ""), t && (t.value = ""), r && (r.value = An), Gr(o, !0), Gr(n, !0);
+    On(), e && (e.value = ""), t && (t.value = ""), r && (r.value = _n), Gr(o, !0), Gr(n, !0);
     let a = document.getElementById("cc-preview-row"), s = document.getElementById("cc-preview-tag");
     a && (a.style.background = "transparent", a.style.borderLeft = "1px solid var(--apm-border)"), s && (s.style.display = "none");
     let l = document.getElementById("cc-add-btn"), c = document.getElementById("cc-add-btn-text");
-    c ? c.textContent = "Save Rule" : l && (l.textContent = "Save Rule"), l && (l.style.background = "var(--apm-accent)"), Ma(null), Zi(), po();
+    c ? c.textContent = "Save Rule" : l && (l.textContent = "Save Rule"), l && (l.style.background = "var(--apm-accent)"), Pa(null), Zi(), po();
     let p = Se();
     p && br(p.doc);
   }
-  function Dm() {
+  function $m() {
     let e = document.getElementById("apm-settings-panel");
     if (!e || e._ccCloseWatcherAttached) return;
     e._ccCloseWatcherAttached = !0, new MutationObserver(() => {
-      e.style.display === "none" && Ec();
+      e.style.display === "none" && Sc();
     }).observe(e, { attributes: !0, attributeFilter: ["style"] });
   }
-  function kc() {
+  function Ec() {
     Zi() && d.debug("ColorCode UI", "Cleaned stale preview rule(s) from colorcode-prefs");
   }
 
   // src/modules/colorcode/colorcode-ui.js
   _.register("ccSetupLogic", ps);
-  _.register("ccCleanupOnPanelClose", Ec);
-  _.register("ccWatchSettingsPanelClose", Dm);
+  _.register("ccCleanupOnPanelClose", Sc);
+  _.register("ccWatchSettingsPanelClose", $m);
 
   // src/modules/ptp/ptp-timer.js
   Te();
-  Ht();
+  Lt();
   qe();
-  vr();
+  wr();
   Oe();
   te();
-  var Fm = null, Bm = 120, In = !1, vt = null, Tc = 0;
-  function ny() {
-    Tc = Date.now();
+  var qm = null, Wm = 120, Mn = !1, wt = null, kc = 0;
+  function cb() {
+    kc = Date.now();
   }
   function us() {
     try {
@@ -16379,16 +16405,16 @@ Use N-M for numeric ranges (e.g. 10500-10510)`, style: { fontSize: "12px", width
     }
     return document;
   }
-  function $m(e, t, r) {
+  function Hm(e, t, r) {
     e.onmouseover = function() {
       this.style.opacity = "1";
     }, e.onmouseout = function() {
       this.style.opacity = "0.6";
     }, e.onclick = () => {
-      t.style.display = "none", vt && (clearInterval(vt), vt = null), In = !1, r && r();
+      t.style.display = "none", wt && (clearInterval(wt), wt = null), Mn = !1, r && r();
     };
   }
-  function ay() {
+  function db() {
     let e = us(), t = e.getElementById("apm-ptp-timer");
     return t || (t = e.createElement("div"), t.id = "apm-ptp-timer", t.style.cssText = `
             position: fixed; top: 85px; right: 30px;
@@ -16397,18 +16423,18 @@ Use N-M for numeric ranges (e.g. 10500-10510)`, style: { fontSize: "12px", width
             z-index: 100000; box-shadow: 0 4px 15px rgba(0,0,0,0.3);
             display: flex; align-items: center; gap: 10px; border: 2px solid var(--apm-surface-sunken);
             user-select: none; pointer-events: auto; transition: all 0.2s;
-        `, e.body.appendChild(t)), In || (t.innerHTML = `
+        `, e.body.appendChild(t)), Mn || (t.innerHTML = `
             <div id="apm-ptp-start-btn" style="display:flex; align-items:baseline; gap:8px; cursor:pointer;">
                 <span style="font-size:12px; text-transform:uppercase; opacity:0.9; letter-spacing:0.5px; color:var(--apm-warning);">\u25B6 Start PTP Timer</span>
                 <span id="apm-ptp-time" style="font-family:monospace; font-size:20px; opacity:0.5;">02:00</span>
             </div>
             <div id="apm-ptp-close" style="cursor:pointer; font-size:14px; opacity:0.6; padding-left:4px; transition:opacity 0.2s;" title="Dismiss Timer">\u2716</div>
-        `, t.style.background = "var(--apm-surface-0)", t.style.borderColor = "var(--apm-surface-sunken)", e.getElementById("apm-ptp-start-btn").onclick = qm), $m(e.getElementById("apm-ptp-close"), t), t;
+        `, t.style.background = "var(--apm-surface-0)", t.style.borderColor = "var(--apm-surface-sunken)", e.getElementById("apm-ptp-start-btn").onclick = Um), Hm(e.getElementById("apm-ptp-close"), t), t;
   }
-  function qm() {
-    In = !0;
-    let e = Bm;
-    Fm = Date.now();
+  function Um() {
+    Mn = !0;
+    let e = Wm;
+    qm = Date.now();
     let t = us(), r = t.getElementById("apm-ptp-timer");
     r.style.background = "var(--apm-danger)", r.style.borderColor = "var(--apm-danger)", r.innerHTML = `
         <div style="display:flex; align-items:baseline; gap:8px;">
@@ -16416,52 +16442,52 @@ Use N-M for numeric ranges (e.g. 10500-10510)`, style: { fontSize: "12px", width
             <span id="apm-ptp-time" style="font-family:monospace; font-size:20px;">02:00</span>
         </div>
         <div id="apm-ptp-close" style="cursor:pointer; font-size:14px; opacity:0.6; padding-left:4px; transition:opacity 0.2s;" title="Dismiss Timer">\u2716</div>
-    `, $m(t.getElementById("apm-ptp-close"), r), vt && clearInterval(vt), vt = setInterval(() => {
-      if (Tc && Date.now() - Tc > 6e3) {
-        Wm();
+    `, Hm(t.getElementById("apm-ptp-close"), r), wt && clearInterval(wt), wt = setInterval(() => {
+      if (kc && Date.now() - kc > 6e3) {
+        Gm();
         return;
       }
-      e = Bm - Math.floor((Date.now() - Fm) / 1e3), e < 0 && (e = 0);
+      e = Wm - Math.floor((Date.now() - qm) / 1e3), e < 0 && (e = 0);
       let o = t.getElementById("apm-ptp-time");
       if (!o) {
-        clearInterval(vt), vt = null, In = !1;
+        clearInterval(wt), wt = null, Mn = !1;
         return;
       }
       if (e <= 0)
-        clearInterval(vt), vt = null, o.textContent = L("ready"), r.style.background = "var(--apm-success-bright)", r.style.borderColor = "var(--apm-success-bright)";
+        clearInterval(wt), wt = null, o.textContent = L("ready"), r.style.background = "var(--apm-success-bright)", r.style.borderColor = "var(--apm-success-bright)";
       else {
         let n = Math.floor(e / 60), a = e % 60;
         o.textContent = `0${n}:${a < 10 ? "0" : ""}${a}`;
       }
     }, 1e3);
   }
-  function Wm() {
+  function Gm() {
     let t = us().getElementById("apm-ptp-timer");
-    t && (t.style.display = "none"), vt && (clearInterval(vt), vt = null), In = !1;
+    t && (t.style.display = "none"), wt && (clearInterval(wt), wt = null), Mn = !1;
   }
-  function Mn() {
-    if (!he.isEnabled("ptpSandbox")) return;
+  function Pn() {
+    if (!fe.isEnabled("ptpSandbox")) return;
     let t = us().getElementById("apm-ptp-timer");
-    t && !Y.ptpTimerEnabled && (t.style.display = "none", vt && (clearInterval(vt), vt = null), In = !1);
+    t && !Y.ptpTimerEnabled && (t.style.display = "none", wt && (clearInterval(wt), wt = null), Mn = !1);
   }
   Xe("frame:attached", () => {
     try {
-      Mn();
+      Pn();
     } catch (e) {
       d.error("PTP", "checkPtpStatus failed on frame attach:", e);
     }
   });
-  _.register("ptpStatusCheck", Mn);
-  _.register("ptpHeartbeat", ny);
-  _.register("ptpInitTimerUI", ay);
-  _.register("ptpStartCountdown", qm);
-  _.register("ptpStopTimer", Wm);
+  _.register("ptpStatusCheck", Pn);
+  _.register("ptpHeartbeat", cb);
+  _.register("ptpInitTimerUI", db);
+  _.register("ptpStartCountdown", Um);
+  _.register("ptpStopTimer", Gm);
 
   // src/modules/ptp/ptp-context-broadcaster.js
   te();
-  oa();
+  na();
   var ms = null;
-  function Hm(e) {
+  function Vm(e) {
     let t = window.top || window, r = (o) => {
       let n = 0;
       try {
@@ -16485,16 +16511,16 @@ Use N-M for numeric ranges (e.g. 10500-10510)`, style: { fontSize: "12px", width
     };
     r(t);
   }
-  function Um() {
+  function zm() {
     let e = () => {
       let t = Br();
-      return t ? (d.debug("PTP", `Broadcasting APM_PTP_CONTEXT wo=${t} (initial)`), Hm(t), !0) : !1;
+      return t ? (d.debug("PTP", `Broadcasting APM_PTP_CONTEXT wo=${t} (initial)`), Vm(t), !0) : !1;
     };
     e() || setTimeout(e, 200), window.addEventListener("APM_EAM_VIEW_CHANGE", (t) => {
       if (t.detail?.view !== "record") return;
       let r = () => {
         let o = Br();
-        return o ? (d.debug("PTP", `Broadcasting APM_PTP_CONTEXT wo=${o}`), Hm(o), !0) : !1;
+        return o ? (d.debug("PTP", `Broadcasting APM_PTP_CONTEXT wo=${o}`), Vm(o), !0) : !1;
       };
       r() || (ms && clearTimeout(ms), ms = setTimeout(() => {
         ms = null, r() || d.debug("PTP", "getActiveWoNumber empty after retry on record view-change");
@@ -16504,7 +16530,7 @@ Use N-M for numeric ranges (e.g. 10500-10510)`, style: { fontSize: "12px", width
 
   // src/modules/tab-grid-order/tab-grid-order.js
   te();
-  Mt();
+  Pt();
   ct();
   Qt();
 
@@ -16516,9 +16542,9 @@ Use N-M for numeric ranges (e.g. 10500-10510)`, style: { fontSize: "12px", width
   // src/modules/tab-grid-order/lst-intercept.js
   te();
   Qt();
-  vr();
-  var fo = "__apmLstColumnsDone", Cc = "__apmLstInterceptInstalled";
-  function iy(e, t) {
+  wr();
+  var fo = "__apmLstColumnsDone", Tc = "__apmLstInterceptInstalled";
+  function pb(e, t) {
     if (t) {
       let r = t.match(/USER_FUNCTION_NAME=([^&]+)/i);
       if (r) return decodeURIComponent(r[1]).toUpperCase();
@@ -16531,7 +16557,7 @@ Use N-M for numeric ranges (e.g. 10500-10510)`, style: { fontSize: "12px", width
     }
     return null;
   }
-  function sy(e, t) {
+  function ub(e, t) {
     if (t) {
       let r = t.match(/SYSTEM_FUNCTION_NAME=([^&]+)/i);
       if (r) return decodeURIComponent(r[1]).toUpperCase();
@@ -16544,7 +16570,7 @@ Use N-M for numeric ranges (e.g. 10500-10510)`, style: { fontSize: "12px", width
     }
     return null;
   }
-  function ly(e) {
+  function mb(e) {
     try {
       let t = e?.pageData?.grid?.GRIDRESULT?.GRID?.FIELDS?.FIELD;
       return Array.isArray(t) ? t : null;
@@ -16552,7 +16578,7 @@ Use N-M for numeric ranges (e.g. 10500-10510)`, style: { fontSize: "12px", width
       return null;
     }
   }
-  function cy(e, t) {
+  function fb(e, t) {
     let r = /* @__PURE__ */ new Map();
     for (let l of e)
       l.name && r.set(l.name, l);
@@ -16569,9 +16595,9 @@ Use N-M for numeric ranges (e.g. 10500-10510)`, style: { fontSize: "12px", width
       l.order = String(a++);
     return d.debug("LstIntercept", `Applied: ${n.size} saved, ${s.length} unsaved visible`), !0;
   }
-  function dy(e, t, r, o) {
+  function gb(e, t, r, o) {
     try {
-      let n = iy(e, t);
+      let n = pb(e, t);
       if (!n || !r || typeof r != "string") return null;
       let a;
       try {
@@ -16579,28 +16605,28 @@ Use N-M for numeric ranges (e.g. 10500-10510)`, style: { fontSize: "12px", width
       } catch {
         return null;
       }
-      let s = ly(a);
+      let s = mb(a);
       if (!s || s.length === 0) return null;
       let l = a?.pageData?.grid?.GRIDRESULT?.GRID?.METADATA?.DATASPYID, c = l != null && l !== "" ? String(l) : "NONE", p = n + "|" + c;
       o.__apmDataspyByFunc || (o.__apmDataspyByFunc = {}), o.__apmDataspyByFunc[n] = c;
-      let u = sy(e, t) || n;
+      let u = ub(e, t) || n;
       o.__apmLstFuncs = { userFunc: n, sysFunc: u, ts: Date.now() };
-      let f = mr().config?.columnOrders?.[p];
-      if (!f || !Array.isArray(f) || f.length === 0 || !cy(s, f)) return null;
-      let h = JSON.stringify(a);
+      let f = fr().config?.columnOrders?.[p];
+      if (!f || !Array.isArray(f) || f.length === 0 || !fb(s, f)) return null;
+      let y = JSON.stringify(a);
       o[fo] || (o[fo] = /* @__PURE__ */ new Set()), o[fo].add(n);
-      let y = f.filter((b) => b.width != null).length;
+      let x = f.filter((h) => h.width != null).length;
       return d.info("LstIntercept", `rewrite ${p}`, {
         fieldCount: s.length,
         savedCount: f.length,
-        widthsWritten: y
-      }), h;
+        widthsWritten: x
+      }), y;
     } catch (n) {
       return d.debug("LstIntercept", `Rewrite failed: ${n.message}`), null;
     }
   }
-  function Ac(e) {
-    if (!e || !e.XMLHttpRequest || e[Cc]) return !1;
+  function Cc(e) {
+    if (!e || !e.XMLHttpRequest || e[Tc]) return !1;
     let t = e.XMLHttpRequest.prototype, r = Object.getOwnPropertyDescriptor(t, "responseText");
     if (!r || !r.get)
       return d.warn("LstIntercept", "Cannot find responseText getter on XHR prototype"), !1;
@@ -16620,21 +16646,21 @@ Use N-M for numeric ranges (e.g. 10500-10510)`, style: { fontSize: "12px", width
         let c = o.call(this);
         if (this._apmLstUrl && this.readyState === 4 && this.status === 200 && !this._apmLstDone) {
           this._apmLstDone = !0;
-          let p = dy(this._apmLstUrl, this._apmLstBody, c, e);
+          let p = gb(this._apmLstUrl, this._apmLstBody, c, e);
           p !== null && (this._apmLstModified = p);
         }
         return this._apmLstModified !== void 0 ? this._apmLstModified : c;
       },
       configurable: !0,
       enumerable: !0
-    }), e[Cc] = !0, d.info("LstIntercept", `XHR response intercept installed on ${e.location?.pathname || "unknown"}`), !0;
+    }), e[Tc] = !0, d.info("LstIntercept", `XHR response intercept installed on ${e.location?.pathname || "unknown"}`), !0;
   }
   Xe("frame:beforeAjax", ({ win: e }) => {
     try {
-      let t = Ac(e);
+      let t = Cc(e);
       d.info("LstIntercept", "install", {
         installed: t,
-        alreadyDone: !!e[Cc],
+        alreadyDone: !!e[Tc],
         href: e.location?.pathname || "unknown"
       });
     } catch (t) {
@@ -16643,9 +16669,9 @@ Use N-M for numeric ranges (e.g. 10500-10510)`, style: { fontSize: "12px", width
   });
 
   // src/modules/tab-grid-order/grid-column-override.js
-  vr();
-  var _c = "__apmGridColumnOverride";
-  function Gm(e, t, r) {
+  wr();
+  var Ac = "__apmGridColumnOverride";
+  function jm(e, t, r) {
     try {
       let n = e?.getStore?.()?.getProxy?.()?.extraParams?.USER_FUNCTION_NAME;
       if (n && n !== "" && n !== "GLOBAL")
@@ -16654,7 +16680,7 @@ Use N-M for numeric ranges (e.g. 10500-10510)`, style: { fontSize: "12px", width
     }
     return bt(t, e) || r;
   }
-  function zm(e, t, r) {
+  function Km(e, t, r) {
     try {
       let o = r?.__apmDataspyByFunc?.[e];
       if (o) return o;
@@ -16672,17 +16698,17 @@ Use N-M for numeric ranges (e.g. 10500-10510)`, style: { fontSize: "12px", width
     }
     return "NONE";
   }
-  function py(e, t) {
+  function hb(e, t) {
     if (!e || !t) return null;
-    let r = e + "|" + t, n = mr().config.columnOrders?.[r];
+    let r = e + "|" + t, n = fr().config.columnOrders?.[r];
     return n ? typeof n == "string" ? n.split(",").map((a) => ({ index: a.trim(), width: null })).filter((a) => a.index) : n.map(
       (a) => typeof a == "string" ? { index: a, width: null } : a
     ) : null;
   }
-  function Vm(e) {
+  function Ym(e) {
     e.flex = 0, e.initialConfig && (e.initialConfig.flex = 0), e.minWidth && (e.minWidth = 0);
   }
-  function uy(e, t) {
+  function yb(e, t) {
     let r = !1, o = 0;
     for (let n of t) {
       for (; o < e.items.length; ) {
@@ -16698,20 +16724,20 @@ Use N-M for numeric ranges (e.g. 10500-10510)`, style: { fontSize: "12px", width
           return a = s, !1;
       }), a) {
         let s = e.items.indexOf(a);
-        s !== -1 && s !== o && (e.move(s, o), r = !0), n.width != null && (a.width = n.width, Vm(a)), o++;
+        s !== -1 && s !== o && (e.move(s, o), r = !0), n.width != null && (a.width = n.width, Ym(a)), o++;
       }
     }
     return r;
   }
-  function my(e, t) {
+  function bb(e, t) {
     let r = 0;
     return e.items.each(function(o) {
       if (!o.dataIndex) return;
       let n = t.find((a) => a.index === o.dataIndex);
-      n && n.width != null && (o.width = n.width, Vm(o), r++);
+      n && n.width != null && (o.width = n.width, Ym(o), r++);
     }), r;
   }
-  function fy(e, t, r, o) {
+  function xb(e, t, r, o) {
     if (!(!r || !r.length) && !(e.isDestroyed || !e.headerCt || e.headerCt.isDestroyed))
       try {
         let n = [];
@@ -16739,22 +16765,22 @@ Use N-M for numeric ranges (e.g. 10500-10510)`, style: { fontSize: "12px", width
         d.debug("GridColumnOverride", `sampleColumnState threw: ${n.message}`);
       }
   }
-  function gy(e, t, r) {
+  function vb(e, t, r) {
     if (e._apmColumnSaveHooked || !e.headerCt || e.headerCt.isDestroyed) return;
     e._apmColumnSaveHooked = !0;
     let o = null;
     function n(s, l) {
       if (!(e.isDestroyed || e.headerCt.isDestroyed) && !(!e.rendered || !e.headerCt.rendered))
         try {
-          let c = s || Gm(e, t, r);
+          let c = s || jm(e, t, r);
           if (!c) return;
-          let p = e.headerCt.getGridColumns().filter((b) => b.dataIndex && !b.isCheckerHd && !b.locked && b.xtype !== "rownumberer" && !b.hidden).map((b) => ({
-            index: b.dataIndex,
-            width: b.getWidth?.() || b.width || null
-          })), u = mr();
+          let p = e.headerCt.getGridColumns().filter((h) => h.dataIndex && !h.isCheckerHd && !h.locked && h.xtype !== "rownumberer" && !h.hidden).map((h) => ({
+            index: h.dataIndex,
+            width: h.getWidth?.() || h.width || null
+          })), u = fr();
           u.config.columnOrders || (u.config.columnOrders = {});
-          let m = l || zm(c, e, t), f = c + "|" + m, g = u.config.columnOrders[f], h = g ? JSON.stringify(g) : null, y = JSON.stringify(p);
-          if (h === y) return;
+          let m = l || Km(c, e, t), f = c + "|" + m, g = u.config.columnOrders[f], y = g ? JSON.stringify(g) : null, x = JSON.stringify(p);
+          if (y === x) return;
           u.config.columnOrders[f] = p, Do(), d.debug("GridColumnOverride", `Saved column state for ${f} (${p.length} cols)`);
         } catch (c) {
           d.debug("GridColumnOverride", `Failed to save column state: ${c.message}`);
@@ -16762,15 +16788,15 @@ Use N-M for numeric ranges (e.g. 10500-10510)`, style: { fontSize: "12px", width
     }
     function a() {
       o && clearTimeout(o);
-      let s = Gm(e, t, r), l = zm(s, e, t);
+      let s = jm(e, t, r), l = Km(s, e, t);
       o = setTimeout(() => {
         o = null, n(s, l);
       }, 150);
     }
     e.headerCt.on("columnresize", a), e.headerCt.on("columnmove", a), e.headerCt.on("columnhide", a), e.headerCt.on("columnshow", a);
   }
-  function Ba(e) {
-    return !e.Ext || !e.EAM?.view?.common?.grids?.core?.ReadOnlyGrid || e[_c] ? !1 : (e.Ext.override(e.EAM.view.common.grids.core.ReadOnlyGrid, {
+  function $a(e) {
+    return !e.Ext || !e.EAM?.view?.common?.grids?.core?.ReadOnlyGrid || e[Ac] ? !1 : (e.Ext.override(e.EAM.view.common.grids.core.ReadOnlyGrid, {
       initComponent: function() {
         if (this.callParent(arguments), this.rendered || this.id && this.id.indexOf("checklistgrid") !== -1 || !this.headerCt || this.headerCt.items.length < 3) return;
         let t = bt(e, this), r = t ? "detectScreenFunction" : null, o = e.__apmLstFuncs;
@@ -16780,25 +16806,25 @@ Use N-M for numeric ranges (e.g. 10500-10510)`, style: { fontSize: "12px", width
         }
         if (!t) return;
         d.debug("GridColumnOverride", `screen resolved id=${this.id} screen=${t} via=${r}`);
-        let n = e.__apmDataspyByFunc?.[t] || "NONE", a = py(t, n), s = e[fo]?.has(t), l = "none", c = null;
+        let n = e.__apmDataspyByFunc?.[t] || "NONE", a = hb(t, n), s = e[fo]?.has(t), l = "none", c = null;
         if (a && a.length > 0)
           if (s)
-            c = my(this.headerCt, a), l = "widthsOnly", d.debug("GridColumnOverride", `LST handled order for ${t} \u2014 applied ${c} widths (grid: ${this.id})`);
+            c = bb(this.headerCt, a), l = "widthsOnly", d.debug("GridColumnOverride", `LST handled order for ${t} \u2014 applied ${c} widths (grid: ${this.id})`);
           else {
             let g = /* @__PURE__ */ new Set();
-            if (this.headerCt.items.each(function(y) {
-              y.dataIndex && g.add(y.dataIndex);
-            }), a.filter((y) => g.has(y.index)).length >= 2) {
+            if (this.headerCt.items.each(function(x) {
+              x.dataIndex && g.add(x.dataIndex);
+            }), a.filter((x) => g.has(x.index)).length >= 2) {
               this.headerCt.suspendEvents(!0);
               try {
-                uy(this.headerCt, a), l = "reorder", d.debug("GridColumnOverride", `Pre-render restore applied for ${t} (grid: ${this.id})`);
-              } catch (y) {
-                l = "reorderFailed", d.warn("GridColumnOverride", `Pre-render restore failed: ${y.message}`);
+                yb(this.headerCt, a), l = "reorder", d.debug("GridColumnOverride", `Pre-render restore applied for ${t} (grid: ${this.id})`);
+              } catch (x) {
+                l = "reorderFailed", d.warn("GridColumnOverride", `Pre-render restore failed: ${x.message}`);
               } finally {
                 try {
                   this.headerCt.resumeEvents();
-                } catch (y) {
-                  d.debug("GridColumnOverride", `resumeEvents threw during restore: ${y.message}`);
+                } catch (x) {
+                  d.debug("GridColumnOverride", `resumeEvents threw during restore: ${x.message}`);
                 }
               }
             } else
@@ -16813,19 +16839,19 @@ Use N-M for numeric ranges (e.g. 10500-10510)`, style: { fontSize: "12px", width
         });
         let p = this, u = t, m = e, f = a;
         this.on("afterrender", function() {
-          fy(p, u, f, "afterrender"), gy(p, m, u);
+          xb(p, u, f, "afterrender"), vb(p, m, u);
         }, this, { single: !0 });
       }
-    }), e[_c] = !0, d.info("GridColumnOverride", "ReadOnlyGrid override installed", {
+    }), e[Ac] = !0, d.info("GridColumnOverride", "ReadOnlyGrid override installed", {
       href: e.location?.pathname || "unknown"
     }), !0);
   }
   Xe("frame:beforeAjax", ({ win: e }) => {
     try {
-      let t = Ba(e);
+      let t = $a(e);
       d.info("GridColumnOverride", "install", {
         installed: t,
-        alreadyDone: !!e[_c],
+        alreadyDone: !!e[Ac],
         extReady: !!e.Ext,
         classReady: !!e.EAM?.view?.common?.grids?.core?.ReadOnlyGrid,
         href: e.location?.pathname || "unknown"
@@ -16837,16 +16863,16 @@ Use N-M for numeric ranges (e.g. 10500-10510)`, style: { fontSize: "12px", width
 
   // src/modules/tab-grid-order/tab-grid-order.js
   Oe();
-  Ht();
-  At();
-  vr();
+  Lt();
+  _t();
+  wr();
 
   // src/modules/tab-grid-order/tab-grid-order-settings.js
   Qt();
 
   // src/modules/tab-grid-order/tab-grid-order-settings-ui.js
   Me();
-  function jm() {
+  function Jm() {
     return i("div", { id: "apm-settings-fields", style: { display: "none" }, className: "apm-panel-section" }, [
       i("div", { className: "apm-tab-content-scroll" }, [
         i("div", { className: "apm-ui-settings-toggles" }, [
@@ -16874,7 +16900,7 @@ Use N-M for numeric ranges (e.g. 10500-10510)`, style: { fontSize: "12px", width
     label: "Tab Order",
     order: 20,
     getValue: () => {
-      let e = Tr();
+      let e = Cr();
       return {
         tabOrders: e?.config?.tabOrders ?? {},
         hiddenTabs: e?.config?.hiddenTabs ?? {},
@@ -16883,18 +16909,18 @@ Use N-M for numeric ranges (e.g. 10500-10510)`, style: { fontSize: "12px", width
       };
     },
     setValue: (e) => {
-      e && ql({
+      e && $l({
         tabOrders: e.tabOrders,
         hiddenTabs: e.hiddenTabs,
         columnOrders: e.columnOrders,
         columnWidths: e.columnWidths
       });
     },
-    render: () => jm()
+    render: () => Jm()
   });
 
   // src/modules/tab-grid-order/tab-grid-order.js
-  var Ym = 2e3, Jm = 400, hy = 100, Km = 5e3, by = 1e3, yy = 3e3, Rc = 11, ae = {
+  var Xm = 2e3, Zm = 400, wb = 100, Qm = 5e3, Sb = 1e3, Eb = 3e3, _c = 11, ae = {
     opSeq: 0,
     // Consistency engine flags
     isApplying: !1,
@@ -16920,8 +16946,8 @@ Use N-M for numeric ranges (e.g. 10500-10510)`, style: { fontSize: "12px", width
     },
     // Tracks blocked setActiveTab calls during orchestration (for deferred external apply)
     blockedTabActivations: []
-  }, xy = (e) => `${e}-${++ae.opSeq}`;
-  async function Oc(e, t = 3e3, r = 50) {
+  }, kb = (e) => `${e}-${++ae.opSeq}`;
+  async function Rc(e, t = 3e3, r = 50) {
     let o = Date.now();
     for (; Date.now() - o < t; ) {
       if (e()) return !0;
@@ -16929,7 +16955,7 @@ Use N-M for numeric ranges (e.g. 10500-10510)`, style: { fontSize: "12px", width
     }
     return !1;
   }
-  function Nc(e) {
+  function Oc(e) {
     ae.allowActiveTabChange = !0;
     try {
       return e();
@@ -16937,17 +16963,17 @@ Use N-M for numeric ranges (e.g. 10500-10510)`, style: { fontSize: "12px", width
       ae.allowActiveTabChange = !1;
     }
   }
-  function Rt(e) {
-    return e ? $a(e.title || e.text || e.tab?.getText?.() || "") : "";
+  function Nt(e) {
+    return e ? qa(e.title || e.text || e.tab?.getText?.() || "") : "";
   }
-  function $a(e) {
+  function qa(e) {
     if (!e) return "";
     if (ae.tabNameCache.has(e)) return ae.tabNameCache.get(e);
     let t = e.replace(/<[^>]*>?/gm, "").replace(/&nbsp;/g, " ").replace(/\u00A0/g, " ").trim();
     return ae.tabNameCache.set(e, t), t;
   }
-  function vy() {
-    if (Date.now() - ae.cachedColumnsTime < Ym && ae.cachedColumns)
+  function Tb() {
+    if (Date.now() - ae.cachedColumnsTime < Xm && ae.cachedColumns)
       return ae.cachedColumns;
     let e = [], t = Se();
     return t && t.grid.headerCt && t.grid.headerCt.items.items.forEach((r) => {
@@ -16961,15 +16987,15 @@ Use N-M for numeric ranges (e.g. 10500-10510)`, style: { fontSize: "12px", width
       }
     }), ae.cachedColumns = e, ae.cachedColumnsTime = Date.now(), e;
   }
-  function wy() {
-    if (Date.now() - ae.cachedTabsTime < Ym && ae.cachedTabs)
+  function Cb() {
+    if (Date.now() - ae.cachedTabsTime < Xm && ae.cachedTabs)
       return ae.cachedTabs;
-    let e = /* @__PURE__ */ new Map(), t = ln();
+    let e = /* @__PURE__ */ new Map(), t = cn();
     if (t) {
       let o = t.tabPanel, n = o.getTabBar ? o.getTabBar() : o.tabBar, a = o.plugins?.find?.((l) => l.ptype === "uxtabmenu"), s = n && n.rendered && n.el?.dom ? n.el.dom.getBoundingClientRect() : null;
       o.items.items.forEach((l) => {
         if (l.isDestroyed) return;
-        let c = Rt(l);
+        let c = Nt(l);
         if (c && c !== "&#160;") {
           let p = !!(l.hidden || l.tab && l.tab.hidden), u = !1;
           if (s && l.tab && l.tab.rendered && !l.tab.isDestroyed) {
@@ -16989,7 +17015,7 @@ Use N-M for numeric ranges (e.g. 10500-10510)`, style: { fontSize: "12px", width
         }
       }), a?.tabsMenu?.items && a.tabsMenu.items.items.forEach((l) => {
         if (l.isDestroyed || !l.text) return;
-        let c = $a(l.text);
+        let c = qa(l.text);
         c && !e.has(c) && e.set(c, {
           index: c,
           text: c,
@@ -17002,21 +17028,21 @@ Use N-M for numeric ranges (e.g. 10500-10510)`, style: { fontSize: "12px", width
     let r = Array.from(e.values());
     return ae.cachedTabs = r, ae.cachedTabsTime = Date.now(), r;
   }
-  var Sy = 1500;
-  function Go(e = hy) {
+  var Ab = 1500;
+  function Go(e = wb) {
     ae.cleanupScheduled || (ae.cleanupScheduled = !0, setTimeout(() => {
-      ae.cleanupScheduled = !1, zo(Rc).catch(
+      ae.cleanupScheduled = !1, Vo(_c).catch(
         (t) => d.debug("TabGridOrder", `Cleanup pass rejected: ${t.message}`)
       ), _.get("triggerResponsiveInjections")?.();
     }, e));
   }
-  function Ey() {
+  function _b() {
     return ae.suppressNative;
   }
-  function Ic(e, t) {
+  function Nc(e, t) {
     return bt(e, t);
   }
-  function ky(e, t) {
+  function Rb(e, t) {
     let r = e.ownerCt?.getActiveTab?.();
     if (r && r.itemId !== "HDR") return !1;
     let o = t.EAM?.FocusManager?.activeView;
@@ -17031,11 +17057,11 @@ Use N-M for numeric ranges (e.g. 10500-10510)`, style: { fontSize: "12px", width
       return d.debug("TabGridOrder", "No record form found in HDR view \u2014 plugin tab restoration will be skipped."), !0;
     return !1;
   }
-  function Ty(e, t, r, o) {
+  function Ob(e, t, r, o) {
     let n = e.getActiveTab?.() || null, a = !1, s = [...e.items.items];
     for (let l of s) {
       if (l.isDestroyed || !l.tab) continue;
-      let c = Rt(l);
+      let c = Nt(l);
       if (t.includes(c)) {
         if (l.itemId === "HDR") continue;
         let u = n === l;
@@ -17061,12 +17087,12 @@ Use N-M for numeric ranges (e.g. 10500-10510)`, style: { fontSize: "12px", width
         let l = e.items.items.find(
           (c) => !c.isDestroyed && c.tab && c.tab.isVisible()
         );
-        l && Nc(() => e.setActiveTab(l));
+        l && Oc(() => e.setActiveTab(l));
       } catch (l) {
         d.warn("TabGridOrder", `[${o}] Could not safely switch away from removed active tab`, l);
       }
   }
-  async function Cy(e, t, r, o, n) {
+  async function Nb(e, t, r, o, n) {
     let a = [], s = e.plugins?.find?.((m) => m.ptype === "uxtabmenu");
     if (!s?.tabsMenu?.items) return a;
     o !== ae.lastPluginRestoreScreen && (ae.failedPluginRestorations.clear(), ae.lastPluginRestoreScreen = o);
@@ -17077,37 +17103,37 @@ Use N-M for numeric ranges (e.g. 10500-10510)`, style: { fontSize: "12px", width
         d.warn("TabGridOrder", `[${n}] Circuit breaker: hit max ${u} restorations. Stopping.`);
         break;
       }
-      let f = $a(m.text), g = `${o}::${f}`;
+      let f = qa(m.text), g = `${o}::${f}`;
       if (ae.failedPluginRestorations.has(g)) continue;
-      let h = t.includes(f), y = r.includes(f);
-      if (!h && y && !e.items.items.some((x) => !x || x.isDestroyed ? !1 : Rt(x) === f) && m.handler && typeof m.handler == "function")
+      let y = t.includes(f), x = r.includes(f);
+      if (!y && x && !e.items.items.some((b) => !b || b.isDestroyed ? !1 : Nt(b) === f) && m.handler && typeof m.handler == "function")
         try {
           d.info("TabGridOrder", `[${n}] Triggering restoration handler for: ${f}`), m.handler.call(m.scope || m, m), c = !0, p++;
-          let x = e.el?.dom?.ownerDocument?.defaultView || window;
-          if (await Oc(() => !x.Ext?.Ajax?.isLoading(), by), !e.items.items.some((E) => !E || E.isDestroyed ? !1 : Rt(E) === f)) {
+          let b = e.el?.dom?.ownerDocument?.defaultView || window;
+          if (await Rc(() => !b.Ext?.Ajax?.isLoading(), Sb), !e.items.items.some((E) => !E || E.isDestroyed ? !1 : Nt(E) === f)) {
             ae.failedPluginRestorations.add(g), d.warn("TabGridOrder", `[${n}] Handler for "${f}" did not add the tab \u2014 marking as failed (no retry).`);
             break;
           }
           a.push(f);
-        } catch (x) {
-          ae.failedPluginRestorations.add(g), d.warn("TabGridOrder", `[${n}] Handler restoration failed for "${f}": ${x.message}`);
+        } catch (b) {
+          ae.failedPluginRestorations.add(g), d.warn("TabGridOrder", `[${n}] Handler restoration failed for "${f}": ${b.message}`);
           break;
         }
     }
     if (c) {
       let m = e.el?.dom?.ownerDocument?.defaultView || window;
-      await Oc(() => !m.Ext?.Ajax?.isLoading(), yy);
+      await Rc(() => !m.Ext?.Ajax?.isLoading(), Eb);
     }
     return a;
   }
-  function Qm(e, t, r, o) {
+  function ef(e, t, r, o) {
     if (!t.length || e.isDestroyed) return;
     let n = e.items, a = (u) => {
       let m = n.getAt(u);
-      return m && !m.isDestroyed ? Rt(m) : null;
+      return m && !m.isDestroyed ? Nt(m) : null;
     }, s = /* @__PURE__ */ new Set();
     n.each((u) => {
-      !u || u.isDestroyed || s.add(Rt(u));
+      !u || u.isDestroyed || s.add(Nt(u));
     });
     let l = t.filter((u) => s.has(u)), c = !1;
     for (let u = 0; u < l.length; u++)
@@ -17147,28 +17173,28 @@ Use N-M for numeric ranges (e.g. 10500-10510)`, style: { fontSize: "12px", width
         }
     }
   }
-  function Ay(e, t, r, o = []) {
+  function Ib(e, t, r, o = []) {
     if (!t || e.isDestroyed) return;
-    let n = e.getActiveTab(), a = n ? Rt(n) : null;
+    let n = e.getActiveTab(), a = n ? Nt(n) : null;
     if (a !== t) {
       if (o.length && !o.includes(a)) {
         d.debug("TabGridOrder", `[${r}] Active tab changed to "${a}" externally \u2014 respecting.`);
         return;
       }
       let s = e.items.items.find(
-        (l) => Rt(l) === t
+        (l) => Nt(l) === t
       );
       if (s && !s.isDestroyed && s.tab && s.tab.isVisible()) {
         d.debug("TabGridOrder", `[${r}] Restoring active tab to: ${t}`);
         try {
-          Nc(() => e.setActiveTab(s));
+          Oc(() => e.setActiveTab(s));
         } catch (l) {
           d.debug("TabGridOrder", `[${r}] setActiveTab threw (mid-transition): ${l.message}`);
         }
       }
     }
   }
-  function _y(e, t, r) {
+  function Mb(e, t, r) {
     if (!r || e.isDestroyed || e.__apmConsistencyHook) return;
     let o = e.move, n = e.add, a = e.insert, s = e.setActiveTab;
     if (e.items && !e.items.__apmHooked) {
@@ -17180,7 +17206,7 @@ Use N-M for numeric ranges (e.g. 10500-10510)`, style: { fontSize: "12px", width
     }
     e.move = function(l, c) {
       let p = o.apply(this, arguments);
-      return ae.isApplying || (d.debug("TabGridOrder", `Framework moved "${Rt(l)}" to ${c}. Scheduling cleanup.`), Go()), p;
+      return ae.isApplying || (d.debug("TabGridOrder", `Framework moved "${Nt(l)}" to ${c}. Scheduling cleanup.`), Go()), p;
     }, e.add = function() {
       let l = n.apply(this, arguments);
       return ae.isApplying || Go(), l;
@@ -17191,38 +17217,38 @@ Use N-M for numeric ranges (e.g. 10500-10510)`, style: { fontSize: "12px", width
       try {
         if (l == null) return s.apply(this, arguments);
         if (ae.allowActiveTabChange) return s.apply(this, arguments);
-        let c = Rt(l);
+        let c = Nt(l);
         return ae.blockedTabActivations.push(c), d.warn("TabGridOrder", `Blocked focus jump for "${c}". Focus protected.`), this.getActiveTab();
       } catch (c) {
         d.debug("TabGridOrder", `setActiveTab threw (mid-transition): ${c.message}`);
       }
-    }, e.on("beforetabchange", (l, c, p) => ae.allowActiveTabChange || c == null || c === p ? !0 : (d.debug("TabGridOrder", `beforetabchange blocked: "${Rt(c)}"`), !1), null, { priority: 1e3 }), e.__apmConsistencyHook = !0;
+    }, e.on("beforetabchange", (l, c, p) => ae.allowActiveTabChange || c == null || c === p ? !0 : (d.debug("TabGridOrder", `beforetabchange blocked: "${Nt(c)}"`), !1), null, { priority: 1e3 }), e.__apmConsistencyHook = !0;
   }
-  async function zo(e = 0) {
-    if (!he.isEnabled("tabGridOrder")) return;
+  async function Vo(e = 0) {
+    if (!fe.isEnabled("tabGridOrder")) return;
     if (ae.isApplying) {
       ae.pendingRerun = !0;
       return;
     }
-    if (e === 0 && Date.now() - ae.lastConsistencyRun < Sy) {
+    if (e === 0 && Date.now() - ae.lastConsistencyRun < Ab) {
       Go();
       return;
     }
-    let t = xy(e === Rc ? "CL" : "TC"), r = performance.now();
+    let t = kb(e === _c ? "CL" : "TC"), r = performance.now();
     d.debug("TabGridOrder", `[${t}] applyTabConsistency called (Retry: ${e})`);
     let o = !1;
     try {
       ae.isApplying = !0;
-      let n = ln();
+      let n = cn();
       if (!n) return;
       let { tabPanel: a, win: s } = n;
-      na(s);
+      aa(s);
       let l = a.child?.("#HDR") || null;
       if (l && (!l.rendered || !l.getEl?.()?.dom?.children?.length)) {
         d.debug("TabGridOrder", `[${t}] Record tab panel found but no record loaded (HDR empty). Skipping.`);
         return;
       }
-      let c = l ? ky(l, s) : !1, p = s.Ext?.ComponentQuery?.query("listdetailview:not([destroyed=true])") || [];
+      let c = l ? Rb(l, s) : !1, p = s.Ext?.ComponentQuery?.query("listdetailview:not([destroyed=true])") || [];
       for (let w of p) {
         if (w.isDestroyed) continue;
         let T = w.getLayout?.();
@@ -17232,35 +17258,35 @@ Use N-M for numeric ranges (e.g. 10500-10510)`, style: { fontSize: "12px", width
         }
       }
       o = !0, ae.suppressNative = !0, ae.allowActiveTabChange = !1;
-      let u = Se(), m = Ic(s, u?.grid), f = Tr(), g = f.config.hiddenTabs?.[m] || [], h = g.length > 0, y = f.config.tabOrders?.[m] || f.config.tabOrders?.GLOBAL || "", b = typeof y == "string" ? y.split(",").map((w) => w.trim()).filter(Boolean) : Array.isArray(y) ? y : [], x = b.length > 0;
-      if (!x && !h) return;
-      if (e < Rc) {
-        let w = await Oc(
+      let u = Se(), m = Nc(s, u?.grid), f = Cr(), g = f.config.hiddenTabs?.[m] || [], y = g.length > 0, x = f.config.tabOrders?.[m] || f.config.tabOrders?.GLOBAL || "", h = typeof x == "string" ? x.split(",").map((w) => w.trim()).filter(Boolean) : Array.isArray(x) ? x : [], b = h.length > 0;
+      if (!b && !y) return;
+      if (e < _c) {
+        let w = await Rc(
           () => a.isVisible?.(!0) && !!s.Ext.isReady,
-          Km
+          Qm
         );
         if (!w && !a.isVisible?.(!0)) return;
-        w || d.warn("TabGridOrder", `[${t}] TabPanel ${a.id} not stable after ${Km}ms. Best-effort.`);
+        w || d.warn("TabGridOrder", `[${t}] TabPanel ${a.id} not stable after ${Qm}ms. Best-effort.`);
       }
       if (!ae.systemDefaults.tabs[m]) {
         let w = [];
         a.items.items.forEach((T) => {
           if (!T || T.isDestroyed) return;
-          let B = Rt(T);
+          let B = Nt(T);
           B && w.push(B);
         }), w.length > 0 && (ae.systemDefaults.tabs[m] = w);
       }
-      x && e === 0 && d.debug("TabGridOrder", `[${t}] [Silo: ${m}] Preferred Order:`, b);
-      let v = a.getActiveTab?.() || null, E = v ? Rt(v) : null;
-      _y(a, s, x || h), ae.blockedTabActivations = [];
+      b && e === 0 && d.debug("TabGridOrder", `[${t}] [Silo: ${m}] Preferred Order:`, h);
+      let v = a.getActiveTab?.() || null, E = v ? Nt(v) : null;
+      Mb(a, s, b || y), ae.blockedTabActivations = [];
       let k = [];
-      (h || x) && (Ty(a, g, b, t), c || (k = await Cy(a, g, b, m, t))), Qm(a, b, s, t), Ay(a, E, t, k);
+      (y || b) && (Ob(a, g, h, t), c || (k = await Nb(a, g, h, m, t))), ef(a, h, s, t), Ib(a, E, t, k);
       let S = [...ae.blockedTabActivations].reverse().find((w) => !k.includes(w));
       if (ae.blockedTabActivations = [], S && S !== E) {
         let w = a.items.items.find(
-          (T) => !T.isDestroyed && Rt(T) === S
+          (T) => !T.isDestroyed && Nt(T) === S
         );
-        w && w.tab?.isVisible() && (d.debug("TabGridOrder", `[${t}] Applying deferred external tab change to: ${S}`), Nc(() => a.setActiveTab(w)));
+        w && w.tab?.isVisible() && (d.debug("TabGridOrder", `[${t}] Applying deferred external tab change to: ${S}`), Oc(() => a.setActiveTab(w)));
       }
       if (ae.allowActiveTabChange = !0, !a.isDestroyed && typeof a.updateLayout == "function")
         try {
@@ -17271,16 +17297,16 @@ Use N-M for numeric ranges (e.g. 10500-10510)`, style: { fontSize: "12px", width
     } finally {
       ae.allowActiveTabChange = !0, ae.blockedTabActivations = [], ae.isApplying = !1, o && (ae.lastConsistencyRun = Date.now()), setTimeout(() => {
         ae.suppressNative = !1;
-      }, Jm), ve.recordPerformance("tabGridOrder", performance.now() - r), ae.pendingRerun && (ae.pendingRerun = !1, Go());
+      }, Zm), ve.recordPerformance("tabGridOrder", performance.now() - r), ae.pendingRerun && (ae.pendingRerun = !1, Go());
     }
   }
-  function Ry() {
-    let e = ln();
+  function Pb() {
+    let e = cn();
     if (!e)
       return d.warn("TabGridOrder", "resetTabDefaults: no tab panel found"), !1;
     let { tabPanel: t, win: r } = e;
-    na(r);
-    let o = Ic(r, Se()?.grid), n = ae.systemDefaults.tabs[o] || (_.has("systemDefaultTabOrder") ? _.get("systemDefaultTabOrder") : null);
+    aa(r);
+    let o = Nc(r, Se()?.grid), n = ae.systemDefaults.tabs[o] || (_.has("systemDefaultTabOrder") ? _.get("systemDefaultTabOrder") : null);
     ae.isApplying = !0, ae.suppressNative = !0, ae.allowActiveTabChange = !1, ae.failedPluginRestorations.clear();
     try {
       let a = t.plugins?.find?.((s) => s.ptype === "uxtabmenu");
@@ -17288,9 +17314,9 @@ Use N-M for numeric ranges (e.g. 10500-10510)`, style: { fontSize: "12px", width
         let s = 0;
         a.tabsMenu.items.items.forEach((l) => {
           if (l.isDestroyed || !l.handler || s >= 5) return;
-          let c = $a(l.text);
+          let c = qa(l.text);
           if (!t.items.items.some(
-            (u) => !u.isDestroyed && Rt(u) === c
+            (u) => !u.isDestroyed && Nt(u) === c
           ))
             try {
               l.handler.call(l.scope || l, l), s++;
@@ -17298,34 +17324,34 @@ Use N-M for numeric ranges (e.g. 10500-10510)`, style: { fontSize: "12px", width
             }
         });
       }
-      return n && n.length > 0 && Qm(t, n, r), t.isDestroyed || (typeof t.updateLayout == "function" && t.updateLayout(), t.getTabBar?.()?.updateLayout && t.getTabBar().updateLayout()), d.info("TabGridOrder", `Tabs reset to system defaults for ${o}`), !0;
+      return n && n.length > 0 && ef(t, n, r), t.isDestroyed || (typeof t.updateLayout == "function" && t.updateLayout(), t.getTabBar?.()?.updateLayout && t.getTabBar().updateLayout()), d.info("TabGridOrder", `Tabs reset to system defaults for ${o}`), !0;
     } catch (a) {
       return d.warn("TabGridOrder", "resetTabDefaults failed:", a), !1;
     } finally {
       ae.allowActiveTabChange = !0, ae.isApplying = !1, setTimeout(() => {
         ae.suppressNative = !1;
-      }, Jm);
+      }, Zm);
     }
   }
-  function Oy() {
+  function Lb() {
     let e = Se();
     if (!e || !e.grid.headerCt || e.grid.headerCt.isDestroyed)
       return d.warn("TabGridOrder", "resetColumnDefaults: no grid found"), !1;
-    let { grid: t, win: r } = e, o = Ic(r, t);
+    let { grid: t, win: r } = e, o = Nc(r, t);
     if (!o)
       return d.warn("TabGridOrder", "resetColumnDefaults: cannot resolve screen"), !1;
     let n = r.__apmDataspyByFunc?.[o] || "NONE", a = o + "|" + n;
     try {
-      let s = mr();
+      let s = fr();
       return s.config?.columnOrders?.[a] ? (delete s.config.columnOrders[a], Do(), d.info("TabGridOrder", `Cleared saved column order for ${a} \u2014 reload to apply EAM default`), !0) : (d.info("TabGridOrder", `No saved column order for ${a}`), !1);
     } catch (s) {
       return d.warn("TabGridOrder", "resetColumnDefaults failed:", s), !1;
     }
   }
-  function Ny() {
+  function Db() {
     ae.cachedColumns = null, ae.cachedColumnsTime = 0, ae.cachedTabs = null, ae.cachedTabsTime = 0, ae.tabNameCache.clear();
   }
-  function Iy() {
+  function Fb() {
     let {
       isApplying: e,
       suppressNative: t,
@@ -17341,16 +17367,16 @@ Use N-M for numeric ranges (e.g. 10500-10510)`, style: { fontSize: "12px", width
       failedPluginRestorations: m,
       lastPluginRestoreScreen: f,
       systemDefaults: g
-    } = ae, h = Date.now();
+    } = ae, y = Date.now();
     return {
       flags: { isApplying: e, suppressNative: t, allowActiveTabChange: r, cleanupScheduled: o, pendingRerun: n },
       timing: {
-        lastConsistencyRunAgo: h - a
+        lastConsistencyRunAgo: y - a
       },
       cache: {
         tabNameCacheSize: s.size,
-        cachedTabsAge: l ? h - c : null,
-        cachedColumnsAge: p ? h - u : null
+        cachedTabsAge: l ? y - c : null,
+        cachedColumnsAge: p ? y - u : null
       },
       retries: { failedPluginRestorations: [...m], lastPluginRestoreScreen: f },
       systemDefaults: {
@@ -17358,52 +17384,52 @@ Use N-M for numeric ranges (e.g. 10500-10510)`, style: { fontSize: "12px", width
       }
     };
   }
-  typeof window < "u" && (_.register("applyTabConsistency", zo), _.register("installGridColumnOverride", Ba), _.register("tgoDebugSnapshot", Iy), window.addEventListener("APM_PRESETS_SYNC_REQUIRED", () => {
-    he.isEnabled("tabGridOrder") && zo().catch(
+  typeof window < "u" && (_.register("applyTabConsistency", Vo), _.register("installGridColumnOverride", $a), _.register("tgoDebugSnapshot", Fb), window.addEventListener("APM_PRESETS_SYNC_REQUIRED", () => {
+    fe.isEnabled("tabGridOrder") && Vo().catch(
       (e) => d.warn("TabGridOrder", "applyTabConsistency failed during sync:", e)
     );
   }));
   Xe("frame:ajaxBurst", () => {
-    he.isEnabled("tabGridOrder") && zo().catch(
+    fe.isEnabled("tabGridOrder") && Vo().catch(
       (e) => d.debug("TabGridOrder", `Tab consistency rejected: ${e.message}`)
     );
   });
-  _.register("applyTabConsistency", zo);
-  _.register("isSuppressingNativeEvents", Ey);
-  _.register("normalizeTabName", $a);
-  _.register("probeExtTabs", wy);
-  _.register("probeExtGridColumns", vy);
-  _.register("invalidateTabCache", Ny);
-  _.register("resetTabDefaults", Ry);
-  _.register("resetColumnDefaults", Oy);
+  _.register("applyTabConsistency", Vo);
+  _.register("isSuppressingNativeEvents", _b);
+  _.register("normalizeTabName", qa);
+  _.register("probeExtTabs", Cb);
+  _.register("probeExtGridColumns", Tb);
+  _.register("invalidateTabCache", Db);
+  _.register("resetTabDefaults", Pb);
+  _.register("resetColumnDefaults", Lb);
 
   // src/boot.js
-  Ga();
+  Va();
 
   // src/modules/labor/labor-tracker.js
   Me();
-  sr();
+  lr();
   ue();
   Te();
   hs();
-  Pt();
-  ys();
-  $c();
+  Dt();
+  bs();
+  Bc();
   te();
-  kr();
+  Tr();
   se();
   _e();
-  Ht();
+  Lt();
   qe();
-  var td = (function() {
+  var ed = (function() {
     if (!Fe()) return { init: function() {
     } };
-    let e = 1, t = !1, r = !1, o = !1, n = N.get(ci) === !0, a = N.get(rl, 1), s = [], l = "";
+    let e = 1, t = !1, r = !1, o = !1, n = N.get(ci) === !0, a = N.get(tl, 1), s = [], l = "";
     function c() {
       try {
-        let S = N.get(qt);
+        let S = N.get(Wt);
         S ? s = Array.isArray(S) ? S : [] : s = [];
-        let w = N.get(Ir);
+        let w = N.get(Mr);
         w !== null && (l = w);
       } catch (S) {
         d.error("LaborTracker", "Failed to load state:", S), s = [], l = "";
@@ -17415,7 +17441,7 @@ Use N-M for numeric ranges (e.g. 10500-10510)`, style: { fontSize: "12px", width
       if (!p || !u) return;
       let S;
       try {
-        let D = N.get(yr);
+        let D = N.get(xr);
         D ? S = D : S = { edge: "right", pos: 300 };
       } catch {
         S = { edge: "right", pos: 300 };
@@ -17427,7 +17453,7 @@ Use N-M for numeric ranges (e.g. 10500-10510)`, style: { fontSize: "12px", width
     }
     async function f(S = !1) {
       if (t || u && u.style.display === "none") return;
-      let w = be.session;
+      let w = ye.session;
       if (!w.eamid || !w.user) {
         d.debug("Labor Tracker", "Waiting for session initialization...");
         return;
@@ -17446,12 +17472,12 @@ Use N-M for numeric ranges (e.g. 10500-10510)`, style: { fontSize: "12px", width
     function g() {
       let S = ot.getCache();
       if (n) {
-        let w = N.get(Mr, "");
+        let w = N.get(Pr, "");
         return w && w !== "00:00" ? ot.calculateShiftTally(S, w, a) : ot.calculateTally(S, 2);
       }
       return ot.calculateTally(S, e);
     }
-    function h() {
+    function y() {
       if (!u) return;
       let S = u.querySelectorAll(".labor-tab");
       if (S.length !== 3) return;
@@ -17462,16 +17488,16 @@ Use N-M for numeric ranges (e.g. 10500-10510)`, style: { fontSize: "12px", width
       let D = document.getElementById("apm-labor-tabs");
       D && D.classList.remove("labor-tabs-dimmed");
     }
-    function y() {
+    function x() {
       let S = document.getElementById("apm-labor-emp-select"), w = document.getElementById("apm-labor-target-label");
       !S || !w || (S.innerHTML = '<option value="">-- Self --</option>', s.forEach((T) => {
         let B = document.createElement("option");
         B.value = T, B.textContent = T, T === l && (B.selected = !0), S.appendChild(B);
       }), w.textContent = l ? L("targetLabel", l) : L("targetSelf"));
     }
-    function b() {
+    function h() {
       p && p.remove(), u && u.remove(), p = document.createElement("div"), p.id = "apm-labor-trigger", p.className = "apm-labor-trigger", p.textContent = L("laborTally");
-      let S = N.get(Et) === !0;
+      let S = N.get(kt) === !0;
       u = i("div", { id: "apm-labor-panel", className: "apm-labor-panel apm-ui-panel" }, [
         i("div", { className: "apm-labor-header" }, [
           i("span", { className: "apm-labor-target-lbl", id: "apm-labor-target-label" }, L("targetSelf")),
@@ -17500,7 +17526,7 @@ Use N-M for numeric ranges (e.g. 10500-10510)`, style: { fontSize: "12px", width
           i("div", { className: "labor-tab", "data-d": "2" }),
           i("div", { className: "labor-tab", "data-d": "7" })
         ]),
-        i("div", { className: "apm-labor-shift-view-row", style: { display: N.get(Et) ? "" : "none" } }, [
+        i("div", { className: "apm-labor-shift-view-row", style: { display: N.get(kt) ? "" : "none" } }, [
           i("label", { className: "apm-toggle-switch" }, [
             i("input", { type: "checkbox", id: "apm-labor-shift-view", checked: n }),
             i("span", { className: "apm-toggle-slider" })
@@ -17519,28 +17545,28 @@ Use N-M for numeric ranges (e.g. 10500-10510)`, style: { fontSize: "12px", width
       w && (w.appendChild(xs(document, {
         onChange: () => {
           let B = document.getElementById("apm-labor-shift-dot");
-          B && (B.style.display = N.get(Et) ? "" : "none"), v(), t || k();
+          B && (B.style.display = N.get(kt) ? "" : "none"), v(), t || k();
         }
       })), w.addEventListener("apm-shift-config-submit", () => {
         w.style.display = "none";
-      })), x(), m(), y(), h();
+      })), b(), m(), x(), y();
       let T = document.getElementById("apm-labor-mgr-panel");
       T && (T.style.display = "none"), w && (w.style.display = "none"), d.debug("APM Master", "Labor Tracker: UI Injected.");
     }
-    function x() {
+    function b() {
       let S;
       try {
-        S = N.get(yr) || { edge: "right", pos: 300 };
+        S = N.get(xr) || { edge: "right", pos: 300 };
       } catch {
         S = { edge: "right", pos: 300 };
       }
       p.onmousedown = (O) => {
-        let H = !1, Q = O.clientX, R = O.clientY, A = p.getBoundingClientRect(), z = Q - A.left, W = R - A.top, M = (U) => {
-          !H && (Math.abs(U.clientX - Q) > 5 || Math.abs(U.clientY - R) > 5) && (H = !0, p.style.transition = "none", u.style.display !== "none" && u.style.visibility !== "hidden" && (Ce.closeAll(!0), m())), H && (p.style.right = p.style.bottom = "auto", p.style.left = U.clientX - z + "px", p.style.top = U.clientY - W + "px", p.style.transform = "none");
+        let H = !1, Q = O.clientX, R = O.clientY, A = p.getBoundingClientRect(), V = Q - A.left, W = R - A.top, M = (U) => {
+          !H && (Math.abs(U.clientX - Q) > 5 || Math.abs(U.clientY - R) > 5) && (H = !0, p.style.transition = "none", u.style.display !== "none" && u.style.visibility !== "hidden" && (Ce.closeAll(!0), m())), H && (p.style.right = p.style.bottom = "auto", p.style.left = U.clientX - V + "px", p.style.top = U.clientY - W + "px", p.style.transform = "none");
         }, F = (U) => {
           if (document.removeEventListener("mousemove", M), document.removeEventListener("mouseup", F), H) {
-            let q = U.clientX, j = U.clientY, Z = window.innerWidth, P = window.innerHeight, G = j, I = P - j, X = q, J = Z - q, V = Math.min(G, I, X, J);
-            V === J ? (S.edge = "right", S.pos = j) : V === X ? (S.edge = "left", S.pos = j) : V === G ? (S.edge = "top", S.pos = q) : (S.edge = "bottom", S.pos = q), N.set(yr, S), m();
+            let q = U.clientX, j = U.clientY, Z = window.innerWidth, P = window.innerHeight, G = j, I = P - j, X = q, J = Z - q, z = Math.min(G, I, X, J);
+            z === J ? (S.edge = "right", S.pos = j) : z === X ? (S.edge = "left", S.pos = j) : z === G ? (S.edge = "top", S.pos = q) : (S.edge = "bottom", S.pos = q), N.set(xr, S), m();
           } else
             Ce.toggle("apm-labor-panel", () => {
               u.style.display = "flex", u.style.visibility = "visible", d.debug("LaborTracker", "Panel toggled via UIManager -> OPENING"), f(!0), m();
@@ -17565,30 +17591,30 @@ Use N-M for numeric ranges (e.g. 10500-10510)`, style: { fontSize: "12px", width
         let O = prompt("Enter employee alias (e.g. ROSENDAH):");
         if (O && O.trim()) {
           let H = O.trim().toUpperCase();
-          s.includes(H) || (s.push(H), N.set(qt, s)), l = H, N.set(Ir, l), y(), f(!0);
+          s.includes(H) || (s.push(H), N.set(Wt, s)), l = H, N.set(Mr, l), x(), f(!0);
         }
       });
       let D = document.getElementById("apm-labor-emp-rem");
       D && (D.onclick = () => {
-        l && confirm("Remove " + l + " from saved list?") && (s = s.filter((O) => O !== l), N.set(qt, s), l = "", N.set(Ir, l), y(), f(!0));
+        l && confirm("Remove " + l + " from saved list?") && (s = s.filter((O) => O !== l), N.set(Wt, s), l = "", N.set(Mr, l), x(), f(!0));
       });
       let $ = document.getElementById("apm-labor-emp-select");
       $ && ($.onchange = (O) => {
-        l = O.target.value, N.set(Ir, l), y(), f(!0);
+        l = O.target.value, N.set(Mr, l), x(), f(!0);
       }), u.querySelectorAll(".labor-tab").forEach((O) => O.onclick = (H) => {
         let Q = parseInt(H.target.getAttribute("data-d"));
         if (!isNaN(Q))
           if (n)
-            a = Q, N.set(rl, a), h(), t || f(!1);
+            a = Q, N.set(tl, a), y(), t || f(!1);
           else {
             e = Q, o = !1;
             let R = document.getElementById("apm-labor-night-hint");
-            R && (R.style.display = "none"), h(), t || k();
+            R && (R.style.display = "none"), y(), t || k();
           }
       });
       let K = document.getElementById("apm-labor-shift-view");
       K && (K.onchange = () => {
-        n = K.checked, N.set(ci, n), h(), v(), t || (n && a > 1 ? f(!1) : k());
+        n = K.checked, N.set(ci, n), y(), v(), t || (n && a > 1 ? f(!1) : k());
       });
       let ee = document.getElementById("labor-force-refresh");
       ee && (ee.onclick = () => {
@@ -17599,25 +17625,25 @@ Use N-M for numeric ranges (e.g. 10500-10510)`, style: { fontSize: "12px", width
       let S = document.getElementById("apm-labor-night-hint");
       if (S)
         if (n) {
-          let w = N.get(Mr, "");
+          let w = N.get(Pr, "");
           w && w !== "00:00" ? a === 1 ? (S.textContent = L("shiftViewHint"), S.style.display = "") : S.style.display = "none" : (S.textContent = L("shiftViewNoEndTime"), S.style.display = "");
         } else o || (S.style.display = "none");
     }
     function E() {
       if (n) return;
-      let S = N.get(Et), w = (/* @__PURE__ */ new Date()).getHours(), T = document.getElementById("apm-labor-night-hint");
-      S && w < 11 && !o ? (o = !0, e = 2, h(), T && (T.style.display = "")) : T && !o && (T.style.display = "none");
+      let S = N.get(kt), w = (/* @__PURE__ */ new Date()).getHours(), T = document.getElementById("apm-labor-night-hint");
+      S && w < 11 && !o ? (o = !0, e = 2, y(), T && (T.style.display = "")) : T && !o && (T.style.display = "none");
     }
     function k(S = null) {
       let w = document.getElementById("labor-sum-box"), T = document.getElementById("labor-breakdown-box");
       if (!w || !T) return;
       let B = document.querySelector(".apm-labor-shift-view-row");
       if (B) {
-        let O = N.get(Et);
+        let O = N.get(kt);
         if (B.style.display = O ? "" : "none", !O && n) {
           n = !1, N.set(ci, !1);
           let H = document.getElementById("apm-labor-shift-view");
-          H && (H.checked = !1), h();
+          H && (H.checked = !1), y();
         }
       }
       if (S) {
@@ -17640,10 +17666,10 @@ Use N-M for numeric ranges (e.g. 10500-10510)`, style: { fontSize: "12px", width
           H.hasUnstamped && R.push(i("span", {
             className: "labor-row-shift-warning",
             title: L("shiftRowDateworkTip")
-          }, L("shiftRowDateworkBadge"))), R.push(i("strong", {}, $(H.total))), T.appendChild(i("div", { className: "labor-row labor-row-shift-header" }, R)), Object.keys(H.breakdown).sort((z, W) => W.localeCompare(z)).forEach((z) => {
+          }, L("shiftRowDateworkBadge"))), R.push(i("strong", {}, $(H.total))), T.appendChild(i("div", { className: "labor-row labor-row-shift-header" }, R)), Object.keys(H.breakdown).sort((V, W) => W.localeCompare(V)).forEach((V) => {
             T.appendChild(i("div", { className: "labor-row labor-row-shift-sub" }, [
-              i("span", {}, Ro(z)),
-              i("strong", {}, $(H.breakdown[z]))
+              i("span", {}, Ro(V)),
+              i("strong", {}, $(H.breakdown[V]))
             ]));
           });
         });
@@ -17660,13 +17686,13 @@ Use N-M for numeric ranges (e.g. 10500-10510)`, style: { fontSize: "12px", width
     }
     return {
       init: function() {
-        if (!he.isEnabled("laborBooker") || !Fe()) return;
+        if (!fe.isEnabled("laborBooker") || !Fe()) return;
         if (r) {
-          document.getElementById("apm-labor-trigger") || b();
+          document.getElementById("apm-labor-trigger") || h();
           return;
         }
-        b(), E(), v(), r = !0, Ce.addExternalHandler(() => {
-          (u.style.display === "none" || u.style.visibility === "hidden") && (l !== "" && (d.debug("LaborTracker", "Resetting selectedEmployee to Self on panel close."), l = "", N.set(Ir, ""), y()), m());
+        h(), E(), v(), r = !0, Ce.addExternalHandler(() => {
+          (u.style.display === "none" || u.style.visibility === "hidden") && (l !== "" && (d.debug("LaborTracker", "Resetting selectedEmployee to Self on panel close."), l = "", N.set(Mr, ""), x()), m());
         }), Ce.registerPanel("apm-labor-panel", ["#apm-labor-trigger", ".apm-labor-trigger"]), window.addEventListener("APM_SESSION_UPDATED", (w) => {
           let T = u.style.display !== "none" && u.style.visibility !== "hidden";
           w.detail?.isFresh && T && f();
@@ -17674,20 +17700,20 @@ Use N-M for numeric ranges (e.g. 10500-10510)`, style: { fontSize: "12px", width
           E(), f(!0);
         }), window.addEventListener("resize", () => m());
         let S = u.style.display !== "none" && u.style.visibility !== "hidden";
-        be.session.isFresh && S && f();
+        ye.session.isFresh && S && f();
       }
     };
   })();
 
   // src/modules/tab-title.js
   te();
-  Rr();
+  Or();
   ct();
   se();
-  ur();
+  mr();
   nt();
-  var Af = null, Cf = null, Ko = 0, za = null;
-  function _f() {
+  var Of = null, Rf = null, Ko = 0, za = null;
+  function Nf() {
     let e = Wr("span.recorddesc", { readOnly: !0 });
     if (e) {
       let r = e.el.textContent.trim();
@@ -17700,44 +17726,44 @@ Use N-M for numeric ranges (e.g. 10500-10510)`, style: { fontSize: "12px", width
     }
     return null;
   }
-  function od(e = 150) {
-    clearTimeout(Cf), Cf = setTimeout(rx, e);
+  function rd(e = 150) {
+    clearTimeout(Rf), Rf = setTimeout(sx, e);
   }
-  function rd(e) {
-    Af = e, document.title !== e && (ap(), document.title = e, d.debug("TabTitle", `Set title: "${e}"`));
+  function td(e) {
+    Of = e, document.title !== e && (lp(), document.title = e, d.debug("TabTitle", `Set title: "${e}"`));
   }
-  function Rf() {
+  function If() {
     window.addEventListener("APM_EAM_VIEW_CHANGE", (e) => {
       let { view: t } = e.detail;
-      t !== "unknown" && (Ko = 0, od(t === "record" ? 500 : 150), t === "record" ? ex() : tx());
+      t !== "unknown" && (Ko = 0, rd(t === "record" ? 500 : 150), t === "record" ? ax() : ix());
     }), d.debug("TabTitle", "Title listener installed");
   }
-  function ex() {
+  function ax() {
     za || (za = setInterval(() => {
-      let e = _f();
-      e && e !== Af && rd(e);
+      let e = Nf();
+      e && e !== Of && td(e);
     }, 3e3));
   }
-  function tx() {
+  function ix() {
     za && (clearInterval(za), za = null);
   }
-  function Of() {
+  function Mf() {
     Ne.onRequestComplete("tab-title", (e, t, r, o) => {
-      Ko = 0, od(1500);
+      Ko = 0, rd(1500);
     }, { activeOnly: !0, urlMatch: ".HDR" });
   }
-  function rx() {
+  function sx() {
     try {
-      let { view: e } = ge();
+      let { view: e } = he();
       if (e === "unknown") return;
       if (e === "record") {
-        let n = _f();
+        let n = Nf();
         if (n) {
-          rd(n), Ko = 0;
+          td(n), Ko = 0;
           return;
         }
         if (Ko < 4) {
-          Ko++, od(500);
+          Ko++, rd(500);
           return;
         }
         Ko = 0;
@@ -17745,8 +17771,8 @@ Use N-M for numeric ranges (e.g. 10500-10510)`, style: { fontSize: "12px", width
         Ko = 0;
       let t = Ze();
       if (!t || t === "GLOBAL") return;
-      let o = fe[t]?.screenTitle || jd[t];
-      o && rd(o);
+      let o = ge[t]?.screenTitle || Jd[t];
+      o && td(o);
     } catch (e) {
       d.error("TabTitle", "Failed to update tab title:", e);
     }
@@ -17756,30 +17782,30 @@ Use N-M for numeric ranges (e.g. 10500-10510)`, style: { fontSize: "12px", width
   mt();
   te();
   se();
-  Tt();
+  yt();
   ct();
   ue();
-  At();
-  ur();
+  _t();
+  mr();
 
   // src/modules/session-snapshot/snapshot-store.js
   _e();
   te();
   se();
-  function Va(e) {
+  function ja(e) {
     return Jr + e;
   }
-  function Nf(e) {
-    return N.get(Va(e));
+  function Pf(e) {
+    return N.get(ja(e));
   }
-  function If(e, t) {
-    N.set(Va(e), t);
+  function Lf(e, t) {
+    N.set(ja(e), t);
   }
   function Yo(e) {
-    let t = e.startsWith(Jr) ? e : Va(e);
+    let t = e.startsWith(Jr) ? e : ja(e);
     N.remove(t);
   }
-  function Mf() {
+  function Df() {
     let e = Date.now(), t = 0;
     try {
       let r = N.list();
@@ -17794,7 +17820,7 @@ Use N-M for numeric ranges (e.g. 10500-10510)`, style: { fontSize: "12px", width
     }
     return t;
   }
-  function Pf() {
+  function Ff() {
     let e = Date.now(), t = null, r = null;
     try {
       for (let o of N.list()) {
@@ -17809,27 +17835,27 @@ Use N-M for numeric ranges (e.g. 10500-10510)`, style: { fontSize: "12px", width
   }
 
   // src/modules/session-snapshot/capture-engine.js
-  Mt();
+  Pt();
   ue();
   nt();
-  Pt();
+  Dt();
   se();
   te();
 
   // src/modules/session-snapshot/grid-state.js
-  Tt();
+  yt();
   ct();
   ue();
   no();
-  sa();
+  la();
   te();
-  var Lf = {
+  var Bf = {
     WSJOBS: "ff_workordernum",
     CTJOBS: "ff_workordernum",
     SSRCVI: "ff_receiptcode",
     SSPART: "ff_partcode"
   };
-  function Df(e) {
+  function $f(e) {
     if (!e) return null;
     let t = Be.from(e);
     if (!t) return null;
@@ -17845,29 +17871,29 @@ Use N-M for numeric ranges (e.g. 10500-10510)`, style: { fontSize: "12px", width
               if (u != null && u !== "" && !(u instanceof Date))
                 m = String(u);
               else if (u instanceof Date) {
-                let h = c.getRawValue?.();
-                if (h)
-                  m = h;
+                let y = c.getRawValue?.();
+                if (y)
+                  m = y;
                 else {
-                  let y = c.getSubmitValue?.();
-                  if (y)
-                    m = y;
+                  let x = c.getSubmitValue?.();
+                  if (x)
+                    m = x;
                   else if (c.format && o.Ext?.Date?.format)
                     m = o.Ext.Date.format(u, c.format);
                   else {
-                    let b = String(u.getMonth() + 1).padStart(2, "0"), x = String(u.getDate()).padStart(2, "0");
-                    m = `${b}/${x}/${u.getFullYear()}`;
+                    let h = String(u.getMonth() + 1).padStart(2, "0"), b = String(u.getDate()).padStart(2, "0");
+                    m = `${h}/${b}/${u.getFullYear()}`;
                   }
                 }
               }
               if (!m) continue;
               let f = "fo_con";
               try {
-                let h = c.getEl(), y = h.up(".x-box-inner") || h.up(".x-column-header-inner") || h.up(".x-container");
-                if (y) {
-                  let b = y.down(".uft-id-btnfilteroperator") || y.down(".x-btn-icon-el-gridfilter-small"), x = b?.hasCls?.("x-btn-icon-el-gridfilter-small") ? b.up(".x-btn") : b;
-                  if (x) {
-                    let E = o.Ext.getCmp(x.id)?.iconCls || "";
+                let y = c.getEl(), x = y.up(".x-box-inner") || y.up(".x-column-header-inner") || y.up(".x-container");
+                if (x) {
+                  let h = x.down(".uft-id-btnfilteroperator") || x.down(".x-btn-icon-el-gridfilter-small"), b = h?.hasCls?.("x-btn-icon-el-gridfilter-small") ? h.up(".x-btn") : h;
+                  if (b) {
+                    let E = o.Ext.getCmp(b.id)?.iconCls || "";
                     E.startsWith("fo_") && (f = E);
                   }
                 }
@@ -17887,7 +17913,7 @@ Use N-M for numeric ranges (e.g. 10500-10510)`, style: { fontSize: "12px", width
       }
     return null;
   }
-  async function Ff(e) {
+  async function qf(e) {
     if (!e) return !1;
     let t = null;
     for (let a = 0; a < 30; a++) {
@@ -17906,7 +17932,7 @@ Use N-M for numeric ranges (e.g. 10500-10510)`, style: { fontSize: "12px", width
     if (!t)
       return d.info("Snapshot", "restoreGridState: Run button not found after polling"), !1;
     let r = t.Ext;
-    await Ye(t), await re(300);
+    await He(t), await re(300);
     let o = !1;
     if (e.dataspyId) {
       let a = r.ComponentQuery.query("combobox:not([destroyed=true])"), s = a.find((l) => (l.itemId || "").toLowerCase().includes("dataspy"));
@@ -17914,7 +17940,7 @@ Use N-M for numeric ranges (e.g. 10500-10510)`, style: { fontSize: "12px", width
         let l = s.getValue();
         if (d.info("Snapshot", `Dataspy: current=${l}, target=${e.dataspyId}`), String(l) !== e.dataspyId) {
           let c = s.findRecordByValue?.(e.dataspyId);
-          c ? (s.setValue(e.dataspyId), s.fireEvent("select", s, c), o = !0, await re(1e3), await Ye(t)) : d.warn("Snapshot", `Dataspy ${e.dataspyId} not in combo store \u2014 skipping`);
+          c ? (s.setValue(e.dataspyId), s.fireEvent("select", s, c), o = !0, await re(1e3), await He(t)) : d.warn("Snapshot", `Dataspy ${e.dataspyId} not in combo store \u2014 skipping`);
         }
       } else
         d.debug("Snapshot", "Dataspy combo not found in restore frame");
@@ -17940,7 +17966,7 @@ Use N-M for numeric ranges (e.g. 10500-10510)`, style: { fontSize: "12px", width
           s = !0;
           break;
         }
-      return s ? (await Ye(t), d.info("Snapshot", "Search completed after Run click")) : (d.info("Snapshot", "No Ajax detected after Run click \u2014 proceeding"), await re(500)), await re(200), !0;
+      return s ? (await He(t), d.info("Snapshot", "Search completed after Run click")) : (d.info("Snapshot", "No Ajax detected after Run click \u2014 proceeding"), await re(500)), await re(200), !0;
     }
     return !1;
   }
@@ -17948,7 +17974,7 @@ Use N-M for numeric ranges (e.g. 10500-10510)`, style: { fontSize: "12px", width
     let n = e.getStore();
     if (!n || n.getCount() === 0) return { success: !1 };
     let a = n.findRecord(r, o, 0, !1, !0, !0);
-    return a ? ia(e, a, t) : (d.info("Snapshot", `Record ${o} not found in ${n.getCount()} grid rows (dataIndex: ${r})`), { success: !1 });
+    return a ? sa(e, a, t) : (d.info("Snapshot", `Record ${o} not found in ${n.getCount()} grid rows (dataIndex: ${r})`), { success: !1 });
   }
   function Ms(e, t, r, o = "fo_eq") {
     let n = e.ComponentQuery.query(`[name=${t}]:not([destroyed=true])`);
@@ -17970,13 +17996,13 @@ Use N-M for numeric ranges (e.g. 10500-10510)`, style: { fontSize: "12px", width
   }
 
   // src/modules/session-snapshot/record-detector.js
-  Mt();
+  Pt();
   ct();
   ue();
-  ar();
+  ir();
   se();
-  function Bf() {
-    let e = Ke(null);
+  function Wf() {
+    let e = Ye(null);
     for (let t of ne())
       try {
         if (!t.Ext?.ComponentQuery) continue;
@@ -17988,7 +18014,7 @@ Use N-M for numeric ranges (e.g. 10500-10510)`, style: { fontSize: "12px", width
             if (!f || typeof f.isVisible != "function" || !f.isVisible(!0)) continue;
           }
           if (e && !e.containsComp(o)) continue;
-          let n = bt(t, null), a = fe[n];
+          let n = bt(t, null), a = ge[n];
           if (!a) continue;
           let s = null, l = o.up?.("tabpanel");
           if (l) {
@@ -18026,23 +18052,23 @@ Use N-M for numeric ranges (e.g. 10500-10510)`, style: { fontSize: "12px", width
   }
 
   // src/modules/session-snapshot/capture-engine.js
-  var nd = null, $f = null, qf = null, Ps = null, Wf = null, Hf = null, Uf = null, Gf = null;
-  function ja(e) {
+  var od = null, Hf = null, Uf = null, Ps = null, Gf = null, Vf = null, zf = null, jf = null;
+  function Ka(e) {
     if (!Fe()) return;
-    let t = ge(), r = Se(), o = pr({ win: r?.win, grid: r?.grid }), n = null;
-    if (t.view !== "list" && (n = Bf(), n && o && n.entityType !== o)) {
-      let v = fe[o]?.systemFunc;
+    let t = he(), r = Se(), o = ur({ win: r?.win, grid: r?.grid }), n = null;
+    if (t.view !== "list" && (n = Wf(), n && o && n.entityType !== o)) {
+      let v = ge[o]?.systemFunc;
       v && n.entityType === v ? n.entityType = o : (d.debug("Snapshot", `Discarding stale record from ${n.entityType} (active screen: ${o})`), n = null);
     }
-    let a = Df(r?.win);
+    let a = $f(r?.win);
     if (a && o && r?.grid) {
-      let v = (r.grid.getStore?.()?.storeId || "").toLowerCase(), E = o.toLowerCase(), k = (fe[o]?.systemFunc || o).toLowerCase();
+      let v = (r.grid.getStore?.()?.storeId || "").toLowerCase(), E = o.toLowerCase(), k = (ge[o]?.systemFunc || o).toLowerCase();
       v && !v.includes(E) && !v.includes(k) && (d.debug("Snapshot", `Discarding stale grid state (store: ${v}, active screen: ${o})`), a = null);
     }
-    !a && n && nd === o && Ps && (a = JSON.parse(Ps));
-    let s = a ? JSON.stringify(a) : null, l = document.getElementById("eam-profile-select"), c = l?.value && l.value !== "manual" ? l.value : null, p = so() || null, u = o !== nd, m = n?.entityType !== $f || n?.entityId !== qf, f = (n?.activeTab || null) !== Wf;
-    if (!u && !m && !f && !(s !== Ps) && !((c || null) !== Hf) && !((p || null) !== Uf) || (nd = o, $f = n?.entityType || null, qf = n?.entityId || null, Wf = n?.activeTab || null, Ps = s, Hf = c || null, Uf = p || null, !o) || !fe[o]) return;
-    let b = {
+    !a && n && od === o && Ps && (a = JSON.parse(Ps));
+    let s = a ? JSON.stringify(a) : null, l = document.getElementById("eam-profile-select"), c = l?.value && l.value !== "manual" ? l.value : null, p = so() || null, u = o !== od, m = n?.entityType !== Hf || n?.entityId !== Uf, f = (n?.activeTab || null) !== Gf;
+    if (!u && !m && !f && !(s !== Ps) && !((c || null) !== Vf) && !((p || null) !== zf) || (od = o, Hf = n?.entityType || null, Uf = n?.entityId || null, Gf = n?.activeTab || null, Ps = s, Vf = c || null, zf = p || null, !o) || !ge[o]) return;
+    let h = {
       _v: 2,
       tabId: e,
       ts: Date.now(),
@@ -18052,39 +18078,39 @@ Use N-M for numeric ranges (e.g. 10500-10510)`, style: { fontSize: "12px", width
       forecastProfileId: c || null,
       nametagFilter: p || null
     };
-    If(e, b);
-    let x = `${o}|${n?.entityId || ""}|${a?.dataspyId || ""}|${a?.filterFields ? Object.keys(a.filterFields).sort().join(",") : ""}|${c || ""}|${p || ""}`;
-    x !== Gf && (Gf = x, d.info("Snapshot", `Captured: ${o}${n ? " / " + n.entityId : ""}${a ? ` (dataspy:${a.dataspyId || "default"}${a.filterFields ? ", " + Object.keys(a.filterFields).length + " filter(s)" : ""})` : ""}${p ? ' tag:"' + p + '"' : ""}${c ? " prof:" + c : ""}`));
+    Lf(e, h);
+    let b = `${o}|${n?.entityId || ""}|${a?.dataspyId || ""}|${a?.filterFields ? Object.keys(a.filterFields).sort().join(",") : ""}|${c || ""}|${p || ""}`;
+    b !== jf && (jf = b, d.info("Snapshot", `Captured: ${o}${n ? " / " + n.entityId : ""}${a ? ` (dataspy:${a.dataspyId || "default"}${a.filterFields ? ", " + Object.keys(a.filterFields).length + " filter(s)" : ""})` : ""}${p ? ' tag:"' + p + '"' : ""}${c ? " prof:" + c : ""}`));
   }
 
   // src/modules/session-snapshot/restore-prompt.js
   Me();
   qe();
-  Rr();
+  Or();
   se();
-  Ht();
+  Lt();
   We();
-  var zf = 15e3;
-  function ox(e) {
+  var Kf = 15e3;
+  function lx(e) {
     let t = e.gridState?.filterFields && Object.keys(e.gridState.filterFields).length > 0, r = !!e.forecastProfileId, o = [];
     r && o.push(L("contextForecastProfile")), t && o.push(L("contextSearchFilters"));
     let n = o.length > 0 ? L("withContext", o.join(" + ")) : "";
     if (e.record) {
-      let l = fe[e.record.entityType], c = l ? l.label : oc(e.record.entityType);
-      return L("restorePromptRecord", `${c} ${oc(e.record.entityId)}`, n);
+      let l = ge[e.record.entityType], c = l ? l.label : rc(e.record.entityType);
+      return L("restorePromptRecord", `${c} ${rc(e.record.entityId)}`, n);
     }
-    let a = fe[e.screen], s = a ? a.screenTitle : e.screen;
+    let a = ge[e.screen], s = a ? a.screenTitle : e.screen;
     return L("restorePromptScreen", s, n);
   }
-  function ad(e) {
+  function nd(e) {
     return new Promise((t) => {
       let r = "apm-snapshot-restore-prompt", o = document.getElementById(r);
       o && o.remove();
-      let n = !1, a, s, l = (h) => {
+      let n = !1, a, s, l = (y) => {
         if (n) return;
         n = !0, s && cancelAnimationFrame(s);
-        let y = document.getElementById(r);
-        y && (y.style.opacity = "0", y.style.transform = "translateX(-50%) translateY(-20px)", setTimeout(() => y.remove(), 300)), a && clearTimeout(a), t(h);
+        let x = document.getElementById(r);
+        x && (x.style.opacity = "0", x.style.transform = "translateX(-50%) translateY(-20px)", setTimeout(() => x.remove(), 300)), a && clearTimeout(a), t(y);
       }, c = "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif", p = {
         border: "none",
         borderRadius: "var(--apm-radius-sm, 4px)",
@@ -18106,10 +18132,10 @@ Use N-M for numeric ranges (e.g. 10500-10510)`, style: { fontSize: "12px", width
           transformOrigin: "left",
           opacity: "0.6"
         }
-      }), m = performance.now(), f = (h) => {
+      }), m = performance.now(), f = (y) => {
         if (n) return;
-        let y = h - m, b = Math.max(0, 1 - y / zf);
-        u.style.transform = `scaleX(${b})`, b > 0 && (s = requestAnimationFrame(f));
+        let x = y - m, h = Math.max(0, 1 - x / Kf);
+        u.style.transform = `scaleX(${h})`, h > 0 && (s = requestAnimationFrame(f));
       }, g = i("div", {
         id: r,
         style: {
@@ -18152,7 +18178,7 @@ Use N-M for numeric ranges (e.g. 10500-10510)`, style: { fontSize: "12px", width
               flexShrink: "0"
             }
           }, ["\u21BB"]),
-          i("span", { innerHTML: ox(e) })
+          i("span", { innerHTML: lx(e) })
         ]),
         // Button row
         i("div", {
@@ -18168,11 +18194,11 @@ Use N-M for numeric ranges (e.g. 10500-10510)`, style: { fontSize: "12px", width
               background: "var(--apm-accent, #3498db)",
               color: "var(--apm-text-on-accent, #fff)"
             },
-            onmouseenter(h) {
-              h.target.style.filter = "brightness(1.15)";
+            onmouseenter(y) {
+              y.target.style.filter = "brightness(1.15)";
             },
-            onmouseleave(h) {
-              h.target.style.filter = "";
+            onmouseleave(y) {
+              y.target.style.filter = "";
             },
             onclick: () => l("restore")
           }, [L("restoreBtn")]),
@@ -18182,11 +18208,11 @@ Use N-M for numeric ranges (e.g. 10500-10510)`, style: { fontSize: "12px", width
               background: "var(--apm-control-bg, #4a5a6a)",
               color: "var(--apm-text-primary, #fff)"
             },
-            onmouseenter(h) {
-              h.target.style.background = "var(--apm-control-bg-hover, #5c6d7e)";
+            onmouseenter(y) {
+              y.target.style.background = "var(--apm-control-bg-hover, #5c6d7e)";
             },
-            onmouseleave(h) {
-              h.target.style.background = "var(--apm-control-bg, #4a5a6a)";
+            onmouseleave(y) {
+              y.target.style.background = "var(--apm-control-bg, #4a5a6a)";
             },
             onclick: () => l("dismiss")
           }, [L("dismissBtn")]),
@@ -18200,14 +18226,14 @@ Use N-M for numeric ranges (e.g. 10500-10510)`, style: { fontSize: "12px", width
               padding: "6px 8px",
               fontWeight: "600"
             },
-            onmouseenter(h) {
-              h.target.style.color = "var(--apm-text-secondary, #b0bec5)";
+            onmouseenter(y) {
+              y.target.style.color = "var(--apm-text-secondary, #b0bec5)";
             },
-            onmouseleave(h) {
-              h.target.style.color = "var(--apm-text-muted, #95a5a6)";
+            onmouseleave(y) {
+              y.target.style.color = "var(--apm-text-muted, #95a5a6)";
             },
             onclick: () => {
-              he.set("sessionSnapshot", !1), C(L("sessionRestoreDisabled"), "var(--apm-control-bg, #4a5a6a)", !1), l("dismiss");
+              fe.set("sessionSnapshot", !1), C(L("sessionRestoreDisabled"), "var(--apm-control-bg, #4a5a6a)", !1), l("dismiss");
             }
           }, [L("dontAskAgain")])
         ]),
@@ -18216,15 +18242,15 @@ Use N-M for numeric ranges (e.g. 10500-10510)`, style: { fontSize: "12px", width
       ]);
       document.body.appendChild(g), setTimeout(() => {
         g.style.opacity = "1", g.style.transform = "translateX(-50%) translateY(0)", s = requestAnimationFrame(f);
-      }, 10), a = setTimeout(() => l("dismiss"), zf);
+      }, 10), a = setTimeout(() => l("dismiss"), Kf);
     });
   }
 
   // src/modules/session-snapshot/restore-engine.js
-  Tt();
-  Mt();
+  yt();
+  Pt();
   ue();
-  ha();
+  ya();
   Te();
   Oe();
   mt();
@@ -18232,8 +18258,8 @@ Use N-M for numeric ranges (e.g. 10500-10510)`, style: { fontSize: "12px", width
   qe();
   se();
   te();
-  var nx = 1e4;
-  async function $n(e) {
+  var cx = 1e4;
+  async function qn(e) {
     let t = () => setTimeout(() => window.dispatchEvent(new Event("APM_PRESETS_SYNC_REQUIRED")), 500);
     if (!e || e === "HDR") {
       t();
@@ -18278,7 +18304,7 @@ Use N-M for numeric ranges (e.g. 10500-10510)`, style: { fontSize: "12px", width
     }
     return !1;
   }
-  async function ax(e = 15e3) {
+  async function dx(e = 15e3) {
     for (let r = 0; r < e; r += 500) {
       for (let o of ne())
         try {
@@ -18290,18 +18316,18 @@ Use N-M for numeric ranges (e.g. 10500-10510)`, style: { fontSize: "12px", width
     return !1;
   }
   async function Ls(e) {
-    if (d.info("Snapshot", `Restoring: navigating to ${e.screen}`), await re(2e3), Qo(), await ax(15e3) || d.warn("Snapshot", "EAM.Nav not available after polling \u2014 falling back to URL navigation"), e.forecastProfileId) {
-      let h = _.get?.("executeForecast");
-      if (h) {
+    if (d.info("Snapshot", `Restoring: navigating to ${e.screen}`), await re(2e3), Qo(), await dx(15e3) || d.warn("Snapshot", "EAM.Nav not available after polling \u2014 falling back to URL navigation"), e.forecastProfileId) {
+      let y = _.get?.("executeForecast");
+      if (y) {
         d.info("Snapshot", `Restoring via forecast profile: ${e.forecastProfileId}`);
-        let y = document.getElementById("eam-profile-select");
-        if (y && (y.value = e.forecastProfileId, y.dispatchEvent(new Event("change"))), await h("normal"), e.record) {
-          let b = fe[e.record.entityType];
-          if (b) {
+        let x = document.getElementById("eam-profile-select");
+        if (x && (x.value = e.forecastProfileId, x.dispatchEvent(new Event("change"))), await y("normal"), e.record) {
+          let h = ge[e.record.entityType];
+          if (h) {
             await re(500);
-            let x = Se(!0);
-            if (x && x.grid.getStore().getCount() > 0 && (await Jo(x.grid, x.win, b.dataIndex, e.record.entityId)).success)
-              return await $n(e.record?.activeTab), C(L("restored", b.label, e.record.entityId), "var(--apm-success, #27ae60)", !1), !0;
+            let b = Se(!0);
+            if (b && b.grid.getStore().getCount() > 0 && (await Jo(b.grid, b.win, h.dataIndex, e.record.entityId)).success)
+              return await qn(e.record?.activeTab), C(L("restored", h.label, e.record.entityId), "var(--apm-success, #27ae60)", !1), !0;
           }
         }
         return C(L("restoredProfile"), "var(--apm-success, #27ae60)", !1), !0;
@@ -18309,16 +18335,16 @@ Use N-M for numeric ranges (e.g. 10500-10510)`, style: { fontSize: "12px", width
     }
     let r = e.gridState?.filterFields && Object.keys(e.gridState.filterFields).length > 0;
     if (e.record && !r) {
-      let h = fe[e.record.entityType];
-      if (h) {
-        if (await ix(e, h)) return !0;
+      let y = ge[e.record.entityType];
+      if (y) {
+        if (await px(e, y)) return !0;
         d.debug("Snapshot", "Nav.goTo unavailable, falling back to filter+run");
       }
     }
     let o = !1;
-    for (let h of ne())
+    for (let y of ne())
       try {
-        if (ga(h, e.screen)) {
+        if (ha(y, e.screen)) {
           o = !0;
           break;
         }
@@ -18327,9 +18353,9 @@ Use N-M for numeric ranges (e.g. 10500-10510)`, style: { fontSize: "12px", width
     if (!o) {
       d.warn("Snapshot", "launchScreenDirect failed \u2014 trying URL navigation fallback");
       try {
-        return Tu(e.screen), !0;
-      } catch (h) {
-        d.error("Snapshot", "URL navigation fallback failed:", h);
+        return _u(e.screen), !0;
+      } catch (y) {
+        d.error("Snapshot", "URL navigation fallback failed:", y);
       }
       return C(L("couldNotRestore"), "var(--apm-danger)", !1), !1;
     }
@@ -18337,26 +18363,26 @@ Use N-M for numeric ranges (e.g. 10500-10510)`, style: { fontSize: "12px", width
       return d.info("Snapshot", "SHFRPT: screen restored \u2014 skipping grid/record restore (split-view auto-loads)"), C(L("restored", "Shift Report", ""), "var(--apm-success, #27ae60)", !1), !0;
     if (e.gridState) {
       d.info("Snapshot", "Restoring grid state (dataspy + filters)");
-      let h = await Ff(e.gridState);
-      if (h && e.nametagFilter) {
-        let y = _.get("applyNametagFilter");
-        y && (d.info("Snapshot", `Restoring nametag filter: "${e.nametagFilter}"`), y(e.nametagFilter));
+      let y = await qf(e.gridState);
+      if (y && e.nametagFilter) {
+        let x = _.get("applyNametagFilter");
+        x && (d.info("Snapshot", `Restoring nametag filter: "${e.nametagFilter}"`), x(e.nametagFilter));
       }
-      if (h && e.record) {
-        let y = fe[e.record.entityType];
-        if (y) {
-          let b = null, x = !1;
-          for (let v = 0; v < 10 && (b = Se(!0), !(b && b.grid.getStore().getCount() > 0)); v++) {
+      if (y && e.record) {
+        let x = ge[e.record.entityType];
+        if (x) {
+          let h = null, b = !1;
+          for (let v = 0; v < 10 && (h = Se(!0), !(h && h.grid.getStore().getCount() > 0)); v++) {
             if (Qo()) {
-              x = !0, b = null;
+              b = !0, h = null;
               break;
             }
-            b = null, await re(500);
+            h = null, await re(500);
           }
-          if (b)
-            return d.info("Snapshot", `Opening record ${e.record.entityId} from grid (${b.grid.getStore().getCount()} rows)`), (await Jo(b.grid, b.win, y.dataIndex, e.record.entityId)).success ? (await $n(e.record?.activeTab), C(L("restored", y.label, e.record.entityId), "var(--apm-success, #27ae60)", !1)) : (d.warn("Snapshot", `Record ${e.record.entityId} not found in grid results`), C(`Restored filters \u2014 could not open ${e.record.entityId}`, "var(--apm-warning)", !1)), !0;
+          if (h)
+            return d.info("Snapshot", `Opening record ${e.record.entityId} from grid (${h.grid.getStore().getCount()} rows)`), (await Jo(h.grid, h.win, x.dataIndex, e.record.entityId)).success ? (await qn(e.record?.activeTab), C(L("restored", x.label, e.record.entityId), "var(--apm-success, #27ae60)", !1)) : (d.warn("Snapshot", `Record ${e.record.entityId} not found in grid results`), C(`Restored filters \u2014 could not open ${e.record.entityId}`, "var(--apm-warning)", !1)), !0;
           {
-            d.warn("Snapshot", "Grid empty after filter restore \u2014 attempting recovery"), x || Qo();
+            d.warn("Snapshot", "Grid empty after filter restore \u2014 attempting recovery"), b || Qo();
             let v = ne().find((E) => {
               try {
                 return E.Ext?.ComponentQuery?.query("button[text=Run]:not([destroyed=true])")?.length > 0;
@@ -18373,52 +18399,52 @@ Use N-M for numeric ranges (e.g. 10500-10510)`, style: { fontSize: "12px", width
                   S.handler ? S.handler.call(S.scope || S, S) : S.fireEvent("click", S);
                 }
               };
-              E(), await re(300), await Ye(v), await re(300), Qo();
-              for (let k = 0; k < 6 && (b = Se(!0), !(b && b.grid.getStore().getCount() > 0)); k++) {
+              E(), await re(300), await He(v), await re(300), Qo();
+              for (let k = 0; k < 6 && (h = Se(!0), !(h && h.grid.getStore().getCount() > 0)); k++) {
                 if (Qo()) {
-                  b = null;
+                  h = null;
                   break;
                 }
-                b = null, await re(500);
+                h = null, await re(500);
               }
-              if (b)
-                return d.info("Snapshot", `Filters applied on retry (${b.grid.getStore().getCount()} rows)`), (await Jo(b.grid, b.win, y.dataIndex, e.record.entityId)).success ? (await $n(e.record?.activeTab), C(L("restored", y.label, e.record.entityId), "var(--apm-success, #27ae60)", !1)) : C(`Restored filters \u2014 could not open ${e.record.entityId}`, "var(--apm-warning)", !1), !0;
+              if (h)
+                return d.info("Snapshot", `Filters applied on retry (${h.grid.getStore().getCount()} rows)`), (await Jo(h.grid, h.win, x.dataIndex, e.record.entityId)).success ? (await qn(e.record?.activeTab), C(L("restored", x.label, e.record.entityId), "var(--apm-success, #27ae60)", !1)) : C(`Restored filters \u2014 could not open ${e.record.entityId}`, "var(--apm-warning)", !1), !0;
               d.warn("Snapshot", "Retry failed \u2014 clearing filters to recover");
               for (let k of Object.keys(e.gridState.filterFields))
                 Ms(v.Ext, k, "");
-              E(), await re(300), await Ye(v), await re(300), Qo();
-              for (let k = 0; k < 6 && (b = Se(!0), !(b && b.grid.getStore().getCount() > 0)); k++)
-                b = null, await re(500);
-              if (b)
-                return d.info("Snapshot", `Grid recovered (${b.grid.getStore().getCount()} rows) \u2014 stale filters cleared`), (await Jo(b.grid, b.win, y.dataIndex, e.record.entityId)).success ? (await $n(e.record?.activeTab), C(`Restored ${y.label} \u2014 saved filters were cleared`, "var(--apm-warning)", !1)) : C(`Restored ${y.label} screen \u2014 saved filters were cleared (record not in view)`, "var(--apm-warning)", !1), !0;
+              E(), await re(300), await He(v), await re(300), Qo();
+              for (let k = 0; k < 6 && (h = Se(!0), !(h && h.grid.getStore().getCount() > 0)); k++)
+                h = null, await re(500);
+              if (h)
+                return d.info("Snapshot", `Grid recovered (${h.grid.getStore().getCount()} rows) \u2014 stale filters cleared`), (await Jo(h.grid, h.win, x.dataIndex, e.record.entityId)).success ? (await qn(e.record?.activeTab), C(`Restored ${x.label} \u2014 saved filters were cleared`, "var(--apm-warning)", !1)) : C(`Restored ${x.label} screen \u2014 saved filters were cleared (record not in view)`, "var(--apm-warning)", !1), !0;
             }
             return C("Could not restore \u2014 saved filters caused a server error", "var(--apm-danger)", !1), !1;
           }
         }
       }
-      if (h) {
-        let y = fe[e.screen], b = y ? y.screenTitle : e.screen;
-        return C(L("restoredFilters", b), "var(--apm-success, #27ae60)", !1), !0;
+      if (y) {
+        let x = ge[e.screen], h = x ? x.screenTitle : e.screen;
+        return C(L("restoredFilters", h), "var(--apm-success, #27ae60)", !1), !0;
       }
     }
     if (!e.record) {
-      let h = fe[e.screen], y = h ? h.screenTitle : e.screen;
-      return C(L("restoredScreen", y), "var(--apm-success, #27ae60)", !1), !0;
+      let y = ge[e.screen], x = y ? y.screenTitle : e.screen;
+      return C(L("restoredScreen", x), "var(--apm-success, #27ae60)", !1), !0;
     }
-    let n = fe[e.record.entityType];
+    let n = ge[e.record.entityType];
     if (!n)
       return C(`Unknown entity type: ${e.record.entityType}`, "var(--apm-danger)", !1), !1;
-    let a = Lf[e.screen];
+    let a = Bf[e.screen];
     if (!a)
       return C(`No filter field mapped for ${e.screen}`, "var(--apm-danger)", !1), !1;
-    let s = 500, l = Math.ceil(nx / s), c = null;
-    for (let h = 0; h < l; h++) {
-      for (let y of ne())
+    let s = 500, l = Math.ceil(cx / s), c = null;
+    for (let y = 0; y < l; y++) {
+      for (let x of ne())
         try {
-          if (!y.Ext?.ComponentQuery) continue;
-          let b = y.Ext.ComponentQuery.query(`[name=${a}]:not([destroyed=true])`), x = y.Ext.ComponentQuery.query("button[text=Run]:not([destroyed=true])");
-          if (b?.length > 0 && x?.length > 0) {
-            c = y;
+          if (!x.Ext?.ComponentQuery) continue;
+          let h = x.Ext.ComponentQuery.query(`[name=${a}]:not([destroyed=true])`), b = x.Ext.ComponentQuery.query("button[text=Run]:not([destroyed=true])");
+          if (h?.length > 0 && b?.length > 0) {
+            c = x;
             break;
           }
         } catch {
@@ -18432,27 +18458,27 @@ Use N-M for numeric ranges (e.g. 10500-10510)`, style: { fontSize: "12px", width
       return C("Could not restore \u2014 filter field not found", "var(--apm-danger)", !1), !1;
     d.info("Snapshot", `Set ${a}=${e.record.entityId}, clicking Run`);
     let m = c.Ext.ComponentQuery.query("button[text=Run]:not([destroyed=true])")[0];
-    if (m.handler ? m.handler.call(m.scope || m, m) : m.fireEvent("click", m), await re(300), await Ye(c), await re(500), e.nametagFilter) {
-      let h = _.get("applyNametagFilter");
-      h && (d.info("Snapshot", `Restoring nametag filter: "${e.nametagFilter}"`), h(e.nametagFilter));
+    if (m.handler ? m.handler.call(m.scope || m, m) : m.fireEvent("click", m), await re(300), await He(c), await re(500), e.nametagFilter) {
+      let y = _.get("applyNametagFilter");
+      y && (d.info("Snapshot", `Restoring nametag filter: "${e.nametagFilter}"`), y(e.nametagFilter));
     }
     let f = Se(!0);
-    return !f || f.grid.getStore().getCount() === 0 ? (C(`Could not find ${n.label} ${e.record.entityId}`, "var(--apm-danger)", !1), !1) : ((await Jo(f.grid, f.win, n.dataIndex, e.record.entityId)).success ? (await $n(e.record?.activeTab), C(L("restored", n.label, e.record.entityId), "var(--apm-success, #27ae60)", !1)) : C(`Could not open ${n.label} ${e.record.entityId}`, "var(--apm-danger)", !1), !0);
+    return !f || f.grid.getStore().getCount() === 0 ? (C(`Could not find ${n.label} ${e.record.entityId}`, "var(--apm-danger)", !1), !1) : ((await Jo(f.grid, f.win, n.dataIndex, e.record.entityId)).success ? (await qn(e.record?.activeTab), C(L("restored", n.label, e.record.entityId), "var(--apm-success, #27ae60)", !1)) : C(`Could not open ${n.label} ${e.record.entityId}`, "var(--apm-danger)", !1), !0);
   }
-  async function ix(e, t) {
+  async function px(e, t) {
     for (let r of ne())
       try {
         let o = r.EAM?.Nav;
         if (!o || typeof o.goTo != "function") continue;
         let n = e.screen, a = `${t.systemFunc}?USER_FUNCTION_NAME=${n}`;
-        d.info("Snapshot", `Restoring via Nav.goTo: ${t.label} ${e.record.entityId}`), lr(!0, 8e3), pe.pause(8e3);
+        d.info("Snapshot", `Restoring via Nav.goTo: ${t.label} ${e.record.entityId}`), cr(!0, 8e3), pe.pause(8e3);
         let s = Bo();
         o.goTo(a, {
           CURRENT_TAB_NAME: "HDR",
           DEFAULT_VIEW: "HDR",
           SAVE_FOR_HEADER: "true",
           [t.entityKey]: e.record.entityId
-        }, { drillback: !0, smartCache: !1 }), await re(2e3), await Ye(r);
+        }, { drillback: !0, smartCache: !1 }), await re(2e3), await He(r);
         let l = n.toLowerCase();
         for (let c = 0; c < 10; c++) {
           for (let p of ne())
@@ -18466,13 +18492,13 @@ Use N-M for numeric ranges (e.g. 10500-10510)`, style: { fontSize: "12px", width
                 let g = (f.storeId || "").toLowerCase();
                 if (!g.includes(l) && !g.includes("wsjobs") && !g.includes("ctjobs")) continue;
                 if (d.info("Snapshot", `Opening from grid: ${f.getCount()} results`), (await Jo(m, p, t.dataIndex, e.record.entityId)).success)
-                  return s(), lr(!1), pe.resume(), await $n(e.record?.activeTab), C(L("restored", t.label, e.record.entityId), "var(--apm-success, #27ae60)", !1), !0;
+                  return s(), cr(!1), pe.resume(), await qn(e.record?.activeTab), C(L("restored", t.label, e.record.entityId), "var(--apm-success, #27ae60)", !1), !0;
               }
             } catch {
             }
           await re(500);
         }
-        return s(), lr(!1), pe.resume(), C(`Navigated to ${t.label} \u2014 could not open ${e.record.entityId}`, "var(--apm-warning)", !1), !0;
+        return s(), cr(!1), pe.resume(), C(`Navigated to ${t.label} \u2014 could not open ${e.record.entityId}`, "var(--apm-warning)", !1), !0;
       } catch (o) {
         d.debug("Snapshot", "Nav.goTo restore failed:", o.message);
       }
@@ -18480,7 +18506,7 @@ Use N-M for numeric ranges (e.g. 10500-10510)`, style: { fontSize: "12px", width
   }
 
   // src/modules/session-snapshot/session-snapshot.js
-  var Vf = !1, jf = {
+  var Yf = !1, Jf = {
     async init() {
       if (!Fe()) return;
       let e = window.location.pathname.toLowerCase();
@@ -18489,22 +18515,22 @@ Use N-M for numeric ranges (e.g. 10500-10510)`, style: { fontSize: "12px", width
         return;
       }
       let t = sessionStorage.getItem("apm_tab_id"), r = crypto.randomUUID();
-      sessionStorage.setItem("apm_tab_id", r), d.info("Snapshot", `Tab ID: ${r}${t ? ` (prev: ${t.slice(0, 8)}\u2026)` : ""}`), Mf(), Vf || (Vf = !0, await sx(t)), setTimeout(() => lx(r), 15e3);
+      sessionStorage.setItem("apm_tab_id", r), d.info("Snapshot", `Tab ID: ${r}${t ? ` (prev: ${t.slice(0, 8)}\u2026)` : ""}`), Df(), Yf || (Yf = !0, await ux(t)), setTimeout(() => mx(r), 15e3);
     }
   };
-  async function sx(e) {
+  async function ux(e) {
     let t = !1, r = !1;
     try {
       t = sessionStorage.getItem("apm_snapshot_auto_restore") === "1", r = sessionStorage.getItem("apm_snapshot_skip_restore") === "1", sessionStorage.removeItem("apm_snapshot_auto_restore"), sessionStorage.removeItem("apm_snapshot_skip_restore");
     } catch {
     }
     let o = new URLSearchParams(window.location.search);
-    if (Object.values(fe).some(
+    if (Object.values(ge).some(
       (p) => o.get(p.drillbackFlag) === "YES" && o.get(p.entityKey)
     )) return;
-    let a = e ? Nf(e) : null, s = e ? Va(e) : null;
+    let a = e ? Pf(e) : null, s = e ? ja(e) : null;
     if ((!a || !a.ts || Date.now() - a.ts > 648e5) && (t || e && !r)) {
-      let p = Pf();
+      let p = Ff();
       p && (a = p.snapshot, s = p.key, d.info("Snapshot", `Tab-specific snapshot not found \u2014 using fallback from key: ${p.key}`));
     }
     if (!a || !a.ts || Date.now() - a.ts > 648e5) return;
@@ -18517,7 +18543,7 @@ Use N-M for numeric ranges (e.g. 10500-10510)`, style: { fontSize: "12px", width
         Yo(s);
       else {
         d.warn("Snapshot", "Auto-restore failed \u2014 falling back to manual prompt."), await re(2e3);
-        let u = await ad(a);
+        let u = await nd(a);
         await re(350), u === "restore" ? await Ls(a) && Yo(s) : Yo(s);
       }
       return;
@@ -18528,14 +18554,14 @@ Use N-M for numeric ranges (e.g. 10500-10510)`, style: { fontSize: "12px", width
       d.info("Snapshot", `On ${l} \u2014 skipping restore (not start screen)`);
       return;
     }
-    let c = await ad(a);
+    let c = await nd(a);
     await re(350), c === "restore" ? await Ls(a) && Yo(s) : Yo(s);
   }
-  function lx(e) {
+  function mx(e) {
     let t = null;
     function r(n = 300) {
       clearTimeout(t), t = setTimeout(() => {
-        ja(e), ve.flushToSession();
+        Ka(e), ve.flushToSession();
       }, n);
     }
     window.addEventListener("APM_EAM_VIEW_CHANGE", () => {
@@ -18544,31 +18570,92 @@ Use N-M for numeric ranges (e.g. 10500-10510)`, style: { fontSize: "12px", width
     let o = null;
     Ne.onRequestComplete("snapshot-capture", (n, a, s, l) => {
       (l?.url || "").toUpperCase().includes(".HDR") && !o && (o = setTimeout(() => {
-        o = null, ja(e), ve.flushToSession();
+        o = null, Ka(e), ve.flushToSession();
       }, 3e3));
-    }), ja(e), ve.flushToSession(), pe.registerTask("session-snapshot", 3e4, () => {
-      ja(e), ve.flushToSession();
+    }), Ka(e), ve.flushToSession(), pe.registerTask("session-snapshot", 3e4, () => {
+      Ka(e), ve.flushToSession();
     }, { skipWhenHidden: !1 });
   }
 
   // src/modules/closing-comments-counter.js
   te();
   Fo();
-  var cx = "CommentCounter", id = "apm-comment-counter", dx = "udfnote01", Kf = 160, px = /* @__PURE__ */ new Set(["preventive", "preventative", "system"]), Yf = !1, Ya = new Lt({
+  Lt();
+  We();
+
+  // src/core/eam/eam-mutate.js
+  te();
+  Te();
+  Ct();
+  function Qf({ win: e, endpoint: t, pageaction: r = "SAVE", params: o = {} }) {
+    return new Promise((n, a) => {
+      let s = e?.Ext;
+      if (!s?.Ajax?.request)
+        return a(new Error("No Ext.Ajax in target window"));
+      let l = `${t}?pageaction=${r}`, c = ye.session || {}, p = {
+        ...o,
+        eamid: c.eamid || o.eamid || "",
+        tenant: c.tenant || nr() || o.tenant || ""
+      };
+      s.Ajax.request({
+        url: l,
+        method: "POST",
+        async: !0,
+        params: p,
+        headers: {
+          "Request-Source": "XMLHTTP",
+          "Request-Type": "XMLHTTP"
+        },
+        success: (u) => {
+          let m;
+          try {
+            m = s.decode ? s.decode(u.responseText) : JSON.parse(u.responseText);
+          } catch (h) {
+            d.warn("EAMSave", `${t} returned non-JSON: ${h.message}`), n({
+              success: !1,
+              errors: ["Server returned a non-JSON response (session may have expired)"],
+              responseData: null
+            });
+            return;
+          }
+          let g = (m?.pageData?.messages || []).filter((h) => {
+            if (!h) return !1;
+            let b = String(h.type || h.severity || "").toLowerCase();
+            return b === "e" || b === "err" || b === "error";
+          }).map((h) => h.msg || h.message || h.text || "").filter(Boolean), x = !(m?.pageData?.success === !1 || m?.success === !1) && g.length === 0;
+          x || d.warn("EAMSave", `${t} rejected: ${g.join(" | ") || "no message (success flag false)"}`), n({ success: x, errors: g, responseData: m });
+        },
+        failure: (u) => {
+          d.warn("EAMSave", `${t} HTTP ${u?.status}: ${u?.statusText || "failure"}`), n({
+            success: !1,
+            errors: [`Network failure (${u?.status || "no status"})`],
+            responseData: null
+          });
+        }
+      });
+    });
+  }
+
+  // src/modules/closing-comments-counter.js
+  yt();
+  var Xo = "CommentCounter", ad = "apm-comment-counter", id = "apm-cc-copy-btn", cd = "udfnote01", Xf = 160, fx = /* @__PURE__ */ new Set(["preventive", "preventative", "system"]), Zf = !1, sd = new Ot({
     feature: "commentCounter",
     screens: { wo: !0 }
+  }), ld = new Ot({
+    feature: "copyClosingToComments",
+    screens: { wo: !0 }
   });
-  function ux(e) {
+  function gx(e) {
     let t = e.querySelector('input[name="workordertype"]');
     if (!t) return !1;
     let r = (t.value || "").trim().toLowerCase().split(/\s+/)[0];
-    return px.has(r);
+    return fx.has(r);
   }
-  function Ka(e, t) {
+  function Ya(e, t) {
     let r = (t.value || "").length;
-    e.textContent = `${r} / ${Kf}`, e.classList.remove("apm-cc-red", "apm-cc-yellow", "apm-cc-green", "apm-cc-neutral"), Yf ? (r < 80 ? e.classList.add("apm-cc-red") : r < Kf ? e.classList.add("apm-cc-yellow") : e.classList.add("apm-cc-green"), e.title = "PM and System Check work orders should have a minimum of 160 characters in closing comments") : (e.classList.add("apm-cc-neutral"), e.title = "");
+    e.textContent = `${r} / ${Xf}`, e.classList.remove("apm-cc-red", "apm-cc-yellow", "apm-cc-green", "apm-cc-neutral"), Zf ? (r < 80 ? e.classList.add("apm-cc-red") : r < Xf ? e.classList.add("apm-cc-yellow") : e.classList.add("apm-cc-green"), e.title = "PM and System Check work orders should have a minimum of 160 characters in closing comments") : (e.classList.add("apm-cc-neutral"), e.title = "");
   }
-  function mx(e, t) {
+  function hx(e, t) {
     if (e.__apmCCHooked) return;
     e.__apmCCHooked = !0;
     let r = Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, "value");
@@ -18583,53 +18670,218 @@ Use N-M for numeric ranges (e.g. 10500-10510)`, style: { fontSize: "12px", width
       }
     });
   }
-  function Ds() {
-    Ya.queryDOM(`textarea[name="${dx}"]`, ({ el: e, doc: t }) => {
-      Yf = ux(t);
-      let r = t.getElementById(id);
-      if (r) {
-        Ka(r, e);
-        return;
+  function yx(e, t) {
+    let r = t.defaultView, o = r?.Ext;
+    if (!o) return { error: "no Ext on textarea window" };
+    let n = o.ComponentQuery.query(`[name="${cd}"]`);
+    if (!n.length) return { error: "ComponentQuery found no udfnote01 field" };
+    let a = n.find((u) => {
+      try {
+        return u.el?.dom?.contains?.(e);
+      } catch {
+        return !1;
       }
-      let o = e.closest(".x-panel"), n = null;
-      for (; o; ) {
-        let a = o.querySelector(".x-title-text");
+    }) || n[0];
+    if (!a || a.isDestroyed) return { error: "field component is destroyed" };
+    let s = null, l = null, c = a, p = 0;
+    for (; c && p < 30 && (!s && typeof c.getFldValue == "function" && (s = c), !l && typeof c.getTabView == "function" && (l = c), !(s && l)); )
+      c = c.ownerCt, p++;
+    return s ? l ? { formPanel: s, recordView: l, win: r, ext: o } : { error: "no ancestor with getTabView" } : { error: "no ancestor with getFldValue" };
+  }
+  async function bx(e, t, r) {
+    let o = (e.value || "").trim();
+    if (!o) {
+      C("Closing comments are empty", "#3498db");
+      return;
+    }
+    let n = yx(e, t);
+    if (n.error) {
+      d.warn(Xo, `resolveWoContext failed: ${n.error}`), C(`Cannot resolve form: ${n.error}`, "#e74c3c");
+      return;
+    }
+    let { formPanel: a, recordView: s, win: l } = n, c = (b) => {
+      if (typeof a.getFldValue == "function") return a.getFldValue(b);
+      let v = a.getForm?.()?.findField?.(b);
+      return v ? v.getValue() : null;
+    }, p = c("workordernum"), u = c("organization");
+    if (!p || !u) {
+      C("Work order not loaded", "#e74c3c");
+      return;
+    }
+    let m = s.getScreen?.(), f = m?.getSystemFunction?.() || "WSJOBS", g = m?.getUserFunction?.() || f, y = n.ext, x = y.ClassManager?.get?.("EAM.model.common.Comments"), h = null;
+    if (x)
+      try {
+        h = y.create("EAM.model.common.Comments", {
+          bsccomment: `<html>${o}</html>`,
+          bsclanguage: "EN",
+          defaultlanguage: "EN",
+          bsclanguage_display: "English",
+          bscprintwdoc: -1,
+          bsccode: p,
+          bsctype: "*",
+          organization: u,
+          entity: "EVNT",
+          rentity: "EVNT",
+          pagemode: "display",
+          can_select: !0,
+          can_insert: !0,
+          can_update: !0,
+          can_delete: !1,
+          canViewOnly: !1,
+          deptsecreadonly: !1
+        }).getData(), delete h.phantom, delete h.dirty;
+      } catch (b) {
+        d.warn(Xo, `Model.create threw, falling back to manual params: ${b?.message || b}`);
+      }
+    r.disabled = !0;
+    try {
+      if (a.isDirty?.() === !0 || s.isDirty?.() === !0) {
+        C("Saving WO...", "#f1c40f", !0);
+        let k;
+        try {
+          k = (s.getTabView?.() || s).callSave?.({ preventDefaultFocus: !0 }), await He(l);
+        } catch (S) {
+          d.warn(Xo, `WO save threw: ${S?.message || S}`), C("Save failed \u2014 comment not added", "#e74c3c");
+          return;
+        }
+        if (k && k.success === !1) {
+          C("Save failed \u2014 comment not added", "#e74c3c");
+          return;
+        }
+      }
+      C("Adding comment...", "#f1c40f", !0);
+      let v = {
+        ...h || {
+          bsccomment: `<html>${o}</html>`,
+          bsclanguage: "EN",
+          defaultlanguage: "EN",
+          bsclanguage_display: "English",
+          bscprintwdoc: "-1",
+          bsccode: p,
+          bsctype: "*",
+          organization: u,
+          entity: "EVNT",
+          rentity: "EVNT",
+          pagemode: "display",
+          can_select: "true",
+          can_insert: "true",
+          can_update: "true",
+          can_delete: "false",
+          canViewOnly: "false",
+          deptsecreadonly: "false",
+          id: `EAM.model.common.Comments-${Date.now()}`
+        },
+        // Screen routing and auth context
+        SYSTEM_FUNCTION_NAME: f,
+        USER_FUNCTION_NAME: g,
+        CURRENT_TAB_NAME: "CMT",
+        // Comment-row lookup keys: empty COMMENTCODE selects the INSERT
+        // path on the server (UPDATE/DELETE require it populated).
+        COMMENTCODE: "",
+        COMMENTENTITY: "EVNT",
+        COMMENTORGANIZATION: u,
+        bsctype: "*",
+        pageaction: "",
+        // Empty `workorder=` placeholder is included by EAM's native save
+        // (it's a model field that gets serialized even when blank). The
+        // server's deserializer expects it present — its absence trips
+        // the "Internal Server Error" 500 page.
+        workorder: ""
+      }, E = await Qf({
+        win: l,
+        endpoint: `${f}.CMT`,
+        pageaction: "SAVE",
+        params: v
+      });
+      if (E.success)
+        d.info(Xo, `Comment added to WO ${p} (${o.length} chars)`), C("Comment added to Comments tab", "#2ecc71");
+      else {
+        let k = E.errors[0] || "Server rejected comment";
+        d.warn(Xo, `Comment POST failed: ${k}`), C(`Comment failed: ${k}`, "#e74c3c");
+      }
+    } catch (b) {
+      d.error(Xo, `copyClosingToCommentsTab failed: ${b?.message || b}`), C(`Comment failed: ${b?.message || "unknown error"}`, "#e74c3c");
+    } finally {
+      r.disabled = !1;
+    }
+  }
+  function eg(e, t, r) {
+    if (!fe.isEnabled("copyClosingToComments") || t.getElementById(id) || !r) return;
+    let o = t.createElement("button");
+    o.id = id, o.type = "button", o.className = "apm-cc-copy-btn", o.textContent = "Copy to Comments", o.title = "Save the WO (if needed) and post the closing comments text as a new entry on the Comments tab", o.addEventListener("click", (n) => {
+      n.preventDefault(), n.stopPropagation(), bx(e, t, o);
+    }), r.appendChild(o);
+  }
+  function xx() {
+    sd.queryDOM(`textarea[name="${cd}"]`, ({ el: e, doc: t }) => {
+      Zf = gx(t);
+      let r = e.closest(".x-panel"), o = null;
+      for (; r; ) {
+        let a = r.querySelector(".x-title-text");
         if (a && a.textContent.trimStart().startsWith("Closing")) {
-          n = a;
+          o = a;
           break;
         }
-        o = o.parentElement?.closest(".x-panel");
+        r = r.parentElement?.closest(".x-panel");
       }
+      let n = t.getElementById(ad);
       if (n)
-        r = t.createElement("span"), r.id = id, r.className = "apm-comment-counter", n.appendChild(r);
+        Ya(n, e);
       else {
-        let a = e.closest(".x-field") || e.parentElement;
-        if (!a?.parentElement) return;
-        r = t.createElement("span"), r.id = id, r.className = "apm-comment-counter", a.parentElement.insertBefore(r, a);
+        if (o)
+          n = t.createElement("span"), n.id = ad, n.className = "apm-comment-counter", o.appendChild(n);
+        else {
+          let a = e.closest(".x-field") || e.parentElement;
+          if (!a?.parentElement) return;
+          n = t.createElement("span"), n.id = ad, n.className = "apm-comment-counter", a.parentElement.insertBefore(n, a);
+        }
+        hx(e, () => Ya(n, e)), e.addEventListener("input", () => Ya(n, e)), e.addEventListener("change", () => Ya(n, e)), Ya(n, e), d.debug(Xo, "Counter injected");
       }
-      mx(e, () => Ka(r, e)), e.addEventListener("input", () => Ka(r, e)), e.addEventListener("change", () => Ka(r, e)), Ka(r, e), d.debug(cx, "Counter injected");
+      eg(e, t, o);
     });
   }
-  function Jf() {
-    Ya.isEnabled() && (Ds(), Ya.onViewChange(() => Ds()), Ya.onAjax("comment-counter", ".HDR", () => {
-      setTimeout(() => Ds(), 500);
-    }), Ya.poll("comment-counter", 3e4, Ds));
+  function vx() {
+    ld.queryDOM(`textarea[name="${cd}"]`, ({ el: e, doc: t }) => {
+      if (t.getElementById(id)) return;
+      let r = e.closest(".x-panel"), o = null;
+      for (; r; ) {
+        let n = r.querySelector(".x-title-text");
+        if (n && n.textContent.trimStart().startsWith("Closing")) {
+          o = n;
+          break;
+        }
+        r = r.parentElement?.closest(".x-panel");
+      }
+      eg(e, t, o);
+    });
+  }
+  function tg() {
+    let e = sd.isEnabled(), t = ld.isEnabled();
+    if (!e && !t) return;
+    let r = () => {
+      e ? xx() : vx();
+    };
+    r();
+    let o = e ? sd : ld;
+    o.onViewChange(r), o.onAjax("comment-counter", ".HDR", () => {
+      setTimeout(r, 500);
+    }), o.poll("comment-counter", 3e4, r);
   }
 
   // src/ui/settings-panel.js
   te();
   We();
   qe();
-  Rr();
-  Mt();
+  Or();
+  Pt();
   ct();
   no();
   Te();
   se();
-  It();
+  Ct();
   Oe();
   _e();
-  At();
+  _t();
   mt();
   Me();
 
@@ -18637,11 +18889,11 @@ Use N-M for numeric ranges (e.g. 10500-10510)`, style: { fontSize: "12px", width
   Me();
 
   // src/ui/help-images.js
-  var fx = "https://raw.githubusercontent.com/jaker788-create/APM-Master/Automation/resources/help/";
+  var wx = "https://raw.githubusercontent.com/jaker788-create/APM-Master/Automation/resources/help/";
   function lt(e) {
-    return fx + encodeURIComponent(e) + ".webp";
+    return wx + encodeURIComponent(e) + ".webp";
   }
-  var He = {
+  var Ue = {
     Autofill_Contextual_Button_Exmple: lt("Autofill Contextual Button Exmple"),
     Autofill_Profile_Example: lt("Autofill Profile Example"),
     Color_Code___Nametag_Rule_creation: lt("Color Code & Nametag Rule creation"),
@@ -18665,12 +18917,12 @@ Use N-M for numeric ranges (e.g. 10500-10510)`, style: { fontSize: "12px", width
 
   // src/ui/settings-panel-overlays.js
   se();
-  It();
+  Ct();
   ki();
   _e();
-  Rr();
+  Or();
   Oe();
-  function Qf() {
+  function rg() {
     let e = [
       { id: "general", label: "Getting Started" },
       { id: "session", label: "Session Protection" },
@@ -18703,7 +18955,7 @@ Use N-M for numeric ranges (e.g. 10500-10510)`, style: { fontSize: "12px", width
             i("div", { className: "apm-help-section active", "data-section": "general" }, [
               i("div", { className: "apm-help-section-title" }, "Getting Started & General Settings"),
               i("p", {}, "APM Master adds productivity tools on top of EAM. Open the APM Master dropdown in the toolbar to access settings and modules. Forecast has its own tab to the left. The General tab is your home for themes, backups, and feature toggles."),
-              i("img", { src: He.General_Settings_Menu, className: "apm-help-img apm-help-img-sm", alt: "General settings tab" }),
+              i("img", { src: Ue.General_Settings_Menu, className: "apm-help-img apm-help-img-sm", alt: "General settings tab" }),
               i("div", { className: "apm-help-img-caption" }, "The General tab \u2014 theme selection, backup tools, and feature module toggles."),
               i("ul", {}, [
                 i("li", {}, [i("b", {}, "Theme: "), "Set your preferred theme in the ", i("b", {}, "General"), " tab. Dark Classic is recommended for dark mode users. Themes apply after a page reload. If you use a bookmark with a theme in the URL, set the theme here instead \u2014 APM Master applies it everywhere including PTP and direct WO links."]),
@@ -18797,8 +19049,8 @@ Use N-M for numeric ranges (e.g. 10500-10510)`, style: { fontSize: "12px", width
               i("div", { className: "apm-help-section-title" }, "Forecast & Filters"),
               i("p", {}, "Automate MADDON filtering with date ranges, keywords, and custom dataspies. Access via the Forecast button in the toolbar."),
               i("div", { className: "apm-help-img-row" }, [
-                i("img", { src: He.Forecast_Main_Menu, className: "apm-help-img apm-help-img-sm", alt: "Forecast main menu" }),
-                i("img", { src: He.Forecast_with_dataspy_active, className: "apm-help-img apm-help-img-sm", alt: "Forecast with a Dataspy profile active" })
+                i("img", { src: Ue.Forecast_Main_Menu, className: "apm-help-img apm-help-img-sm", alt: "Forecast main menu" }),
+                i("img", { src: Ue.Forecast_with_dataspy_active, className: "apm-help-img apm-help-img-sm", alt: "Forecast with a Dataspy profile active" })
               ]),
               i("div", { className: "apm-help-img-row-caption" }, [
                 i("div", { className: "apm-help-img-caption" }, "Standard search mode \u2014 pick a target week, toggle days, and add keyword filters."),
@@ -18814,8 +19066,8 @@ Use N-M for numeric ranges (e.g. 10500-10510)`, style: { fontSize: "12px", width
               i("p", { style: { marginTop: "20px", fontWeight: "600", color: "var(--apm-text-bright)", fontSize: "var(--apm-text-lg)" } }, "Dataspy Builder"),
               i("p", {}, "The Dataspy Builder gives you full control over filtering with a visual editor. Click the ", i("b", {}, "+ New"), " button next to the profile dropdown to create a new Dataspy profile."),
               i("div", { className: "apm-help-img-row" }, [
-                i("img", { src: He.Forecst_Dataspy_Builder_Menu, className: "apm-help-img apm-help-img-sm", alt: "Dataspy Builder visual editor" }),
-                i("img", { src: He.Dataspy_Date_Override_Example, className: "apm-help-img apm-help-img-sm", alt: "Dataspy profile with date override enabled" })
+                i("img", { src: Ue.Forecst_Dataspy_Builder_Menu, className: "apm-help-img apm-help-img-sm", alt: "Dataspy Builder visual editor" }),
+                i("img", { src: Ue.Dataspy_Date_Override_Example, className: "apm-help-img apm-help-img-sm", alt: "Dataspy profile with date override enabled" })
               ]),
               i("div", { className: "apm-help-img-row-caption" }, [
                 i("div", { className: "apm-help-img-caption" }, "A Dataspy profile with exclude filters and organization targeting."),
@@ -18835,7 +19087,7 @@ Use N-M for numeric ranges (e.g. 10500-10510)`, style: { fontSize: "12px", width
             i("div", { className: "apm-help-section", "data-section": "pm-filter" }, [
               i("div", { className: "apm-help-section-title" }, "PM / Non-PM Filter"),
               i("p", {}, 'In the grid toolbar there is a filter button that lets you instantly toggle between "PMs Only", "Non-PMs", or "Show All". This filters the already-loaded results \u2014 no new search needed.'),
-              i("img", { src: He.PM_and_Non_PM_Filter_toggle, className: "apm-help-img apm-help-img-wide", alt: "PM / Non-PM filter toggle in the grid" }),
+              i("img", { src: Ue.PM_and_Non_PM_Filter_toggle, className: "apm-help-img apm-help-img-wide", alt: "PM / Non-PM filter toggle in the grid" }),
               i("div", { className: "apm-help-img-caption" }, "The filter set to Non-PMs \u2014 work orders with a PM Due Date are removed from the results."),
               i("ul", {}, [
                 i("li", {}, [i("b", {}, "PMs Only: "), "Shows only work orders with a PM Due Date from the current search results."]),
@@ -18848,7 +19100,7 @@ Use N-M for numeric ranges (e.g. 10500-10510)`, style: { fontSize: "12px", width
             i("div", { className: "apm-help-section", "data-section": "colorcode" }, [
               i("div", { className: "apm-help-section-title" }, "ColorCode & Nametag"),
               i("p", {}, "Highlight work orders in the grid based on keywords. Rules are matched top-to-bottom against the description column."),
-              i("img", { src: He.Color_Code___Nametag_Rule_creation, className: "apm-help-img apm-help-img-half", alt: "ColorCode rule creation with live preview" }),
+              i("img", { src: Ue.Color_Code___Nametag_Rule_creation, className: "apm-help-img apm-help-img-half", alt: "ColorCode rule creation with live preview" }),
               i("div", { className: "apm-help-img-caption" }, "Creating a ColorCode rule \u2014 keyword matching with a colored nametag badge. Live preview updates the grid instantly."),
               i("ul", {}, [
                 i("li", {}, [i("b", {}, "Creating Rules: "), "Open the ", i("b", {}, "ColorCode & Nametag"), " tab, type a keyword, pick a color, and click Add. The rule is applied immediately with a live preview."]),
@@ -18861,7 +19113,7 @@ Use N-M for numeric ranges (e.g. 10500-10510)`, style: { fontSize: "12px", width
               ]),
               i("p", { style: { marginTop: "16px", fontWeight: "600", color: "var(--apm-text-bright)" } }, "Filtering by Nametag"),
               i("p", {}, "Click any nametag badge in the grid to instantly filter the list to only show work orders with that tag. A green filter banner appears at the top \u2014 click it to clear the filter."),
-              i("img", { src: He.Nametag_filter_example, className: "apm-help-img apm-help-img-wide", alt: "Nametag click-to-filter in action" }),
+              i("img", { src: Ue.Nametag_filter_example, className: "apm-help-img apm-help-img-wide", alt: "Nametag click-to-filter in action" }),
               i("div", { className: "apm-help-img-caption" }, 'After clicking a "Motor Quarterly" nametag \u2014 the grid is filtered and a banner shows the active filter.')
             ]),
             // ── AutoFill Profiles ──
@@ -18869,8 +19121,8 @@ Use N-M for numeric ranges (e.g. 10500-10510)`, style: { fontSize: "12px", width
               i("div", { className: "apm-help-section-title" }, "AutoFill Profiles"),
               i("p", {}, "Create templates for recurring work orders. When APM detects a matching WO, a teal Auto Fill button appears on the record toolbar."),
               i("div", { className: "apm-help-img-row" }, [
-                i("img", { src: He.Autofill_Profile_Example, className: "apm-help-img apm-help-img-med", alt: "AutoFill profile editor" }),
-                i("img", { src: He.New_Record_Template, className: "apm-help-img apm-help-img-med", alt: "New record template profile" })
+                i("img", { src: Ue.Autofill_Profile_Example, className: "apm-help-img apm-help-img-med", alt: "AutoFill profile editor" }),
+                i("img", { src: Ue.New_Record_Template, className: "apm-help-img apm-help-img-med", alt: "New record template profile" })
               ]),
               i("div", { className: "apm-help-img-row-caption" }, [
                 i("div", { className: "apm-help-img-caption" }, "A keyword-matched AutoFill profile \u2014 WO fields, trouble codes, closing comments, and PM checklist automation."),
@@ -18888,7 +19140,7 @@ Use N-M for numeric ranges (e.g. 10500-10510)`, style: { fontSize: "12px", width
               ]),
               i("p", { style: { marginTop: "16px", fontWeight: "600", color: "var(--apm-text-bright)" } }, "Where the Button Appears"),
               i("p", {}, "When you open a work order whose description matches a profile keyword, the teal Auto Fill button appears in the record toolbar. Click it to fill all configured fields in one step."),
-              i("img", { src: He.Autofill_Contextual_Button_Exmple, className: "apm-help-img apm-help-img-wide", alt: "Auto Fill button on a work order" }),
+              i("img", { src: Ue.Autofill_Contextual_Button_Exmple, className: "apm-help-img apm-help-img-wide", alt: "Auto Fill button on a work order" }),
               i("div", { className: "apm-help-img-caption" }, "The teal Auto Fill button appears contextually on matching work orders.")
             ]),
             // ── Labor Tools ──
@@ -18896,8 +19148,8 @@ Use N-M for numeric ranges (e.g. 10500-10510)`, style: { fontSize: "12px", width
               i("div", { className: "apm-help-section-title" }, "Labor Tools"),
               i("p", {}, "Book labor and track your hours without navigating away from the work order."),
               i("div", { className: "apm-help-img-row" }, [
-                i("img", { src: He.Quick_Book_Menu_Example, className: "apm-help-img", style: { flex: "1", minWidth: "260px" }, alt: "Quick Book labor panel" }),
-                i("img", { src: He.Labor_Tally_Example, className: "apm-help-img", style: { flex: "1", minWidth: "200px" }, alt: "Labor Tally docked widget" })
+                i("img", { src: Ue.Quick_Book_Menu_Example, className: "apm-help-img", style: { flex: "1", minWidth: "260px" }, alt: "Quick Book labor panel" }),
+                i("img", { src: Ue.Labor_Tally_Example, className: "apm-help-img", style: { flex: "1", minWidth: "200px" }, alt: "Labor Tally docked widget" })
               ]),
               i("div", { className: "apm-help-img-row-caption" }, [
                 i("div", { className: "apm-help-img-caption" }, "Quick Book \u2014 pick a preset or type custom hours, with shift summary."),
@@ -18916,8 +19168,8 @@ Use N-M for numeric ranges (e.g. 10500-10510)`, style: { fontSize: "12px", width
               i("div", { className: "apm-help-section-title" }, "Tab & Grid Customization"),
               i("p", {}, "Rearrange EAM's interface to match your workflow. Changes persist across sessions."),
               i("div", { className: "apm-help-img-row" }, [
-                i("img", { src: He.Tab_Order_Menu, className: "apm-help-img apm-help-img-sm", alt: "Grid column reorder" }),
-                i("img", { src: He.Record_tab_order, className: "apm-help-img apm-help-img-sm", alt: "Record tab reorder and hiding" })
+                i("img", { src: Ue.Tab_Order_Menu, className: "apm-help-img apm-help-img-sm", alt: "Grid column reorder" }),
+                i("img", { src: Ue.Record_tab_order, className: "apm-help-img apm-help-img-sm", alt: "Record tab reorder and hiding" })
               ]),
               i("div", { className: "apm-help-img-row-caption" }, [
                 i("div", { className: "apm-help-img-caption" }, "Grid Columns mode \u2014 drag to reorder columns. Widths are saved automatically when resized in the grid."),
@@ -18934,7 +19186,7 @@ Use N-M for numeric ranges (e.g. 10500-10510)`, style: { fontSize: "12px", width
             // ── Search & Navigation ──
             i("div", { className: "apm-help-section", "data-section": "search" }, [
               i("div", { className: "apm-help-section-title" }, "Search & Navigation"),
-              i("img", { src: He.Quick_Search, className: "apm-help-img", alt: "Quick Search in the toolbar" }),
+              i("img", { src: Ue.Quick_Search, className: "apm-help-img", alt: "Quick Search in the toolbar" }),
               i("div", { className: "apm-help-img-caption" }, "The Quick Search box in the top toolbar \u2014 type a WO number and press Enter to jump directly to it."),
               i("ul", {}, [
                 i("li", {}, [i("b", {}, "Quick Search: "), "Type a WO number in the search box in the top toolbar to jump directly to that work order."]),
@@ -18951,7 +19203,7 @@ Use N-M for numeric ranges (e.g. 10500-10510)`, style: { fontSize: "12px", width
                 i("li", {}, [i("b", {}, "PTP Status Icons: "), "A checkmark icon appears in the grid and record header for work orders where you've already completed a PTP assessment. This tracks your personal history only."]),
                 i("li", {}, [i("b", {}, "Toggle: "), "Enable or disable the PTP Timer in the ", i("b", {}, "General"), " tab."])
               ]),
-              i("img", { src: He.PTP_Status_Example, className: "apm-help-img apm-help-img-xs", alt: "PTP status icons in the grid" }),
+              i("img", { src: Ue.PTP_Status_Example, className: "apm-help-img apm-help-img-xs", alt: "PTP status icons in the grid" }),
               i("div", { className: "apm-help-img-caption" }, "PTP checkmarks in the grid \u2014 completed assessments show a green check next to the WO number."),
               i("div", { style: { textAlign: "center", borderTop: "1px solid var(--apm-border)", paddingTop: "14px", marginTop: "20px" } }, [
                 i("a", { href: "https://w.amazon.com/bin/view/Users/rosendah/APM-Master/", target: "_blank", className: "apm-help-wiki-link", style: { color: "var(--apm-accent)", fontWeight: "bold", fontSize: "12px", textDecoration: "underline", textUnderlineOffset: "3px" } }, "Full Wiki \u2014 in-depth guides, screenshots & videos")
@@ -18968,30 +19220,30 @@ Use N-M for numeric ranges (e.g. 10500-10510)`, style: { fontSize: "12px", width
       }
     }), t;
   }
-  function Xf() {
+  function og() {
     let e = " Open from the <b>APM Master</b> menu in the toolbar.", t = [
       {
-        image: He.Forecast_Main_Menu,
+        image: Ue.Forecast_Main_Menu,
         title: "Forecast & Custom Filters",
         desc: "Filter your work order list by <b>date ranges, keywords, type</b>, and more. Multi-site users can narrow results by site. Use the <b>Dataspy Builder</b> for advanced AND/OR logic, exclude what you don't need, and save the filters you use every day."
       },
       {
-        image: He.Menu_Access,
+        image: Ue.Menu_Access,
         title: "Tab & Grid Customization",
         desc: "Drag and drop to <b>reorder record tabs and grid columns</b> to match how you actually work. Hide the tabs you never use. Your layout is saved across sessions \u2014 EAM finally remembers your preferences." + e
       },
       {
-        image: { left: He.Labor_Booking, right: He.Labor_Tally_Example },
+        image: { left: Ue.Labor_Booking, right: Ue.Labor_Tally_Example },
         title: "Labor Booking & Tally",
         desc: "Book labor directly from the work order with <b>Quick Book</b> \u2014 pick your hours, hit go. The <b>Labor Tally</b> widget docks to any edge of your screen and shows your booked hours at a glance, with multi-day and manager views."
       },
       {
-        image: He.Menu_Access,
+        image: Ue.Menu_Access,
         title: "AutoFill Profiles",
         desc: "Create <b>templates for recurring work orders</b> \u2014 closing comments, trouble codes, checklists, equipment fields. When APM detects a matching WO description, it offers to fill the form for you in one click." + e
       },
       {
-        image: He.Menu_Access,
+        image: Ue.Menu_Access,
         title: "ColorCode & Nametag",
         desc: "Highlight work orders in the grid based on <b>keywords</b>. Add colored nametag badges, click them to filter instantly. Color the <b>entire row, just the badge, or both</b> \u2014 it's up to you." + e
       }
@@ -19058,7 +19310,7 @@ Use N-M for numeric ranges (e.g. 10500-10510)`, style: { fontSize: "12px", width
     ]), n = o.querySelector(".apm-welcome-modal");
     return n && Hr(n), o;
   }
-  function Zf() {
+  function ng() {
     let e = document.getElementById("apm-welcome-overlay");
     if (!e) return;
     let t = 0, r = !1, o = e.querySelectorAll(".apm-welcome-page"), n = e.querySelectorAll(".apm-welcome-dot"), a = e.querySelectorAll(".apm-welcome-tour-nav"), s = document.getElementById("apm-welcome-next"), l = document.getElementById("apm-welcome-skip"), c = document.getElementById("apm-welcome-start"), p = document.getElementById("apm-welcome-skip-intro"), u = document.getElementById("apm-welcome-theme"), m = 5;
@@ -19073,18 +19325,18 @@ Use N-M for numeric ranges (e.g. 10500-10510)`, style: { fontSize: "12px", width
       }
     }
     function g() {
-      e.style.display = "none", N.set(pi, !0), r && (window.top.location.href = nr());
+      e.style.display = "none", N.set(pi, !0), r && (window.top.location.href = ar());
     }
     u.onchange = () => {
       let E = u.value;
-      r = !0, Promise.resolve().then(() => (Zr(), wl)).then(({ ThemeResolver: k }) => {
+      r = !0, Promise.resolve().then(() => (Zr(), vl)).then(({ ThemeResolver: k }) => {
         k.setGlobalTheme(E);
       });
     };
-    let h = document.getElementById("apm-welcome-betterapm-row"), y = document.getElementById("apm-welcome-betterapm-btn"), b = document.getElementById("apm-welcome-betterapm-sub"), x = _.get("welcome.detectBetterApm"), v = typeof x == "function" ? x() : null;
-    if (v && h && y) {
+    let y = document.getElementById("apm-welcome-betterapm-row"), x = document.getElementById("apm-welcome-betterapm-btn"), h = document.getElementById("apm-welcome-betterapm-sub"), b = _.get("welcome.detectBetterApm"), v = typeof b == "function" ? b() : null;
+    if (v && y && x) {
       let E = [];
-      v.ruleCount && E.push(`${v.ruleCount} nametag rule${v.ruleCount === 1 ? "" : "s"}`), v.themeLabel && E.push(`Theme: ${v.themeLabel}`), E.length && b && (b.textContent = E.join(" \xB7 ")), h.style.display = "flex", y.onclick = () => {
+      v.ruleCount && E.push(`${v.ruleCount} nametag rule${v.ruleCount === 1 ? "" : "s"}`), v.themeLabel && E.push(`Theme: ${v.themeLabel}`), E.length && h && (h.textContent = E.join(" \xB7 ")), y.style.display = "flex", x.onclick = () => {
         let k = !!v.mappings, S = !!v.theme, w = i("input", { type: "checkbox", checked: k, disabled: !k, style: { marginRight: "8px" } }), T = i("input", { type: "checkbox", checked: S, disabled: !S, style: { marginRight: "8px" } }), B = i("div", { className: "apm-modal-overlay", style: { zIndex: "2147483647" } }, [
           i("div", { className: "apm-modal-content", style: { width: "380px", maxWidth: "90vw" } }, [
             i("div", { className: "apm-modal-header" }, [
@@ -19113,18 +19365,18 @@ Use N-M for numeric ranges (e.g. 10500-10510)`, style: { fontSize: "12px", width
               i("button", {
                 className: "apm-modal-btn apm-modal-btn-accent",
                 onclick: async () => {
-                  B.remove(), y.disabled = !0;
+                  B.remove(), x.disabled = !0;
                   let D = _.get("welcome.importFromBetterApm"), $ = typeof D == "function" ? await D({
                     importMappings: !!w.checked,
                     importTheme: !!T.checked
                   }) : { ruleCount: 0, finalCount: 0, consolidatedGroups: 0, themeApplied: !1 };
-                  if (y.textContent = "\u2713 Imported", b) {
+                  if (x.textContent = "\u2713 Imported", h) {
                     let K = [];
                     if ($.ruleCount) {
                       let ee = `${$.finalCount} rule${$.finalCount === 1 ? "" : "s"}`;
                       K.push($.consolidatedGroups ? `${ee} (${$.consolidatedGroups} consolidated)` : ee);
                     }
-                    $.themeApplied && K.push("theme"), b.textContent = K.length ? `Imported ${K.join(" + ")}` : "Nothing imported";
+                    $.themeApplied && K.push("theme"), h.textContent = K.length ? `Imported ${K.join(" + ")}` : "Nothing imported";
                   }
                   $.themeApplied && (r = !0);
                 }
@@ -19141,7 +19393,7 @@ Use N-M for numeric ranges (e.g. 10500-10510)`, style: { fontSize: "12px", width
       E.target === e && g();
     };
   }
-  function gx(e) {
+  function Sx(e) {
     let t = e.split(`
 `), r = "", o = !1;
     for (let n = 0; n < t.length; n++) {
@@ -19153,27 +19405,27 @@ Use N-M for numeric ranges (e.g. 10500-10510)`, style: { fontSize: "12px", width
       let s = a.match(/^(#{1,4})\s+(.+)/);
       if (s) {
         o && (r += "</ul>", o = !1);
-        let c = s[1].length, p = sd(s[2]), u = { 1: "16px", 2: "14px", 3: "13px", 4: "12px" }, m = c <= 2 ? "var(--apm-success)" : "var(--apm-text-bright)";
+        let c = s[1].length, p = dd(s[2]), u = { 1: "16px", 2: "14px", 3: "13px", 4: "12px" }, m = c <= 2 ? "var(--apm-success)" : "var(--apm-text-bright)";
         r += `<div style="font-size:${u[c]};font-weight:bold;color:${m};margin:${c <= 2 ? "16px" : "10px"} 0 6px 0">${p}</div>`;
         continue;
       }
       let l = a.match(/^[-*]\s+(.+)/);
       if (l) {
-        o || (r += '<ul style="padding-left:20px;margin:4px 0">', o = !0), r += `<li style="margin-bottom:3px">${sd(l[1])}</li>`;
+        o || (r += '<ul style="padding-left:20px;margin:4px 0">', o = !0), r += `<li style="margin-bottom:3px">${dd(l[1])}</li>`;
         continue;
       }
       if (a.trim() === "") {
         o && (r += "</ul>", o = !1);
         continue;
       }
-      o && (r += "</ul>", o = !1), r += `<p style="margin:4px 0">${sd(a)}</p>`;
+      o && (r += "</ul>", o = !1), r += `<p style="margin:4px 0">${dd(a)}</p>`;
     }
     return o && (r += "</ul>"), r;
   }
-  function sd(e) {
+  function dd(e) {
     return e = e.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;"), e = e.replace(/`([^`]+)`/g, '<code style="background:var(--apm-surface-inset);padding:1px 4px;border-radius:3px;font-size:11px">$1</code>'), e = e.replace(/\*\*([^*]+)\*\*/g, "<b>$1</b>"), e = e.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" style="color:var(--apm-accent)">$1</a>'), e;
   }
-  function eg() {
+  function ag() {
     return i("div", { id: "apm-changelog-modal", className: "apm-help-overlay apm-ui-panel", style: { display: "none" } }, [
       i("div", { className: "apm-help-modal", style: { width: "550px", maxHeight: "80vh", display: "flex", flexDirection: "column" } }, [
         i("div", { className: "apm-help-header" }, [
@@ -19189,10 +19441,10 @@ Use N-M for numeric ranges (e.g. 10500-10510)`, style: { fontSize: "12px", width
       ])
     ]);
   }
-  async function tg(e) {
+  async function ig(e) {
     let t = document.getElementById("apm-changelog-content"), r = document.getElementById("apm-changelog-github-link");
     if (!t) return;
-    let o = e === "beta", n = o ? Ud : Gd, a = o ? zd : Vd, s = o ? "Developer Changelog" : "Release Notes";
+    let o = e === "beta", n = o ? zd : jd, a = o ? Kd : Yd, s = o ? "Developer Changelog" : "Release Notes";
     r && (r.href = a);
     let l = t.closest(".apm-help-modal")?.querySelector(".apm-help-title");
     l && (l.textContent = `What's New \u2014 ${s}`), t.innerHTML = '<div style="text-align:center;padding:40px 0;color:var(--apm-text-muted)">Loading...</div>';
@@ -19200,7 +19452,7 @@ Use N-M for numeric ranges (e.g. 10500-10510)`, style: { fontSize: "12px", width
       let c = await to(n);
       if (!c.ok) throw new Error(`HTTP ${c.status}`);
       let p = await c.text();
-      t.innerHTML = gx(p);
+      t.innerHTML = Sx(p);
     } catch {
       t.innerHTML = `<div style="text-align:center;padding:40px 0"><div style="color:var(--apm-danger);margin-bottom:12px">Failed to load ${s.toLowerCase()}</div><a href="${a}" target="_blank" style="color:var(--apm-accent)">View on GitHub instead</a></div>`;
     }
@@ -19210,9 +19462,9 @@ Use N-M for numeric ranges (e.g. 10500-10510)`, style: { fontSize: "12px", width
   Me();
   Te();
   se();
-  It();
-  Ht();
-  Ve();
+  Ct();
+  Lt();
+  je();
   ct();
   Oe();
 
@@ -19222,8 +19474,8 @@ Use N-M for numeric ranges (e.g. 10500-10510)`, style: { fontSize: "12px", width
 
   // src/ui/chip-input.js
   Me();
-  var ld = /* @__PURE__ */ new Map();
-  function hx(e, { onRemove: t, textTransform: r = "capitalize" } = {}) {
+  var pd = /* @__PURE__ */ new Map();
+  function Ex(e, { onRemove: t, textTransform: r = "capitalize" } = {}) {
     let o = i("span", {
       className: "cc-chip",
       title: e,
@@ -19265,54 +19517,54 @@ Use N-M for numeric ranges (e.g. 10500-10510)`, style: { fontSize: "12px", width
     ]);
     return o.dataset.keyword = e, o;
   }
-  function Fs({ containerId: e, inputId: t, countId: r, textTransform: o } = {}) {
+  function Ds({ containerId: e, inputId: t, countId: r, textTransform: o } = {}) {
     function n() {
       let g = document.getElementById(e);
-      return g ? Array.from(g.querySelectorAll(".cc-chip")).map((h) => h.dataset.keyword || "").filter((h) => h) : [];
+      return g ? Array.from(g.querySelectorAll(".cc-chip")).map((y) => y.dataset.keyword || "").filter((y) => y) : [];
     }
     function a() {
       if (!r) return;
       let g = document.getElementById(r);
       if (!g) return;
-      let h = n().length;
-      if (h >= 5 ? (g.textContent = `(${h} keywords)`, g.style.display = "") : g.style.display = "none", h > 10) {
-        let y = document.getElementById(e);
-        y && y.querySelectorAll(".cc-or-label").forEach((b) => b.remove());
+      let y = n().length;
+      if (y >= 5 ? (g.textContent = `(${y} keywords)`, g.style.display = "") : g.style.display = "none", y > 10) {
+        let x = document.getElementById(e);
+        x && x.querySelectorAll(".cc-or-label").forEach((h) => h.remove());
       }
     }
-    function s(g, { onChange: h } = {}) {
-      let y = g.trim();
-      if (!y) return !1;
-      let b = document.getElementById(e), x = document.getElementById(t);
-      if (!b || !x || n().map((w) => w.toLowerCase()).includes(y.toLowerCase())) return !1;
-      let E = hx(y, {
+    function s(g, { onChange: y } = {}) {
+      let x = g.trim();
+      if (!x) return !1;
+      let h = document.getElementById(e), b = document.getElementById(t);
+      if (!h || !b || n().map((w) => w.toLowerCase()).includes(x.toLowerCase())) return !1;
+      let E = Ex(x, {
         onRemove: () => {
-          a(), h && h();
+          a(), y && y();
         },
         textTransform: o
-      }), k = b.querySelector(".cc-chip-pending") || x;
-      b.insertBefore(E, k);
-      let S = b.querySelectorAll(".cc-chip");
+      }), k = h.querySelector(".cc-chip-pending") || b;
+      h.insertBefore(E, k);
+      let S = h.querySelectorAll(".cc-chip");
       if (S.length > 1 && S.length <= 10) {
         let w = i("span", {
           className: "cc-or-label",
           style: { fontSize: "9px", color: "var(--apm-text-muted)", fontStyle: "italic", userSelect: "none", padding: "0 1px" }
         }, "or");
-        b.insertBefore(w, E);
+        h.insertBefore(w, E);
       }
-      return a(), h && h(), !0;
+      return a(), y && y(), !0;
     }
     function l() {
       let g = document.getElementById(e);
-      g && (g.querySelectorAll(".cc-chip, .cc-or-label").forEach((h) => h.remove()), a());
+      g && (g.querySelectorAll(".cc-chip, .cc-or-label").forEach((y) => y.remove()), a());
     }
-    function c(g, { onChange: h } = {}) {
-      l(), Array.isArray(g) && g.forEach((y) => s(y, { onChange: h }));
+    function c(g, { onChange: y } = {}) {
+      l(), Array.isArray(g) && g.forEach((x) => s(x, { onChange: y }));
     }
     function p() {
-      let g = document.getElementById(e), h = document.getElementById(t);
-      if (!g || !h || g.querySelector(".cc-chip-pending")) return;
-      let y = i("span", {
+      let g = document.getElementById(e), y = document.getElementById(t);
+      if (!g || !y || g.querySelector(".cc-chip-pending")) return;
+      let x = i("span", {
         className: "cc-chip-pending",
         style: {
           display: "inline-flex",
@@ -19324,30 +19576,30 @@ Use N-M for numeric ranges (e.g. 10500-10510)`, style: { fontSize: "12px", width
           lineHeight: "18px"
         }
       });
-      g.insertBefore(y, h), y.appendChild(h), h.focus();
+      g.insertBefore(x, y), x.appendChild(y), y.focus();
     }
     function u() {
       let g = document.getElementById(e);
       if (!g) return;
-      let h = g.querySelector(".cc-chip-pending");
-      if (!h) return;
-      let y = h.querySelector("input");
-      y && g.insertBefore(y, h), h.remove();
+      let y = g.querySelector(".cc-chip-pending");
+      if (!y) return;
+      let x = y.querySelector("input");
+      x && g.insertBefore(x, y), y.remove();
     }
     function m({ onChange: g } = {}) {
-      let h = document.getElementById(t);
-      if (!h) return !1;
-      let y = h.value.trim();
+      let y = document.getElementById(t);
       if (!y) return !1;
-      let b = s(y, { onChange: g });
-      return h.value = "", u(), b;
+      let x = y.value.trim();
+      if (!x) return !1;
+      let h = s(x, { onChange: g });
+      return y.value = "", u(), h;
     }
     function f({ onChange: g } = {}) {
-      let h = document.getElementById(t);
-      if (!h) return;
-      ld.has(t) && ld.get(t).abort();
-      let y = new AbortController();
-      ld.set(t, y), document.addEventListener("keydown", (v) => {
+      let y = document.getElementById(t);
+      if (!y) return;
+      pd.has(t) && pd.get(t).abort();
+      let x = new AbortController();
+      pd.set(t, x), document.addEventListener("keydown", (v) => {
         if (!(!v.target || v.target.id !== t)) {
           if (v.key !== "Tab" && v.stopPropagation(), v.key === "Enter") {
             v.preventDefault(), v.stopImmediatePropagation();
@@ -19377,42 +19629,42 @@ Use N-M for numeric ranges (e.g. 10500-10510)`, style: { fontSize: "12px", width
             });
           }
         }
-      }, { capture: !0, signal: y.signal }), h.addEventListener("input", () => {
-        h.value.length > 0 ? p() : u();
-      }, { signal: y.signal }), h.onpaste = (v) => {
+      }, { capture: !0, signal: x.signal }), y.addEventListener("input", () => {
+        y.value.length > 0 ? p() : u();
+      }, { signal: x.signal }), y.onpaste = (v) => {
         v.preventDefault();
         let k = (v.clipboardData || window.clipboardData).getData("text").trim();
         k && s(k, { onChange: g }), u();
       };
-      let b = document.getElementById(e);
-      b && b.addEventListener("click", (v) => {
-        (v.target === b || v.target.classList.contains("cc-or-label")) && h.focus();
+      let h = document.getElementById(e);
+      h && h.addEventListener("click", (v) => {
+        (v.target === h || v.target.classList.contains("cc-or-label")) && y.focus();
       });
-      let x = document.getElementById(e + "-add");
-      x && (x.onclick = () => {
-        let v = h.value?.trim();
-        v && (s(v, { onChange: g }), h.value = "", h.focus()), u();
+      let b = document.getElementById(e + "-add");
+      b && (b.onclick = () => {
+        let v = y.value?.trim();
+        v && (s(v, { onChange: g }), y.value = "", y.focus()), u();
       });
     }
     return { get: n, add: s, set: c, clear: l, wireEvents: f, commitPending: m };
   }
 
   // src/ui/settings-panel-autofill.js
-  var cd = null, dd = null, pd = null;
-  function qn() {
-    return cd || (cd = Fs({ containerId: "apm-c-chip-container", inputId: "apm-c-chip-input" })), cd;
-  }
+  var ud = null, md = null, fd = null;
   function Wn() {
-    return dd || (dd = Fs({ containerId: "apm-c-eq-chip-container", inputId: "apm-c-eq-chip-input", textTransform: "uppercase" })), dd;
+    return ud || (ud = Ds({ containerId: "apm-c-chip-container", inputId: "apm-c-chip-input" })), ud;
+  }
+  function Hn() {
+    return md || (md = Ds({ containerId: "apm-c-eq-chip-container", inputId: "apm-c-eq-chip-input", textTransform: "uppercase" })), md;
   }
   function Qa() {
-    return pd || (pd = Fs({ containerId: "apm-c-sr-chip-container", inputId: "apm-c-sr-chip-input" })), pd;
+    return fd || (fd = Ds({ containerId: "apm-c-sr-chip-container", inputId: "apm-c-sr-chip-input" })), fd;
   }
   function Ja(e) {
     return Array.isArray(e) ? e : typeof e == "string" && e.trim() ? e.split(",").map((t) => t.trim()).filter((t) => t) : [];
   }
-  var Za = "wo", Bs = null;
-  function ud(e) {
+  var Za = "wo", Fs = null;
+  function gd(e) {
     let t = document.getElementById(e);
     if (!t || t.style.display === "none") return null;
     let r = t.querySelectorAll(".apm-adv-row");
@@ -19426,20 +19678,20 @@ Use N-M for numeric ranges (e.g. 10500-10510)`, style: { fontSize: "12px", width
     }
     return o;
   }
-  function rg(e, t) {
+  function sg(e, t) {
     if (document.getElementById(t)?.checked) return null;
     let n = document.getElementById(e)?.value;
     if (n === "" || n == null) return null;
     let a = parseInt(n, 10);
     return isNaN(a) ? null : a;
   }
-  function og(e, t, r) {
+  function lg(e, t, r) {
     let o = document.getElementById(t), n = document.getElementById(e);
     if (!o || !n) return;
     let a = r == null || typeof r == "string";
     o.checked = a, n.value = a ? "" : r, n.style.opacity = a ? "0.4" : "1", n.style.pointerEvents = a ? "none" : "auto";
   }
-  function md(e, t) {
+  function hd(e, t) {
     let r = document.getElementById(e), o = e.replace("apm-adv-grid-", ""), n = document.getElementById(`apm-adv-link-${o}`);
     if (!t || !Array.isArray(t) || t.length === 0) {
       r && (r.innerHTML = "", r.style.display = "none"), n && n.classList.remove("apm-adv-link-active");
@@ -19469,16 +19721,16 @@ Use N-M for numeric ranges (e.g. 10500-10510)`, style: { fontSize: "12px", width
     }
     n && n.classList.add("apm-adv-link-active");
   }
-  function ng(e) {
+  function cg(e) {
     return typeof e == "string" && /^\.\d/.test(e.trim()) ? "0" + e.trim() : e;
   }
-  function Hn() {
+  function Un() {
     return Za;
   }
-  function ag(e) {
+  function dg(e) {
     Za = e;
   }
-  function fd() {
+  function yd() {
     let e = document.getElementById("apm-c-is-default")?.checked, t = document.getElementById("apm-c-keyword-row"), r = document.getElementById("apm-c-keyword-hint"), o = document.getElementById("apm-c-keyword-label"), n = document.getElementById("apm-c-eq-keyword-row"), a = document.getElementById("apm-c-wo-title-row"), s = document.getElementById("apm-c-wo-title-hint"), l = document.getElementById("apm-c-org-row"), c = document.getElementById("apm-c-keyword-mode-toggle");
     if (e) {
       if (t && (t.style.display = "none"), r && (r.style.display = "none"), n && (n.style.display = "none"), c && (c.style.display = "none"), o) {
@@ -19488,28 +19740,28 @@ Use N-M for numeric ranges (e.g. 10500-10510)`, style: { fontSize: "12px", width
     } else {
       r && (r.style.display = ""), c && (c.style.display = "");
       let p = document.getElementById("apm-c-kw-title-label"), u = document.getElementById("apm-c-kw-equip-label");
-      p && (p.textContent = "Title"), u && (u.style.display = ""), Xo();
+      p && (p.textContent = "Title"), u && (u.style.display = ""), Zo();
     }
     a && (a.style.display = e ? "" : "none"), s && (s.style.display = e ? "" : "none"), l && (l.style.display = e ? "" : "none");
   }
-  function Xo() {
+  function Zo() {
     if (document.getElementById("apm-c-is-default")?.checked) return;
     let e = document.getElementById("apm-c-keyword-mode-input")?.checked, t = document.getElementById("apm-c-keyword-row"), r = document.getElementById("apm-c-eq-keyword-row"), o = document.getElementById("apm-c-kw-title-label"), n = document.getElementById("apm-c-kw-equip-label"), a = document.getElementById("apm-c-keyword-hint");
     t && (t.style.display = e ? "none" : ""), r && (r.style.display = e ? "" : "none"), o && (o.style.color = e ? "var(--apm-text-muted)" : "var(--apm-warning)"), n && (n.style.color = e ? "var(--apm-warning)" : "var(--apm-text-muted)");
-    let s = qn().get().length, l = Wn().get().length;
+    let s = Wn().get().length, l = Hn().get().length;
     o && (o.textContent = s > 0 ? `Title (${s})` : "Title"), n && (n.textContent = l > 0 ? `Equipment (${l})` : "Equipment"), a && (s > 0 && l > 0 ? a.textContent = "Both title AND equipment keywords must match for this template to trigger." : s > 0 ? a.textContent = "Matches when WO title contains any of these keywords. Add equipment keywords for stricter matching." : l > 0 ? a.textContent = "Matches when WO equipment contains any of these keywords. Add title keywords for stricter matching." : a.textContent = "Add keywords to auto-suggest this template when a WO matches.");
   }
-  function gd() {
+  function bd() {
     let e = document.getElementById("apm-c-labor-mode")?.value === "scheduled", t = document.getElementById("apm-c-labor-hours"), r = document.getElementById("apm-c-labor-fraction"), o = document.getElementById("apm-c-labor-ignore-booked-wrap");
     t && (t.style.display = e ? "none" : ""), r && (r.style.display = e ? "" : "none"), o && (o.style.display = e ? "flex" : "none");
   }
   function Xa(e, t) {
     if (t = t || Za, e || (e = {}), t === "wo") {
-      qn().set(Ja(e.keyword)), Wn().set(Ja(e.equipmentKeyword));
+      Wn().set(Ja(e.keyword)), Hn().set(Ja(e.equipmentKeyword));
       let r = document.getElementById("apm-c-keyword-mode-input");
       if (r) {
         let c = Ja(e.keyword).length > 0, p = Ja(e.equipmentKeyword).length > 0;
-        r.checked = !c && p, Xo();
+        r.checked = !c && p, Zo();
       }
       [
         "dept",
@@ -19536,7 +19788,7 @@ Use N-M for numeric ranges (e.g. 10500-10510)`, style: { fontSize: "12px", width
           let u = c.replace(/-([a-z0-9])/g, (m) => m[1].toUpperCase());
           p.value = e[u] || (c === "loto-mode" ? "none" : c === "labor-mode" ? "fixed" : "");
         }
-      }), og("apm-c-start", "apm-c-start-skip", e.start), og("apm-c-end", "apm-c-end-skip", e.end);
+      }), lg("apm-c-start", "apm-c-start-skip", e.start), lg("apm-c-end", "apm-c-end-skip", e.end);
       let n = document.getElementById("apm-c-is-default");
       n && (n.checked = !!e.isDefault);
       let a = document.getElementById("apm-c-labor-ignore-booked");
@@ -19544,11 +19796,11 @@ Use N-M for numeric ranges (e.g. 10500-10510)`, style: { fontSize: "12px", width
       let s = document.getElementById("apm-c-labor-fraction");
       s && (s.value = e.laborFraction || "");
       let l = document.getElementById("apm-c-wo-title");
-      if (l && (l.value = e.woTitle || ""), md("apm-adv-grid-loto", e.advancedChecklistLoto), md("apm-adv-grid-5", e.advancedChecklist5), md("apm-adv-grid-10", e.advancedChecklist10), Array.isArray(e.advancedChecklistLoto) && e.advancedChecklistLoto.length > 0) {
+      if (l && (l.value = e.woTitle || ""), hd("apm-adv-grid-loto", e.advancedChecklistLoto), hd("apm-adv-grid-5", e.advancedChecklist5), hd("apm-adv-grid-10", e.advancedChecklist10), Array.isArray(e.advancedChecklistLoto) && e.advancedChecklistLoto.length > 0) {
         let c = document.getElementById("apm-c-loto-mode");
         c && (c.value = "custom");
       }
-      fd(), gd();
+      yd(), bd();
     } else if (t === "repair") {
       let r = (n, a) => {
         let s = document.getElementById(n);
@@ -19565,11 +19817,11 @@ Use N-M for numeric ranges (e.g. 10500-10510)`, style: { fontSize: "12px", width
       };
       r("apm-c-sr-status", "status"), r("apm-c-sr-act-10", "actChecks10"), r("apm-c-sr-act-20", "actChecks20");
       let o = document.getElementById("apm-c-sr-user");
-      o && (o.value = be.session.user || "Auto (current user)");
+      o && (o.value = ye.session.user || "Auto (current user)");
     }
-    Bs = Zo(t);
+    Fs = en(t);
   }
-  function Un(e, t) {
+  function Gn(e, t) {
     t = t || Za;
     let r = _.get("getPresets")?.() ?? { autofill: {} };
     e.replaceChildren();
@@ -19580,10 +19832,10 @@ Use N-M for numeric ranges (e.g. 10500-10510)`, style: { fontSize: "12px", width
     }
     Object.keys(o).length > 0 ? Xa(o[Object.keys(o)[0]], t) : Xa({}, t);
   }
-  function Zo(e) {
-    return e = e || Za, e === "wo" ? (qn().commitPending(), Wn().commitPending(), {
-      keyword: qn().get().map((t) => t.toLowerCase()),
-      equipmentKeyword: Wn().get().map((t) => t.toLowerCase()),
+  function en(e) {
+    return e = e || Za, e === "wo" ? (Wn().commitPending(), Hn().commitPending(), {
+      keyword: Wn().get().map((t) => t.toLowerCase()),
+      equipmentKeyword: Hn().get().map((t) => t.toLowerCase()),
       dept: document.getElementById("apm-c-dept")?.value || "",
       org: document.getElementById("apm-c-org")?.value || "",
       eq: document.getElementById("apm-c-eq")?.value || "",
@@ -19594,21 +19846,21 @@ Use N-M for numeric ranges (e.g. 10500-10510)`, style: { fontSize: "12px", width
       lotoMode: document.getElementById("apm-c-loto-mode")?.value || "",
       techChecks5: parseInt(document.getElementById("apm-c-tech-checks-5")?.value, 10) || 0,
       techChecks10: parseInt(document.getElementById("apm-c-tech-checks-10")?.value, 10) || 0,
-      advancedChecklistLoto: ud("apm-adv-grid-loto"),
-      advancedChecklist5: ud("apm-adv-grid-5"),
-      advancedChecklist10: ud("apm-adv-grid-10"),
+      advancedChecklistLoto: gd("apm-adv-grid-loto"),
+      advancedChecklist5: gd("apm-adv-grid-5"),
+      advancedChecklist10: gd("apm-adv-grid-10"),
       prob: document.getElementById("apm-c-prob")?.value || "",
       fail: document.getElementById("apm-c-fail")?.value || "",
       cause: document.getElementById("apm-c-cause")?.value || "",
       assign: document.getElementById("apm-c-assign")?.value || "",
       shift: document.getElementById("apm-c-shift")?.value || "",
-      start: rg("apm-c-start", "apm-c-start-skip"),
-      end: rg("apm-c-end", "apm-c-end-skip"),
+      start: sg("apm-c-start", "apm-c-start-skip"),
+      end: sg("apm-c-end", "apm-c-end-skip"),
       close: document.getElementById("apm-c-close")?.value || "",
       laborMode: document.getElementById("apm-c-labor-mode")?.value || "fixed",
-      laborHours: ng(document.getElementById("apm-c-labor-hours")?.value || ""),
+      laborHours: cg(document.getElementById("apm-c-labor-hours")?.value || ""),
       laborIgnoreBooked: document.getElementById("apm-c-labor-ignore-booked")?.checked || !1,
-      laborFraction: ng(document.getElementById("apm-c-labor-fraction")?.value || ""),
+      laborFraction: cg(document.getElementById("apm-c-labor-fraction")?.value || ""),
       isDefault: document.getElementById("apm-c-is-default")?.checked || !1,
       woTitle: document.getElementById("apm-c-wo-title")?.value || ""
     }) : e === "repair" ? {
@@ -19624,7 +19876,7 @@ Use N-M for numeric ranges (e.g. 10500-10510)`, style: { fontSize: "12px", width
       actChecks20: parseInt(document.getElementById("apm-c-sr-act-20")?.value, 10) || 0
     }) : {};
   }
-  function ig(e) {
+  function pg(e) {
     return e === "wo" ? {
       keyword: [],
       equipmentKeyword: [],
@@ -19656,15 +19908,15 @@ Use N-M for numeric ranges (e.g. 10500-10510)`, style: { fontSize: "12px", width
       woTitle: ""
     } : e === "repair" ? { org: "", qty: 1, repairablePart: "", requestedBy: "", initiateRepair: !1 } : e === "shiftReport" ? { keyword: [], status: "", actChecks10: 0, actChecks20: 0 } : {};
   }
-  function hd(e) {
-    if (!Bs) return !1;
-    let t = Zo(e);
-    return JSON.stringify(t) !== JSON.stringify(Bs);
+  function xd(e) {
+    if (!Fs) return !1;
+    let t = en(e);
+    return JSON.stringify(t) !== JSON.stringify(Fs);
   }
-  function bd(e) {
-    Bs = Zo(e);
+  function vd(e) {
+    Fs = en(e);
   }
-  function yd(e) {
+  function wd(e) {
     let t = {
       wo: document.getElementById("apm-fields-wo"),
       repair: document.getElementById("apm-fields-repair"),
@@ -19675,12 +19927,12 @@ Use N-M for numeric ranges (e.g. 10500-10510)`, style: { fontSize: "12px", width
   }
 
   // src/ui/settings-panel-tabs.js
-  function bx() {
+  function kx() {
     let e = Ze() || "", r = _.get("resolveAutofillScreen")?.(e);
     return i(
       "div",
       { className: "apm-screen-pills", id: "apm-screen-pills" },
-      Object.entries(Kd).map(
+      Object.entries(Qd).map(
         ([n, a]) => i("button", {
           className: `apm-screen-pill${n === r ? " apm-screen-pill-active" : ""}`,
           "data-screen": n
@@ -19688,7 +19940,7 @@ Use N-M for numeric ranges (e.g. 10500-10510)`, style: { fontSize: "12px", width
       )
     );
   }
-  function yx() {
+  function Tx() {
     return i("div", { className: "apm-template-box" }, [
       i("div", { className: "apm-template-label" }, "Saved Templates:"),
       i("div", { className: "apm-template-row" }, [
@@ -19699,7 +19951,7 @@ Use N-M for numeric ranges (e.g. 10500-10510)`, style: { fontSize: "12px", width
       ])
     ]);
   }
-  function xd(e, t = {}) {
+  function Sd(e, t = {}) {
     let r = `apm-adv-grid-${e}`, o = t.showFollowUp !== !1, n;
     if (t.fixedCount != null)
       n = t.fixedCount;
@@ -19741,9 +19993,9 @@ Use N-M for numeric ranges (e.g. 10500-10510)`, style: { fontSize: "12px", width
     m.className = "apm-adv-modal-close", m.textContent = "\xD7", m.onclick = () => l.remove(), p.appendChild(m), c.appendChild(p);
     let f = document.createElement("table");
     f.className = "apm-adv-table";
-    let g = o ? 6 : 5, h = "<colgroup>" + "<col>".repeat(g) + "</colgroup>", y = o ? '<thead><tr><th>#</th><th>Yes/Completed</th><th>No</th><th>Text</th><th style="text-align:left">Notes</th><th>Follow Up</th></tr></thead>' : '<thead><tr><th>#</th><th>Yes/Completed</th><th>No</th><th>Text</th><th style="text-align:left">Notes</th></tr></thead>';
-    f.innerHTML = h + y;
-    let b = document.createElement("tbody"), x = (D, $) => {
+    let g = o ? 6 : 5, y = "<colgroup>" + "<col>".repeat(g) + "</colgroup>", x = o ? '<thead><tr><th>#</th><th>Yes/Completed</th><th>No</th><th>Text</th><th style="text-align:left">Notes</th><th>Follow Up</th></tr></thead>' : '<thead><tr><th>#</th><th>Yes/Completed</th><th>No</th><th>Text</th><th style="text-align:left">Notes</th></tr></thead>';
+    f.innerHTML = y + x;
+    let h = document.createElement("tbody"), b = (D, $) => {
       let K = D.querySelector(".apm-adv-chk-cell:nth-child(2)"), ee = D.querySelector(".apm-adv-chk-cell:nth-child(3)"), O = D.querySelector(".apm-adv-result-text");
       $ === "text" ? (K && (K.style.visibility = "hidden"), ee && (ee.style.visibility = "hidden"), O && (O.style.display = "")) : (K && (K.style.visibility = ""), ee && (ee.style.visibility = ""), O && (O.style.display = "none"));
     };
@@ -19760,17 +20012,17 @@ Use N-M for numeric ranges (e.g. 10500-10510)`, style: { fontSize: "12px", width
       R.className = "apm-adv-chk-cell";
       let A = document.createElement("input");
       A.type = "checkbox", A.className = "apm-adv-chk-no", A.checked = K === "no", R.appendChild(A), ee.appendChild(R);
-      let z = document.createElement("td");
-      z.className = "apm-adv-chk-cell";
+      let V = document.createElement("td");
+      V.className = "apm-adv-chk-cell";
       let W = document.createElement("input");
-      W.type = "checkbox", W.className = "apm-adv-chk-text", W.checked = K === "text", z.appendChild(W);
+      W.type = "checkbox", W.className = "apm-adv-chk-text", W.checked = K === "text", V.appendChild(W);
       let M = document.createElement("input");
-      M.type = "text", M.className = "apm-adv-result-text", M.placeholder = "Result...", M.maxLength = 4e3, M.value = $.resultText || "", M.style.display = K === "text" ? "" : "none", z.appendChild(M), ee.appendChild(z), Q.addEventListener("change", () => {
-        Q.checked && (A.checked = !1, W.checked = !1), x(ee, "checkbox");
+      M.type = "text", M.className = "apm-adv-result-text", M.placeholder = "Result...", M.maxLength = 4e3, M.value = $.resultText || "", M.style.display = K === "text" ? "" : "none", V.appendChild(M), ee.appendChild(V), Q.addEventListener("change", () => {
+        Q.checked && (A.checked = !1, W.checked = !1), b(ee, "checkbox");
       }), A.addEventListener("change", () => {
-        A.checked && (Q.checked = !1, W.checked = !1), x(ee, "checkbox");
+        A.checked && (Q.checked = !1, W.checked = !1), b(ee, "checkbox");
       }), W.addEventListener("change", () => {
-        W.checked ? (Q.checked = !1, A.checked = !1, x(ee, "text"), M.focus()) : x(ee, "checkbox");
+        W.checked ? (Q.checked = !1, A.checked = !1, b(ee, "text"), M.focus()) : b(ee, "checkbox");
       }), K === "text" && (H.style.visibility = "hidden", R.style.visibility = "hidden");
       let F = document.createElement("td"), U = document.createElement("input");
       if (U.type = "text", U.className = "apm-adv-notes", U.placeholder = "Notes...", U.maxLength = 4e3, U.value = $.notes || "", F.appendChild(U), ee.appendChild(F), o) {
@@ -19779,9 +20031,9 @@ Use N-M for numeric ranges (e.g. 10500-10510)`, style: { fontSize: "12px", width
         let j = document.createElement("input");
         j.type = "checkbox", j.className = "apm-adv-followup", j.checked = !!$.followUp, q.appendChild(j), ee.appendChild(q);
       }
-      b.appendChild(ee);
+      h.appendChild(ee);
     }
-    f.appendChild(b);
+    f.appendChild(h);
     let v = document.createElement("div");
     v.className = "apm-adv-table-wrap", v.appendChild(f), c.appendChild(v);
     let E = document.createElement("div");
@@ -19792,7 +20044,7 @@ Use N-M for numeric ranges (e.g. 10500-10510)`, style: { fontSize: "12px", width
     w.className = "apm-adv-modal-btn apm-adv-modal-save", w.textContent = "Save", w.onclick = () => {
       let D = document.getElementById(r);
       D || (D = document.createElement("div"), D.id = r, D.style.display = "none", document.body.appendChild(D)), D.innerHTML = "", D.style.display = "";
-      for (let K of b.querySelectorAll(".apm-adv-row")) {
+      for (let K of h.querySelectorAll(".apm-adv-row")) {
         let ee = document.createElement("div");
         ee.className = "apm-adv-row";
         let O = document.createElement("select");
@@ -19834,7 +20086,7 @@ Use N-M for numeric ranges (e.g. 10500-10510)`, style: { fontSize: "12px", width
       D.target === l && l.remove();
     }), document.body.appendChild(l);
   }
-  function sg(e, t, r) {
+  function ug(e, t, r) {
     let o = i("input", {
       type: "checkbox",
       id: r,
@@ -19863,7 +20115,7 @@ Use N-M for numeric ranges (e.g. 10500-10510)`, style: { fontSize: "12px", width
       n
     ]);
   }
-  function xx() {
+  function Cx() {
     return i("div", { id: "apm-fields-wo", className: "apm-fields-wrapper" }, [
       // ── Trigger Keywords / New Record Default ──
       i("div", { className: "apm-section-group", style: { marginBottom: "8px" } }, [
@@ -19973,17 +20225,17 @@ Use N-M for numeric ranges (e.g. 10500-10510)`, style: { fontSize: "12px", width
             i("option", { value: "no" }, "NO"),
             i("option", { value: "custom", disabled: !0 }, "Custom")
           ]),
-          i("button", { className: "apm-adv-toggle-btn", id: "apm-adv-link-loto", title: "Configure per-row actions for LOTO checklist", onclick: () => xd("loto", { showFollowUp: !1, fixedCount: 2 }), style: { flexShrink: "0", verticalAlign: "middle", marginLeft: "1px" } }, "\u2699"),
+          i("button", { className: "apm-adv-toggle-btn", id: "apm-adv-link-loto", title: "Configure per-row actions for LOTO checklist", onclick: () => Sd("loto", { showFollowUp: !1, fixedCount: 2 }), style: { flexShrink: "0", verticalAlign: "middle", marginLeft: "1px" } }, "\u2699"),
           i("div", { className: "field-label", title: "How many 5-Tech items to check YES", style: { flexShrink: "0", width: "auto", textAlign: "right", color: "var(--apm-text-bright)" } }, "5-Tech:"),
           i("input", { type: "number", id: "apm-c-tech-checks-5", className: "field-input", title: "How many 5-Tech items to check YES", min: "0", placeholder: "0", onblur: (e) => {
             e.target.value === "" && (e.target.value = "0");
           }, style: { flexShrink: "0", width: "44px", height: "28px", padding: "0 2px", textAlign: "center", verticalAlign: "middle" } }),
-          i("button", { className: "apm-adv-toggle-btn", id: "apm-adv-link-5", title: "Configure per-row actions for 5-Tech checklist", onclick: () => xd("5"), style: { flexShrink: "0", verticalAlign: "middle", marginLeft: "1px" } }, "\u2699"),
+          i("button", { className: "apm-adv-toggle-btn", id: "apm-adv-link-5", title: "Configure per-row actions for 5-Tech checklist", onclick: () => Sd("5"), style: { flexShrink: "0", verticalAlign: "middle", marginLeft: "1px" } }, "\u2699"),
           i("div", { className: "field-label", title: "How many 10-Tech items to check YES", style: { flexShrink: "0", width: "auto", textAlign: "right", color: "var(--apm-text-bright)" } }, "10-Tech:"),
           i("input", { type: "number", id: "apm-c-tech-checks-10", className: "field-input", title: "How many 10-Tech items to check YES", min: "0", placeholder: "0", onblur: (e) => {
             e.target.value === "" && (e.target.value = "0");
           }, style: { flexShrink: "0", width: "44px", height: "28px", padding: "0 2px", textAlign: "center", verticalAlign: "middle" } }),
-          i("button", { className: "apm-adv-toggle-btn", id: "apm-adv-link-10", title: "Configure per-row actions for 10-Tech checklist", onclick: () => xd("10"), style: { flexShrink: "0", verticalAlign: "middle", marginLeft: "1px" } }, "\u2699")
+          i("button", { className: "apm-adv-toggle-btn", id: "apm-adv-link-10", title: "Configure per-row actions for 10-Tech checklist", onclick: () => Sd("10"), style: { flexShrink: "0", verticalAlign: "middle", marginLeft: "1px" } }, "\u2699")
         ])
       ]),
       // ── Schedule & Labor (collapsible dates in section header) ──
@@ -19992,8 +20244,8 @@ Use N-M for numeric ranges (e.g. 10500-10510)`, style: { fontSize: "12px", width
           i("summary", { className: "apm-section-label", style: { margin: "0", cursor: "pointer" } }, "Schedule & Labor"),
           i("div", { className: "apm-details-body" }, [
             i("div", { style: { display: "flex", gap: "6px" } }, [
-              sg("Start:", "apm-c-start", "apm-c-start-skip"),
-              sg("End:", "apm-c-end", "apm-c-end-skip")
+              ug("Start:", "apm-c-start", "apm-c-start-skip"),
+              ug("End:", "apm-c-end", "apm-c-end-skip")
             ])
           ])
         ]),
@@ -20011,7 +20263,7 @@ Use N-M for numeric ranges (e.g. 10500-10510)`, style: { fontSize: "12px", width
         ]),
         i("div", { className: "field-row", style: { margin: "4px 0 0 0" } }, [
           i("div", { className: "field-label", title: "Hours to book during autofill", style: { width: "65px", textAlign: "left", color: "var(--apm-success)", fontWeight: "bold" } }, "Book Labor:"),
-          i("select", { id: "apm-c-labor-mode", className: "field-input", title: "Labor booking mode", style: { height: "28px", padding: "0 4px", width: "90px", flexGrow: "0" }, onchange: () => gd() }, [
+          i("select", { id: "apm-c-labor-mode", className: "field-input", title: "Labor booking mode", style: { height: "28px", padding: "0 4px", width: "90px", flexGrow: "0" }, onchange: () => bd() }, [
             i("option", { value: "fixed" }, "Fixed"),
             i("option", { value: "scheduled" }, "Scheduled")
           ]),
@@ -20053,7 +20305,7 @@ Use N-M for numeric ranges (e.g. 10500-10510)`, style: { fontSize: "12px", width
       ])
     ]);
   }
-  function vx() {
+  function Ax() {
     return i("div", { id: "apm-fields-repair", className: "apm-fields-wrapper" }, [
       i("div", { className: "apm-section-group" }, [
         i("div", { className: "apm-section-label" }, "Repair Fields"),
@@ -20089,7 +20341,7 @@ Use N-M for numeric ranges (e.g. 10500-10510)`, style: { fontSize: "12px", width
       )
     ]);
   }
-  function wx() {
+  function _x() {
     return i("div", { id: "apm-fields-shiftReport", className: "apm-fields-wrapper" }, [
       // ── Trigger Keywords ──
       i("div", { className: "apm-section-group", style: { marginBottom: "8px" } }, [
@@ -20135,38 +20387,38 @@ Use N-M for numeric ranges (e.g. 10500-10510)`, style: { fontSize: "12px", width
       ])
     ]);
   }
-  function cg() {
+  function fg() {
     return i("div", { id: "apm-main-fields", className: "apm-panel-section" }, [
       i("div", { className: "apm-tab-content-scroll" }, [
-        bx(),
-        yx(),
+        kx(),
+        Tx(),
         // All three field containers — only one visible at a time
-        xx(),
-        vx(),
-        wx()
+        Cx(),
+        Ax(),
+        _x()
       ])
     ]);
   }
-  function vd() {
-    return ie.isUS1 && he.isEnabled("ptpSandbox");
+  function Ed() {
+    return ie.isUS1 && fe.isEnabled("ptpSandbox");
   }
-  function lg(e, t) {
-    return e ? he.isEnabled("ptpSandbox") ? t : "Requires PTP Sandbox to be enabled" : "US1 only \u2014 PTP is not available on this domain";
+  function mg(e, t) {
+    return e ? fe.isEnabled("ptpSandbox") ? t : "Requires PTP Sandbox to be enabled" : "US1 only \u2014 PTP is not available on this domain";
   }
-  function Sx(e) {
+  function Rx(e) {
     if (!ie.isUS1) return;
     [
       { id: "gen-setting-ptp-ui", descId: "apm-pref-ptp-status-desc", rowId: "apm-pref-ptp-status", settingKey: "ptpTrackingEnabled", normalDesc: "Track assessment completion per WO \u2014 shows status icons in grids and gates labor booking" },
       { id: "gen-setting-ptp-timer", descId: "apm-pref-ptp-timer-desc", rowId: "apm-pref-ptp-timer", settingKey: "ptpTimerEnabled", normalDesc: "2-minute safety countdown when starting a PTP assessment" }
     ].forEach(({ id: r, descId: o, rowId: n, settingKey: a, normalDesc: s }) => {
       let l = document.getElementById(r), c = document.getElementById(o), p = document.getElementById(n);
-      l && (l.disabled = !e, Y[a] !== e && (yt(a, e), l.checked = e)), c && (c.textContent = e ? s : "Requires PTP Sandbox to be enabled"), p && p.classList.toggle("apm-pref-disabled", !e);
+      l && (l.disabled = !e, Y[a] !== e && (xt(a, e), l.checked = e)), c && (c.textContent = e ? s : "Requires PTP Sandbox to be enabled"), p && p.classList.toggle("apm-pref-disabled", !e);
     });
   }
-  var wd = !1;
-  function Ex() {
-    if (wd) return;
-    wd = !0;
+  var kd = !1;
+  function Ox() {
+    if (kd) return;
+    kd = !0;
     let e = i("div", { className: "apm-modal-overlay", style: { zIndex: "2147483647" } }, [
       i("div", { className: "apm-modal-content", style: { width: "360px", maxWidth: "90vw" } }, [
         i("div", { className: "apm-modal-header" }, [
@@ -20188,13 +20440,13 @@ Use N-M for numeric ranges (e.g. 10500-10510)`, style: { fontSize: "12px", width
           i("button", {
             className: "apm-modal-btn apm-modal-btn-ghost",
             onclick: () => {
-              e.remove(), wd = !1;
+              e.remove(), kd = !1;
             }
           }, "Later"),
           i("button", {
             className: "apm-modal-btn apm-modal-btn-accent",
             onclick: () => {
-              window.top.location.href = nr();
+              window.top.location.href = ar();
             }
           }, "Refresh Now")
         ])
@@ -20202,8 +20454,8 @@ Use N-M for numeric ranges (e.g. 10500-10510)`, style: { fontSize: "12px", width
     ]);
     document.body.appendChild(e);
   }
-  function dg() {
-    let e = "apm-general-item" + (vd() ? "" : " apm-pref-disabled"), t = he.getAll().map((r) => {
+  function gg() {
+    let e = "apm-general-item" + (Ed() ? "" : " apm-pref-disabled"), t = fe.getAll().map((r) => {
       let o = r.id === "ptpSandbox", n = o && !ie.isUS1;
       return i("div", { className: "apm-general-item" }, [
         i("div", { style: { flex: "1" } }, [
@@ -20216,7 +20468,7 @@ Use N-M for numeric ranges (e.g. 10500-10510)`, style: { fontSize: "12px", width
             checked: r.value,
             disabled: n,
             onchange: (a) => {
-              he.set(r.id, a.target.checked), o && Sx(a.target.checked), Ex();
+              fe.set(r.id, a.target.checked), o && Rx(a.target.checked), Ox();
             }
           }),
           i("span", { className: "cc-toggle-slider" })
@@ -20286,20 +20538,20 @@ Use N-M for numeric ranges (e.g. 10500-10510)`, style: { fontSize: "12px", width
           i("div", { className: e, id: "apm-pref-ptp-status" }, [
             i("div", {}, [
               i("div", { className: "apm-general-title" }, "PTP Status Tracking"),
-              i("div", { className: "apm-general-desc", id: "apm-pref-ptp-status-desc" }, lg(ie.isUS1, "Track assessment completion per WO \u2014 shows status icons in grids and gates labor booking"))
+              i("div", { className: "apm-general-desc", id: "apm-pref-ptp-status-desc" }, mg(ie.isUS1, "Track assessment completion per WO \u2014 shows status icons in grids and gates labor booking"))
             ]),
             i("label", { className: "cc-toggle-switch" }, [
-              i("input", { type: "checkbox", id: "gen-setting-ptp-ui", checked: !!Y.ptpTrackingEnabled, disabled: !vd() }),
+              i("input", { type: "checkbox", id: "gen-setting-ptp-ui", checked: !!Y.ptpTrackingEnabled, disabled: !Ed() }),
               i("span", { className: "cc-toggle-slider" })
             ])
           ]),
           i("div", { className: e, id: "apm-pref-ptp-timer" }, [
             i("div", {}, [
               i("div", { className: "apm-general-title" }, "PTP Take-2 Timer"),
-              i("div", { className: "apm-general-desc", id: "apm-pref-ptp-timer-desc" }, lg(ie.isUS1, "2-minute safety countdown when starting a PTP assessment"))
+              i("div", { className: "apm-general-desc", id: "apm-pref-ptp-timer-desc" }, mg(ie.isUS1, "2-minute safety countdown when starting a PTP assessment"))
             ]),
             i("label", { className: "cc-toggle-switch" }, [
-              i("input", { type: "checkbox", id: "gen-setting-ptp-timer", checked: !!Y.ptpTimerEnabled, disabled: !vd() }),
+              i("input", { type: "checkbox", id: "gen-setting-ptp-timer", checked: !!Y.ptpTimerEnabled, disabled: !Ed() }),
               i("span", { className: "cc-toggle-slider" })
             ])
           ]),
@@ -20377,7 +20629,7 @@ Use N-M for numeric ranges (e.g. 10500-10510)`, style: { fontSize: "12px", width
       ])
     ]);
   }
-  function pg() {
+  function hg() {
     return i("div", { id: "apm-diagnostics-fields", style: { display: "none" }, className: "apm-panel-section" }, [
       i("div", { className: "apm-tab-content-scroll" }, [
         i("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "10px", padding: "6px 8px", background: "var(--apm-overlay-dark)", borderRadius: "var(--apm-radius-sm)" } }, [
@@ -20406,7 +20658,7 @@ Use N-M for numeric ranges (e.g. 10500-10510)`, style: { fontSize: "12px", width
       ])
     ]);
   }
-  function ug() {
+  function yg() {
     return i("div", { className: "apm-footer" }, [
       i("div", { id: "cc-footer-btns", style: { display: "none", flexDirection: "column", gap: "8px", marginBottom: "10px", padding: "0" } }, [
         i("div", { style: { display: "flex", gap: "6px", width: "100%", boxSizing: "border-box" } }, [
@@ -20446,8 +20698,8 @@ Use N-M for numeric ranges (e.g. 10500-10510)`, style: { fontSize: "12px", width
 
   // src/ui/settings-panel-diagnostics.js
   Me();
-  At();
-  var mg = {
+  _t();
+  var bg = {
     bootWaterfall: '<b>Boot Waterfall</b> shows how long each startup phase took.<br><span class="apm-tip-good">\u25CF &lt;500ms</span> = fast<br><span class="apm-tip-warn">\u25CF &lt;1500ms</span> = acceptable<br><span class="apm-tip-bad">\u25CF &gt;1500ms</span> = slow, investigate',
     domReady: "Time from page load until the DOM was fully parsed. Should be near-instant \u2014 slow values suggest a heavy page or network delay.",
     settingsLoad: "Time to read saved settings from Tampermonkey/localStorage. Slow if storage is bloated or the GM API is throttled.",
@@ -20463,71 +20715,71 @@ Use N-M for numeric ranges (e.g. 10500-10510)`, style: { fontSize: "12px", width
     bootGates: `<b>Boot Gates</b> shows which initialization steps completed.<br><span class="apm-tip-good">\u25CF Set</span> = init step ran successfully<br><span class="apm-tip-bad">\u25CF Not set</span> = init step did not run<br>Missing gates can explain why a feature isn't working.`,
     sessionInfo: "<b>Session</b> shows EAM session state captured from network traffic.<br><b>Tenant</b> = EAM organization identifier<br><b>User</b> = whether the session user was captured<br>If not initialized, session-dependent features (e.g., restore) won't work.",
     recentLogs: '<b>Recent Logs</b> captures the last 150 internal messages.<br><span class="apm-tip-warn">\u25CF WARN</span> = potential issues<br><span class="apm-tip-good">\u25CF INFO</span> = normal activity<br><span style="color:var(--apm-text-muted)">\u25CF DEBUG</span> = detailed trace<br><br>Logs are stored in memory and cycle out over time.<br><b>Copy the report right after reproducing a bug</b> for the most useful data.'
-  }, $s = null, ei = null;
-  function qs() {
-    $s && ($s.remove(), $s = null);
+  }, Bs = null, ei = null;
+  function $s() {
+    Bs && (Bs.remove(), Bs = null);
   }
-  function fg(e, t) {
-    qs();
+  function xg(e, t) {
+    $s();
     let r = document.createElement("div");
-    r.className = "apm-info-bubble", mg[t] ? r.innerHTML = mg[t] : r.textContent = t;
+    r.className = "apm-info-bubble", bg[t] ? r.innerHTML = bg[t] : r.textContent = t;
     let o = document.getElementById("apm-settings-panel") || document.body;
     o.appendChild(r);
     let n = e.getBoundingClientRect(), a = o.getBoundingClientRect(), s = r.offsetHeight, l = 210, c = n.top - a.top, p = n.bottom - a.top, u = n.left - a.left;
     c > s + 8 ? (r.style.top = c - s - 6 + "px", r.setAttribute("data-arrow", "top")) : (r.style.top = p + 6 + "px", r.setAttribute("data-arrow", "bottom"));
     let m = u, f = a.width - l - 8;
-    m = Math.max(4, Math.min(m, f)), r.style.left = m + "px", $s = r, ei = t;
+    m = Math.max(4, Math.min(m, f)), r.style.left = m + "px", Bs = r, ei = t;
   }
-  function Sd(e) {
+  function Td(e) {
     let t = i("span", { className: "apm-info-tip", "data-tip-key": e }, "?");
     return t.onclick = (r) => {
       if (r.stopPropagation(), ei === e) {
-        qs(), ei = null;
+        $s(), ei = null;
         return;
       }
-      fg(t, e);
-    }, ei === e && requestAnimationFrame(() => fg(t, e)), t;
+      xg(t, e);
+    }, ei === e && requestAnimationFrame(() => xg(t, e)), t;
   }
   window._apmDiagTipCloseHandler || (window._apmDiagTipCloseHandler = (e) => {
-    e.target.closest(".apm-info-tip") || (qs(), ei = null);
+    e.target.closest(".apm-info-tip") || ($s(), ei = null);
   }, document.addEventListener("click", window._apmDiagTipCloseHandler));
-  function kx(e) {
+  function Nx(e) {
     if (!e || e.length === 0) return "";
     let t = [" ", "\u2582", "\u2583", "\u2584", "\u2585", "\u2586", "\u2587", "\u2588"], r = Math.max(...e) || 1;
     return e.map((o) => t[Math.min(t.length - 1, Math.floor(o / r * (t.length - 1)))]).join("");
   }
-  function Ed() {
+  function Cd() {
     let e = document.getElementById("diag-content");
     if (!e) return;
-    qs();
-    let t = ve.toJSON(), r = (x, v) => i("div", { style: { display: "flex", justifyContent: "space-between", fontSize: "var(--apm-text-sm)", marginBottom: "3px" } }, [
-      i("span", { style: { color: "var(--apm-text-muted)" } }, x),
+    $s();
+    let t = ve.toJSON(), r = (b, v) => i("div", { style: { display: "flex", justifyContent: "space-between", fontSize: "var(--apm-text-sm)", marginBottom: "3px" } }, [
+      i("span", { style: { color: "var(--apm-text-muted)" } }, b),
       i("span", { style: { color: "var(--apm-accent)" } }, v || "---")
-    ]), o = (x, v) => r(x, v ? `${v}ms` : null), n = (x) => i("div", { style: { borderLeft: "2px solid var(--apm-danger)", paddingLeft: "8px", marginBottom: "8px", fontSize: "var(--apm-text-xs)" } }, [
-      i("div", { style: { color: "var(--apm-danger)", fontWeight: "600" } }, `[${x.tag}] ${x.timestamp.split("T")[1].substring(0, 8)}`),
-      i("div", { style: { color: "var(--apm-text-bright)", whiteSpace: "pre-wrap", overflow: "hidden" } }, x.message)
-    ]), a = { WARN: "var(--apm-warning)", INFO: "var(--apm-accent)", DEBUG: "var(--apm-text-muted)" }, s = (x) => i("div", { style: { borderLeft: `2px solid ${a[x.level] || "var(--apm-text-muted)"}`, paddingLeft: "8px", marginBottom: "4px", fontSize: "var(--apm-text-xs)" } }, [
-      i("div", { style: { display: "flex", gap: "6px", color: a[x.level] || "var(--apm-text-muted)" } }, [
-        i("span", { style: { fontWeight: "600", minWidth: "36px" } }, x.level),
-        i("span", {}, `[${x.tag}]`),
-        i("span", { style: { color: "var(--apm-text-disabled)" } }, x.timestamp.split("T")[1].substring(0, 8))
+    ]), o = (b, v) => r(b, v ? `${v}ms` : null), n = (b) => i("div", { style: { borderLeft: "2px solid var(--apm-danger)", paddingLeft: "8px", marginBottom: "8px", fontSize: "var(--apm-text-xs)" } }, [
+      i("div", { style: { color: "var(--apm-danger)", fontWeight: "600" } }, `[${b.tag}] ${b.timestamp.split("T")[1].substring(0, 8)}`),
+      i("div", { style: { color: "var(--apm-text-bright)", whiteSpace: "pre-wrap", overflow: "hidden" } }, b.message)
+    ]), a = { WARN: "var(--apm-warning)", INFO: "var(--apm-accent)", DEBUG: "var(--apm-text-muted)" }, s = (b) => i("div", { style: { borderLeft: `2px solid ${a[b.level] || "var(--apm-text-muted)"}`, paddingLeft: "8px", marginBottom: "4px", fontSize: "var(--apm-text-xs)" } }, [
+      i("div", { style: { display: "flex", gap: "6px", color: a[b.level] || "var(--apm-text-muted)" } }, [
+        i("span", { style: { fontWeight: "600", minWidth: "36px" } }, b.level),
+        i("span", {}, `[${b.tag}]`),
+        i("span", { style: { color: "var(--apm-text-disabled)" } }, b.timestamp.split("T")[1].substring(0, 8))
       ]),
-      i("div", { style: { color: "var(--apm-text-bright)", whiteSpace: "pre-wrap", overflow: "hidden", maxHeight: "40px" } }, x.message)
-    ]), l = (x) => i("div", { style: { background: "var(--apm-surface-raised)", padding: "6px", borderRadius: "var(--apm-radius-sm)", marginBottom: "5px", fontSize: "var(--apm-text-xs)" } }, [
+      i("div", { style: { color: "var(--apm-text-bright)", whiteSpace: "pre-wrap", overflow: "hidden", maxHeight: "40px" } }, b.message)
+    ]), l = (b) => i("div", { style: { background: "var(--apm-surface-raised)", padding: "6px", borderRadius: "var(--apm-radius-sm)", marginBottom: "5px", fontSize: "var(--apm-text-xs)" } }, [
       i("div", { style: { display: "flex", justifyContent: "space-between", marginBottom: "2px" } }, [
-        i("span", { style: { color: "var(--apm-accent)", fontWeight: "600" } }, x.id || "Unnamed Frame"),
-        i("span", { style: { color: x.accessible ? "var(--apm-success-bright)" : "var(--apm-danger)" } }, x.accessible ? "Accessible" : "Blocked")
+        i("span", { style: { color: "var(--apm-accent)", fontWeight: "600" } }, b.id || "Unnamed Frame"),
+        i("span", { style: { color: b.accessible ? "var(--apm-success-bright)" : "var(--apm-danger)" } }, b.accessible ? "Accessible" : "Blocked")
       ]),
-      x.accessible && i("div", { style: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: "2px", color: "var(--apm-text-muted)" } }, [
-        i("span", {}, x.gridFound ? "\u2705 Grid Found" : "\u274C No Grid"),
-        i("span", {}, x.ccFound ? "\u2705 ColorCode" : "\u274C No CC"),
-        i("span", {}, x.tagsFound ? "\u2705 Nametags" : "\u274C No Tags"),
-        i("span", {}, x.styles ? "\u2705 Styles" : "\u274C No Styles")
+      b.accessible && i("div", { style: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: "2px", color: "var(--apm-text-muted)" } }, [
+        i("span", {}, b.gridFound ? "\u2705 Grid Found" : "\u274C No Grid"),
+        i("span", {}, b.ccFound ? "\u2705 ColorCode" : "\u274C No CC"),
+        i("span", {}, b.tagsFound ? "\u2705 Nametags" : "\u274C No Tags"),
+        i("span", {}, b.styles ? "\u2705 Styles" : "\u274C No Styles")
       ]),
-      x.error && i("div", { style: { color: "var(--apm-warning)", fontSize: "9px" } }, x.error)
-    ]), c = ve.getPerformanceSummary(), p = t.bootTimings.total || 1, u = (x, v = "boot") => v === "boot" ? x < 500 ? "var(--apm-success-bright)" : x < 1500 ? "var(--apm-warning)" : "var(--apm-danger)" : x < 25 ? "var(--apm-success-bright)" : x < 100 ? "var(--apm-warning)" : "var(--apm-danger)", m = (x, v, E) => {
-      let k = v / p * 100, S = u(v, "boot"), w = x.includes("Total"), T = [i("span", {}, x)];
-      return E && T.push(Sd(E)), i("div", { style: { marginBottom: "8px" } }, [
+      b.error && i("div", { style: { color: "var(--apm-warning)", fontSize: "9px" } }, b.error)
+    ]), c = ve.getPerformanceSummary(), p = t.bootTimings.total || 1, u = (b, v = "boot") => v === "boot" ? b < 500 ? "var(--apm-success-bright)" : b < 1500 ? "var(--apm-warning)" : "var(--apm-danger)" : b < 25 ? "var(--apm-success-bright)" : b < 100 ? "var(--apm-warning)" : "var(--apm-danger)", m = (b, v, E) => {
+      let k = v / p * 100, S = u(v, "boot"), w = b.includes("Total"), T = [i("span", {}, b)];
+      return E && T.push(Td(E)), i("div", { style: { marginBottom: "8px" } }, [
         i("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: "var(--apm-text-xs)", color: "var(--apm-text-muted)", marginBottom: "2px" } }, [
           i("span", { style: { display: "flex", alignItems: "center" } }, T),
           i("span", { style: { color: w ? "var(--apm-warning)" : "var(--apm-text-bright)" } }, `T+ ${v}ms`)
@@ -20536,44 +20788,44 @@ Use N-M for numeric ranges (e.g. 10500-10510)`, style: { fontSize: "12px", width
           i("div", { style: { height: "100%", width: `${Math.max(2, Math.min(100, k))}%`, background: S, transition: "width 0.5s ease" } })
         ])
       ]);
-    }, f = (x, v, E) => i("div", { style: { fontWeight: "600", color: "var(--apm-text-bright)", fontSize: "var(--apm-text-sm)", marginTop: E ? "0" : "15px", marginBottom: "10px", borderBottom: "1px solid var(--apm-border)", paddingBottom: "4px", display: "flex", alignItems: "center" } }, v ? [x, Sd(v)] : [x]), g = [
+    }, f = (b, v, E) => i("div", { style: { fontWeight: "600", color: "var(--apm-text-bright)", fontSize: "var(--apm-text-sm)", marginTop: E ? "0" : "15px", marginBottom: "10px", borderBottom: "1px solid var(--apm-border)", paddingBottom: "4px", display: "flex", alignItems: "center" } }, v ? [b, Td(v)] : [b]), g = [
       f("Boot Waterfall", "bootWaterfall", !0),
       m("DOM Ready", t.bootTimings.dom, "domReady"),
       m("Settings Load", t.bootTimings.settings, "settingsLoad"),
       m("ExtJS Ready", t.bootTimings.extjs, "extjsReady"),
       m("Total Boot", t.bootTimings.total, "totalBoot")
-    ], h = Object.entries(t.bootTimings).filter(([x]) => x.startsWith("module.")).sort((x, v) => v[1] - x[1]);
-    h.length > 0 && g.push(i(
+    ], y = Object.entries(t.bootTimings).filter(([b]) => b.startsWith("module.")).sort((b, v) => v[1] - b[1]);
+    y.length > 0 && g.push(i(
       "div",
       { style: { fontSize: "var(--apm-text-xs)", color: "var(--apm-text-disabled)", marginTop: "10px", display: "grid", gridTemplateColumns: "1fr 1fr", gap: "4px" } },
-      h.map(([x, v]) => i("div", { style: { display: "flex", justifyContent: "space-between", padding: "2px 4px", background: "var(--apm-overlay-dark)", borderRadius: "2px" } }, [
-        i("span", {}, x.replace("module.", "")),
+      y.map(([b, v]) => i("div", { style: { display: "flex", justifyContent: "space-between", padding: "2px 4px", background: "var(--apm-overlay-dark)", borderRadius: "2px" } }, [
+        i("span", {}, b.replace("module.", "")),
         i("span", { style: { color: u(v, "module") } }, `${v}ms`)
       ]))
     ));
-    let y = (x, v, E, k) => {
+    let x = (b, v, E, k) => {
       let S = "\u{1F7E2}", w = u(v.avg, "boot");
       w === "var(--apm-warning)" && (S = "\u{1F7E1}"), w === "var(--apm-danger)" && (S = "\u{1F534}");
-      let T = [`${S} ${x}`];
-      return k && T.push(Sd(k)), i("div", { style: { background: "var(--apm-surface-raised)", padding: "8px", borderRadius: "var(--apm-radius-sm)", marginBottom: "8px" } }, [
+      let T = [`${S} ${b}`];
+      return k && T.push(Td(k)), i("div", { style: { background: "var(--apm-surface-raised)", padding: "8px", borderRadius: "var(--apm-radius-sm)", marginBottom: "8px" } }, [
         i("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "4px" } }, [
           i("span", { style: { color: "var(--apm-text-bright)", fontSize: "var(--apm-text-sm)", fontWeight: "600", display: "flex", alignItems: "center" } }, T),
           i("span", { style: { color: "var(--apm-accent)", fontSize: "var(--apm-text-sm)" } }, `${v.avg}ms avg`)
         ]),
         i("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "center" } }, [
-          i("span", { style: { color: "var(--apm-text-disabled)", fontSize: "9px", fontFamily: "var(--apm-font-mono)" } }, kx(E)),
+          i("span", { style: { color: "var(--apm-text-disabled)", fontSize: "9px", fontFamily: "var(--apm-font-mono)" } }, Nx(E)),
           i("span", { style: { color: "var(--apm-text-muted)", fontSize: "9px" } }, `max: ${v.max}ms / p95: ${v.p95}ms`)
         ])
       ]);
-    }, b = [
+    }, h = [
       ...g,
       f("Engine Performance", "enginePerf"),
-      y("ColorCode Engine", c.colorCode, t.performance.colorCode, "colorCode"),
-      y("EAM Query Service", c.eamQuery, t.performance.eamQuery, "eamQuery"),
+      x("ColorCode Engine", c.colorCode, t.performance.colorCode, "colorCode"),
+      x("EAM Query Service", c.eamQuery, t.performance.eamQuery, "eamQuery"),
       f("Scheduler Tasks (avg/max)", "schedulerTasks"),
-      i("div", { style: { fontSize: "var(--apm-text-xs)" } }, c.scheduler.slice(0, 5).map((x) => i("div", { style: { display: "flex", justifyContent: "space-between", marginBottom: "2px" } }, [
-        i("span", { style: { color: "var(--apm-text-muted)" } }, x.name),
-        i("span", { style: { color: "var(--apm-accent)" } }, `${x.avg} / ${x.max}ms`)
+      i("div", { style: { fontSize: "var(--apm-text-xs)" } }, c.scheduler.slice(0, 5).map((b) => i("div", { style: { display: "flex", justifyContent: "space-between", marginBottom: "2px" } }, [
+        i("span", { style: { color: "var(--apm-text-muted)" } }, b.name),
+        i("span", { style: { color: "var(--apm-accent)" } }, `${b.avg} / ${b.max}ms`)
       ]))),
       f("System State", "systemState"),
       r("Uptime", `${t.uptime}s`),
@@ -20589,8 +20841,8 @@ Use N-M for numeric ranges (e.g. 10500-10510)`, style: { fontSize: "12px", width
         "div",
         { style: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: "4px", fontSize: "var(--apm-text-xs)" } },
         Object.entries(t.guardFlags).map(
-          ([x, v]) => i("div", { style: { display: "flex", justifyContent: "space-between", padding: "2px 4px", background: "var(--apm-overlay-dark)", borderRadius: "2px" } }, [
-            i("span", { style: { color: "var(--apm-text-muted)" } }, x.replace(/_/g, " ").toLowerCase().replace(/^\w/, (E) => E.toUpperCase())),
+          ([b, v]) => i("div", { style: { display: "flex", justifyContent: "space-between", padding: "2px 4px", background: "var(--apm-overlay-dark)", borderRadius: "2px" } }, [
+            i("span", { style: { color: "var(--apm-text-muted)" } }, b.replace(/_/g, " ").toLowerCase().replace(/^\w/, (E) => E.toUpperCase())),
             i("span", { style: { color: v ? "var(--apm-success-bright)" : "var(--apm-text-disabled)" } }, v ? "Set" : "---")
           ])
         )
@@ -20606,138 +20858,138 @@ Use N-M for numeric ranges (e.g. 10500-10510)`, style: { fontSize: "12px", width
       f("Recent Logs", "recentLogs"),
       t.logs.length === 0 ? i("div", { style: { color: "var(--apm-text-muted)", fontSize: "var(--apm-text-xs)", fontStyle: "italic" } }, "No log entries captured.") : i("div", {}, t.logs.slice(0, 15).map(s))
     ];
-    e.replaceChildren(), b.forEach((x) => e.appendChild(x));
+    e.replaceChildren(), h.forEach((b) => e.appendChild(b));
   }
 
   // src/ui/settings-panel-draglist.js
   Me();
   ct();
   Oe();
-  function Ws() {
+  function qs() {
     return _.get("getPresets")?.() ?? { config: {} };
   }
-  function kd(e) {
+  function Ad(e) {
     return _.get("updatePresetConfig")?.(e);
   }
-  function Hs(e, t, r, o) {
+  function Ws(e, t, r, o) {
     let n = null;
     if (t.replaceChildren(), r.length === 0) {
       let g = document.createElement("div");
       g.style.cssText = "color:var(--apm-text-disabled); text-align:center; padding:10px;", g.textContent = o, t.appendChild(g);
       return;
     }
-    let a = Ws();
+    let a = qs();
     a.config.hiddenTabs || (a.config.hiddenTabs = {});
     let s = e.settingsMode === "tabs", l = r, c = [], p = Ze(), u = () => {
-      let h = [...t.querySelectorAll(".apm-col-item")].filter((v) => v.dataset.hidden !== "true");
-      if (h.length === 0) return;
-      let y = Ws();
+      let y = [...t.querySelectorAll(".apm-col-item")].filter((v) => v.dataset.hidden !== "true");
+      if (y.length === 0) return;
+      let x = qs();
       if (!s) return;
-      let b = h.map((v) => v.dataset.index).filter(Boolean), x = { ...y.config.tabOrders || {}, [p]: b };
-      kd({ tabOrders: x });
+      let h = y.map((v) => v.dataset.index).filter(Boolean), b = { ...x.config.tabOrders || {}, [p]: h };
+      Ad({ tabOrders: b });
     };
     if (s) {
-      let g = a.config.tabOrders?.[p] || "", h = typeof g == "string" ? g.split(",").map((x) => x.trim()).filter(Boolean) : Array.isArray(g) ? g : [], b = [...(a.config.hiddenTabs || {})[p] || []];
-      if (r.forEach((x) => {
-        x.systemHidden && !b.includes(x.index) && !h.includes(x.index) && b.push(x.index);
-      }), l = r.filter((x) => !b.includes(x.index)), h.length > 0) {
-        let x = new Map(h.map((v, E) => [v, E]));
+      let g = a.config.tabOrders?.[p] || "", y = typeof g == "string" ? g.split(",").map((b) => b.trim()).filter(Boolean) : Array.isArray(g) ? g : [], h = [...(a.config.hiddenTabs || {})[p] || []];
+      if (r.forEach((b) => {
+        b.systemHidden && !h.includes(b.index) && !y.includes(b.index) && h.push(b.index);
+      }), l = r.filter((b) => !h.includes(b.index)), y.length > 0) {
+        let b = new Map(y.map((v, E) => [v, E]));
         l.sort((v, E) => {
-          let k = x.has(v.index) ? x.get(v.index) : 1 / 0, S = x.has(E.index) ? x.get(E.index) : 1 / 0;
+          let k = b.has(v.index) ? b.get(v.index) : 1 / 0, S = b.has(E.index) ? b.get(E.index) : 1 / 0;
           return k - S;
         });
       }
-      c = r.filter((x) => b.includes(x.index));
+      c = r.filter((b) => h.includes(b.index));
     }
     let m = document.getElementById("apm-s-btn-reset");
     m && (m.style.display = "block");
-    let f = (g, h) => {
-      let y = document.createElement("div");
-      if (y.dataset.index = g.index, y.className = "apm-col-item", h) {
-        y.draggable = !1, y.dataset.hidden = "true", y.style.cursor = "default", y.style.borderLeftColor = "var(--apm-danger)";
-        let b = [];
-        g.isPluginMenu && b.push(i("span", { className: "apm-overflow-badge", style: { background: "var(--apm-purple)" }, title: "This tab is managed by the EAM tab menu plugin (More menu)" }, "More Menu"));
-        let x = i("span", { style: { opacity: "0.5", flex: "1", display: "flex", alignItems: "center" } }, [
+    let f = (g, y) => {
+      let x = document.createElement("div");
+      if (x.dataset.index = g.index, x.className = "apm-col-item", y) {
+        x.draggable = !1, x.dataset.hidden = "true", x.style.cursor = "default", x.style.borderLeftColor = "var(--apm-danger)";
+        let h = [];
+        g.isPluginMenu && h.push(i("span", { className: "apm-overflow-badge", style: { background: "var(--apm-purple)" }, title: "This tab is managed by the EAM tab menu plugin (More menu)" }, "More Menu"));
+        let b = i("span", { style: { opacity: "0.5", flex: "1", display: "flex", alignItems: "center" } }, [
           i("span", { style: { textDecoration: "line-through" } }, [
             i("b", { style: { color: "var(--apm-text-disabled)" } }, "\u2630"),
             document.createTextNode(" \xA0 " + g.text)
           ]),
-          ...b
+          ...h
         ]), v = i("button", {
           className: "apm-tab-restore-btn",
           "data-tab-name": g.index,
           style: { background: "var(--apm-success-bright)", color: "white", border: "none", borderRadius: "4px", padding: "4px 10px", cursor: "pointer", fontSize: "14px", fontWeight: "bold", boxShadow: "var(--apm-shadow-sm)", transition: "transform 0.1s", position: "relative", zIndex: "10" },
           title: "Restore tab"
         }, "\uFF0B");
-        y.appendChild(x), y.appendChild(v);
+        x.appendChild(b), x.appendChild(v);
       } else {
-        y.draggable = !0;
-        let b = s ? i("button", {
+        x.draggable = !0;
+        let h = s ? i("button", {
           className: "apm-tab-hide-btn",
           "data-tab-name": g.index,
           style: { background: "transparent", color: "var(--apm-danger)", border: "none", borderRadius: "4px", padding: "2px 6px", cursor: "pointer", fontSize: "13px", fontWeight: "bold" },
           title: "Hide tab"
-        }, "\u2716") : i("span", { style: { color: "var(--apm-text-disabled)", fontSize: "10px" } }, "[" + g.index + "]"), x = [];
-        s && g.isPluginMenu && x.push(i("span", { className: "apm-overflow-badge", style: { background: "var(--apm-purple)" }, title: "This tab is managed by the EAM tab menu plugin (More menu)" }, "More Menu"));
+        }, "\u2716") : i("span", { style: { color: "var(--apm-text-disabled)", fontSize: "10px" } }, "[" + g.index + "]"), b = [];
+        s && g.isPluginMenu && b.push(i("span", { className: "apm-overflow-badge", style: { background: "var(--apm-purple)" }, title: "This tab is managed by the EAM tab menu plugin (More menu)" }, "More Menu"));
         let v = i("span", {}, [
           i("span", {}, [
             i("b", { style: { color: "var(--apm-accent)" } }, "\u2630"),
             document.createTextNode(" \xA0 " + g.text)
           ]),
-          ...x
+          ...b
         ]);
-        y.appendChild(v), y.appendChild(document.createTextNode(" ")), y.appendChild(b), y.ondragstart = (E) => {
-          E.dataTransfer.setData("text/plain", ""), y.classList.add("dragging"), n = y;
-        }, y.ondragend = () => {
-          y.classList.remove("dragging"), n = null, u();
+        x.appendChild(v), x.appendChild(document.createTextNode(" ")), x.appendChild(h), x.ondragstart = (E) => {
+          E.dataTransfer.setData("text/plain", ""), x.classList.add("dragging"), n = x;
+        }, x.ondragend = () => {
+          x.classList.remove("dragging"), n = null, u();
         };
       }
-      return y;
+      return x;
     };
     if (l.forEach((g) => t.appendChild(f(g, !1))), s && c.length > 0) {
       let g = document.createElement("div");
-      g.style.cssText = "text-align:center; color:var(--apm-text-disabled); font-size:11px; padding:6px 0; margin:4px 0; border-top:1px dashed var(--apm-border-strong); user-select:none;", g.textContent = "\u2500\u2500 Hidden \u2500\u2500", t.appendChild(g), c.forEach((h) => t.appendChild(f(h, !0)));
+      g.style.cssText = "text-align:center; color:var(--apm-text-disabled); font-size:11px; padding:6px 0; margin:4px 0; border-top:1px dashed var(--apm-border-strong); user-select:none;", g.textContent = "\u2500\u2500 Hidden \u2500\u2500", t.appendChild(g), c.forEach((y) => t.appendChild(f(y, !0)));
     }
     s && (t.querySelectorAll(".apm-tab-hide-btn").forEach((g) => {
-      g.onclick = (h) => {
-        h.stopPropagation();
-        let y = g.getAttribute("data-tab-name"), x = { ...Ws().config.hiddenTabs || {} }, v = x[p] || [];
-        v.includes(y) || (x[p] = [...v, y], kd({ hiddenTabs: x })), Hs(e, t, r, o);
+      g.onclick = (y) => {
+        y.stopPropagation();
+        let x = g.getAttribute("data-tab-name"), b = { ...qs().config.hiddenTabs || {} }, v = b[p] || [];
+        v.includes(x) || (b[p] = [...v, x], Ad({ hiddenTabs: b })), Ws(e, t, r, o);
       };
     }), t.querySelectorAll(".apm-tab-restore-btn").forEach((g) => {
-      g.onmousedown = (h) => h.stopPropagation(), g.onclick = (h) => {
-        h.preventDefault(), h.stopPropagation();
-        let y = g.getAttribute("data-tab-name"), b = Ws(), x = { ...b.config.hiddenTabs || {} };
-        x[p] = (x[p] || []).filter((S) => S !== y);
-        let v = { ...b.config.tabOrders || {} }, E = v[p], k = typeof E == "string" ? E.split(",").map((S) => S.trim()) : Array.isArray(E) ? [...E] : [];
-        k.includes(y) || k.push(y), v[p] = k, kd({
-          hiddenTabs: x,
+      g.onmousedown = (y) => y.stopPropagation(), g.onclick = (y) => {
+        y.preventDefault(), y.stopPropagation();
+        let x = g.getAttribute("data-tab-name"), h = qs(), b = { ...h.config.hiddenTabs || {} };
+        b[p] = (b[p] || []).filter((S) => S !== x);
+        let v = { ...h.config.tabOrders || {} }, E = v[p], k = typeof E == "string" ? E.split(",").map((S) => S.trim()) : Array.isArray(E) ? [...E] : [];
+        k.includes(x) || k.push(x), v[p] = k, Ad({
+          hiddenTabs: b,
           tabOrders: v
-        }), Hs(e, t, r, o);
+        }), Ws(e, t, r, o);
       };
     })), t.ondragover = (g) => {
       g.preventDefault();
-      let h = n;
-      if (!h) return;
-      let b = [...t.querySelectorAll(".apm-col-item:not(.dragging)")].find((x) => {
-        let v = x.getBoundingClientRect();
+      let y = n;
+      if (!y) return;
+      let h = [...t.querySelectorAll(".apm-col-item:not(.dragging)")].find((b) => {
+        let v = b.getBoundingClientRect();
         return g.clientY <= v.top + v.height / 2;
       });
-      b ? t.insertBefore(h, b) : t.appendChild(h);
+      h ? t.insertBefore(y, h) : t.appendChild(y);
     };
   }
 
   // src/ui/settings-panel.js
-  function Tx() {
+  function Ix() {
     let e = i("div", { id: "apm-settings-panel", className: "apm-settings-container apm-ui-panel" });
     return Hr(e), e;
   }
-  function Cx() {
+  function Mx() {
     return i("div", { className: "apm-settings-header" }, [
       i("h4", { className: "apm-settings-title" }, "APM Master")
     ]);
   }
-  function Ax() {
+  function Px() {
     return i("div", { id: "apm-tab-container", className: "apm-tab-container" }, [
       i("div", { id: "tab-autofill", className: "apm-tab-btn apm-tab-active-autofill" }, "Auto Fill Profiles"),
       i("div", { id: "tab-settings", className: "apm-tab-btn apm-tab-inactive" }, "Tab Order"),
@@ -20746,10 +20998,10 @@ Use N-M for numeric ranges (e.g. 10500-10510)`, style: { fontSize: "12px", width
       i("div", { id: "tab-diagnostics", className: "apm-tab-btn apm-tab-inactive" }, "Diagnostics")
     ]);
   }
-  function Us() {
+  function Hs() {
     if (window.self !== window.top || document.getElementById("apm-settings-panel")) return;
-    let e = Tx(), t = Qf(), r = eg(), o = Xf(), n = Cx(), a = Ax(), s = cg(), l = qo.get("tabGridOrder")?.render() ?? i("div", { id: "apm-settings-fields", style: { display: "none" }, className: "apm-panel-section" }), c = qo.get("colorcode")?.render() ?? i("div", { id: "apm-colorcode-fields", style: { display: "none" }, className: "apm-panel-section" }), p = dg(), u = pg(), m = ug();
-    e.appendChild(n), e.appendChild(a), e.appendChild(s), e.appendChild(l), e.appendChild(c), e.appendChild(p), e.appendChild(u), e.appendChild(m), document.body.appendChild(e), document.body.appendChild(t), document.body.appendChild(r), document.body.appendChild(o), _x({
+    let e = Ix(), t = rg(), r = ag(), o = og(), n = Mx(), a = Px(), s = fg(), l = qo.get("tabGridOrder")?.render() ?? i("div", { id: "apm-settings-fields", style: { display: "none" }, className: "apm-panel-section" }), c = qo.get("colorcode")?.render() ?? i("div", { id: "apm-colorcode-fields", style: { display: "none" }, className: "apm-panel-section" }), p = gg(), u = hg(), m = yg();
+    e.appendChild(n), e.appendChild(a), e.appendChild(s), e.appendChild(l), e.appendChild(c), e.appendChild(p), e.appendChild(u), e.appendChild(m), document.body.appendChild(e), document.body.appendChild(t), document.body.appendChild(r), document.body.appendChild(o), Lx({
       settingsMode: "cols",
       activeTab: "autofill",
       panel: e,
@@ -20759,13 +21011,13 @@ Use N-M for numeric ranges (e.g. 10500-10510)`, style: { fontSize: "12px", width
       generalFields: p,
       diagnosticsFields: u,
       footer: m
-    }), Zf(), N.get(pi) || setTimeout(() => {
+    }), ng(), N.get(pi) || setTimeout(() => {
       let g = document.getElementById("apm-welcome-overlay");
       g && (g.style.display = "flex");
     }, 1500);
   }
-  _.register("buildSettingsPanel", Us);
-  function _x(e) {
+  _.register("buildSettingsPanel", Hs);
+  function Lx(e) {
     let {
       panel: t,
       autofillFields: r,
@@ -20774,8 +21026,8 @@ Use N-M for numeric ranges (e.g. 10500-10510)`, style: { fontSize: "12px", width
       generalFields: a,
       diagnosticsFields: s,
       footer: l
-    } = e, c = document.getElementById("apm-c-preset-select"), p = document.getElementById("tab-autofill"), u = document.getElementById("tab-settings"), m = document.getElementById("tab-colorcode"), f = document.getElementById("tab-general"), g = document.getElementById("tab-diagnostics"), h = document.getElementById("apm-s-tog-cols"), y = document.getElementById("apm-s-tog-tabs"), b = document.getElementById("apm-s-col-list");
-    function x(W) {
+    } = e, c = document.getElementById("apm-c-preset-select"), p = document.getElementById("tab-autofill"), u = document.getElementById("tab-settings"), m = document.getElementById("tab-colorcode"), f = document.getElementById("tab-general"), g = document.getElementById("tab-diagnostics"), y = document.getElementById("apm-s-tog-cols"), x = document.getElementById("apm-s-tog-tabs"), h = document.getElementById("apm-s-col-list");
+    function b(W) {
       let M = new Blob([W], { type: "application/json" }), F = URL.createObjectURL(M), U = document.createElement("a");
       U.href = F, U.download = `apm-master-settings-${(/* @__PURE__ */ new Date()).toISOString().split("T")[0]}.json`, document.body.appendChild(U), U.click(), document.body.removeChild(U), URL.revokeObjectURL(F), C(L("settingsDownloaded"), "var(--apm-success)");
     }
@@ -20787,7 +21039,7 @@ Use N-M for numeric ranges (e.g. 10500-10510)`, style: { fontSize: "12px", width
       W && (W.style.display = "none"), pe.removeTask("diag-ui-poll");
     }, E = () => {
       if (e.settingsMode === "cols")
-        b.replaceChildren(
+        h.replaceChildren(
           i("div", {
             style: {
               padding: "24px 20px",
@@ -20815,11 +21067,11 @@ Use N-M for numeric ranges (e.g. 10500-10510)`, style: { fontSize: "12px", width
         );
       else {
         let W = _.get("probeExtTabs")?.() ?? [];
-        Hs(e, b, W, "No record tabs found. Open a Work Order.");
+        Ws(e, h, W, "No record tabs found. Open a Work Order.");
       }
     }, k = (W) => {
       if (!W) {
-        let G = ln(), I = !1;
+        let G = cn(), I = !1;
         if (G && Be.active()?.win === G.win) {
           let X = G.tabPanel.items?.items?.find((J) => J.itemId === "HDR");
           I = X && X.rendered && !!X.getEl?.()?.dom?.innerHTML?.trim();
@@ -20828,11 +21080,11 @@ Use N-M for numeric ranges (e.g. 10500-10510)`, style: { fontSize: "12px", width
       }
       let M = document.getElementById("apm-s-btn-reset"), F = document.getElementById("apm-s-title"), U = Ze() || "Unknown", q = document.getElementById("apm-s-drag-tip"), j = document.getElementById("apm-s-eam-hint-line"), Z = document.getElementById("apm-s-eam-hint"), P = "Tip: You can also add or remove tabs from the record directly, and the state will be saved.";
       if (e.settingsMode === "cols") {
-        h.className = "apm-ui-settings-btn active", y.className = "apm-ui-settings-btn inactive", M && (M.style.display = "block");
-        let G = Se(), I = bl(G?.win || window, G?.grid), X = I ? ` \xB7 ${I}` : "";
+        y.className = "apm-ui-settings-btn active", x.className = "apm-ui-settings-btn inactive", M && (M.style.display = "block");
+        let G = Se(), I = hl(G?.win || window, G?.grid), X = I ? ` \xB7 ${I}` : "";
         F && (F.textContent = `Column Order (${U}${X}):`), q && (q.style.display = "none"), j && (j.style.display = "none");
       } else
-        y.className = "apm-ui-settings-btn active", h.className = "apm-ui-settings-btn inactive", M && (M.style.display = "block"), F && (F.textContent = `Tab Layout (${U}):`), q && (q.style.display = "inline"), Z && (Z.textContent = P), j && (j.style.display = "inline");
+        x.className = "apm-ui-settings-btn active", y.className = "apm-ui-settings-btn inactive", M && (M.style.display = "block"), F && (F.textContent = `Tab Layout (${U}):`), q && (q.style.display = "inline"), Z && (Z.textContent = P), j && (j.style.display = "inline");
       E();
     };
     function S() {
@@ -20864,45 +21116,45 @@ Use N-M for numeric ranges (e.g. 10500-10510)`, style: { fontSize: "12px", width
       try {
         let W = document.getElementById("gen-setting-ptp-ui");
         W && (W.onchange = (J) => {
-          yt("ptpTrackingEnabled", J.target.checked), _.get("invalidateColorCodeCache")?.();
+          xt("ptpTrackingEnabled", J.target.checked), _.get("invalidateColorCodeCache")?.();
         });
         let M = document.getElementById("gen-setting-ptp-timer");
         M && (M.onchange = (J) => {
-          yt("ptpTimerEnabled", J.target.checked);
+          xt("ptpTimerEnabled", J.target.checked);
         });
         let F = document.getElementById("gen-setting-links");
         F && (F.onchange = (J) => {
-          yt("openLinksInNewTab", J.target.checked);
-          let V = document.getElementById("gen-setting-links-title");
-          V && (V.textContent = J.target.checked ? "Open Work Orders in New Tab" : "Open Work Orders in Current Tab"), _.get("invalidateColorCodeCache")?.();
+          xt("openLinksInNewTab", J.target.checked);
+          let z = document.getElementById("gen-setting-links-title");
+          z && (z.textContent = J.target.checked ? "Open Work Orders in New Tab" : "Open Work Orders in Current Tab"), _.get("invalidateColorCodeCache")?.();
         });
         let U = document.getElementById("gen-setting-redirect");
         U && (U.onchange = (J) => {
-          yt("autoRedirect", J.target.checked);
+          xt("autoRedirect", J.target.checked);
         });
         let q = document.getElementById("gen-setting-date-fmt");
         q && (q.onchange = (J) => {
-          yt("dateFormat", J.target.value);
+          xt("dateFormat", J.target.value);
         });
         let j = document.getElementById("gen-setting-date-sep");
         j && (j.onchange = (J) => {
-          yt("dateSeparator", J.target.value);
+          xt("dateSeparator", J.target.value);
         });
         let Z = document.getElementById("gen-setting-date-over");
         Z && (Z.onchange = (J) => {
-          yt("dateOverrideEnabled", J.target.checked);
+          xt("dateOverrideEnabled", J.target.checked);
         });
         let P = document.getElementById("gen-setting-language");
         P && (P.onchange = (J) => {
-          yt("language", J.target.value), xi(J.target.value);
+          xt("language", J.target.value), xi(J.target.value);
         });
         let G = document.getElementById("gen-setting-log-level");
-        G && (G.value = Y.logLevel || "error", G.onchange = (J) => yt("logLevel", J.target.value));
+        G && (G.value = Y.logLevel || "error", G.onchange = (J) => xt("logLevel", J.target.value));
         let I = document.getElementById("gen-setting-update-track");
         I && (I.value = Y.updateTrack || "stable", I.onchange = (J) => {
-          let V = J.target.value;
-          yt("updateTrack", V);
-          let { download: oe } = Oo(), xe = V === "beta" ? "Beta" : "Stable", $e = i("div", { className: "apm-modal-overlay", style: { zIndex: "2147483647" } }, [
+          let z = J.target.value;
+          xt("updateTrack", z);
+          let { download: oe } = Oo(), xe = z === "beta" ? "Beta" : "Stable", $e = i("div", { className: "apm-modal-overlay", style: { zIndex: "2147483647" } }, [
             i("div", { className: "apm-modal-content", style: { width: "360px", maxWidth: "90vw" } }, [
               i("div", { className: "apm-modal-header" }, [
                 i("span", { style: { fontWeight: "600", fontSize: "14px", color: "var(--apm-text-bright)" } }, `Switched to ${xe}`)
@@ -20922,7 +21174,7 @@ Use N-M for numeric ranges (e.g. 10500-10510)`, style: { fontSize: "12px", width
                 i("button", {
                   className: "apm-modal-btn apm-modal-btn-accent",
                   onclick: () => {
-                    $e.remove(), hn(oe);
+                    $e.remove(), yn(oe);
                   }
                 }, `Install ${xe}`)
               ])
@@ -20930,16 +21182,16 @@ Use N-M for numeric ranges (e.g. 10500-10510)`, style: { fontSize: "12px", width
           ]);
           document.body.appendChild($e);
         }), Ti(() => {
-          let J = document.getElementById("apm-settings-update-container"), V = document.getElementById("apm-btn-check-updates"), oe = _.get("updateInfo");
+          let J = document.getElementById("apm-settings-update-container"), z = document.getElementById("apm-btn-check-updates"), oe = _.get("updateInfo");
           if (oe?.available) {
-            J && (J.style.display = "block"), V && (V.style.display = "none");
+            J && (J.style.display = "block"), z && (z.style.display = "none");
             let xe = document.getElementById("apm-footer-update-link");
             if (xe && oe?.url) {
               if (oe?.url?.startsWith("https://"))
                 try {
                   let $e = new URL(oe.url).hostname;
                   !$e.endsWith("github.com") && !$e.endsWith("githubusercontent.com") && !$e.endsWith("greasyfork.org") ? xe.href = "#" : (xe.href = oe.url, xe.onclick = (et) => {
-                    et.preventDefault(), hn(oe.url);
+                    et.preventDefault(), yn(oe.url);
                   });
                 } catch {
                   xe.href = "#";
@@ -20947,11 +21199,11 @@ Use N-M for numeric ranges (e.g. 10500-10510)`, style: { fontSize: "12px", width
               oe?.version && (xe.textContent = `\u2728 Update to v${oe?.version} Available`);
             }
           } else
-            J && (J.style.display = "none"), V && (V.style.display = "inline-block");
+            J && (J.style.display = "none"), z && (z.style.display = "inline-block");
         });
         let X = document.getElementById("apm-btn-check-updates");
         X && (X.onclick = () => {
-          X.textContent = "Checking...", X.disabled = !0, ra(!0, (J) => {
+          X.textContent = "Checking...", X.disabled = !0, oa(!0, (J) => {
             J || (X.textContent = "Up to Date", setTimeout(() => {
               X && (X.textContent = "Check for Updates", X.disabled = !1);
             }, 3e3));
@@ -20966,8 +21218,8 @@ Use N-M for numeric ranges (e.g. 10500-10510)`, style: { fontSize: "12px", width
         let W = document.getElementById("apm-btn-export-settings");
         W && (W.onclick = () => {
           try {
-            let q = Cm();
-            x(q);
+            let q = Rm();
+            b(q);
           } catch (q) {
             d.error("Settings", "Error exporting settings:", q), C("Error exporting settings", "var(--apm-danger)");
           }
@@ -20976,14 +21228,14 @@ Use N-M for numeric ranges (e.g. 10500-10510)`, style: { fontSize: "12px", width
         if (M && F) {
           let q = function(j) {
             return new Promise((Z) => {
-              let P = [], G = Sm.map((J) => {
-                let V = i("input", { type: "checkbox", checked: !0, id: `import-mod-${J.id}`, style: { accentColor: "var(--apm-accent)", cursor: "pointer", width: "14px", height: "14px", margin: "0" } });
-                return P.push({ cb: V, mod: J }), i("label", { htmlFor: `import-mod-${J.id}`, style: { display: "flex", alignItems: "center", gap: "8px", padding: "6px 8px", borderRadius: "var(--apm-radius-sm)", cursor: "pointer", transition: "background 0.15s", fontSize: "12px", color: "var(--apm-text-bright)" } }, [
-                  V,
+              let P = [], G = Tm.map((J) => {
+                let z = i("input", { type: "checkbox", checked: !0, id: `import-mod-${J.id}`, style: { accentColor: "var(--apm-accent)", cursor: "pointer", width: "14px", height: "14px", margin: "0" } });
+                return P.push({ cb: z, mod: J }), i("label", { htmlFor: `import-mod-${J.id}`, style: { display: "flex", alignItems: "center", gap: "8px", padding: "6px 8px", borderRadius: "var(--apm-radius-sm)", cursor: "pointer", transition: "background 0.15s", fontSize: "12px", color: "var(--apm-text-bright)" } }, [
+                  z,
                   i("span", {}, J.label)
                 ]);
-              }), I = (J) => P.forEach(({ cb: V }) => {
-                V.checked = J;
+              }), I = (J) => P.forEach(({ cb: z }) => {
+                z.checked = J;
               }), X = i("div", { className: "apm-modal-overlay", style: { zIndex: "2147483647" } }, [
                 i("div", { className: "apm-modal-content", style: { width: "400px", maxWidth: "90vw" } }, [
                   i("div", { className: "apm-modal-header" }, [
@@ -21018,17 +21270,17 @@ Use N-M for numeric ranges (e.g. 10500-10510)`, style: { fontSize: "12px", width
                       className: "apm-modal-btn apm-modal-btn-accent",
                       onclick: () => {
                         let J = /* @__PURE__ */ new Set();
-                        if (P.forEach(({ cb: V, mod: oe }) => {
-                          V.checked && oe.keys.forEach((xe) => J.add(xe));
+                        if (P.forEach(({ cb: z, mod: oe }) => {
+                          z.checked && oe.keys.forEach((xe) => J.add(xe));
                         }), J.size === 0) {
                           C("No modules selected", "var(--apm-warning)");
                           return;
                         }
                         X.remove();
                         try {
-                          let V = Am(j, { onlyKeys: [...J] });
-                          if (V.ok) {
-                            let oe = P.filter(({ cb: $t }) => $t.checked).length, xe = Array.isArray(V.warnings) ? V.warnings : [];
+                          let z = Om(j, { onlyKeys: [...J] });
+                          if (z.ok) {
+                            let oe = P.filter(({ cb: qt }) => qt.checked).length, xe = Array.isArray(z.warnings) ? z.warnings : [];
                             C(`Imported ${oe} module${oe !== 1 ? "s" : ""} from backup`, "var(--apm-success)"), d.info("Settings", `Selective import: ${oe} modules`), xe.length > 0 && d.warn("Settings", "Import warnings:", xe);
                             let $e = [
                               i(
@@ -21051,7 +21303,7 @@ Use N-M for numeric ranges (e.g. 10500-10510)`, style: { fontSize: "12px", width
                                 }
                               }, [
                                 i("div", { style: { fontWeight: "600", color: "var(--apm-text-bright)", marginBottom: "4px" } }, "Some data could not be restored"),
-                                ...xe.map(($t) => i("div", { style: { marginTop: "2px" } }, $t))
+                                ...xe.map((qt) => i("div", { style: { marginTop: "2px" } }, qt))
                               ])
                             );
                             let et = i("div", { className: "apm-modal-overlay", style: { zIndex: "2147483647" } }, [
@@ -21068,7 +21320,7 @@ Use N-M for numeric ranges (e.g. 10500-10510)`, style: { fontSize: "12px", width
                                   i("button", {
                                     className: "apm-modal-btn apm-modal-btn-accent",
                                     onclick: () => {
-                                      window.top.location.href = nr();
+                                      window.top.location.href = ar();
                                     }
                                   }, "Refresh Now")
                                 ])
@@ -21076,11 +21328,11 @@ Use N-M for numeric ranges (e.g. 10500-10510)`, style: { fontSize: "12px", width
                             ]);
                             document.body.appendChild(et);
                           } else {
-                            let oe = V.errors.length > 0 ? V.errors.slice(0, 3).join("; ") : "Import failed";
-                            C(oe, "var(--apm-danger)"), d.error("Settings", "Import errors:", V.errors);
+                            let oe = z.errors.length > 0 ? z.errors.slice(0, 3).join("; ") : "Import failed";
+                            C(oe, "var(--apm-danger)"), d.error("Settings", "Import errors:", z.errors);
                           }
-                        } catch (V) {
-                          d.error("Settings", "Error during import:", V), C("Error processing import data", "var(--apm-danger)");
+                        } catch (z) {
+                          d.error("Settings", "Error during import:", z), C("Error processing import data", "var(--apm-danger)");
                         }
                         Z(!0);
                       }
@@ -21112,33 +21364,33 @@ Make sure you have a backup first!
 
 Continue?`) && confirm("Are you absolutely sure? This cannot be undone."))
             try {
-              let q = be.session?.tenant || Dr();
-              Object.keys(Y).forEach((V) => {
-                delete Y[V];
+              let q = ye.session?.tenant || nr();
+              Object.keys(Y).forEach((z) => {
+                delete Y[z];
               });
               let j = N.list(), Z = 0;
-              j.forEach((V) => {
-                N.remove(V), Z++;
-              }), N.list().forEach((V) => N.remove(V)), [je, St, tt, Qe, kt].forEach((V) => N.remove(V));
-              let G = Object.keys(localStorage).filter((V) => V.startsWith("apm") || V.startsWith("Apm") || V.startsWith("APM"));
-              G.forEach((V) => localStorage.removeItem(V)), Z += G.length;
-              let I = window.location.hostname.split(".").slice(-2).join("."), X = [kt, jn, To];
-              X.forEach((V) => {
-                document.cookie = `${V}=; path=/; domain=.${I}; max-age=0; SameSite=Lax`, document.cookie = `${V}=; path=/; max-age=0; SameSite=Lax`;
+              j.forEach((z) => {
+                N.remove(z), Z++;
+              }), N.list().forEach((z) => N.remove(z)), [Ke, Et, tt, Qe, Tt].forEach((z) => N.remove(z));
+              let G = Object.keys(localStorage).filter((z) => z.startsWith("apm") || z.startsWith("Apm") || z.startsWith("APM"));
+              G.forEach((z) => localStorage.removeItem(z)), Z += G.length;
+              let I = window.location.hostname.split(".").slice(-2).join("."), X = [Tt, Kn, To];
+              X.forEach((z) => {
+                document.cookie = `${z}=; path=/; domain=.${I}; max-age=0; SameSite=Lax`, document.cookie = `${z}=; path=/; max-age=0; SameSite=Lax`;
               });
               let J = document.querySelector('meta[name="color-scheme"]');
               J && J.remove();
               try {
-                typeof GM_setValue < "u" && (GM_setValue(je, "{}"), GM_setValue(St, "default"), GM_setValue(tt, "{}"), GM_setValue(Qe, "[]"));
-              } catch (V) {
-                d.warn("Settings", "Placeholder write failed:", V);
+                typeof GM_setValue < "u" && (GM_setValue(Ke, "{}"), GM_setValue(Et, "default"), GM_setValue(tt, "{}"), GM_setValue(Qe, "[]"));
+              } catch (z) {
+                d.warn("Settings", "Placeholder write failed:", z);
               }
               d.info("Settings", `Wiped ${Z} storage entries + ${X.length} cookies.`), C(`All data wiped (${Z} entries). Reloading...`, "var(--apm-danger)"), setTimeout(() => {
-                let V = q ? `${Lr}logindisp?tenant=${q}` : Lr;
+                let z = q ? `${Dr}logindisp?tenant=${q}` : Dr;
                 try {
-                  window.top.location.href = V;
+                  window.top.location.href = z;
                 } catch {
-                  window.location.href = V;
+                  window.location.href = z;
                 }
               }, 1500);
             } catch (q) {
@@ -21153,12 +21405,12 @@ Continue?`) && confirm("Are you absolutely sure? This cannot be undone."))
       let W = (M) => {
         [r, o, n, a, s].forEach((F) => F.style.display = "none"), M.style.display = "flex";
       };
-      h.onclick = () => {
+      y.onclick = () => {
         e.settingsMode = "cols", k("cols");
-      }, y.onclick = () => {
+      }, x.onclick = () => {
         e.settingsMode = "tabs", _.get("invalidateTabCache")?.(), k("tabs");
       }, p.onclick = () => {
-        e.activeTab = "autofill", v(), p.className = "apm-tab-btn apm-tab-active-autofill", W(r), Un(c);
+        e.activeTab = "autofill", v(), p.className = "apm-tab-btn apm-tab-active-autofill", W(r), Gn(c);
       }, u.onclick = () => {
         e.activeTab = "settings", v(), u.className = "apm-tab-btn apm-tab-active-autofill", W(o), k();
       }, m.onclick = () => {
@@ -21168,7 +21420,7 @@ Continue?`) && confirm("Are you absolutely sure? This cannot be undone."))
       }, f.onclick = () => {
         e.activeTab = "general", v(), f.className = "apm-tab-btn apm-tab-active-autofill", W(a);
       }, g.onclick = () => {
-        e.activeTab = "diagnostics", v(), g.className = "apm-tab-btn apm-tab-active-autofill", W(s), Ed(), pe.registerTask("diag-ui-poll", 5e3, Ed);
+        e.activeTab = "diagnostics", v(), g.className = "apm-tab-btn apm-tab-active-autofill", W(s), Cd(), pe.registerTask("diag-ui-poll", 5e3, Cd);
       };
     }
     function K() {
@@ -21209,7 +21461,7 @@ Continue?`) && confirm("Are you absolutely sure? This cannot be undone."))
           Z && (Z.scrollTop = 0);
         };
       }), document.getElementById("apm-v-changelog").onclick = () => {
-        document.getElementById("apm-changelog-modal").style.display = "flex", tg(Y.updateTrack || "stable");
+        document.getElementById("apm-changelog-modal").style.display = "flex", ig(Y.updateTrack || "stable");
       }, document.getElementById("apm-changelog-close").onclick = () => {
         document.getElementById("apm-changelog-modal").style.display = "none";
       }, document.getElementById("apm-changelog-modal").onclick = (q) => {
@@ -21239,7 +21491,7 @@ Continue?`) && confirm("Are you absolutely sure? This cannot be undone."))
         }, j = !1, Z = setTimeout(() => {
           j || (j = !0, q());
         }, 8e3);
-        ra(!0, (P) => {
+        oa(!0, (P) => {
           if (clearTimeout(Z), j) return;
           if (j = !0, !P) {
             q();
@@ -21268,7 +21520,7 @@ Continue?`) && confirm("Are you absolutely sure? This cannot be undone."))
                 i("button", {
                   className: "apm-modal-btn apm-modal-btn-accent",
                   onclick: () => {
-                    U.remove(), F = !1, hn(I);
+                    U.remove(), F = !1, yn(I);
                   }
                 }, "Update Now")
               ])
@@ -21278,17 +21530,17 @@ Continue?`) && confirm("Are you absolutely sure? This cannot be undone."))
       };
     }
     function H() {
-      let W = () => Hn(), M = document.getElementById("apm-c-is-default");
-      M && M.addEventListener("change", fd);
+      let W = () => Un(), M = document.getElementById("apm-c-is-default");
+      M && M.addEventListener("change", yd);
       let F = document.getElementById("apm-c-keyword-mode-input");
-      F && F.addEventListener("change", Xo);
+      F && F.addEventListener("change", Zo);
       let U = document.getElementById("apm-c-kw-title-label"), q = document.getElementById("apm-c-kw-equip-label");
       U && U.addEventListener("click", () => {
-        F?.checked && (F.checked = !1, Xo());
+        F?.checked && (F.checked = !1, Zo());
       }), q && q.addEventListener("click", () => {
-        F && !F.checked && (F.checked = !0, Xo());
-      }), qn().wireEvents(), Wn().wireEvents(), Qa().wireEvents();
-      let j = new MutationObserver(Xo), Z = document.getElementById("apm-c-chip-container"), P = document.getElementById("apm-c-eq-chip-container");
+        F && !F.checked && (F.checked = !0, Zo());
+      }), Wn().wireEvents(), Hn().wireEvents(), Qa().wireEvents();
+      let j = new MutationObserver(Zo), Z = document.getElementById("apm-c-chip-container"), P = document.getElementById("apm-c-eq-chip-container");
       Z && j.observe(Z, { childList: !0 }), P && j.observe(P, { childList: !0 });
       let G = document.getElementById("apm-c-labor-hours");
       G && G.addEventListener("blur", () => {
@@ -21299,29 +21551,29 @@ Continue?`) && confirm("Are you absolutely sure? This cannot be undone."))
       I && I.addEventListener("click", (X) => {
         let J = X.target.closest(".apm-screen-pill");
         if (!J || J.classList.contains("apm-screen-pill-active")) return;
-        let V = J.dataset.screen, oe = () => {
-          I.querySelectorAll(".apm-screen-pill").forEach((xe) => xe.classList.remove("apm-screen-pill-active")), J.classList.add("apm-screen-pill-active"), ag(V), yd(V), Un(c, V);
+        let z = J.dataset.screen, oe = () => {
+          I.querySelectorAll(".apm-screen-pill").forEach((xe) => xe.classList.remove("apm-screen-pill-active")), J.classList.add("apm-screen-pill-active"), dg(z), wd(z), Gn(c, z);
         };
-        hd() ? R(c.value, oe) : oe();
-      }), yd(Hn()), Un(c, Hn()), c.addEventListener("change", () => {
-        let X = _.get("getPresets")?.() ?? { autofill: {} }, J = c.value, V = X.autofill?.[W()] || {}, oe = () => {
-          J && V[J] && Xa(V[J], W());
+        xd() ? R(c.value, oe) : oe();
+      }), wd(Un()), Gn(c, Un()), c.addEventListener("change", () => {
+        let X = _.get("getPresets")?.() ?? { autofill: {} }, J = c.value, z = X.autofill?.[W()] || {}, oe = () => {
+          J && z[J] && Xa(z[J], W());
         };
-        hd() ? R(c.value, oe) : oe();
+        xd() ? R(c.value, oe) : oe();
       }), document.getElementById("apm-c-btn-save").onclick = () => {
-        c.value ? (_.get("updatePresetAutofill")?.(c.value, Zo(), W()), bd(), C(L("templateSaved", c.value), "var(--apm-success-bright)")) : C("No template selected to save.", "var(--apm-danger)");
+        c.value ? (_.get("updatePresetAutofill")?.(c.value, en(), W()), vd(), C(L("templateSaved", c.value), "var(--apm-success-bright)")) : C("No template selected to save.", "var(--apm-danger)");
       }, document.getElementById("apm-c-btn-new").onclick = (X) => {
         Q(X.target, c);
       }, document.getElementById("apm-c-btn-del").onclick = () => {
         if (c.value && confirm(`Delete template "${c.value}"?`)) {
           let X = c.value;
-          _.get("updatePresetAutofill")?.(X, null, W()), Un(c, W()), C(L("templateDeleted", X), "var(--apm-danger)");
+          _.get("updatePresetAutofill")?.(X, null, W()), Gn(c, W()), C(L("templateDeleted", X), "var(--apm-danger)");
         }
       };
     }
     function Q(W, M) {
       document.getElementById("apm-new-template-popover")?.remove();
-      let F = Hn(), U = i("div", { id: "apm-new-template-popover", className: "apm-popover" }, [
+      let F = Un(), U = i("div", { id: "apm-new-template-popover", className: "apm-popover" }, [
         i("input", { type: "text", id: "apm-popover-name", className: "apm-popover-input", placeholder: "Template name" }),
         i("div", { className: "apm-popover-row" }, [
           i("label", { style: { display: "flex", alignItems: "center", gap: "5px", cursor: "pointer", fontSize: "var(--apm-text-xs)", color: "var(--apm-text-muted)" } }, [
@@ -21343,8 +21595,8 @@ Continue?`) && confirm("Are you absolutely sure? This cannot be undone."))
       let P = () => {
         let G = Z.value.trim();
         if (!G) return;
-        let X = document.getElementById("apm-popover-copy")?.checked ? Zo() : ig(F);
-        _.get("updatePresetAutofill")?.(G, X, F), Un(M, F), M.value = G, Xa(X, F), C(L("templateCreated", G), "var(--apm-accent)"), U.remove();
+        let X = document.getElementById("apm-popover-copy")?.checked ? en() : pg(F);
+        _.get("updatePresetAutofill")?.(G, X, F), Gn(M, F), M.value = G, Xa(X, F), C(L("templateCreated", G), "var(--apm-accent)"), U.remove();
       };
       document.getElementById("apm-popover-create").onclick = P, Z.addEventListener("keydown", (G) => {
         G.key === "Enter" && P(), G.key === "Escape" && U.remove();
@@ -21357,7 +21609,7 @@ Continue?`) && confirm("Are you absolutely sure? This cannot be undone."))
     }
     function R(W, M) {
       document.getElementById("apm-dirty-popover")?.remove();
-      let F = Hn(), U = i("div", { id: "apm-dirty-popover", className: "apm-popover", style: { left: "50%", transform: "translateX(-50%)", top: "60px" } }, [
+      let F = Un(), U = i("div", { id: "apm-dirty-popover", className: "apm-popover", style: { left: "50%", transform: "translateX(-50%)", top: "60px" } }, [
         i(
           "div",
           { style: { fontSize: "var(--apm-text-sm)", color: "var(--apm-text-bright)", marginBottom: "8px" } },
@@ -21379,7 +21631,7 @@ Continue?`) && confirm("Are you absolutely sure? This cannot be undone."))
       q?.closest(".apm-settings-container")?.appendChild(U), document.getElementById("apm-dirty-discard").onclick = () => {
         U.remove(), M();
       }, document.getElementById("apm-dirty-save").onclick = () => {
-        q?.value && (_.get("updatePresetAutofill")?.(q.value, Zo(), F), bd(), C(L("templateSaved", q.value), "var(--apm-success-bright)")), U.remove(), M();
+        q?.value && (_.get("updatePresetAutofill")?.(q.value, en(), F), vd(), C(L("templateSaved", q.value), "var(--apm-success-bright)")), U.remove(), M();
       };
       let j = (Z) => {
         Z.key === "Escape" && (U.remove(), document.removeEventListener("keydown", j));
@@ -21416,7 +21668,7 @@ Continue?`) && confirm("Are you absolutely sure? This cannot be undone."))
             i("button", {
               className: "apm-modal-btn apm-modal-btn-accent",
               onclick: () => {
-                window.top.location.href = nr();
+                window.top.location.href = ar();
               }
             }, "Refresh Now")
           ])
@@ -21424,7 +21676,7 @@ Continue?`) && confirm("Are you absolutely sure? This cannot be undone."))
       ]);
       document.body.appendChild(Z);
     }
-    function z() {
+    function V() {
       document.getElementById("apm-s-btn-reset").onclick = () => {
         let W = e.settingsMode === "tabs" ? "tab" : "column", M = _.get("getPresets")?.() ?? { config: {} }, F = Ze();
         if (e.settingsMode === "tabs") {
@@ -21437,12 +21689,12 @@ Continue?`) && confirm("Are you absolutely sure? This cannot be undone."))
         let U = "";
         if (e.settingsMode === "cols") {
           let q = Se();
-          U = bl(q?.win || window, q?.grid);
+          U = hl(q?.win || window, q?.grid);
         }
         E(), A(W, F, U);
       };
     }
-    S(), w(), T(), B(), D(), $(), K(), ee(), O(), H(), z(), e.activeTab === "autofill" ? p.onclick() : u.onclick(), _.register("refreshSettingsPanel", () => {
+    S(), w(), T(), B(), D(), $(), K(), ee(), O(), H(), V(), e.activeTab === "autofill" ? p.onclick() : u.onclick(), _.register("refreshSettingsPanel", () => {
       e.activeTab === "settings" && (_.get("invalidateTabCache")?.(), k());
     });
   }
@@ -21451,14 +21703,14 @@ Continue?`) && confirm("Are you absolutely sure? This cannot be undone."))
   mt();
   ue();
   te();
-  kr();
+  Tr();
   Me();
   Oe();
-  Ve();
-  var en = rt();
-  function gg() {
+  je();
+  var tn = rt();
+  function vg() {
     if (!Fe()) return;
-    let e = en.top.document;
+    let e = tn.top.document;
     if (!window[de.FORECAST_TOGGLE]) {
       window[de.FORECAST_TOGGLE] = !0, window.addEventListener("APM_TOGGLE_FORECAST", (o) => {
         d.debug("APM Master", "Event: APM_TOGGLE_FORECAST fired."), Ce.toggle("eam-forecast-panel", () => {
@@ -21467,23 +21719,23 @@ Continue?`) && confirm("Are you absolutely sure? This cannot be undone."))
             d.error("APM Master", "Failed to find/build eam-forecast-panel");
             return;
           }
-          let s = parseFloat(n.style.zoom) || 1, l = o.detail.bottom, c = o.detail.left, p = o.detail.width, u = 500, m = 20, f = (l + 6) / s, g = (c + p / 2 - u * s / 2) / s, h = (window.innerWidth - u * s - 10) / s;
-          g > h && (g = h), g < 10 / s && (g = 10 / s), n.style.top = f + "px", n.style.left = g + "px", n.style.right = "", n.style.display = "block", n.style.visibility = "visible";
-          let y = (window.innerHeight - l - 6 - m) / s;
-          n.style.maxHeight = Math.max(300, y) + "px", d.info("APM Master", "Forecast panel opened.");
+          let s = parseFloat(n.style.zoom) || 1, l = o.detail.bottom, c = o.detail.left, p = o.detail.width, u = 500, m = 20, f = (l + 6) / s, g = (c + p / 2 - u * s / 2) / s, y = (window.innerWidth - u * s - 10) / s;
+          g > y && (g = y), g < 10 / s && (g = 10 / s), n.style.top = f + "px", n.style.left = g + "px", n.style.right = "", n.style.display = "block", n.style.visibility = "visible";
+          let x = (window.innerHeight - l - 6 - m) / s;
+          n.style.maxHeight = Math.max(300, x) + "px", d.info("APM Master", "Forecast panel opened.");
         });
       }), window.addEventListener("APM_TOGGLE_SETTINGS", (o) => {
         d.debug("APM Master", "Event: APM_TOGGLE_SETTINGS fired."), Ce.toggle("apm-settings-panel", () => {
           let n = document.getElementById("apm-settings-panel"), a = !!n, s = _.get("buildSettingsPanel");
           if (!n && typeof s == "function" && (s(), n = document.getElementById("apm-settings-panel")), !n) return;
-          let l = parseFloat(n.style.zoom) || 1, c = o.detail.bottom, p = o.detail.left, u = o.detail.width, m = 440, f = 20, g = (c + 6) / l, h = (p + u / 2 - m * l / 2) / l, y = (window.innerWidth - m * l - 10) / l;
-          h > y && (h = y), h < 10 / l && (h = 10 / l), n.style.top = g + "px", n.style.left = h + "px", n.style.right = "", n.style.display = "flex", n.style.visibility = "visible";
-          let b = (window.innerHeight - c - 6 - f) / l;
-          if (n.style.maxHeight = Math.max(300, b) + "px", a) {
-            let x = _.get("refreshSettingsPanel");
-            if (typeof x == "function")
+          let l = parseFloat(n.style.zoom) || 1, c = o.detail.bottom, p = o.detail.left, u = o.detail.width, m = 440, f = 20, g = (c + 6) / l, y = (p + u / 2 - m * l / 2) / l, x = (window.innerWidth - m * l - 10) / l;
+          y > x && (y = x), y < 10 / l && (y = 10 / l), n.style.top = g + "px", n.style.left = y + "px", n.style.right = "", n.style.display = "flex", n.style.visibility = "visible";
+          let h = (window.innerHeight - c - 6 - f) / l;
+          if (n.style.maxHeight = Math.max(300, h) + "px", a) {
+            let b = _.get("refreshSettingsPanel");
+            if (typeof b == "function")
               try {
-                x();
+                b();
               } catch (v) {
                 d.debug("APM Master", "refreshSettingsPanel threw:", v);
               }
@@ -21513,15 +21765,15 @@ Continue?`) && confirm("Are you absolutely sure? This cannot be undone."))
       let t = 0, r = () => {
         try {
           let o = Date.now();
-          if (!en.Ext || !en.Ext.ComponentQuery) {
+          if (!tn.Ext || !tn.Ext.ComponentQuery) {
             Fe() && o - t > 1e4 && (d.debug("APM Toolbar", "Waiting for ExtJS..."), t = o);
             return;
           }
-          let n = en.Ext.getCmp("apm-custom-btn-group");
+          let n = tn.Ext.getCmp("apm-custom-btn-group");
           if (n && n.getEl() && n.getEl().dom && document.body.contains(n.getEl().dom))
             return;
           Fe() && o - t > 1e4 && (d.debug("APM Toolbar", "Pulse: Injection task active."), t = o), n && (d.debug("APM Toolbar", "Destroying stale button component."), n.destroy());
-          let a = null, s = -1, l = en.Ext.ComponentQuery.query("mainmenubar:not([destroyed=true])");
+          let a = null, s = -1, l = tn.Ext.ComponentQuery.query("mainmenubar:not([destroyed=true])");
           for (let c of l) {
             if (!c.rendered || c.isDestroyed || !c.isVisible?.(!0)) continue;
             let p = c.getEl?.()?.dom;
@@ -21546,7 +21798,7 @@ Continue?`) && confirm("Are you absolutely sure? This cannot be undone."))
               if (p) {
                 let u = p.closest(".x-btn") || p;
                 if (u && u.id) {
-                  let m = en.Ext.getCmp(u.id);
+                  let m = tn.Ext.getCmp(u.id);
                   m && (a = m.up("toolbar") || m.up("container"), a || (a = m.up("panel")?.getDockedItems?.('toolbar[dock="top"]')?.[0]), a && (s = a.items.indexOf(m) + 1, d.debug("APM Toolbar", `Strategy 1: Found toolbar via DOM anchor (${a.id})`)));
                 }
               }
@@ -21576,7 +21828,7 @@ Continue?`) && confirm("Are you absolutely sure? This cannot be undone."))
                 i("span", {}, "APM Master"),
                 i("span", {
                   style: "margin-left: 5px; display: inline-flex; align-items: center;",
-                  innerHTML: Xp.trim()
+                  innerHTML: tu.trim()
                 })
               ])
             ]).outerHTML
@@ -21591,7 +21843,7 @@ Continue?`) && confirm("Are you absolutely sure? This cannot be undone."))
       };
       pe.registerTask("ext-btn-injection", 3e3, r), r(), document.addEventListener("visibilitychange", () => {
         if (!document.hidden) {
-          let o = en.Ext?.getCmp?.("apm-custom-btn-group");
+          let o = tn.Ext?.getCmp?.("apm-custom-btn-group");
           if (o && o.ownerCt) {
             d.debug("APM Toolbar", "Tab visible \u2014 forcing toolbar layout.");
             try {
@@ -21608,8 +21860,8 @@ Continue?`) && confirm("Are you absolutely sure? This cannot be undone."))
   // src/ui/multi-install-banner.js
   ue();
   te();
-  var Td = "apm-multi-install-banner";
-  function Rx() {
+  var _d = "apm-multi-install-banner";
+  function Dx() {
     try {
       let e = window.top._apmUi;
       return Array.isArray(e && e.installs) ? e.installs.length : 0;
@@ -21617,9 +21869,9 @@ Continue?`) && confirm("Are you absolutely sure? This cannot be undone."))
       return 0;
     }
   }
-  function Ox(e) {
+  function Fx(e) {
     let t = document.createElement("div");
-    t.id = Td, t.setAttribute("role", "alert"), t.style.cssText = `
+    t.id = _d, t.setAttribute("role", "alert"), t.style.cssText = `
         position: fixed;
         top: 0;
         left: 0;
@@ -21649,26 +21901,26 @@ Continue?`) && confirm("Are you absolutely sure? This cannot be undone."))
         cursor: pointer;
     `, r.addEventListener("click", () => t.remove()), t.appendChild(r), t;
   }
-  function Nx(e) {
-    let t = Ox(e), r = () => {
-      document.getElementById(Td) || document.body.appendChild(t);
+  function Bx(e) {
+    let t = Fx(e), r = () => {
+      document.getElementById(_d) || document.body.appendChild(t);
     };
     document.body ? r() : document.addEventListener("DOMContentLoaded", r, { once: !0 });
   }
-  function hg() {
-    if (!Fe() || document.getElementById(Td)) return;
-    let e = Rx();
-    e <= 1 || (d.info("MultiInstallBanner", `Detected ${e} APM installs \u2014 mounting warning banner`), Nx(e));
+  function wg() {
+    if (!Fe() || document.getElementById(_d)) return;
+    let e = Dx();
+    e <= 1 || (d.info("MultiInstallBanner", `Detected ${e} APM installs \u2014 mounting warning banner`), Bx(e));
   }
 
   // src/boot.js
   We();
   qe();
   se();
-  var bg = !1;
-  async function Ix() {
-    if (bg || !Fe()) return;
-    bg = !0, document.hidden && (d.info("Boot", "Tab hidden \u2014 deferring auto-open until visible."), await new Promise((r) => {
+  var Sg = !1;
+  async function $x() {
+    if (Sg || !Fe()) return;
+    Sg = !0, document.hidden && (d.info("Boot", "Tab hidden \u2014 deferring auto-open until visible."), await new Promise((r) => {
       let o = () => {
         document.hidden || (document.removeEventListener("visibilitychange", o), r());
       };
@@ -21677,24 +21929,24 @@ Continue?`) && confirm("Are you absolutely sure? This cannot be undone."))
       }, 6e4);
     }), d.info("Boot", "Tab now visible \u2014 starting auto-open poll."));
     let e = /* @__PURE__ */ new Set();
-    for (let r of Object.values(fe))
+    for (let r of Object.values(ge))
       r.systemFunc && e.add(r.systemFunc.toLowerCase());
     let t = await Oi(e, { timeoutMs: 15e3 });
     t.success && C(L("openedEntity", t.entityId), "#1abc9c", !1);
   }
-  function yg(e = window) {
+  function Eg(e = window) {
     let t = e === e.top;
-    he.registerDefaults(), du();
+    fe.registerDefaults(), mu();
     try {
-      ca();
+      da();
     } catch (r) {
       d.error("Boot", "Failed to load initial settings:", r);
     }
-    if (he.isEnabled("tabGridOrder")) {
-      Ac(e);
+    if (fe.isEnabled("tabGridOrder")) {
+      Cc(e);
       let r = !1, o = () => {
         if (!r) {
-          if (Ba(e)) {
+          if ($a(e)) {
             r = !0;
             return;
           }
@@ -21703,9 +21955,9 @@ Continue?`) && confirm("Are you absolutely sure? This cannot be undone."))
       };
       o();
     }
-    mn.waitForExt(e), mn.onBoot(() => {
+    fn.waitForExt(e), fn.onBoot(() => {
       try {
-        pl();
+        dl();
       } catch {
       }
       if (Fe()) {
@@ -21713,7 +21965,7 @@ Continue?`) && confirm("Are you absolutely sure? This cannot be undone."))
           if (!s) {
             s = !0;
             try {
-              Cp();
+              Rp();
             } catch (c) {
               d.debug("Boot", "logEamCaptureSummary failed:", c?.message || c);
             }
@@ -21727,37 +21979,37 @@ Continue?`) && confirm("Are you absolutely sure? This cannot be undone."))
       }
       let r = ie.isLanding, o = ie.isShell;
       if (pe.registerTask("session-monitor", 1e4, () => {
-        fn.monitorStatus();
+        gn.monitorStatus();
       }, { isIdle: !0, skipWhenHidden: !1 }), pe.registerTask("session-heartbeat", 3e5, () => {
-        fn.refreshSession();
+        gn.refreshSession();
       }, { skipWhenHidden: !1 }), r) {
         d.info("Boot", "Landing page detected. Skipping core UI initialization.");
         return;
       }
       [
-        { name: "Styles", fn: Qp },
-        { name: "DateOverride", fn: lu },
+        { name: "Styles", fn: eu },
+        { name: "DateOverride", fn: pu },
         { name: "ForecastUI", flag: "forecast", onlyTop: !0, fn: Xi },
-        { name: "SearchUI", flag: "forecast", onlyTop: !0, fn: mc },
-        { name: "Shortcuts", flag: "forecast", fn: Zu },
-        { name: "ForecastFilter", flag: "forecast", fn: () => em.init() },
-        { name: "LaborTracker", flag: "laborBooker", onlyTop: !0, fn: () => td.init() },
-        { name: "SettingsPanel", onlyTop: !0, fn: Us },
+        { name: "SearchUI", flag: "forecast", onlyTop: !0, fn: uc },
+        { name: "Shortcuts", flag: "forecast", fn: rm },
+        { name: "ForecastFilter", flag: "forecast", fn: () => om.init() },
+        { name: "LaborTracker", flag: "laborBooker", onlyTop: !0, fn: () => ed.init() },
+        { name: "SettingsPanel", onlyTop: !0, fn: Hs },
         { name: "ColorCodeLogic", flag: "colorCode", noShell: !0, fn: ps },
-        { name: "AutoFillObserver", flag: "autoFill", fn: ed },
-        { name: "CommentCounter", flag: "commentCounter", fn: Jf },
+        { name: "AutoFillObserver", flag: "autoFill", fn: Zc },
+        { name: "CommentCounter", flag: "commentCounter", fn: tg },
         { name: "TabGridOrder", flag: "tabGridOrder", noShell: !0, fn: () => {
-          zo().catch(() => {
+          Vo().catch(() => {
           });
         } },
-        { name: "NativeToggle", onlyTop: !0, fn: gg },
-        { name: "PtpStatus", flag: "ptpSandbox", onlyTop: !0, fn: Mn },
-        { name: "PtpContextBroadcaster", flag: "ptpSandbox", onlyTop: !0, fn: Um }
+        { name: "NativeToggle", onlyTop: !0, fn: vg },
+        { name: "PtpStatus", flag: "ptpSandbox", onlyTop: !0, fn: Pn },
+        { name: "PtpContextBroadcaster", flag: "ptpSandbox", onlyTop: !0, fn: zm }
       ].forEach((s) => {
         try {
           if (o && s.noShell)
             return;
-          if (s.flag && !he.isEnabled(s.flag)) {
+          if (s.flag && !fe.isEnabled(s.flag)) {
             d.debug("Boot", `Skipping disabled feature: ${s.name}`);
             return;
           }
@@ -21772,18 +22024,18 @@ Continue?`) && confirm("Are you absolutely sure? This cannot be undone."))
         }
       });
       try {
-        aa.bindAll();
+        ia.bindAll();
       } catch (s) {
         d.error("Boot", "ExtConsistency initial bind failed:", s);
       }
       try {
-        pe.registerTask("consistency-bind", 1e4, () => aa.bindAll());
+        pe.registerTask("consistency-bind", 1e4, () => ia.bindAll());
       } catch (s) {
         d.error("Boot", "Failed to register consistency-bind task:", s);
       }
       if (t) {
         let s = () => {
-          document.getElementById("apm-settings-panel") || (d.info("APM Master", "Settings panel missing, re-injecting..."), Us()), he.isEnabled("forecast") && !document.getElementById("eam-forecast-panel") && (d.info("APM Master", "Forecast panel missing, re-injecting..."), Xi()), he.isEnabled("forecast") && !document.getElementById("apm-quick-search-container") && (d.info("APM Master", "Quick Search missing, re-injecting..."), mc()), he.isEnabled("laborBooker") && !document.getElementById("apm-labor-trigger") && (d.info("APM Master", "Labor Tally missing/detached, re-injecting..."), td.init());
+          document.getElementById("apm-settings-panel") || (d.info("APM Master", "Settings panel missing, re-injecting..."), Hs()), fe.isEnabled("forecast") && !document.getElementById("eam-forecast-panel") && (d.info("APM Master", "Forecast panel missing, re-injecting..."), Xi()), fe.isEnabled("forecast") && !document.getElementById("apm-quick-search-container") && (d.info("APM Master", "Quick Search missing, re-injecting..."), uc()), fe.isEnabled("laborBooker") && !document.getElementById("apm-labor-trigger") && (d.info("APM Master", "Labor Tally missing/detached, re-injecting..."), ed.init());
         };
         try {
           pe.registerTask("ui-persistence", 3e4, s);
@@ -21794,7 +22046,7 @@ Continue?`) && confirm("Are you absolutely sure? This cannot be undone."))
           document.hidden || setTimeout(s, 500);
         });
       }
-      t && ip(), t && he.isEnabled("tabTitle") && (Rf(), Of());
+      t && cp(), t && fe.isEnabled("tabTitle") && (If(), Mf());
       let a = "";
       try {
         pe.registerTask("scheduler-investigator", 1e4, () => {
@@ -21804,30 +22056,30 @@ Continue?`) && confirm("Are you absolutely sure? This cannot be undone."))
       } catch (s) {
         d.error("Boot", "Failed to register scheduler-investigator task:", s);
       }
-      t && he.isEnabled("sessionSnapshot") && jf.init().catch((s) => d.error("Boot", "Session snapshot error:", s)), t && setTimeout(hg, 3e3), Ix().catch((s) => d.error("Boot", "Auto-open error:", s));
+      t && fe.isEnabled("sessionSnapshot") && Jf.init().catch((s) => d.error("Boot", "Session snapshot error:", s)), t && setTimeout(wg, 3e3), $x().catch((s) => d.error("Boot", "Auto-open error:", s));
     });
   }
 
   // src/ui/diagnostic-overlay.js
-  At();
+  _t();
   se();
   ue();
-  var Cd = [
+  var Rd = [
     "eam-forecast-panel",
     "apm-settings-panel",
     "apm-welcome-overlay",
     "apm-labor-panel",
     "apm-labor-popup",
     "apm-colorcode-panel"
-  ], Ad = [
+  ], Od = [
     "apm-forecast-ext-btn",
     "apm-settings-ext-btn",
     "apm-custom-btn-group"
-  ], Mx = 40, Px = 30, xo = [], vo = [];
+  ], qx = 40, Wx = 30, xo = [], vo = [];
   function ri() {
     return Date.now();
   }
-  var Lx = [
+  var Hx = [
     "_apmUi",
     "_apmUiInitialized",
     "_apmUiFallback",
@@ -21855,7 +22107,7 @@ Continue?`) && confirm("Are you absolutely sure? This cannot be undone."))
     "GM_listValues",
     "unsafeWindow"
   ];
-  function xg() {
+  function kg() {
     let e = navigator.userAgent || "";
     return {
       userAgent: e,
@@ -21874,10 +22126,10 @@ Continue?`) && confirm("Are you absolutely sure? This cannot be undone."))
       screenHeight: screen?.height,
       colorDepth: screen?.colorDepth,
       documentVisibilityState: document.visibilityState,
-      cssZoomSupported: Dx()
+      cssZoomSupported: Ux()
     };
   }
-  function Dx() {
+  function Ux() {
     try {
       let e = document.createElement("div");
       e.style.cssText = "position:absolute;top:-9999px;left:-9999px;width:100px;height:100px;zoom:2;pointer-events:none;", document.body.appendChild(e);
@@ -21887,7 +22139,7 @@ Continue?`) && confirm("Are you absolutely sure? This cannot be undone."))
       return null;
     }
   }
-  function vg() {
+  function Tg() {
     let e = [];
     try {
       let t = document.scripts;
@@ -21906,7 +22158,7 @@ Continue?`) && confirm("Are you absolutely sure? This cannot be undone."))
     }
     return e;
   }
-  function wg() {
+  function Cg() {
     let e = [];
     try {
       let t = document.querySelectorAll("iframe");
@@ -21926,13 +22178,13 @@ Continue?`) && confirm("Are you absolutely sure? This cannot be undone."))
     }
     return { count: e.length, list: e };
   }
-  function Sg() {
+  function Ag() {
     let e = [], t = window, r = null;
     try {
       r = window.top;
     } catch {
     }
-    for (let o of Lx) {
+    for (let o of Hx) {
       let n = !1;
       try {
         n = o in t;
@@ -21947,7 +22199,7 @@ Continue?`) && confirm("Are you absolutely sure? This cannot be undone."))
     }
     return e;
   }
-  function Eg() {
+  function _g() {
     let e = { localStorage: [], sessionStorage: [], gmKeys: [] };
     try {
       for (let t = 0; t < localStorage.length; t++) {
@@ -21972,7 +22224,7 @@ Continue?`) && confirm("Are you absolutely sure? This cannot be undone."))
     }
     return e;
   }
-  function kg() {
+  function Rg() {
     try {
       if (typeof GM_info < "u" && GM_info)
         return {
@@ -21993,7 +22245,7 @@ Continue?`) && confirm("Are you absolutely sure? This cannot be undone."))
     }
     return null;
   }
-  function Tg(e) {
+  function Og(e) {
     let t = document.getElementById(e);
     if (!t) return { id: e, present: !1 };
     let r = window.getComputedStyle(t), o = t.getBoundingClientRect();
@@ -22017,7 +22269,7 @@ Continue?`) && confirm("Are you absolutely sure? This cannot be undone."))
       offsetHeight: t.offsetHeight
     };
   }
-  function Cg(e) {
+  function Ng(e) {
     let t = document.getElementById(e);
     if (!t) return { id: e, present: !1 };
     let r = t.getBoundingClientRect();
@@ -22035,7 +22287,7 @@ Continue?`) && confirm("Are you absolutely sure? This cannot be undone."))
       }
     };
   }
-  function Ag() {
+  function Ig() {
     try {
       let e = window.top._apmUi || {};
       return {
@@ -22052,7 +22304,7 @@ Continue?`) && confirm("Are you absolutely sure? This cannot be undone."))
       return { error: String(e) };
     }
   }
-  function Fx() {
+  function Gx() {
     let e = {};
     try {
       e = ve.toJSON();
@@ -22063,21 +22315,21 @@ Continue?`) && confirm("Are you absolutely sure? This cannot be undone."))
       ...e,
       diagOverlay: {
         capturedAt: (/* @__PURE__ */ new Date()).toISOString(),
-        uiManager: Ag(),
-        panels: Cd.map(Tg),
-        toolbarButtons: Ad.map(Cg),
-        browser: xg(),
-        iframes: wg(),
-        scripts: vg(),
-        globals: Sg(),
-        storageKeys: Eg(),
-        gmInfo: kg(),
+        uiManager: Ig(),
+        panels: Rd.map(Og),
+        toolbarButtons: Od.map(Ng),
+        browser: kg(),
+        iframes: Cg(),
+        scripts: Tg(),
+        globals: Ag(),
+        storageKeys: _g(),
+        gmInfo: Rg(),
         panelHistory: xo.slice(),
         clickHistory: vo.slice()
       }
     };
   }
-  function Bx() {
+  function Vx() {
     let e = (t) => {
       try {
         let r = t.target;
@@ -22096,26 +22348,26 @@ Continue?`) && confirm("Are you absolutely sure? This cannot be undone."))
           clientY: t.clientY,
           targetRect: { left: Math.round(a.left), top: Math.round(a.top), width: Math.round(a.width), height: Math.round(a.height) },
           defaultPrevented: t.defaultPrevented
-        }), vo.length > Px && vo.shift();
+        }), vo.length > Wx && vo.shift();
       } catch {
       }
     };
     document.addEventListener("mousedown", e, !0), document.addEventListener("click", e, !0);
   }
-  function $x() {
+  function zx() {
     let e = /* @__PURE__ */ new Map(), t = () => {
-      for (let r of Cd.concat(Ad)) {
+      for (let r of Rd.concat(Od)) {
         let o = document.getElementById(r), n = !!(o && o.offsetWidth > 0 && o.offsetHeight > 0 && window.getComputedStyle(o).display !== "none" && window.getComputedStyle(o).visibility !== "hidden"), a = e.get(r);
-        a !== n && (e.set(r, n), a !== void 0 && (xo.push({ t: ri(), id: r, event: n ? "shown" : "hidden" }), xo.length > Mx && xo.shift()));
+        a !== n && (e.set(r, n), a !== void 0 && (xo.push({ t: ri(), id: r, event: n ? "shown" : "hidden" }), xo.length > qx && xo.shift()));
       }
     };
     setInterval(t, 150), t();
   }
-  function qx(e, t) {
+  function jx(e, t) {
     for (; e.firstChild; ) e.removeChild(e.firstChild);
     e.appendChild(document.createTextNode(t));
   }
-  function Gs(e, t) {
+  function Us(e, t) {
     e.style.cssText = `
         display: inline-block;
         padding: 6px 10px;
@@ -22133,7 +22385,7 @@ Continue?`) && confirm("Are you absolutely sure? This cannot be undone."))
       e.style.filter = "";
     };
   }
-  function Wx(e) {
+  function Kx(e) {
     let t = document.createElement("div");
     return t.id = "apm-diag-badge", t.style.cssText = `
         position: fixed;
@@ -22154,12 +22406,12 @@ Continue?`) && confirm("Are you absolutely sure? This cannot be undone."))
       t.remove(), e();
     }), t;
   }
-  function Gn(e, t, r) {
+  function Vn(e, t, r) {
     e.textContent = t, e.style.color = r ? "#7fff7f" : "#ff8080", setTimeout(() => {
       e.textContent === t && (e.textContent = "", e.style.color = "");
     }, 4e3);
   }
-  function Hx(e) {
+  function Yx(e) {
     return navigator.clipboard?.writeText ? navigator.clipboard.writeText(e) : new Promise((t, r) => {
       try {
         let o = document.createElement("textarea");
@@ -22171,13 +22423,13 @@ Continue?`) && confirm("Are you absolutely sure? This cannot be undone."))
       }
     });
   }
-  function Ux(e, t) {
+  function Jx(e, t) {
     let r = new Blob([e], { type: "application/json" }), o = URL.createObjectURL(r), n = document.createElement("a");
     n.href = o, n.download = t, document.body.appendChild(n), n.click(), setTimeout(() => {
       n.remove(), URL.revokeObjectURL(o);
     }, 1e3);
   }
-  function Gx() {
+  function Qx() {
     let e = document.createElement("div");
     e.id = "apm-diag-overlay", e.style.cssText = `
         position: fixed;
@@ -22229,13 +22481,13 @@ Continue?`) && confirm("Are you absolutely sure? This cannot be undone."))
         background: #181818;
     `;
     let l = document.createElement("button");
-    l.textContent = "Copy summary", l.title = "Copy the visible status text \u2014 quick paste into chat/email", Gs(l, !0);
+    l.textContent = "Copy summary", l.title = "Copy the visible status text \u2014 quick paste into chat/email", Us(l, !0);
     let c = document.createElement("button");
-    c.textContent = "Download .json", c.title = "Download full structured diagnostic \u2014 the file to send for deep analysis", Gs(c, !0);
+    c.textContent = "Download .json", c.title = "Download full structured diagnostic \u2014 the file to send for deep analysis", Us(c, !0);
     let p = document.createElement("button");
-    p.textContent = "Refresh", Gs(p, !1);
+    p.textContent = "Refresh", Us(p, !1);
     let u = document.createElement("button");
-    u.textContent = "Clear History", Gs(u, !1), s.appendChild(l), s.appendChild(c), s.appendChild(p), s.appendChild(u);
+    u.textContent = "Clear History", Us(u, !1), s.appendChild(l), s.appendChild(c), s.appendChild(p), s.appendChild(u);
     let m = document.createElement("div");
     return m.style.cssText = "margin-top:6px;min-height:14px;font-size:11px;", s.appendChild(m), e.appendChild(s), {
       panel: e,
@@ -22251,10 +22503,10 @@ Continue?`) && confirm("Are you absolutely sure? This cannot be undone."))
     };
   }
   function ti(e) {
-    let t = Ag(), r = xg(), o = kg(), n = wg(), a = vg(), s = Sg(), l = Eg(), c = [], p = r.firefoxVersion ? `Firefox ${r.firefoxVersion}` : r.edgeVersion ? `Edge ${r.edgeVersion}` : r.chromeVersion ? `Chrome ${r.chromeVersion}` : "unknown";
+    let t = Ig(), r = kg(), o = Rg(), n = Cg(), a = Tg(), s = Ag(), l = _g(), c = [], p = r.firefoxVersion ? `Firefox ${r.firefoxVersion}` : r.edgeVersion ? `Edge ${r.edgeVersion}` : r.chromeVersion ? `Chrome ${r.chromeVersion}` : "unknown";
     c.push(`browser: ${p}  platform: ${r.platform}`), c.push(`viewport: ${r.innerWidth}x${r.innerHeight}  dpr: ${r.devicePixelRatio}  cssZoom: ${r.cssZoomSupported}`), c.push(`top frame: ${Fe()}  visibility: ${r.documentVisibilityState}`), o && c.push(`runtime: ${o.scriptHandler} ${o.handlerVersion}  script v${o.script?.version}`), c.push(""), c.push("--- UIManager registry ---"), c.push(`activePanelId: ${t.activePanelId}`), c.push(`panels:    ${(t.panels || []).join(", ") || "(none)"}`), c.push(`triggers:  ${(t.triggers || []).join(", ") || "(none)"}`), c.push(`lastTrigger: ${t.msSinceLastTrigger == null ? "(never)" : t.msSinceLastTrigger + "ms ago"}`), t.installs > 1 ? c.push(`*** APM installs detected: ${t.installs} (>1 \u2014 multiple userscript copies running, fans out every click) ***`) : c.push(`installs: ${t.installs}`), c.push(""), c.push("--- Toolbar buttons ---");
-    for (let m of Ad) {
-      let f = Cg(m);
+    for (let m of Od) {
+      let f = Ng(m);
       if (!f.present) {
         c.push(`${m}: NOT_FOUND`);
         continue;
@@ -22262,8 +22514,8 @@ Continue?`) && confirm("Are you absolutely sure? This cannot be undone."))
       c.push(`${m}: ${f.rect.width}x${f.rect.height} @ (${f.rect.left},${f.rect.top})`);
     }
     c.push(""), c.push("--- Panels ---");
-    for (let m of Cd) {
-      let f = Tg(m);
+    for (let m of Rd) {
+      let f = Og(m);
       if (!f.present) {
         c.push(`${m}: NOT_BUILT`);
         continue;
@@ -22289,12 +22541,12 @@ Continue?`) && confirm("Are you absolutely sure? This cannot be undone."))
       }
     }
     if (c.push(""), c.push("--- Other scripts on page ---"), Array.isArray(a)) {
-      let m = a.filter((h) => h.src !== "(inline)"), f = a.length - m.length;
+      let m = a.filter((y) => y.src !== "(inline)"), f = a.length - m.length;
       c.push(`${a.length} total: ${m.length} external, ${f} inline`);
-      let g = m.filter((h) => !/eam|hxgnsmartcloud|hexagon/.test(h.src)).slice(0, 6);
+      let g = m.filter((y) => !/eam|hxgnsmartcloud|hexagon/.test(y.src)).slice(0, 6);
       if (g.length) {
         c.push("non-EAM external:");
-        for (let h of g) c.push(`  ${h.src.slice(0, 80)}`);
+        for (let y of g) c.push(`  ${y.src.slice(0, 80)}`);
       }
     } else
       c.push(`error: ${a.error}`);
@@ -22302,10 +22554,10 @@ Continue?`) && confirm("Are you absolutely sure? This cannot be undone."))
     else for (let m of s) c.push(`${m.key}${m.inWindow ? " [w]" : ""}${m.inTop ? " [top]" : ""}`);
     c.push(""), c.push("--- Iframes ---"), c.push(`${n.count || 0} on page`), c.push(""), c.push("--- Storage keys ---");
     let u = (l.localStorage || []).filter((m) => /^apm/.test(m));
-    c.push(`localStorage: ${(l.localStorage || []).length} keys (${u.length} apm_*)`), c.push(`gmKeys: ${(l.gmKeys || []).length}`), qx(e, c.join(`
+    c.push(`localStorage: ${(l.localStorage || []).length} keys (${u.length} apm_*)`), c.push(`gmKeys: ${(l.gmKeys || []).length}`), jx(e, c.join(`
 `));
   }
-  function zx(e, t) {
+  function Xx(e, t) {
     let r = !1, o = 0, n = 0, a = 0, s = 0;
     t.addEventListener("mousedown", (l) => {
       if (l.target !== t && !t.contains(l.target) || l.target.tagName === "SPAN" && l.target !== t) return;
@@ -22318,34 +22570,34 @@ Continue?`) && confirm("Are you absolutely sure? This cannot be undone."))
       r = !1;
     });
   }
-  function _d() {
+  function Nd() {
     if (!Fe() || document.getElementById("apm-diag-overlay") || document.getElementById("apm-diag-badge")) return;
     let e = () => {
       if (document.getElementById("apm-diag-overlay") || document.getElementById("apm-diag-badge")) return;
-      let t = Gx(), r = () => {
-        let n = _d, a = document.getElementById("apm-diag-badge");
+      let t = Qx(), r = () => {
+        let n = Nd, a = document.getElementById("apm-diag-badge");
         a && a.remove(), n();
       };
       t.minimizeBtn.addEventListener("click", () => {
-        t.panel.remove(), document.body.appendChild(Wx(r));
+        t.panel.remove(), document.body.appendChild(Kx(r));
       }), t.closeBtn.addEventListener("click", () => {
         t.panel.remove();
       }), t.btnCopy.addEventListener("click", () => {
         ti(t.body);
         let n = t.body.textContent || "";
-        Hx(n).then(() => Gn(t.status, `Copied summary (${n.length} chars)`, !0)).catch((a) => Gn(t.status, `Copy failed: ${a.message || a}`, !1));
+        Yx(n).then(() => Vn(t.status, `Copied summary (${n.length} chars)`, !0)).catch((a) => Vn(t.status, `Copy failed: ${a.message || a}`, !1));
       }), t.btnDownload.addEventListener("click", () => {
-        let n = JSON.stringify(Fx(), null, 2), a = (/* @__PURE__ */ new Date()).toISOString().split("T")[0], s = (/* @__PURE__ */ new Date()).toISOString().split("T")[1].replace(/[:.]/g, "-").slice(0, 8), l = `apm-diagnostics-${a}-${s}.json`;
+        let n = JSON.stringify(Gx(), null, 2), a = (/* @__PURE__ */ new Date()).toISOString().split("T")[0], s = (/* @__PURE__ */ new Date()).toISOString().split("T")[1].replace(/[:.]/g, "-").slice(0, 8), l = `apm-diagnostics-${a}-${s}.json`;
         try {
-          Ux(n, l), Gn(t.status, `Downloaded ${l}`, !0);
+          Jx(n, l), Vn(t.status, `Downloaded ${l}`, !0);
         } catch (c) {
-          Gn(t.status, `Download failed: ${c.message || c}`, !1);
+          Vn(t.status, `Download failed: ${c.message || c}`, !1);
         }
       }), t.btnRefresh.addEventListener("click", () => {
-        ti(t.body), Gn(t.status, "Status refreshed", !0);
+        ti(t.body), Vn(t.status, "Status refreshed", !0);
       }), t.btnClearHistory.addEventListener("click", () => {
-        xo.length = 0, vo.length = 0, ti(t.body), Gn(t.status, "History cleared \u2014 try clicking the buttons now", !0);
-      }), zx(t.panel, t.titleBar), document.body.appendChild(t.panel), ti(t.body);
+        xo.length = 0, vo.length = 0, ti(t.body), Vn(t.status, "History cleared \u2014 try clicking the buttons now", !0);
+      }), Xx(t.panel, t.titleBar), document.body.appendChild(t.panel), ti(t.body);
       let o = setInterval(() => {
         if (!document.body.contains(t.panel)) {
           clearInterval(o);
@@ -22354,16 +22606,16 @@ Continue?`) && confirm("Are you absolutely sure? This cannot be undone."))
         ti(t.body);
       }, 1e3);
     };
-    document.body ? e() : document.addEventListener("DOMContentLoaded", e, { once: !0 }), $x(), Bx();
+    document.body ? e() : document.addEventListener("DOMContentLoaded", e, { once: !0 }), zx(), Vx();
   }
 
   // src/modules/ptp/ptp-sandbox.js
   se();
   te();
   _e();
-  ta();
-  Pt();
-  var Rd = "apm-ptp-dark-patch", oi = /* @__PURE__ */ new Set(["theme-hex-dark", "theme-dark"]), wo = "default", wt = null, ni = null, zs = typeof unsafeWindow < "u" ? unsafeWindow : typeof window < "u" ? window : null, Vx = `
+  ra();
+  Dt();
+  var Id = "apm-ptp-dark-patch", oi = /* @__PURE__ */ new Set(["theme-hex-dark", "theme-dark"]), wo = "default", St = null, ni = null, Gs = typeof unsafeWindow < "u" ? unsafeWindow : typeof window < "u" ? window : null, Zx = `
     /* PTP question cards \u2014 inline aliceblue background.
        Card stays transparent so it inherits the dark-blue parent; only the
        color override stays so text is readable on the dark background. */
@@ -22413,9 +22665,9 @@ Continue?`) && confirm("Are you absolutely sure? This cannot be undone."))
     #root [class*="awsui_arrow-outer_xjuzf_"] {
       background-color: #555 !important;
     }
-`, _g = /\/(?:submit_assessment|create_assessment|create_troubleshooting|convert_iptp_assess)/, Od = /\/get_all_assessment/;
-  function jx(e, t, r, o) {
-    if (t !== 200 || !e || !_g.test(e)) return null;
+`, Mg = /\/(?:submit_assessment|create_assessment|create_troubleshooting|convert_iptp_assess)/, Md = /\/get_all_assessment/;
+  function ev(e, t, r, o) {
+    if (t !== 200 || !e || !Mg.test(e)) return null;
     if (e.includes("submit_assessment")) {
       let n = r?.workorder_id ?? r?.workOrderId;
       if (!n) return null;
@@ -22432,8 +22684,8 @@ Continue?`) && confirm("Are you absolutely sure? This cannot be undone."))
     }
     return e.includes("create_troubleshooting") && o ? { kind: "START", wo: String(o) } : null;
   }
-  function Kx(e, t, r, o) {
-    if (!e || !Od.test(e)) return null;
+  function tv(e, t, r, o) {
+    if (!e || !Md.test(e)) return null;
     let n = { stopTimer: !0 }, a = t?.body?.assessments;
     if (!a || !r || !a.some(
       (u) => u.AssessmentStatus === "COMPLETE" && (u.AssociatedBy?.toUpperCase() === r || u.AssociatedEmployeeIds?.includes(r))
@@ -22442,14 +22694,14 @@ Continue?`) && confirm("Are you absolutely sure? This cannot be undone."))
     return p && (n.complete = { wo: String(p) }), n;
   }
   function Vs(e) {
-    let t = document.getElementById(Rd);
-    e ? (document.body?.classList.add("awsui-dark-mode"), t || (t = document.createElement("style"), t.id = Rd, t.textContent = Vx, d.debug("APM Master", "PTP: Injecting Dark Theme Patch")), (document.head || document.documentElement).appendChild(t)) : (document.body?.classList.remove("awsui-dark-mode"), t && (t.remove(), d.debug("APM Master", "PTP: Removing Dark Theme Patch")));
+    let t = document.getElementById(Id);
+    e ? (document.body?.classList.add("awsui-dark-mode"), t || (t = document.createElement("style"), t.id = Id, t.textContent = Zx, d.debug("APM Master", "PTP: Injecting Dark Theme Patch")), (document.head || document.documentElement).appendChild(t)) : (document.body?.classList.remove("awsui-dark-mode"), t && (t.remove(), d.debug("APM Master", "PTP: Removing Dark Theme Patch")));
   }
-  function Rg() {
+  function Pg() {
     if (!/\.ptp\.amazon\.dev|\.insights\./i.test(window.location.hostname)) return;
     d.info("APM Master", `PTP Sandbox detected on: ${window.location.hostname}`);
     try {
-      let w = N.get(St);
+      let w = N.get(Et);
       if (w && oi.has(w)) {
         wo = w;
         let T = document.createElement("style");
@@ -22474,7 +22726,7 @@ Continue?`) && confirm("Are you absolutely sure? This cannot be undone."))
           }
           $.attempts++;
           try {
-            window.top.postMessage(B, wt);
+            window.top.postMessage(B, St);
           } catch {
           }
           $.timer = setTimeout(D, 500);
@@ -22483,7 +22735,7 @@ Continue?`) && confirm("Are you absolutely sure? This cannot be undone."))
       n.set(T, { payload: B, attempts: 0, timer: null }), D();
     }
     function s(w, T) {
-      if (!wt) {
+      if (!St) {
         o.push({ type: w, wo: T });
         return;
       }
@@ -22502,15 +22754,15 @@ Continue?`) && confirm("Are you absolutely sure? This cannot be undone."))
     }, p = (w) => {
       w && (r = w, d.info("APM Master", `PTP Sandbox: Assessment cancelled for WO ${w}. Broadcasting...`), s("APM_PTP_CANCELLED", w));
     }, u = () => {
-      if (d.info("APM Master", "PTP Sandbox: Assessment list hit. Requesting timer stop..."), wt)
+      if (d.info("APM Master", "PTP Sandbox: Assessment list hit. Requesting timer stop..."), St)
         try {
-          window.top.postMessage({ type: "APM_PTP_STOP_TIMER" }, wt);
+          window.top.postMessage({ type: "APM_PTP_STOP_TIMER" }, St);
         } catch {
         }
     }, m = (w, T) => {
-      if (d.info("APM Master", `PTP Sandbox: iPTP ${w.toLowerCase()} for alias ${T}. Broadcasting...`), wt)
+      if (d.info("APM Master", `PTP Sandbox: iPTP ${w.toLowerCase()} for alias ${T}. Broadcasting...`), St)
         try {
-          window.top.postMessage({ type: w === "IPTP_COMPLETE" ? "APM_PTP_IPTP_COMPLETED" : "APM_PTP_IPTP_CANCELLED", alias: T }, wt);
+          window.top.postMessage({ type: w === "IPTP_COMPLETE" ? "APM_PTP_IPTP_COMPLETED" : "APM_PTP_IPTP_CANCELLED", alias: T }, St);
         } catch {
         }
     }, f = (w, T, B, D) => {
@@ -22522,7 +22774,7 @@ Continue?`) && confirm("Are you absolutely sure? This cannot be undone."))
           } catch {
           }
         else D && typeof D == "object" && ($ = D);
-        let K = jx(w, B, $, r);
+        let K = ev(w, B, $, r);
         if (K) {
           switch (d.info("PTP", `${w.split("?")[0].split("/").pop()} \u2192 ${K.kind} wo=${K.wo}`), K.kind) {
             case "START":
@@ -22541,37 +22793,37 @@ Continue?`) && confirm("Are you absolutely sure? This cannot be undone."))
           }
           return;
         }
-        if (B === 200 && Od.test(w || "")) {
+        if (B === 200 && Md.test(w || "")) {
           let ee = null;
           if (T)
             try {
               ee = JSON.parse(T);
             } catch {
             }
-          let O = Jt() || null, H = Kx(w, ee, O, r);
+          let O = Jt() || null, H = tv(w, ee, O, r);
           H?.stopTimer && u(), H?.complete && (d.debug("APM Master", `PTP Sandbox: Safety net \u2014 ${O} has COMPLETE assessment for WO ${H.complete.wo}`), l(H.complete.wo));
         }
       } catch ($) {
         d.info("PTP", `Capture error on ${w?.split("?")[0] || "unknown URL"}: ${$.message}`);
       }
-    }, g = (w) => w && (_g.test(w) || Od.test(w)), h = (w) => w && w.includes("execute-api."), y = (w, T) => {
-      if (h(w) && !(T !== 401 && T !== 403)) {
+    }, g = (w) => w && (Mg.test(w) || Md.test(w)), y = (w) => w && w.includes("execute-api."), x = (w, T) => {
+      if (y(w) && !(T !== 401 && T !== 403)) {
         d.info("PTP", `Auth failure status=${T} url=${w.split("?")[0].split("/").pop()}`);
         try {
-          window.top.postMessage({ type: "APM_PTP_AUTH_FAILED", status: T, url: w }, wt || "*");
+          window.top.postMessage({ type: "APM_PTP_AUTH_FAILED", status: T, url: w }, St || "*");
         } catch {
         }
       }
-    }, b = zs.XMLHttpRequest, x = b.prototype.open, v = b.prototype.send;
-    b.prototype.open = function(w, T) {
-      return this._apmUrl = (T || "").toString(), x.apply(this, arguments);
-    }, b.prototype.send = function(w) {
+    }, h = Gs.XMLHttpRequest, b = h.prototype.open, v = h.prototype.send;
+    h.prototype.open = function(w, T) {
+      return this._apmUrl = (T || "").toString(), b.apply(this, arguments);
+    }, h.prototype.send = function(w) {
       return this._apmLoadListenerAdded || (this._apmLoadListenerAdded = !0, this.addEventListener("loadend", function() {
-        y(this._apmUrl, this.status), g(this._apmUrl) && (this.status === 0 && !this.responseText || f(this._apmUrl, this.responseText, this.status, w));
+        x(this._apmUrl, this.status), g(this._apmUrl) && (this.status === 0 && !this.responseText || f(this._apmUrl, this.responseText, this.status, w));
       })), v.apply(this, arguments);
     };
-    let E = zs.fetch;
-    zs.fetch = async function(...w) {
+    let E = Gs.fetch;
+    Gs.fetch = async function(...w) {
       let T = w[0] instanceof Request ? w[0].url : typeof w[0] == "string" ? w[0] : "", B = null, D = null;
       try {
         return B = await E.apply(this, w), B;
@@ -22579,7 +22831,7 @@ Continue?`) && confirm("Are you absolutely sure? This cannot be undone."))
         throw D = $, $;
       } finally {
         try {
-          if (B && y(T, B.status), B && g(T)) {
+          if (B && x(T, B.status), B && g(T)) {
             let K = await B.clone().text(), ee = w[0] instanceof Request ? w[0] : w[1] || {};
             f(T, K, B.status, ee.body);
           } else !B && g(T) && d.debug("PTP", `Fetch failed on relevant URL (${T.split("?")[0]}): ${D?.message || "unknown"}`);
@@ -22592,25 +22844,25 @@ Continue?`) && confirm("Are you absolutely sure? This cannot be undone."))
       d.debug("APM Master", "PTP Sandbox: Starting core logic"), (() => {
         if (document.visibilityState !== "visible" || !document.body) return;
         let T = !!document.querySelector('.ptp-header, .permit-details, #ptp-main-content, [class*="awsui_root_"]'), B = window.location.href.includes("workOrder");
-        if ((T || B) && wt)
+        if ((T || B) && St)
           try {
-            window.top.postMessage({ type: "APM_PTP_HEARTBEAT", visible: !0, url: window.location.href }, wt);
+            window.top.postMessage({ type: "APM_PTP_HEARTBEAT", visible: !0, url: window.location.href }, St);
           } catch {
           }
       })(), setInterval(() => {
-        if (wt)
+        if (St)
           try {
-            window.top.postMessage({ type: "APM_PTP_HEARTBEAT", visible: !0, url: zs.location.href }, wt);
+            window.top.postMessage({ type: "APM_PTP_HEARTBEAT", visible: !0, url: Gs.location.href }, St);
           } catch {
           }
       }, 5e3), window.addEventListener("mousedown", (T) => {
-        if (wt)
+        if (St)
           try {
-            window.top.postMessage({ type: "APM_PTP_CLICK_AWAY" }, wt);
+            window.top.postMessage({ type: "APM_PTP_CLICK_AWAY" }, St);
           } catch {
           }
       }, !0), new MutationObserver(() => {
-        !document.getElementById(Rd) && oi.has(wo) && Vs(!0);
+        !document.getElementById(Id) && oi.has(wo) && Vs(!0);
       }).observe(document.head || document.documentElement, { childList: !0 }), ni = () => {
         oi.has(wo) && document.querySelectorAll('[id^="question-"]').forEach((T) => {
           T.style.backgroundColor && (T.style.backgroundColor = ""), T.style.borderColor && (T.style.borderColor = "");
@@ -22621,19 +22873,19 @@ Continue?`) && confirm("Are you absolutely sure? This cannot be undone."))
     };
     window.addEventListener("message", (w) => {
       let T = w.data;
-      if (!T || !Er(w.origin)) return;
+      if (!T || !kr(w.origin)) return;
       if (T.type === "APM_PTP_ACK" && T.msgId) {
         let $ = n.get(T.msgId);
         $ && (clearTimeout($.timer), n.delete(T.msgId));
         return;
       }
-      if (T.type === "APM_PTP_CONTEXT" && T.wo && Er(w.origin)) {
+      if (T.type === "APM_PTP_CONTEXT" && T.wo && kr(w.origin)) {
         r = String(T.wo), d.debug("PTP", `Received APM_PTP_CONTEXT wo=${r}`);
         return;
       }
       let B = T.__betterApm === "theme" || T.__betterApm === "setTheme", D = T.type === "APM_SET_THEME" || T.apmMaster === "theme";
       if (B || D) {
-        if (!wt && Er(w.origin) && (wt = w.origin, o.length)) {
+        if (!St && kr(w.origin) && (St = w.origin, o.length)) {
           let ee = o;
           o = [];
           let O = /* @__PURE__ */ new Set();
@@ -22646,7 +22898,7 @@ Continue?`) && confirm("Are you absolutely sure? This cannot be undone."))
         if (!$ || $ === "default") return;
         d.debug("APM Master", `PTP Sandbox: Theme Sync -> ${$}`);
         try {
-          N.set(St, $);
+          N.set(Et, $);
         } catch {
         }
         wo = $, Vs(oi.has(wo));
@@ -22656,13 +22908,13 @@ Continue?`) && confirm("Are you absolutely sure? This cannot be undone."))
     }), document.readyState === "loading" ? window.addEventListener("DOMContentLoaded", k) : k();
     let S = () => {
       try {
-        let w = N.get(St);
+        let w = N.get(Et);
         w && w !== wo && (wo = w, Vs(oi.has(wo)));
       } catch {
       }
       d.debug("APM Master", "PTP Sandbox: Requesting Theme Handshake...");
       try {
-        let w = wt || "*";
+        let w = St || "*";
         try {
           window.top.postMessage({ type: "APM_GET_THEME", apmMaster: "getTheme", __betterApm: "getTheme" }, w);
         } catch {
@@ -22674,7 +22926,7 @@ Continue?`) && confirm("Are you absolutely sure? This cannot be undone."))
   }
 
   // src/index.js
-  qc();
+  $c();
 
   // src/modules/welcome/betterapm-import.js
   _e();
@@ -22682,7 +22934,7 @@ Continue?`) && confirm("Are you absolutely sure? This cannot be undone."))
   se();
   Zr();
   te();
-  var Yx = {
+  var rv = {
     "theme-hex-dark": "Dark Hex",
     "theme-dark": "Dark Classic",
     "theme-darkblue": "Dark Blue",
@@ -22691,8 +22943,8 @@ Continue?`) && confirm("Are you absolutely sure? This cannot be undone."))
     "theme-orange": "Orange",
     "theme-ux3": "UX3"
   };
-  function Og() {
-    if (N.get(nl)) return null;
+  function Lg() {
+    if (N.get(ol)) return null;
     try {
       let e = localStorage.getItem("apmMappings"), t = (localStorage.getItem("apmUiTheme") || "").trim(), r = null;
       if (e)
@@ -22705,35 +22957,35 @@ Continue?`) && confirm("Are you absolutely sure? This cannot be undone."))
       return !o && !n ? null : {
         mappings: o,
         theme: n,
-        themeLabel: n ? Yx[n] || n : null,
+        themeLabel: n ? rv[n] || n : null,
         ruleCount: o ? o.length : 0
       };
     } catch (e) {
       return d.warn("BetterApmImport", "detect failed", e), null;
     }
   }
-  async function Jx({ importMappings: e, importTheme: t }) {
-    let r = Og();
+  async function ov({ importMappings: e, importTheme: t }) {
+    let r = Lg();
     if (!r) return { ruleCount: 0, finalCount: 0, consolidatedGroups: 0, themeApplied: !1 };
     let o = 0, n = 0, a = 0;
     if (e && r.mappings) {
       let l = ds(r.mappings) || [];
       o = l.length;
-      let c = [...it(), ...l], p = Pa(c);
+      let c = [...it(), ...l], p = La(c);
       if (p.length > 0) {
-        let u = await Fa(p, { cancelLabel: "Keep Separate" });
-        u && u.length > 0 && (c = La(c, u), a = u.length);
+        let u = await Ba(p, { cancelLabel: "Keep Separate" });
+        u && u.length > 0 && (c = Da(c, u), a = u.length);
       }
-      gr(c), n = c.length;
+      hr(c), n = c.length;
     }
     let s = !1;
-    return t && r.theme && (dr.setGlobalTheme(r.theme), s = !0), N.set(nl, !0), d.info(
+    return t && r.theme && (pr.setGlobalTheme(r.theme), s = !0), N.set(ol, !0), d.info(
       "BetterApmImport",
       `Imported ${o} rule(s), final ${n}, consolidated ${a} group(s), theme=${s}`
     ), { ruleCount: o, finalCount: n, consolidatedGroups: a, themeApplied: s };
   }
-  _.register("welcome.detectBetterApm", Og);
-  _.register("welcome.importFromBetterApm", Jx);
+  _.register("welcome.detectBetterApm", Lg);
+  _.register("welcome.importFromBetterApm", ov);
 
   // src/index.js
   d.debug("Boot", `APM script initializing in frame: ${window.location.pathname} (Top: ${ie.isTop})`);
@@ -22743,22 +22995,22 @@ Continue?`) && confirm("Are you absolutely sure? This cannot be undone."))
     d.error("Boot", "Theme enforcement failed:", e);
   }
   try {
-    Sl.run(), Tp();
+    wl.run(), _p();
   } catch (e) {
     d.error("Boot", "Settings init failed:", e);
   } finally {
-    mn.markReady("settings");
+    fn.markReady("settings");
   }
   ve.restoreFromSession();
   window.addEventListener("beforeunload", () => ve.flushToSession());
-  he.registerDefaults();
+  fe.registerDefaults();
   try {
-    fn.init();
+    gn.init();
   } catch (e) {
     d.error("Boot", "SessionMonitor init failed:", e);
   }
   try {
-    Bp();
+    Wp();
   } catch (e) {
     d.error("Boot", "WakePrompt init failed:", e);
   }
@@ -22767,22 +23019,22 @@ Continue?`) && confirm("Are you absolutely sure? This cannot be undone."))
   } catch (e) {
     d.error("Boot", "UIManager init failed:", e);
   }
-  var { isEAM: Ks, isPTP: Ys, isLanding: Js } = ie;
-  Js && ie.isTop && Y.autoRedirect && (window.location.href.toLowerCase().includes("logindisp") || (d.info("Boot", "Landing page detected \u2014 immediate redirect to login."), fn.forceRedirect()));
-  if (Ks || Ys || Js) {
-    if (Ys && he.isEnabled("ptpSandbox") && Rg(), Ks) {
-      ie.isTop && setTimeout(ra, 1e4);
+  var { isEAM: js, isPTP: Ks, isLanding: Ys } = ie;
+  Ys && ie.isTop && Y.autoRedirect && (window.location.href.toLowerCase().includes("logindisp") || (d.info("Boot", "Landing page detected \u2014 immediate redirect to login."), gn.forceRedirect()));
+  if (js || Ks || Ys) {
+    if (Ks && fe.isEnabled("ptpSandbox") && Pg(), js) {
+      ie.isTop && setTimeout(oa, 1e4);
       try {
-        nm(), kc(), Uo(), jp(), he.isEnabled("laborBooker") && vs.init(ze);
+        sm(), Ec(), Uo(), Jp(), fe.isEnabled("laborBooker") && vs.init(ze);
       } catch (e) {
         throw d.error("Boot", "EAM init threw \u2014 analytics ping already scheduled.", e), e;
       }
     }
-    (Ks || Ys) && (he.isEnabled("colorCode") && _.register("applyNametagFilter", es), _.register("Logger", d), _.register("mainWin", ze));
+    (js || Ks) && (fe.isEnabled("colorCode") && _.register("applyNametagFilter", es), _.register("Logger", d), _.register("mainWin", ze));
   }
   _.register("closeAllPanels", (e) => Ce.closeAll(e));
-  _.register("MigrationManager", Sl);
-  var Qx = (e) => {
+  _.register("MigrationManager", wl);
+  var nv = (e) => {
     if (e._apmHandled) return;
     let t = e.target;
     if (!t) return;
@@ -22811,7 +23063,7 @@ Continue?`) && confirm("Are you absolutely sure? This cannot be undone."))
         }
         u ? C(L("filterActive", u), "var(--apm-success-bright)", !0, () => {
           window.dispatchEvent(new CustomEvent("APM_CLEAR_FILTER"));
-        }) : (cr(), C(L("filterCleared"), "var(--apm-text-disabled)"));
+        }) : (dr(), C(L("filterCleared"), "var(--apm-text-disabled)"));
         let m = _.get("applyNametagFilter");
         if (typeof m == "function" && m(u), s) {
           let f = { type: "APM_SET_FILTER", kw: u, sourceFrame: window.location.href };
@@ -22832,29 +23084,29 @@ Continue?`) && confirm("Are you absolutely sure? This cannot be undone."))
         let p = c ? `${l} - ${c}` : l, u = () => {
           o.classList.add("apm-copy-success"), setTimeout(() => o.classList.remove("apm-copy-success"), 1500);
         }, m = () => {
-          let y = e.view || window, b = y.document || document;
+          let x = e.view || window, h = x.document || document;
           try {
-            let w = b.activeElement;
-            w?.setSelectionRange && (w.tagName === "INPUT" || w.tagName === "TEXTAREA") && w.setSelectionRange(0, 0), y.getSelection()?.removeAllRanges();
+            let w = h.activeElement;
+            w?.setSelectionRange && (w.tagName === "INPUT" || w.tagName === "TEXTAREA") && w.setSelectionRange(0, 0), x.getSelection()?.removeAllRanges();
           } catch {
           }
-          let x = b.createElement("span"), v = b.createElement("a");
-          v.href = s, v.textContent = l, x.appendChild(v), c && x.appendChild(b.createTextNode(` - ${c}`)), x.style.cssText = "position:fixed;left:-9999px;opacity:0", b.body.appendChild(x);
-          let E = b.createRange();
-          E.selectNodeContents(x);
-          let k = y.getSelection();
+          let b = h.createElement("span"), v = h.createElement("a");
+          v.href = s, v.textContent = l, b.appendChild(v), c && b.appendChild(h.createTextNode(` - ${c}`)), b.style.cssText = "position:fixed;left:-9999px;opacity:0", h.body.appendChild(b);
+          let E = h.createRange();
+          E.selectNodeContents(b);
+          let k = x.getSelection();
           k.removeAllRanges(), k.addRange(E);
           let S = !1;
           try {
-            S = b.execCommand("copy");
+            S = h.execCommand("copy");
           } catch {
           }
-          return k.removeAllRanges(), x.remove(), S;
+          return k.removeAllRanges(), b.remove(), S;
         }, f = document.createElement("span"), g = document.createElement("a");
         g.href = s, g.textContent = l, f.appendChild(g), c && f.appendChild(document.createTextNode(` - ${c}`));
-        let h = f.innerHTML;
+        let y = f.innerHTML;
         navigator.clipboard?.write && typeof ClipboardItem < "u" ? navigator.clipboard.write([new ClipboardItem({
-          "text/html": new Blob([h], { type: "text/html" }),
+          "text/html": new Blob([y], { type: "text/html" }),
           "text/plain": new Blob([p], { type: "text/plain" })
         })]).then(u).catch(() => {
           d.warn("Core", `Clipboard API write failed for ${l}, trying execCommand fallback`), m() ? u() : (d.warn("Core", `execCommand copy also failed for ${l}, falling back to writeText`), navigator.clipboard.writeText(s).then(u).catch(() => {
@@ -22865,23 +23117,23 @@ Continue?`) && confirm("Are you absolutely sure? This cannot be undone."))
       return;
     }
   };
-  _.register("handleGlobalClick", Qx);
+  _.register("handleGlobalClick", nv);
   document.addEventListener("mousedown", _.get("handleGlobalClick"), !0);
   document.addEventListener("click", (e) => {
     (e.target.closest?.(".apm-nametag") || e.target.closest?.(".apm-copy-icon")) && (e.preventDefault(), e.stopPropagation());
   }, !0);
-  var js = null, Xx = () => {
-    if (!Ks && !Ys && !Js) return;
-    Js || (Ce.registerPanel("apm-settings-panel", ["#apm-settings-ext-btn"]), Ce.registerPanel("eam-forecast-panel", ["#apm-forecast-ext-btn"]), Ce.registerPanel("apm-labor-panel", ["#apm-labor-trigger"]), Ce.registerPanel("apm-colorcode-panel", [".apm-toolbar-btn", ".rain-cloud-hover"]), Ce.registerPanel("apm-labor-popup", ["#apm-quick-book-btn"])), yg(ze), js && js.disconnect(), js = new MutationObserver((t) => {
+  var zs = null, av = () => {
+    if (!js && !Ks && !Ys) return;
+    Ys || (Ce.registerPanel("apm-settings-panel", ["#apm-settings-ext-btn"]), Ce.registerPanel("eam-forecast-panel", ["#apm-forecast-ext-btn"]), Ce.registerPanel("apm-labor-panel", ["#apm-labor-trigger"]), Ce.registerPanel("apm-colorcode-panel", [".apm-toolbar-btn", ".rain-cloud-hover"]), Ce.registerPanel("apm-labor-popup", ["#apm-quick-book-btn"])), Eg(ze), zs && zs.disconnect(), zs = new MutationObserver((t) => {
       t.some((o) => Array.from(o.addedNodes).some((n) => n.nodeType === 1 && (n.tagName === "IFRAME" || n.querySelector && n.querySelector("iframe")))) && pe.runTaskNow("frame-sync-pulse");
     });
     let e = () => {
-      document.body && js.observe(document.body, { childList: !0, subtree: !0 }), mn.markReady("dom"), pe.registerTask("frame-sync-pulse", 5e3, Ml), pe.runTaskNow("frame-sync-pulse"), ie.isTop && pe.registerTask("ptp-status-check", 15e3, Mn, { isIdle: !0 });
+      document.body && zs.observe(document.body, { childList: !0, subtree: !0 }), fn.markReady("dom"), pe.registerTask("frame-sync-pulse", 5e3, Il), pe.runTaskNow("frame-sync-pulse"), ie.isTop && pe.registerTask("ptp-status-check", 15e3, Pn, { isIdle: !0 });
     };
     document.body ? (e(), co(document)) : window.addEventListener("DOMContentLoaded", e), window.addEventListener("APM_CLEAR_FILTER", () => {
       ze.activeNametagFilter = "";
       let t = _.get("applyNametagFilter");
-      typeof t == "function" && t(""), cr(), C(L("filterCleared"), "var(--apm-text-disabled)");
+      typeof t == "function" && t(""), dr(), C(L("filterCleared"), "var(--apm-text-disabled)");
       let r = { type: "APM_SET_FILTER", kw: "" };
       window.postMessage(r, window.location.origin), document.querySelectorAll("iframe").forEach((n) => {
         try {
@@ -22892,16 +23144,16 @@ Continue?`) && confirm("Are you absolutely sure? This cannot be undone."))
       let o = typeof ze < "u" && ze.top ? ze.top : window.top;
       window !== o && o.postMessage(r, window.location.origin);
     });
-  }, Zx = () => {
+  }, iv = () => {
     try {
-      _d();
+      Nd();
     } catch (e) {
       d.error("Boot", "DiagOverlay mount failed:", e);
     }
   };
   document.addEventListener("keydown", (e) => {
     if (!e.ctrlKey || !e.shiftKey || !e.altKey || e.key !== "D" && e.key !== "d") return;
-    e.preventDefault(), document.getElementById("apm-diag-overlay") || document.getElementById("apm-diag-badge") ? (document.getElementById("apm-diag-overlay")?.remove(), document.getElementById("apm-diag-badge")?.remove()) : Zx();
+    e.preventDefault(), document.getElementById("apm-diag-overlay") || document.getElementById("apm-diag-badge") ? (document.getElementById("apm-diag-overlay")?.remove(), document.getElementById("apm-diag-badge")?.remove()) : iv();
   }, !0);
-  Xx();
+  av();
 })();
