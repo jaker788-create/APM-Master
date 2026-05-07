@@ -1,5 +1,16 @@
 # APM Master v14 Changelog
 
+## v14.14.126 — Re-enable typing into Problem / Failure / Cause code fields (2026-05-07)
+
+### Features
+- **Problem / Failure / Cause code fields accept typed values again on WSJOBS.** A recent EAM update locked all three to tree-picker only. The new `unlockTroubleCodes` module flips `editable`/`readOnly`, sets state to `'optional'`, and for problemcode dismantles Amazon's three-layer lock (100ms watchdog interval, capture-phase keydown blocker, inline `cursor: pointer`). F9 still opens the picker; the Clear button still resets all three.
+
+## v14.14.125 — Diagnostic boundary + ColorCode active-screen log honesty (2026-05-07)
+
+### Correctness
+- **Diagnostic boundary markers stay scoped to the top frame.** `Diagnostics.restoreFromSession` ran in every same-origin iframe, so screen-cache navigation and PTP handshakes each emitted a phantom `── session reload ──` BOUNDARY. Emission now gates on `AppContext.isTop` and renames to `── top frame reload ──`. `SessionMonitor.forceRedirect` stamps a sessionStorage marker that upgrades the next boot's message to `── new session (post-SSO) ──` for genuine re-auth.
+- **ColorCode "Active screen" log stops claiming WSJOBS when no screen is detected.** `resolveEntityColumn` falls back to `WSJOBS` when detection is empty (start page) or the screen lacks an entity config (WSBOOK), and the log treated the fallback as a detection. Emission now gates on real detection; when detected screen differs from its fallback, both surface (`Active screen: WSBOOK (entity config: WSJOBS/Work Order)`).
+
 ## v14.14.124 — Gate EAM module boot in PTP iframe (2026-05-05)
 
 ### Cleanup
